@@ -13,8 +13,13 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 private:
-    QMenu* m_mnuWindows;
+    QMenu * m_mnuWindows;
+    QMenu * m_mnuStyles;
+    QMenu * m_mnuLangs;
     QSignalMapper * m_psigmapper;
+    QSignalMapper * m_psigmapperStyle;
+    QList<QString> lstStyles;
+
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
@@ -26,8 +31,12 @@ public slots:
     void slotNotImpl    ();
     void slotNewDoc     ();
     void slotWindows    ();
+    void slotStyles     ();
+    void slotLanguages  ();
     void slotAbout      ();
     void slotSetActiveSubWindow (QWidget*);
+    void slotSetActiveStyle     (QString);
+    void slotSetActiveLang      (QString);
 
 
 

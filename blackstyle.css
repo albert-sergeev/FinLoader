@@ -1,0 +1,18 @@
+QWidget{
+    background:black;
+
+    color: white;
+    border: 1px solid white;
+    
+}
+
+QPushButton{
+    background: qlineargradient(
+		    x1:0,y1:1,x2:0,y2:0,
+		    stop:1 rgb(133,133,135),
+		    stop:0.4 rgb(31,31,33)
+    );
+
+    border-radius: 5px;
+}
+

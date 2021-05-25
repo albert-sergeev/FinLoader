@@ -21,6 +21,8 @@ MainWindow::~MainWindow()
 /// \brief plug for future
 ///
 void MainWindow::slotNotImpl(){};
+void MainWindow::slotLanguages  (){};
+void MainWindow::slotSetActiveLang      (QString){};
 
 //--------------------------------------------------------------------------------------------------------------------------------
 ////////
@@ -80,6 +82,19 @@ void MainWindow::InitAction()
     connect(m_mnuWindows,SIGNAL(aboutToShow()),SLOT(slotWindows()));
     menuBar()->addSeparator();
     //
+    QMenu * pmnuSettings = new QMenu("&Settings");
+    pmnuSettings->addAction(pacConfig);
+    pmnuSettings->addSeparator();
+
+    m_mnuStyles = new QMenu("St&yles");
+    pmnuSettings->addMenu(m_mnuStyles);
+    connect(m_mnuStyles,SIGNAL(aboutToShow()),SLOT(slotStyles()));
+    m_mnuLangs = new QMenu("&Language");
+    pmnuSettings->addMenu(m_mnuLangs);
+    connect(m_mnuLangs,SIGNAL(aboutToShow()),SLOT(slotLanguages()));
+
+    menuBar()->addMenu(pmnuSettings);
+    //
     QMenu * pmnuHelp = new QMenu("&Help");
     pmnuHelp->addAction("&About",this,SLOT(slotAbout()),Qt::Key_F1);
     menuBar()->addMenu(pmnuHelp);
@@ -87,6 +102,8 @@ void MainWindow::InitAction()
     //------------------------------------------------
     m_psigmapper = new QSignalMapper(this);
     connect(m_psigmapper,SIGNAL(mapped(QWidget*)),this,SLOT(slotSetActiveSubWindow(QWidget*)));
+    m_psigmapperStyle = new QSignalMapper(this);
+    connect(m_psigmapperStyle,SIGNAL(mapped(QString)),this,SLOT(slotSetActiveStyle(QString)));
     //------------------------------------------------
     //------------------------------------------------
     QToolBar * tbr =new QToolBar("Top tool");
@@ -109,11 +126,29 @@ void MainWindow::slotNewDoc()
     pdoc->setAttribute(Qt::WA_DeleteOnClose);
     pdoc->setWindowTitle("Unnamed document");
     pdoc->setWindowIcon(QPixmap(":/store/images/sc_newdoc"));
+
+
+    QGridLayout *lt=new QGridLayout();
+    QLabel *lbl=new QLabel("Document");
+    QPushButton * btn1=new QPushButton("Push it");
+    QPushButton * btn2=new QPushButton("Doun't");
+    QComboBox * cbx=new QComboBox();
+    cbx->addItem("First elem");
+    cbx->addItem("Second elem");
+    lt->addWidget(lbl);
+    lt->addWidget(btn1);
+    lt->addWidget(btn2);
+    lt->addWidget(cbx);
+    pdoc->setLayout(lt);
+
     ui->mdiArea->addSubWindow(pdoc);
     pdoc->show();
 }
 
 //--------------------------------------------------------------------------------------------------------------------------------
+///
+/// \brief Making menu for teg "Windows"
+///
 void MainWindow::slotWindows ()
 {
     m_mnuWindows->clear();
@@ -157,3 +192,46 @@ void MainWindow::slotAbout   ()
 
 };
 //--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotStyles     ()
+{
+    QAction * pac;
+    m_mnuStyles->clear();
+    lstStyles.clear();
+    foreach(QString str,QStyleFactory::keys()){
+        lstStyles.append(str);
+    }
+    lstStyles.append("BlackStyle");
+
+    for(auto s:lstStyles){
+        pac = m_mnuStyles->addAction(s);
+        connect(pac,SIGNAL(triggered()),m_psigmapperStyle,SLOT(map()));
+        m_psigmapperStyle->setMapping(pac,s);
+    }
+
+};
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotSetActiveStyle     (QString s)
+{
+    if(s == "BlackStyle"){
+        //QFile fl("./blackstyle.css");
+        QFile fl(":/store/blackstyle.css");
+        fl.open(QFile::ReadOnly);
+        QString strCSS=QLatin1String(fl.readAll());
+        //QApplication::setStyleSheet(strCSS);
+        qApp->setStyleSheet(strCSS);
+    }
+    else{
+        QStyle * st=QStyleFactory::create(s);
+        QApplication::setStyle(st);
+    }
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------------------
+

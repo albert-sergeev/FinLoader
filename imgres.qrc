@@ -15,5 +15,6 @@
         <file>images/sc_save.png</file>
         <file>images/sc_saveas.png</file>
         <file>images/sc_config.png</file>
+        <file>blackstyle.css</file>
     </qresource>
 </RCC>
