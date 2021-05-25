@@ -369,12 +369,16 @@ void MainWindow::slotLanguages  ()
 void MainWindow::slotSetActiveLang      (QString sL)
 {
     //////////////////////////////////////////////////////////////////////////////////////////
+    /// \brief do it first, becouse need old translation (befour load new language to QTranslator)
+    ///
     QMessageBox *msg = new QMessageBox(QMessageBox::Question,
                                    tr("Language change"),
                                    tr("For language change app needed to be reloaded. Do it?"),
                                    QMessageBox::Yes|QMessageBox::No
             );
     //////////////////////////////////////////////////////////////////////////////////////////
+    /// \brief do lang exchange, anyway has it set befour or not, for usage purpouse.
+    ///
     QString sOldLang = m_Language;
     if(sL == "Русский"){
         m_Language = sL;
@@ -387,6 +391,7 @@ void MainWindow::slotSetActiveLang      (QString sL)
         qApp->installTranslator(&m_translator);
     }
 
+    // do reload, if needed
     if (sOldLang.size()>0 && sOldLang != sL){
         int n = msg->exec();
         delete msg;
