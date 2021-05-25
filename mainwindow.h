@@ -1,8 +1,24 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+//#include <QtWidgets>
 #include <QMainWindow>
-#include <QtWidgets>
+#include <QSignalMapper>
+#include <QTranslator>
+#include <QSettings>
+#include <QStyle>
+#include <QDebug>
+#include <QToolBar>
+#include <QLabel>
+#include <QPushButton>
+#include <QComboBox>
+#include <QMdiSubWindow>
+#include <QMessageBox>
+#include <QStyleFactory>
+#include <QFile>
+#include <QTextEdit>
+//#include <>
+
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
