@@ -19,13 +19,21 @@ private:
     QSignalMapper * m_psigmapper;
     QSignalMapper * m_psigmapperStyle;
     QList<QString> lstStyles;
+    QString m_sStyleName;
+
+    QSettings m_settings;
 
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+signals:
+    void addToLog(QString);
+
 protected:
     void InitAction();
+    void SaveSettings();
+    void LoadSettings();
 
 public slots:
     void slotNotImpl    ();
@@ -35,6 +43,7 @@ public slots:
     void slotStyles     ();
     void slotLanguages  ();
     void slotAbout      ();
+    void slotSendTestText();
     void slotSetActiveSubWindow (QWidget*);
     void slotSetActiveStyle     (QString);
     void slotSetActiveLang      (QString);

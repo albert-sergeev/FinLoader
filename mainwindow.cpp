@@ -9,10 +9,12 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
 
     InitAction();
+    LoadSettings();
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 MainWindow::~MainWindow()
 {
+    SaveSettings();
     delete ui;
 }
 
@@ -24,6 +26,48 @@ void MainWindow::slotNotImpl(){};
 void MainWindow::slotLanguages  (){};
 void MainWindow::slotSetActiveLang      (QString){};
 
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::LoadSettings()
+{
+
+    QString sMark;
+
+    m_settings.beginGroup("Settings");
+        sMark = m_settings.value("markKey","nothing").toString();
+        m_settings.beginGroup("Mainwindow");
+            int nWidth = m_settings.value("Width", width()).toInt();
+            int nHeight = m_settings.value("Height",height()).toInt();
+            m_sStyleName = m_settings.value("StyleName",style()->objectName()).toString();
+        m_settings.endGroup();
+    m_settings.endGroup();
+    //
+    resize(nWidth,nHeight);
+    slotSetActiveStyle(m_sStyleName);
+    //addToLog(sMark);
+
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::SaveSettings()
+{
+    //
+    m_settings.beginGroup("Settings");
+        m_settings.setValue("markKey","Hulala");
+        m_settings.beginGroup("Mainwindow");
+            m_settings.setValue("Width", this->width());
+            m_settings.setValue("Height",this->height());
+            m_settings.setValue("StyleName",m_sStyleName);
+        m_settings.endGroup();
+    m_settings.endGroup();
+
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotSendTestText()
+{
+    addToLog("Test text");
+    //addToLog("Test text");
+    qDebug()<<style()->objectName();
+    qDebug()<<style();
+}
 //--------------------------------------------------------------------------------------------------------------------------------
 ////////
 /// \brief Initialisation of menues and panels
@@ -132,7 +176,7 @@ void MainWindow::InitAction()
 
 //--------------------------------------------------------------------------------------------------------------------------------
 ///
-/// \brief MainWindow::slotNewDoc
+/// \brief create NewDoc Window (for test purpouse)
 ///
 void MainWindow::slotNewDoc()
 {
@@ -147,6 +191,9 @@ void MainWindow::slotNewDoc()
     QPushButton * btn1=new QPushButton("Push it");
     QPushButton * btn2=new QPushButton("Doun't");
     QComboBox * cbx=new QComboBox();
+
+    connect(btn1,SIGNAL(clicked()),this,SLOT(slotSendTestText()));
+
     cbx->addItem("First elem");
     cbx->addItem("Second elem");
     lt->addWidget(lbl);
@@ -190,6 +237,10 @@ void MainWindow::slotWindows ()
 };
 
 //--------------------------------------------------------------------------------------------------------------------------------
+////
+/// \brief process changing active sub window (through menu)
+/// \param pwg
+///
 void MainWindow::slotSetActiveSubWindow (QWidget* pwg)
 {
     if(pwg){
@@ -206,6 +257,9 @@ void MainWindow::slotAbout   ()
 
 };
 //--------------------------------------------------------------------------------------------------------------------------------
+///
+/// \brief fill menu with styles
+///
 void MainWindow::slotStyles     ()
 {
     QAction * pac;
@@ -224,22 +278,45 @@ void MainWindow::slotStyles     ()
 
 };
 //--------------------------------------------------------------------------------------------------------------------------------
+////
+/// \brief process style changing
+/// \param styleName
+///
+
 void MainWindow::slotSetActiveStyle     (QString s)
 {
+    QString sOldStyle = m_sStyleName;
+    m_sStyleName = s;
     if(s == "BlackStyle"){
-        //QFile fl("./blackstyle.css");
         QFile fl(":/store/blackstyle.css");
         fl.open(QFile::ReadOnly);
         QString strCSS=QLatin1String(fl.readAll());
-        //QApplication::setStyleSheet(strCSS);
         qApp->setStyleSheet(strCSS);
     }
     else{
         QStyle * st=QStyleFactory::create(s);
+        //qApp->setStyle(st);
         QApplication::setStyle(st);
+        if (sOldStyle == "BlackStyle"){
+            QMessageBox *msg = new QMessageBox(QMessageBox::Question,
+                                               "Изменение стиля",
+                                               "Для применения стиля нужна перезагрузка. Перегрузить приложение?",
+                                               QMessageBox::Yes|QMessageBox::No
+                        );
+            int n = msg->exec();
+            delete msg;
+            if(n == QMessageBox::Yes){
+                //qDebug()<<"reboot!!!";
+                SaveSettings();
+                qApp->quit();
+            }
+        }
     }
 }
 //--------------------------------------------------------------------------------------------------------------------------------
+////
+/// \brief create new log window
+///
 void MainWindow::slotNewLogWnd()
 {
     QWidget *pdoc=new QWidget;
@@ -254,6 +331,8 @@ void MainWindow::slotNewLogWnd()
     lt->addWidget(ed);
     lt->setMargin(1);
     pdoc->setLayout(lt);
+
+    connect(this,SIGNAL(addToLog(QString)),ed,SLOT(append(QString)));
 
     ui->mdiArea->addSubWindow(pdoc);
     pdoc->show();
