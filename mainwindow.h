@@ -18,8 +18,11 @@ private:
     QMenu * m_mnuLangs;
     QSignalMapper * m_psigmapper;
     QSignalMapper * m_psigmapperStyle;
+    QSignalMapper * m_psigmapperLang;
     QList<QString> lstStyles;
     QString m_sStyleName;
+    QString m_Language;
+    QTranslator m_translator;
 
     QSettings m_settings;
 

@@ -6,10 +6,14 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
 {
+
     ui->setupUi(this);
 
-    InitAction();
     LoadSettings();
+    slotSetActiveLang (m_Language);
+    slotSetActiveStyle(m_sStyleName);
+
+    InitAction();
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 MainWindow::~MainWindow()
@@ -23,8 +27,8 @@ MainWindow::~MainWindow()
 /// \brief plug for future
 ///
 void MainWindow::slotNotImpl(){};
-void MainWindow::slotLanguages  (){};
-void MainWindow::slotSetActiveLang      (QString){};
+
+
 
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::LoadSettings()
@@ -33,17 +37,15 @@ void MainWindow::LoadSettings()
     QString sMark;
 
     m_settings.beginGroup("Settings");
-        sMark = m_settings.value("markKey","nothing").toString();
+        m_Language   = m_settings.value("Language","English").toString();
         m_settings.beginGroup("Mainwindow");
-            int nWidth = m_settings.value("Width", width()).toInt();
-            int nHeight = m_settings.value("Height",height()).toInt();
+            int nWidth   = m_settings.value("Width", width()).toInt();
+            int nHeight  = m_settings.value("Height",height()).toInt();
             m_sStyleName = m_settings.value("StyleName",style()->objectName()).toString();
         m_settings.endGroup();
     m_settings.endGroup();
     //
     resize(nWidth,nHeight);
-    slotSetActiveStyle(m_sStyleName);
-    //addToLog(sMark);
 
 }
 //--------------------------------------------------------------------------------------------------------------------------------
@@ -51,7 +53,7 @@ void MainWindow::SaveSettings()
 {
     //
     m_settings.beginGroup("Settings");
-        m_settings.setValue("markKey","Hulala");
+        m_settings.setValue("Language",m_Language);
         m_settings.beginGroup("Mainwindow");
             m_settings.setValue("Width", this->width());
             m_settings.setValue("Height",this->height());
@@ -76,84 +78,84 @@ void MainWindow::InitAction()
 {
     //------------------------------------------------
     QAction * pacNewDoc =new QAction("newdoc");
-    pacNewDoc->setText("&New");
-    pacNewDoc->setShortcut(QKeySequence("CTRL+N"));
-    pacNewDoc->setToolTip("New board");
-    pacNewDoc->setStatusTip("New board");
-    pacNewDoc->setWhatsThis("New board");
+    pacNewDoc->setText(tr("&New"));
+    pacNewDoc->setShortcut(QKeySequence(tr("CTRL+N")));
+    pacNewDoc->setToolTip(tr("New board"));
+    pacNewDoc->setStatusTip(tr("New board"));
+    pacNewDoc->setWhatsThis(tr("New board"));
     pacNewDoc->setIcon(QPixmap(":/store/images/sc_newdoc"));
     connect(pacNewDoc,SIGNAL(triggered()),SLOT(slotNewDoc()));
     //------------------------------------------------
     QAction * pacOpen =new QAction("Open");
-    pacOpen->setText("&Open");
-    pacOpen->setShortcut(QKeySequence("CTRL+L"));
-    pacOpen->setToolTip("Load history data");
-    pacOpen->setStatusTip("Load history data");
-    pacOpen->setWhatsThis("Load history data");
+    pacOpen->setText(tr("&Open"));
+    pacOpen->setShortcut(QKeySequence(tr("CTRL+L")));
+    pacOpen->setToolTip(tr("Load history data"));
+    pacOpen->setStatusTip(tr("Load history data"));
+    pacOpen->setWhatsThis(tr("Load history data"));
     pacOpen->setIcon(QPixmap(":/store/images/sc_open"));
     //------------------------------------------------
     QAction * pacSave =new QAction("Save");
-    pacSave->setText("&Save");
-    pacSave->setShortcut(QKeySequence("CTRL+S"));
-    pacSave->setToolTip("Save Document");
-    pacSave->setStatusTip("Save file to disk");
-    pacSave->setWhatsThis("Save file to disk");
+    pacSave->setText(tr("&Save"));
+    pacSave->setShortcut(QKeySequence(tr("CTRL+S")));
+    pacSave->setToolTip(tr("Save Document"));
+    pacSave->setStatusTip(tr("Save file to disk"));
+    pacSave->setWhatsThis(tr("Save file to disk"));
     pacSave->setIcon(QPixmap(":/store/images/sc_save"));
     //------------------------------------------------
     QAction * pacLogWnd =new QAction("LogWnd");
-    pacLogWnd->setText("Lo&g window");
-    pacLogWnd->setShortcut(QKeySequence("ALT+L"));
-    pacLogWnd->setToolTip("Log window");
-    pacLogWnd->setStatusTip("Log window");
-    pacLogWnd->setWhatsThis("Log window");
+    pacLogWnd->setText(tr("Lo&g window"));
+    pacLogWnd->setShortcut(QKeySequence(tr("ALT+L")));
+    pacLogWnd->setToolTip(tr("Log window"));
+    pacLogWnd->setStatusTip(tr("Log window"));
+    pacLogWnd->setWhatsThis(tr("Log window"));
     pacLogWnd->setIcon(QPixmap(":/store/images/sc_move"));
     connect(pacLogWnd,SIGNAL(triggered()),SLOT(slotNewLogWnd()));
     //------------------------------------------------
     QAction * pacConfig =new QAction("Config");
-    pacConfig->setText("Confi&g");
-    pacConfig->setShortcut(QKeySequence("CTRL+G"));
-    pacConfig->setToolTip("Config");
-    pacConfig->setStatusTip("Config");
-    pacConfig->setWhatsThis("Config");
+    pacConfig->setText(tr("Confi&g"));
+    pacConfig->setShortcut(QKeySequence(tr("CTRL+G")));
+    pacConfig->setToolTip(tr("Config"));
+    pacConfig->setStatusTip(tr("Config"));
+    pacConfig->setWhatsThis(tr("Config"));
     pacConfig->setIcon(QPixmap(":/store/images/sc_config"));
     //------------------------------------------------
     //
-    QMenu * pmnuFile = new QMenu("&File");
+    QMenu * pmnuFile = new QMenu(tr("&File","menu"));
     pmnuFile->addAction(pacNewDoc);
     pmnuFile->addAction(pacOpen);
     pmnuFile->addAction(pacSave);
     pmnuFile->addSeparator();
-    pmnuFile->addAction("&Quit",
+    pmnuFile->addAction(tr("&Quit"),
                         qApp,
                         SLOT(closeAllWindows()),
-                        QKeySequence("CTRL+Q")
+                        QKeySequence(tr("CTRL+Q"))
                 );
     menuBar()->addMenu(pmnuFile);
     //
-    m_mnuWindows = new QMenu("&Windows");
+    m_mnuWindows = new QMenu(tr("&Windows"));
     menuBar()->addMenu(m_mnuWindows);
     connect(m_mnuWindows,SIGNAL(aboutToShow()),SLOT(slotWindows()));
     menuBar()->addSeparator();
     //
-    QMenu * pmnuTools = new QMenu("&Tools");
+    QMenu * pmnuTools = new QMenu(tr("&Tools"));
     pmnuTools->addAction(pacLogWnd);
     menuBar()->addMenu(pmnuTools);
     //
-    QMenu * pmnuSettings = new QMenu("&Settings");
+    QMenu * pmnuSettings = new QMenu(tr("&Settings"));
     pmnuSettings->addAction(pacConfig);
     pmnuSettings->addSeparator();
 
-    m_mnuStyles = new QMenu("St&yles");
+    m_mnuStyles = new QMenu(tr("St&yles"));
     pmnuSettings->addMenu(m_mnuStyles);
     connect(m_mnuStyles,SIGNAL(aboutToShow()),SLOT(slotStyles()));
-    m_mnuLangs = new QMenu("&Language");
+    m_mnuLangs = new QMenu(tr("&Language"));
     pmnuSettings->addMenu(m_mnuLangs);
     connect(m_mnuLangs,SIGNAL(aboutToShow()),SLOT(slotLanguages()));
 
     menuBar()->addMenu(pmnuSettings);
     //
-    QMenu * pmnuHelp = new QMenu("&Help");
-    pmnuHelp->addAction("&About",this,SLOT(slotAbout()),Qt::Key_F1);
+    QMenu * pmnuHelp = new QMenu(tr("&Help"));
+    pmnuHelp->addAction(tr("&About"),this,SLOT(slotAbout()),Qt::Key_F1);
     menuBar()->addMenu(pmnuHelp);
 
     //------------------------------------------------
@@ -161,6 +163,8 @@ void MainWindow::InitAction()
     connect(m_psigmapper,SIGNAL(mapped(QWidget*)),this,SLOT(slotSetActiveSubWindow(QWidget*)));
     m_psigmapperStyle = new QSignalMapper(this);
     connect(m_psigmapperStyle,SIGNAL(mapped(QString)),this,SLOT(slotSetActiveStyle(QString)));
+    m_psigmapperLang = new QSignalMapper(this);
+    connect(m_psigmapperLang,SIGNAL(mapped(QString)),this,SLOT(slotSetActiveLang(QString)));
     //------------------------------------------------
     //------------------------------------------------
     QToolBar * tbr =new QToolBar("Top tool");
@@ -182,20 +186,20 @@ void MainWindow::slotNewDoc()
 {
     QWidget *pdoc=new QWidget;
     pdoc->setAttribute(Qt::WA_DeleteOnClose);
-    pdoc->setWindowTitle("Unnamed document");
+    pdoc->setWindowTitle(tr("Unnamed document"));
     pdoc->setWindowIcon(QPixmap(":/store/images/sc_newdoc"));
 
 
     QGridLayout *lt=new QGridLayout();
-    QLabel *lbl=new QLabel("Document");
-    QPushButton * btn1=new QPushButton("Push it");
-    QPushButton * btn2=new QPushButton("Doun't");
+    QLabel *lbl=new QLabel(tr("Document"));
+    QPushButton * btn1=new QPushButton(tr("Push it"));
+    QPushButton * btn2=new QPushButton(tr("Doun't"));
     QComboBox * cbx=new QComboBox();
 
     connect(btn1,SIGNAL(clicked()),this,SLOT(slotSendTestText()));
 
-    cbx->addItem("First elem");
-    cbx->addItem("Second elem");
+    cbx->addItem(tr("First elem"));
+    cbx->addItem(tr("Second elem"));
     lt->addWidget(lbl);
     lt->addWidget(btn1);
     lt->addWidget(btn2);
@@ -216,10 +220,10 @@ void MainWindow::slotWindows ()
     //
     QAction *pac;
     //
-    pac = m_mnuWindows->addAction("&Cascade",ui->mdiArea,SLOT(cascadeSubWindows()));
+    pac = m_mnuWindows->addAction(tr("&Cascade"),ui->mdiArea,SLOT(cascadeSubWindows()));
     pac->setEnabled(!ui->mdiArea->subWindowList().isEmpty());
     //
-    pac = m_mnuWindows->addAction("&Tile",ui->mdiArea,SLOT(tileSubWindows()));
+    pac = m_mnuWindows->addAction(tr("&Tile"),ui->mdiArea,SLOT(tileSubWindows()));
     pac->setEnabled(!ui->mdiArea->subWindowList().isEmpty());
     //
     m_mnuWindows->addSeparator();
@@ -253,7 +257,7 @@ void MainWindow::slotSetActiveSubWindow (QWidget* pwg)
 ///
 void MainWindow::slotAbout   ()
 {
-    QMessageBox::about(0,"About","FinLoader v.0.0.1");
+    QMessageBox::about(0,tr("About"),"FinLoader v.0.0.1");
 
 };
 //--------------------------------------------------------------------------------------------------------------------------------
@@ -297,10 +301,12 @@ void MainWindow::slotSetActiveStyle     (QString s)
         QStyle * st=QStyleFactory::create(s);
         //qApp->setStyle(st);
         QApplication::setStyle(st);
+        //
+        // becouse stylesheet cannot be redone, reload
         if (sOldStyle == "BlackStyle"){
             QMessageBox *msg = new QMessageBox(QMessageBox::Question,
-                                               "Изменение стиля",
-                                               "Для применения стиля нужна перезагрузка. Перегрузить приложение?",
+                                               tr("style change"),
+                                               tr("For style change app needed to be reloaded. Do it?"),
                                                QMessageBox::Yes|QMessageBox::No
                         );
             int n = msg->exec();
@@ -309,6 +315,7 @@ void MainWindow::slotSetActiveStyle     (QString s)
                 //qDebug()<<"reboot!!!";
                 SaveSettings();
                 qApp->quit();
+                //TODO: auto start app
             }
         }
     }
@@ -321,7 +328,7 @@ void MainWindow::slotNewLogWnd()
 {
     QWidget *pdoc=new QWidget;
     pdoc->setAttribute(Qt::WA_DeleteOnClose);
-    pdoc->setWindowTitle("Log window");
+    pdoc->setWindowTitle(tr("Log window"));
     pdoc->setWindowIcon(QPixmap(":/store/images/sc_move"));
 
 
@@ -339,7 +346,59 @@ void MainWindow::slotNewLogWnd()
 
 }
 //--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotLanguages  ()
+{
+    QAction * pac;
+    QString sL;
+    m_mnuLangs->clear();
+
+    {
+        sL = "English";
+        pac = m_mnuLangs->addAction(sL);
+        connect(pac,SIGNAL(triggered()),m_psigmapperLang,SLOT(map()));
+        m_psigmapperLang->setMapping(pac,sL);
+        //
+        sL = "Русский";
+        pac = m_mnuLangs->addAction(sL);
+        connect(pac,SIGNAL(triggered()),m_psigmapperLang,SLOT(map()));
+        m_psigmapperLang->setMapping(pac,sL);
+    }
+
+};
 //--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotSetActiveLang      (QString sL)
+{
+    //////////////////////////////////////////////////////////////////////////////////////////
+    QMessageBox *msg = new QMessageBox(QMessageBox::Question,
+                                   tr("Language change"),
+                                   tr("For language change app needed to be reloaded. Do it?"),
+                                   QMessageBox::Yes|QMessageBox::No
+            );
+    //////////////////////////////////////////////////////////////////////////////////////////
+    QString sOldLang = m_Language;
+    if(sL == "Русский"){
+        m_Language = sL;
+        m_translator.load(":/store/FinLoader_ru_RU.qm");
+        qApp->installTranslator(&m_translator);
+    }
+    else{
+        m_Language = "English";
+        m_translator.load(":/store/FinLoader_en_US.qm");
+        qApp->installTranslator(&m_translator);
+    }
+
+    if (sOldLang.size()>0 && sOldLang != sL){
+        int n = msg->exec();
+        delete msg;
+
+        if(n == QMessageBox::Yes){
+            //qDebug()<<"reboot!!!";
+            SaveSettings();
+            qApp->quit();
+            //TODO: auto start app
+        }
+    }
+}
 //--------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------

@@ -16,5 +16,7 @@
         <file>images/sc_saveas.png</file>
         <file>images/sc_config.png</file>
         <file>blackstyle.css</file>
+        <file>FinLoader_ru_RU.qm</file>
+        <file>FinLoader_en_US.qm</file>
     </qresource>
 </RCC>
