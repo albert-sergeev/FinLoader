@@ -30,6 +30,7 @@ protected:
 public slots:
     void slotNotImpl    ();
     void slotNewDoc     ();
+    void slotNewLogWnd  ();
     void slotWindows    ();
     void slotStyles     ();
     void slotLanguages  ();

@@ -56,6 +56,15 @@ void MainWindow::InitAction()
     pacSave->setWhatsThis("Save file to disk");
     pacSave->setIcon(QPixmap(":/store/images/sc_save"));
     //------------------------------------------------
+    QAction * pacLogWnd =new QAction("LogWnd");
+    pacLogWnd->setText("Lo&g window");
+    pacLogWnd->setShortcut(QKeySequence("ALT+L"));
+    pacLogWnd->setToolTip("Log window");
+    pacLogWnd->setStatusTip("Log window");
+    pacLogWnd->setWhatsThis("Log window");
+    pacLogWnd->setIcon(QPixmap(":/store/images/sc_move"));
+    connect(pacLogWnd,SIGNAL(triggered()),SLOT(slotNewLogWnd()));
+    //------------------------------------------------
     QAction * pacConfig =new QAction("Config");
     pacConfig->setText("Confi&g");
     pacConfig->setShortcut(QKeySequence("CTRL+G"));
@@ -81,6 +90,10 @@ void MainWindow::InitAction()
     menuBar()->addMenu(m_mnuWindows);
     connect(m_mnuWindows,SIGNAL(aboutToShow()),SLOT(slotWindows()));
     menuBar()->addSeparator();
+    //
+    QMenu * pmnuTools = new QMenu("&Tools");
+    pmnuTools->addAction(pacLogWnd);
+    menuBar()->addMenu(pmnuTools);
     //
     QMenu * pmnuSettings = new QMenu("&Settings");
     pmnuSettings->addAction(pacConfig);
@@ -111,6 +124,7 @@ void MainWindow::InitAction()
     tbr->addAction(pacOpen);
     tbr->addAction(pacSave);
     tbr->addAction(pacConfig);
+    tbr->addAction(pacLogWnd);
 
     this->addToolBar(tbr);
 
@@ -226,6 +240,25 @@ void MainWindow::slotSetActiveStyle     (QString s)
     }
 }
 //--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotNewLogWnd()
+{
+    QWidget *pdoc=new QWidget;
+    pdoc->setAttribute(Qt::WA_DeleteOnClose);
+    pdoc->setWindowTitle("Log window");
+    pdoc->setWindowIcon(QPixmap(":/store/images/sc_move"));
+
+
+    QGridLayout *lt=new QGridLayout();
+    QTextEdit * ed=new QTextEdit();
+
+    lt->addWidget(ed);
+    lt->setMargin(1);
+    pdoc->setLayout(lt);
+
+    ui->mdiArea->addSubWindow(pdoc);
+    pdoc->show();
+
+}
 //--------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------
