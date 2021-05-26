@@ -47,7 +47,7 @@ public:
     ~MainWindow();
 
 signals:
-    void addToLog(QString);
+    void SendToLog(QString);
 
 protected:
     void InitAction();

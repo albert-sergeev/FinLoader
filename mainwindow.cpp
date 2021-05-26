@@ -65,10 +65,9 @@ void MainWindow::SaveSettings()
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::slotSendTestText()
 {
-    addToLog("Test text");
-    //addToLog("Test text");
-    qDebug()<<style()->objectName();
-    qDebug()<<style();
+    SendToLog("Test text");
+    //qDebug()<<style()->objectName();
+    //qDebug()<<style();
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 ////////
@@ -88,7 +87,7 @@ void MainWindow::InitAction()
     //------------------------------------------------
     QAction * pacOpen =new QAction("Open");
     pacOpen->setText(tr("&Open"));
-    pacOpen->setShortcut(QKeySequence(tr("CTRL+L")));
+    pacOpen->setShortcut(QKeySequence(tr("CTRL+O")));
     pacOpen->setToolTip(tr("Load history data"));
     pacOpen->setStatusTip(tr("Load history data"));
     pacOpen->setWhatsThis(tr("Load history data"));
@@ -104,7 +103,7 @@ void MainWindow::InitAction()
     //------------------------------------------------
     QAction * pacLogWnd =new QAction("LogWnd");
     pacLogWnd->setText(tr("Lo&g window"));
-    pacLogWnd->setShortcut(QKeySequence(tr("ALT+L")));
+    pacLogWnd->setShortcut(QKeySequence(tr("CTRL+L")));
     pacLogWnd->setToolTip(tr("Log window"));
     pacLogWnd->setStatusTip(tr("Log window"));
     pacLogWnd->setWhatsThis(tr("Log window"));
@@ -339,7 +338,7 @@ void MainWindow::slotNewLogWnd()
     lt->setMargin(1);
     pdoc->setLayout(lt);
 
-    connect(this,SIGNAL(addToLog(QString)),ed,SLOT(append(QString)));
+    connect(this,SIGNAL(SendToLog(QString)),ed,SLOT(append(QString)));
 
     ui->mdiArea->addSubWindow(pdoc);
     pdoc->show();
