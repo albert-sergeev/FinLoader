@@ -34,7 +34,9 @@ public:
 
 public:
     //--------------------------------------------------------------------------------------------------------
-    enum eInterval:int {pTick=0,p1=1,p5=5,p10=10,p15=15,p30=30,p60=60,p120=120,p180=180};
+    enum eInterval:int {pTick=0,p1=1,p5=5,p10=10,p15=15,p30=30,p60=60,p120=120,p180=180, pDay=1440, pWeek=10080, pMonth=302400};
+    //--------------------------------------------------------------------------------------------------------
+
     //--------------------------------------------------------------------------------------------------------
     Bar() = delete ;
     //--------------------------------------------------------------------------------------------------------
@@ -42,13 +44,9 @@ public:
         dOpen{Open},dHigh{High},dLow{Low},dClose{Close},iValue{Value},iInterval{Interval},
         tmPeriod{Period}
     {
-    };
-    //--------------------------------------------------------------------------------------------------------
-    // diff from above: init from std::tm instead std::time_t
-    Bar (double Open, double High,double Low,double Close,int Value, std::tm Period, int Interval = eInterval::pTick):
-        dOpen{Open},dHigh{High},dLow{Low},dClose{Close},iValue{Value},iInterval{Interval},
-        tmPeriod{mktime(&Period)}
-    {
+        // accomodate time to discret intervals (to up)
+        tmPeriod = DateAccomodate(tmPeriod,this->iInterval);
+
     };
     //--------------------------------------------------------------------------------------------------------
     Bar (Bar &b):
@@ -82,6 +80,12 @@ public:
     //--------------------------------------------------------------------------------------------------------
     bool operator== (const Bar &b) const
     {
+        if(b.iInterval != iInterval){
+            std::stringstream ss;
+            ss<<"Invalid interval value [Bar& Bar::operator==(Bar &)] {" << iInterval << "!=" << b.iInterval << "}";
+            throw std::invalid_argument(ss.str());
+        }
+
         if(
             dOpen       ==   b.dOpen    &&
             dHigh       ==   b.dHigh    &&
@@ -101,11 +105,23 @@ public:
         return operator==(b);
     }
     //--------------------------------------------------------------------------------------------------------
-    Bar & Append (const Bar &b)
+    // do compare only by time
+    bool operator< (const Bar &b) const
     {
         if(b.iInterval != iInterval){
             std::stringstream ss;
-            ss<<"Invalid interval value [Bar& Bar::operator=(Bar &)] {" << iInterval << "!=" << b.iInterval << "}";
+            ss<<"Invalid interval value [Bar& Bar::operator<(Bar &)] {" << iInterval << "!=" << b.iInterval << "}";
+            throw std::invalid_argument(ss.str());
+        }
+
+        return tmPeriod < b.tmPeriod;
+    }
+    //--------------------------------------------------------------------------------------------------------
+    Bar & Append (const Bar &b)
+    {
+        if(b.iInterval > iInterval){// must be less or equal
+            std::stringstream ss;
+            ss<<"Invalid interval value [Bar& Bar::Append(Bar &)] {" << iInterval << "!=" << b.iInterval << "}";
             throw std::invalid_argument(ss.str());
         }
         //dOpen       =   b.dOpen;                      //  first event is in left element
@@ -121,6 +137,32 @@ public:
     Bar & Append (Bar &&b)
     {
         return Append(b);
+    }
+    //--------------------------------------------------------------------------------------------------------
+private:
+    //--------------------------------------------------------------------------------------------------------
+    time_t DateAccomodate(time_t &t, int iInterval)
+    {
+        time_t tRet = t;
+
+        if(iInterval != eInterval::pTick){
+            if(iInterval < pDay){
+                int iSec = t % (iInterval*60);
+                if(iSec>0){
+                    tRet = t  + ((iInterval*60) - iSec);
+                }
+            }
+            else{
+                std::tm tp  =  *std::localtime(&t);
+                tp.tm_hour = 0;
+                tp.tm_min = 0;
+                tp.tm_sec = 0;
+                tp.tm_isdst = 0;
+
+                tRet = std::mktime(&tp);
+            }
+        }
+        return tRet;
     }
     //--------------------------------------------------------------------------------------------------------
 
