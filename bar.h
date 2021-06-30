@@ -7,6 +7,7 @@
 
 
 
+
 ////
 /// \brief Main class for store trade operations data for decent time period
 ///
@@ -45,7 +46,7 @@ public:
         tmPeriod{Period}
     {
         // accomodate time to discret intervals (to up)
-        tmPeriod = DateAccomodate(tmPeriod,this->iInterval);
+        tmPeriod = DateAccommodate(tmPeriod,this->iInterval);
 
     };
     //--------------------------------------------------------------------------------------------------------
@@ -141,9 +142,15 @@ public:
     //--------------------------------------------------------------------------------------------------------
 private:
     //--------------------------------------------------------------------------------------------------------
-    time_t DateAccomodate(const time_t & t, int iInterval)
+    // align dates to discret marks
+    time_t DateAccommodate(time_t t, int iInterval)
     {
         time_t tRet = t;
+
+        //1. ticks dont align - they use seconds
+        //2. interdays align by math: append addition to remainder of divide by interval
+        //3. days and more by manipulate days and substract hours and mins
+
 
         if(iInterval != eInterval::pTick){
             if(iInterval < pDay){
@@ -153,7 +160,16 @@ private:
                 }
             }
             else{
-                std::tm tp  =  *std::localtime(&t);
+                std::tm tp =  *std::localtime(&t);
+
+                if(iInterval == eInterval::pWeek){//weeks align to mondeys
+                    t= t -  ((tp.tm_wday)*86400);
+                    tp  =  *std::localtime(&t);
+                }
+                else if(iInterval == eInterval::pMonth){// month to first day
+                    tp.tm_mday = 1;
+                }
+
                 tp.tm_hour = 0;
                 tp.tm_min = 0;
                 tp.tm_sec = 0;
