@@ -19,6 +19,8 @@
 #include <QTextEdit>
 //#include <>
 
+#include "bar.h"
+
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -41,6 +43,8 @@ private:
     QTranslator m_translator;
 
     QSettings m_settings;
+
+
 
 public:
     MainWindow(QWidget *parent = nullptr);
