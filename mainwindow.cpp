@@ -1,12 +1,18 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include "configwindow.h"
+
+#include<QListView>
 
 
 //--------------------------------------------------------------------------------------------------------------------------------
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
+    , vMarketsLst{{"MMVB","MOEX"}}
+    , m_MarketLstModel{vMarketsLst}
     , ui(new Ui::MainWindow)
 {
+
 
     ui->setupUi(this);
 
@@ -118,6 +124,7 @@ void MainWindow::InitAction()
     pacConfig->setStatusTip(tr("Config"));
     pacConfig->setWhatsThis(tr("Config"));
     pacConfig->setIcon(QPixmap(":/store/images/sc_config"));
+    connect(pacConfig,SIGNAL(triggered()),SLOT(slotConfigWndow()));
     //------------------------------------------------
     //
     QMenu * pmnuFile = new QMenu(tr("&File","menu"));
@@ -205,6 +212,11 @@ void MainWindow::slotNewDoc()
     lt->addWidget(btn2);
     lt->addWidget(cbx);
     pdoc->setLayout(lt);
+
+
+    QListView *lw8=new QListView();
+    lw8->setModel(&m_MarketLstModel);
+    lt->addWidget(lw8);
 
     ui->mdiArea->addSubWindow(pdoc);
     pdoc->show();
@@ -405,6 +417,20 @@ void MainWindow::slotSetActiveLang      (QString sL)
     }
 }
 //--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotConfigWndow()
+{
+    ConfigWindow *pdoc=new ConfigWindow;
+    pdoc->setAttribute(Qt::WA_DeleteOnClose);
+    pdoc->setWindowTitle(tr("Config"));
+    pdoc->setWindowIcon(QPixmap(":/store/images/sc_config"));
+
+   // vMarketsLst.push_back({"MOEX","MOEX"});
+
+    pdoc->setMarketModel(&m_MarketLstModel);
+
+    ui->mdiArea->addSubWindow(pdoc);
+    pdoc->show();
+}
 //--------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------

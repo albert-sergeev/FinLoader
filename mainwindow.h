@@ -20,6 +20,7 @@
 //#include <>
 
 #include "bar.h"
+#include "marketslistmodel.h"
 
 
 QT_BEGIN_NAMESPACE
@@ -44,7 +45,8 @@ private:
 
     QSettings m_settings;
 
-
+    std::vector<Market> vMarketsLst;
+    MarketsListModel m_MarketLstModel;
 
 public:
     MainWindow(QWidget *parent = nullptr);
@@ -70,6 +72,7 @@ public slots:
     void slotSetActiveSubWindow (QWidget*);
     void slotSetActiveStyle     (QString);
     void slotSetActiveLang      (QString);
+    void slotConfigWndow ();
 
 
 
