@@ -46,7 +46,7 @@ void Storage::Initialize()
     ///========
     pathMarkersFile = std::filesystem::absolute(pathDataDir/"markets.dat");
     //
-    if(!std::filesystem::exists(pathMarkersFile)){
+    if(!std::filesystem::exists(pathMarkersFile)){ // if no file - create new with defaults
         std::ofstream fileMarket(pathMarkersFile);
         std::vector<Market> m{{"MOEXXXX","MOEX"}};
         SaveMarketConfig(m);
@@ -67,7 +67,7 @@ void Storage::LoadMarketConfig(std::vector<Market> & vMarketsLst)
     //
     ///=======
     /// for speed optimisation
-    std::ios::sync_with_stdio(false);
+    //std::ios::sync_with_stdio(false);
     ///=======
     //
     std::string sBuff;
@@ -88,7 +88,7 @@ void Storage::LoadMarketConfig(std::vector<Market> & vMarketsLst)
     }
 
     ///=======
-    std::ios::sync_with_stdio(true);
+    //std::ios::sync_with_stdio(true);
 }
 //--------------------------------------------------------------------------------------------------------
 void Storage::ParsMarketConfigV_1(std::vector<Market> & vMarketsLst, std::ifstream &file)
@@ -134,7 +134,7 @@ void Storage::SaveMarketConfig(std::vector<Market> && vMarketsLst)
 void Storage::SaveMarketConfigV_1(std::vector<Market> & vMarketsLst)
 {
     //
-    std::ios::sync_with_stdio(false);
+    //std::ios::sync_with_stdio(false);
     //
     std::ofstream fileMarket(pathMarkersFile);
     fileMarket <<"1\n";
@@ -147,9 +147,10 @@ void Storage::SaveMarketConfigV_1(std::vector<Market> & vMarketsLst)
         fileMarket<<m.UpToSys()<<" ";
         fileMarket<<m.StartTime()<<" ";
         fileMarket<<m.EndTime()<<" ";
+        fileMarket<<"\n";
     }
     //
-    std::ios::sync_with_stdio(true);
+    //std::ios::sync_with_stdio(true);
     //
 }
 //--------------------------------------------------------------------------------------------------------

@@ -13,8 +13,6 @@ private:
 
     std::vector<Market> * vMarketsLst; //init in const by ref
 
-
-
 public:
 
     explicit MarketsListModel(std::vector<Market> &v, QObject *parent = nullptr):QAbstractTableModel{parent},vMarketsLst{&v}{};
@@ -24,16 +22,20 @@ public:
 
     // Basic functionality:
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
-
-    int columnCount(const QModelIndex &/*indx=QModelIndex()*/) const  override{return 2;};
+    int columnCount(const QModelIndex &/*indx=QModelIndex()*/) const  override{return 7;};
 
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
 
-    bool setData(const QModelIndex &indx,const QVariant &value,int nRole=Qt::DisplayRole) override;
+    //bool setData(const QModelIndex &indx,const QVariant &value,int nRole=Qt::DisplayRole) override;
 
-    Qt::ItemFlags flags(const QModelIndex &indx)const override;
+    int AddRow(Market &m);
+    bool removeItem(const int indx);
 
-    const Market & getMarket(const QModelIndex &index);
+
+    Qt::ItemFlags flags(const QModelIndex &indx) const override;
+
+    Market & getMarket(const QModelIndex &index);
+
 
 private:
 };

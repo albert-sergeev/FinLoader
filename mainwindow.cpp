@@ -88,6 +88,23 @@ void MainWindow::LoadDataStorage()
     }
 }
 //--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotSaveMarketDataStorage()
+{
+    try{
+        stStore.SaveMarketConfig(vMarketsLst);
+    }
+    catch (std::exception &e){
+        //
+        int n=QMessageBox::critical(0,tr("Error during saving markets config!"),e.what());
+        if (n==QMessageBox::Ok){;}
+        //
+    }
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotSaveTicketDataStorage()
+{
+}
+//--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::SaveDataStorage()
 {
 }
@@ -451,6 +468,7 @@ void MainWindow::slotConfigWndow()
     ui->mdiArea->addSubWindow(pdoc);
 
     connect(pdoc,SIGNAL(SendToMainLog(QString)),this,SIGNAL(SendToLog(QString)));
+    connect(pdoc,SIGNAL(NeedSaveMarketsChanges()),this,SLOT(slotSaveMarketDataStorage()));
     pdoc->show();
 }
 //--------------------------------------------------------------------------------------------------------------------------------

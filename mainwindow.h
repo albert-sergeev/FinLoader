@@ -63,6 +63,9 @@ protected:
     void LoadSettings();
     void LoadDataStorage();
     void SaveDataStorage();
+public slots:
+    void slotSaveMarketDataStorage();
+    void slotSaveTicketDataStorage();
 
 public slots:
     void slotNotImpl    ();

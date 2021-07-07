@@ -40,10 +40,12 @@ public:
     inline std::time_t StartTime()  const {return tStartTime;};
     inline std::time_t EndTime()    const {return tEndTime;};
 
-    inline void SetAutoLoad     (const bool         AutoLoad)   {bAutoLoad  = AutoLoad;};
-    inline void SetUpToSys      (const bool         UpToSys)    {bUpToSys   = UpToSys;};
-    inline void SetStartTime    (const std::time_t  StartTime)  {tStartTime = StartTime;};
-    inline void SetEndTime      (const std::time_t  EndTime)    {tEndTime   = EndTime;};
+    inline void SetMarketName   (const std::string  MarketName) {sMarketName    = MarketName;};
+    inline void SetMarketSign   (const std::string  MarketSign) {sMarketSign    = MarketSign;};
+    inline void SetAutoLoad     (const bool         AutoLoad)   {bAutoLoad      = AutoLoad;};
+    inline void SetUpToSys      (const bool         UpToSys)    {bUpToSys       = UpToSys;};
+    inline void SetStartTime    (const std::time_t  StartTime)  {tStartTime     = StartTime;};
+    inline void SetEndTime      (const std::time_t  EndTime)    {tEndTime       = EndTime;};
 
 
 public:
@@ -60,8 +62,8 @@ public:
         std::tm tmPer;
         {
             tmPer.tm_year   = 2000 - 1900;
-            tmPer.tm_mon    = 0;
-            tmPer.tm_mday   = 0;
+            tmPer.tm_mon    = 1;
+            tmPer.tm_mday   = 1;
             tmPer.tm_hour   = 0;
             tmPer.tm_min    = 0;
             tmPer.tm_sec    = 0;

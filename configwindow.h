@@ -3,6 +3,7 @@
 
 //TODO: shrink includes
 #include <QWidget>
+#include <QTime>
 
 #include "marketslistmodel.h"
 #include "storage.h"
@@ -18,6 +19,12 @@ class ConfigWindow : public QWidget
 private:
     MarketsListModel *modelMarket;
     Storage stStore;
+    bool bDataChanged;
+    bool bAddingRow;
+
+private:
+
+    void ClearWidgetsValues();
 
 public:
     explicit ConfigWindow(QWidget *parent = nullptr);
@@ -30,16 +37,22 @@ public:
 signals:
 
     void SendToMainLog(QString);
+    void NeedSaveMarketsChanges();
 
 public slots:
 
     void slotSetSelectedMarket(const  QModelIndex& indx);
 
-    void slotStateChanged();
+
+
     void slotBtnAddClicked();
     void slotBtnRemoveClicked();
     void slotBtnSaveClicked();
     void slotBtnCancelClicked();
+
+    void slotDataChanged(bool Changed=true);
+    void slotDataChanged(int)               {slotDataChanged(true);};
+    void slotTimeChanged(const QTime &)     {slotDataChanged(true);};
 
 
 
