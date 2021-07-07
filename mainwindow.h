@@ -56,6 +56,7 @@ public:
 
 signals:
     void SendToLog(QString);
+    void SaveUnsavedConfigs();
 
 protected:
     void InitAction();
@@ -70,7 +71,7 @@ public slots:
     void slotSaveMarketDataStorage();
     void slotSaveTicketDataStorage();
 
-public slots:
+protected slots:
     void slotNotImpl    ();
     void slotNewDoc     ();
     void slotNewLogWnd  ();
@@ -83,6 +84,7 @@ public slots:
     void slotSetActiveStyle     (QString);
     void slotSetActiveLang      (QString);
     void slotConfigWndow ();
+
 
 
 

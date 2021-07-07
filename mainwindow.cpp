@@ -34,7 +34,7 @@ MainWindow::~MainWindow()
 bool MainWindow::event(QEvent *event)
 {
     if(event->type() == QEvent::Close){
-        ;
+        SaveUnsavedConfigs();
     }
     return QWidget::event(event);
 }
@@ -477,9 +477,14 @@ void MainWindow::slotConfigWndow()
 
     connect(pdoc,SIGNAL(SendToMainLog(QString)),this,SIGNAL(SendToLog(QString)));
     connect(pdoc,SIGNAL(NeedSaveMarketsChanges()),this,SLOT(slotSaveMarketDataStorage()));
+    connect(this,SIGNAL(SaveUnsavedConfigs()),pdoc,SLOT(slotBtnSaveClicked()));
+
     pdoc->show();
 }
 //--------------------------------------------------------------------------------------------------------------------------------
+
+/*
+*/
 //--------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------

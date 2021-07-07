@@ -2,6 +2,8 @@
 #include "ui_configwindow.h"
 
 #include<QMessageBox>
+#include<QDebug>
+#include <QKeyEvent>
 
 //--------------------------------------------------------------------------------------------------------
 ConfigWindow::ConfigWindow(QWidget *parent) :
@@ -43,6 +45,13 @@ bool ConfigWindow::event(QEvent *event)
         slotAboutQuit();
     }
     return QWidget::event(event);
+}
+//--------------------------------------------------------------------------------------------------------
+void ConfigWindow::keyPressEvent(QKeyEvent *event)
+{
+    if(event->key() == Qt::Key_Escape){
+        slotBtnCancelClicked();
+    }
 }
 //--------------------------------------------------------------------------------------------------------
 void ConfigWindow::slotAboutQuit()
@@ -122,21 +131,20 @@ void ConfigWindow::ClearWidgetsValues()
 //--------------------------------------------------------------------------------------------------------
 void ConfigWindow::slotBtnSaveClicked()
 {
-    int n=QMessageBox::warning(0,tr("Warning"),
+    if(bDataChanged){
+        int n=QMessageBox::warning(0,tr("Warning"),
                                tr("Do you want to save changes?"),
                                QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel
                                );
-    if (n==QMessageBox::Yes){
+        if (n==QMessageBox::Yes){
 
-        auto qml(ui->listViewMarket->selectionModel());
-        auto lst (qml->selectedIndexes());
+            auto qml(ui->listViewMarket->selectionModel());
+            auto lst (qml->selectedIndexes());
 
-        if(lst.count() > 0){
-            if(lst.count() > 1){
-                qml->select(lst[0],QItemSelectionModel::SelectionFlag::ClearAndSelect) ;
-            }
-            //slotSetSelectedMarket(lst[0]);
-            if(bDataChanged){
+            if(lst.count() > 0){
+                  if(lst.count() > 1){
+                      qml->select(lst[0],QItemSelectionModel::SelectionFlag::ClearAndSelect) ;
+                  }
 
                   Market& m=modelMarket->getMarket(lst[0]);
 
@@ -168,19 +176,16 @@ void ConfigWindow::slotBtnSaveClicked()
                   std::time_t tE (std::mktime(&tmSt));
                   m.SetEndTime(tE);
                   ///
-
-                NeedSaveMarketsChanges();
-                modelMarket->dataChanged(lst[0],lst[0]);
-
-
+                  NeedSaveMarketsChanges();
+                  modelMarket->dataChanged(lst[0],lst[0]);
             }
         }
-        bAddingRow = false;
-        slotDataChanged(false);
+        if (n==QMessageBox::Cancel){
+            slotBtnCancelClicked();
+        }
     }
-    if (n==QMessageBox::Cancel){
-        slotBtnCancelClicked();
-    }
+    bAddingRow = false;
+    slotDataChanged(false);
 };
 //--------------------------------------------------------------------------------------------------------
 void ConfigWindow::slotBtnCancelClicked()
@@ -212,8 +217,16 @@ void ConfigWindow::setMarketModel(MarketsListModel *model)
 {
     modelMarket = model;
     ui->listViewMarket->setModel(model);
-    //connect(ui->listViewMarket,SIGNAL(activated(const QModelIndex&)),this,SLOT(slotSetSelectedMarket(const  QModelIndex&)));
+
+
+
+
     connect(ui->listViewMarket,SIGNAL(clicked(const QModelIndex&)),this,SLOT(slotSetSelectedMarket(const  QModelIndex&)));
+    //
+    connect(ui->listViewMarket,SIGNAL(activated(const QModelIndex&)),this,SLOT(slotSetSelectedMarket(const  QModelIndex&)));
+    connect(ui->listViewMarket,SIGNAL(pressed(const QModelIndex&)),this,SLOT(slotSetSelectedMarket(const  QModelIndex&)));
+    connect(ui->listViewMarket,SIGNAL(doubleClicked(const QModelIndex&)),this,SLOT(slotSetSelectedMarket(const  QModelIndex&)));
+    connect(ui->listViewMarket,SIGNAL(entered(const QModelIndex&)),this,SLOT(slotSetSelectedMarket(const  QModelIndex&)));
     /////////
 
 
@@ -231,6 +244,8 @@ void ConfigWindow::setMarketModel(MarketsListModel *model)
 
 void ConfigWindow::slotSetSelectedMarket(const  QModelIndex& indx)
 {
+    qDebug()<<"Enter slotSetSelectedMarket";
+
     if (indx.isValid()){
         const Market& m=modelMarket->getMarket(indx);
         ui->edName->setPlainText(QString::fromStdString(m.MarketName()));

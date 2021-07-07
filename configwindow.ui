@@ -39,11 +39,17 @@
         <layout class="QGridLayout" name="gridLayout_3">
          <item row="0" column="0">
           <widget class="QListView" name="listViewMarket">
+           <property name="tabKeyNavigation">
+            <bool>false</bool>
+           </property>
            <property name="spacing">
             <number>0</number>
            </property>
            <property name="modelColumn">
             <number>0</number>
+           </property>
+           <property name="selectionRectVisible">
+            <bool>false</bool>
            </property>
           </widget>
          </item>
