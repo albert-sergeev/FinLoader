@@ -91,7 +91,7 @@ bool MarketsListModel::removeItem(const int indx)
         vMarketsLst->shrink_to_fit();
 
 
-        emit dataChanged(this->index(indx,0),this->index(indx,0));
+        emit dataChanged(this->index(indx,0),this->index(indx+1,0));
         return  true;
     }
     return  false;

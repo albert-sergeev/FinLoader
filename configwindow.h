@@ -21,6 +21,7 @@ private:
     Storage stStore;
     bool bDataChanged;
     bool bAddingRow;
+    bool bIsAboutChanged;
 
 private:
 
@@ -44,9 +45,13 @@ signals:
 protected slots:
 
     void slotSetSelectedMarket(const  QModelIndex& indx);
+    void slotSetSelectedMarket(const  QModelIndex& indx,const  QModelIndex&) {slotSetSelectedMarket(indx);};
+
     void slotDataChanged(bool Changed=true);
     void slotDataChanged(int)               {slotDataChanged(true);};
+    void slotDataChanged(const QString &)   {slotDataChanged(true);};
     void slotTimeChanged(const QTime &)     {slotDataChanged(true);};
+
     void slotAboutQuit();
 
 public slots:
