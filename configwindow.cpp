@@ -1,6 +1,8 @@
 #include "configwindow.h"
 #include "ui_configwindow.h"
 
+#include<QMessageBox>
+
 //--------------------------------------------------------------------------------------------------------
 ConfigWindow::ConfigWindow(QWidget *parent) :
     QWidget(parent)
@@ -8,7 +10,43 @@ ConfigWindow::ConfigWindow(QWidget *parent) :
     , ui(new Ui::ConfigWindow)
 {
     ui->setupUi(this);
+
+    try{
+        stStore.Initialize();
+
+    }
+    //catch (std::runtime_error &e){
+    catch (std::exception &e){
+        //
+        int n=QMessageBox::critical(0,tr("Error during initialising data dir!"),e.what());
+        if (n==QMessageBox::Ok){;}
+        //
+    }
+    //
+    connect(ui->btnAddMaket,SIGNAL(clicked()),  this,SLOT(slotBtnAddClicked()));
+    connect(ui->btnDelMarket,SIGNAL(clicked()), this,SLOT(slotBtnRemoveClicked()));
+    connect(ui->btnSaveMarket,SIGNAL(clicked()),this,SLOT(slotBtnSaveClicked()));
+    //connect(ui->btnSaveMarket,SIGNAL(clicked()),this,SLOT(slotBtnCancelClicked()));
 }
+//--------------------------------------------------------------------------------------------------------
+void ConfigWindow::slotBtnAddClicked()
+{
+
+
+    SendToMainLog(QString::fromStdString(stStore.GetCurrentPath()));
+    SendToMainLog("\n");
+    SendToMainLog(QString::fromStdString(stStore.GetDataPath()));
+    SendToMainLog("\n");
+    SendToMainLog(QString::fromStdString(stStore.GetStoragePath()));
+    SendToMainLog("\n");
+
+};
+//--------------------------------------------------------------------------------------------------------
+void ConfigWindow::slotBtnRemoveClicked(){};
+void ConfigWindow::slotBtnSaveClicked(){};
+void ConfigWindow::slotBtnCancelClicked(){};
+void ConfigWindow::slotStateChanged(){};
+
 //--------------------------------------------------------------------------------------------------------
 void ConfigWindow::setMarketModel(MarketsListModel *model)
 {
@@ -27,6 +65,7 @@ void ConfigWindow::setMarketModel(MarketsListModel *model)
         qml->select(first_i,QItemSelectionModel::SelectionFlag::Select) ;
         slotSetSelectedMarket(first_i);
     }
+    ////
 }
 //--------------------------------------------------------------------------------------------------------
 

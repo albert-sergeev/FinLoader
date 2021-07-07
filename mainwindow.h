@@ -21,6 +21,7 @@
 
 #include "bar.h"
 #include "marketslistmodel.h"
+#include "storage.h"
 
 
 QT_BEGIN_NAMESPACE
@@ -44,9 +45,10 @@ private:
     QTranslator m_translator;
 
     QSettings m_settings;
-
+    Storage stStore;
     std::vector<Market> vMarketsLst;
     MarketsListModel m_MarketLstModel;
+
 
 public:
     MainWindow(QWidget *parent = nullptr);
@@ -59,6 +61,8 @@ protected:
     void InitAction();
     void SaveSettings();
     void LoadSettings();
+    void LoadDataStorage();
+    void SaveDataStorage();
 
 public slots:
     void slotNotImpl    ();

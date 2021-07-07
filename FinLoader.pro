@@ -2,6 +2,7 @@ QT       += core gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
+LIBS += -lstdc++fs
 CONFIG += c++1z
 
 
@@ -16,6 +17,7 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     marketslistmodel.cpp \
+    storage.cpp \
     ticket.cpp
 
 HEADERS += \
@@ -24,6 +26,7 @@ HEADERS += \
     graph.h \
     mainwindow.h \
     marketslistmodel.h \
+    storage.h \
     ticket.h
 
 FORMS += \

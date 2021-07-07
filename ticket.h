@@ -40,6 +40,12 @@ public:
     inline std::time_t StartTime()  const {return tStartTime;};
     inline std::time_t EndTime()    const {return tEndTime;};
 
+    inline void SetAutoLoad     (const bool         AutoLoad)   {bAutoLoad  = AutoLoad;};
+    inline void SetUpToSys      (const bool         UpToSys)    {bUpToSys   = UpToSys;};
+    inline void SetStartTime    (const std::time_t  StartTime)  {tStartTime = StartTime;};
+    inline void SetEndTime      (const std::time_t  EndTime)    {tEndTime   = EndTime;};
+
+
 public:
     //--------------------------------------------------------------------------------------------------------
     // use only explicit constructor. Copy constructor by default is acceptable;

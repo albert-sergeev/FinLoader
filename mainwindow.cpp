@@ -8,7 +8,7 @@
 //--------------------------------------------------------------------------------------------------------------------------------
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
-    , vMarketsLst{{"MMVB","MOEX"}}
+    , vMarketsLst{}
     , m_MarketLstModel{vMarketsLst}
     , ui(new Ui::MainWindow)
 {
@@ -21,6 +21,8 @@ MainWindow::MainWindow(QWidget *parent)
     slotSetActiveStyle(m_sStyleName);
 
     InitAction();
+
+    LoadDataStorage();
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 MainWindow::~MainWindow()
@@ -68,6 +70,26 @@ void MainWindow::SaveSettings()
         m_settings.endGroup();
     m_settings.endGroup();
 
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::LoadDataStorage()
+{
+    try{
+        stStore.Initialize();
+        stStore.LoadMarketConfig(vMarketsLst);
+
+    }
+    //catch (std::runtime_error &e){
+    catch (std::exception &e){
+        //
+        int n=QMessageBox::critical(0,tr("Error during initialising data dir!"),e.what());
+        if (n==QMessageBox::Ok){;}
+        //
+    }
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::SaveDataStorage()
+{
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::slotSendTestText()
@@ -425,10 +447,10 @@ void MainWindow::slotConfigWndow()
     pdoc->setWindowIcon(QPixmap(":/store/images/sc_config"));
 
    // vMarketsLst.push_back({"MOEX","MOEX"});
-
     pdoc->setMarketModel(&m_MarketLstModel);
-
     ui->mdiArea->addSubWindow(pdoc);
+
+    connect(pdoc,SIGNAL(SendToMainLog(QString)),this,SIGNAL(SendToLog(QString)));
     pdoc->show();
 }
 //--------------------------------------------------------------------------------------------------------------------------------
