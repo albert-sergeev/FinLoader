@@ -63,6 +63,9 @@ protected:
     void LoadSettings();
     void LoadDataStorage();
     void SaveDataStorage();
+
+    bool event(QEvent *event) override;
+
 public slots:
     void slotSaveMarketDataStorage();
     void slotSaveTicketDataStorage();

@@ -25,6 +25,7 @@ private:
 private:
 
     void ClearWidgetsValues();
+    bool event(QEvent *event) override;
 
 public:
     explicit ConfigWindow(QWidget *parent = nullptr);
@@ -43,8 +44,6 @@ public slots:
 
     void slotSetSelectedMarket(const  QModelIndex& indx);
 
-
-
     void slotBtnAddClicked();
     void slotBtnRemoveClicked();
     void slotBtnSaveClicked();
@@ -53,6 +52,8 @@ public slots:
     void slotDataChanged(bool Changed=true);
     void slotDataChanged(int)               {slotDataChanged(true);};
     void slotTimeChanged(const QTime &)     {slotDataChanged(true);};
+
+    void slotAboutQuit();
 
 
 
