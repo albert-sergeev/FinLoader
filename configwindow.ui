@@ -33,9 +33,9 @@
        <property name="geometry">
         <rect>
          <x>20</x>
-         <y>30</y>
-         <width>241</width>
-         <height>321</height>
+         <y>80</y>
+         <width>221</width>
+         <height>271</height>
         </rect>
        </property>
       </widget>
@@ -44,7 +44,7 @@
         <rect>
          <x>280</x>
          <y>50</y>
-         <width>181</width>
+         <width>161</width>
          <height>19</height>
         </rect>
        </property>
@@ -55,40 +55,194 @@
       <widget class="QLabel" name="label_5">
        <property name="geometry">
         <rect>
-         <x>290</x>
+         <x>280</x>
          <y>80</y>
-         <width>67</width>
+         <width>141</width>
          <height>19</height>
         </rect>
        </property>
        <property name="text">
-        <string>TextLabel</string>
+        <string>Обозначение</string>
        </property>
       </widget>
       <widget class="QLabel" name="label_7">
        <property name="geometry">
         <rect>
-         <x>290</x>
-         <y>120</y>
-         <width>67</width>
+         <x>280</x>
+         <y>110</y>
+         <width>161</width>
          <height>19</height>
         </rect>
        </property>
        <property name="text">
-        <string>TextLabel</string>
+        <string>Обозначение в Finam</string>
        </property>
       </widget>
       <widget class="QLabel" name="label_8">
        <property name="geometry">
         <rect>
-         <x>290</x>
-         <y>150</y>
-         <width>67</width>
+         <x>280</x>
+         <y>140</y>
+         <width>161</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Обозначение в Quik</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_9">
+       <property name="geometry">
+        <rect>
+         <x>280</x>
+         <y>180</y>
+         <width>121</width>
          <height>19</height>
         </rect>
        </property>
        <property name="text">
-        <string>TextLabel</string>
+        <string>Автозагрузка</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_10">
+       <property name="geometry">
+        <rect>
+         <x>280</x>
+         <y>210</y>
+         <width>151</width>
+         <height>19</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Выгрузка в систему</string>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="edTickerName">
+       <property name="geometry">
+        <rect>
+         <x>480</x>
+         <y>50</y>
+         <width>113</width>
+         <height>27</height>
+        </rect>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="edTickerSign">
+       <property name="geometry">
+        <rect>
+         <x>480</x>
+         <y>80</y>
+         <width>113</width>
+         <height>27</height>
+        </rect>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="edTickerNameFinam">
+       <property name="geometry">
+        <rect>
+         <x>480</x>
+         <y>110</y>
+         <width>113</width>
+         <height>27</height>
+        </rect>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="edTickerNameQuik">
+       <property name="geometry">
+        <rect>
+         <x>480</x>
+         <y>140</y>
+         <width>113</width>
+         <height>27</height>
+        </rect>
+       </property>
+      </widget>
+      <widget class="QCheckBox" name="chkAutoLoad_2">
+       <property name="geometry">
+        <rect>
+         <x>480</x>
+         <y>180</y>
+         <width>92</width>
+         <height>25</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>CheckBox</string>
+       </property>
+      </widget>
+      <widget class="QCheckBox" name="chkUpToSys_2">
+       <property name="geometry">
+        <rect>
+         <x>480</x>
+         <y>210</y>
+         <width>92</width>
+         <height>25</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>CheckBox</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="btnAddTicker">
+       <property name="geometry">
+        <rect>
+         <x>280</x>
+         <y>290</y>
+         <width>88</width>
+         <height>27</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Добавить</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="btnRemoveTicker">
+       <property name="geometry">
+        <rect>
+         <x>380</x>
+         <y>290</y>
+         <width>88</width>
+         <height>27</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Удалить</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="btnSaveTicker">
+       <property name="geometry">
+        <rect>
+         <x>480</x>
+         <y>290</y>
+         <width>88</width>
+         <height>27</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Сохранить</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="btnCancelTicker">
+       <property name="geometry">
+        <rect>
+         <x>600</x>
+         <y>290</y>
+         <width>88</width>
+         <height>27</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Отменить</string>
+       </property>
+      </widget>
+      <widget class="QComboBox" name="cmbMarkets">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>30</y>
+         <width>221</width>
+         <height>27</height>
+        </rect>
        </property>
       </widget>
      </widget>
@@ -266,7 +420,6 @@
   </layout>
  </widget>
  <tabstops>
-  <tabstop>tabWidget</tabstop>
   <tabstop>listViewMarket</tabstop>
   <tabstop>edName</tabstop>
   <tabstop>edSign</tabstop>

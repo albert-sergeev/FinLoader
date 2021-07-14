@@ -45,21 +45,21 @@ signals:
     void SendToMainLog(QString);
     void NeedSaveMarketsChanges();
 public slots:
-    void slotBtnAddClicked();
-    void slotBtnRemoveClicked();
-    void slotBtnSaveClicked();
-    void slotBtnCancelClicked();
+    void slotBtnAddMarketClicked();
+    void slotBtnRemoveMarketClicked();
+    void slotBtnSaveMarketClicked();
+    void slotBtnCancelMarketClicked();
 protected slots:
     void slotSetSelectedMarket(const  QModelIndex& indx);
     void slotSetSelectedMarket(const  QModelIndex& indx,const  QModelIndex&) {slotSetSelectedMarket(indx);};
-    void slotDataChanged(bool Changed=true);
-    void slotDataChanged(int)               {slotDataChanged(true);};
-    void slotDataChanged(const QString &)   {slotDataChanged(true);};
-    void slotTimeChanged(const QTime &)     {slotDataChanged(true);};
+    void slotMarketDataChanged(bool Changed=true);
+    void slotMarketDataChanged(int)               {slotMarketDataChanged(true);};
+    void slotMarketDataChanged(const QString &)   {slotMarketDataChanged(true);};
+    void slotMarketTimeChanged(const QTime &)     {slotMarketDataChanged(true);};
     void slotAboutQuit();
 
     //////////////////////////////////////////
-    /// Ticket work part
+    /// Ticker work part
     //////////////////////////////////////////
 private:
 //    MarketsListModel *modelMarket;
@@ -76,10 +76,10 @@ signals:
 //    void SendToMainLog(QString);
 //    void NeedSaveMarketsChanges();
 public slots:
-//    void slotBtnAddClicked();
-//    void slotBtnRemoveClicked();
-//    void slotBtnSaveClicked();
-//    void slotBtnCancelClicked();
+    void slotBtnAddTickerClicked();
+    void slotBtnRemoveTickerClicked();
+    void slotBtnSaveTickerClicked();
+    void slotBtnCancelTickerClicked();
 protected slots:
 //    void slotSetSelectedMarket(const  QModelIndex& indx);
 //    void slotSetSelectedMarket(const  QModelIndex& indx,const  QModelIndex&) {slotSetSelectedMarket(indx);};

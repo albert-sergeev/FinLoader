@@ -29,23 +29,23 @@ ConfigWindow::ConfigWindow(QWidget *parent) :
     // market-tab work
 
     //
-    connect(ui->btnAddMaket,SIGNAL(clicked()),  this,SLOT(slotBtnAddClicked()));
-    connect(ui->btnDelMarket,SIGNAL(clicked()), this,SLOT(slotBtnRemoveClicked()));
-    connect(ui->btnSaveMarket,SIGNAL(clicked()),this,SLOT(slotBtnSaveClicked()));
-    connect(ui->btnCancel,SIGNAL(clicked()),this,SLOT(slotBtnCancelClicked()));
+    connect(ui->btnAddMaket,SIGNAL(clicked()),  this,SLOT(slotBtnAddMarketClicked()));
+    connect(ui->btnDelMarket,SIGNAL(clicked()), this,SLOT(slotBtnRemoveMarketClicked()));
+    connect(ui->btnSaveMarket,SIGNAL(clicked()),this,SLOT(slotBtnSaveMarketClicked()));
+    connect(ui->btnCancel,SIGNAL(clicked()),this,SLOT(slotBtnCancelMarketClicked()));
     //
 
 
-    connect(ui->edName,SIGNAL(textChanged(const QString &)),this,SLOT(slotDataChanged(const QString &)));
-    connect(ui->edSign,SIGNAL(textChanged(const QString &)),this,SLOT(slotDataChanged(const QString &)));
+    connect(ui->edName,SIGNAL(textChanged(const QString &)),this,SLOT(slotMarketDataChanged(const QString &)));
+    connect(ui->edSign,SIGNAL(textChanged(const QString &)),this,SLOT(slotMarketDataChanged(const QString &)));
 
-    connect(ui->chkAutoLoad,SIGNAL(stateChanged(int)),this,SLOT(slotDataChanged(int)));
-    connect(ui->chkUpToSys,SIGNAL(stateChanged(int)),this,SLOT(slotDataChanged(int)));
-    connect(ui->dateTimeStart,SIGNAL(timeChanged(const QTime &)),this,SLOT(slotTimeChanged(const QTime &)));
-    connect(ui->dateTimeEnd,SIGNAL(timeChanged(const QTime &)),this,SLOT(slotTimeChanged(const QTime &)));
+    connect(ui->chkAutoLoad,SIGNAL(stateChanged(int)),this,SLOT(slotMarketDataChanged(int)));
+    connect(ui->chkUpToSys,SIGNAL(stateChanged(int)),this,SLOT(slotMarketDataChanged(int)));
+    connect(ui->dateTimeStart,SIGNAL(timeChanged(const QTime &)),this,SLOT(slotMarketTimeChanged(const QTime &)));
+    connect(ui->dateTimeEnd,SIGNAL(timeChanged(const QTime &)),this,SLOT(slotMarketTimeChanged(const QTime &)));
 
     ///////////////////////////////////////////////////////////////////////
-    // ticket-tab work
+    // ticker-tab work
 
 
 }
@@ -73,27 +73,27 @@ bool ConfigWindow::event(QEvent *event)
 void ConfigWindow::keyPressEvent(QKeyEvent *event)
 {
     if(event->key() == Qt::Key_Escape){
-        slotBtnCancelClicked();
+        slotBtnCancelMarketClicked();
     }
 }
 //--------------------------------------------------------------------------------------------------------
 void ConfigWindow::slotAboutQuit()
 {
     if(bDataChanged){
-        slotBtnSaveClicked();
+        slotBtnSaveMarketClicked();
     }
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///ticket-tab work
+///ticker-tab work
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //--------------------------------------------------------------------------------------------------------
-void ConfigWindow::slotDataChanged(bool Changed )
+void ConfigWindow::slotMarketDataChanged(bool Changed )
 {
     if (!bIsAboutChanged){
         bDataChanged = Changed;
@@ -107,7 +107,7 @@ void ConfigWindow::slotDataChanged(bool Changed )
     }    
 }
 //--------------------------------------------------------------------------------------------------------
-void ConfigWindow::slotBtnAddClicked()
+void ConfigWindow::slotBtnAddMarketClicked()
 {
     bAddingRow = true;
 
@@ -122,11 +122,11 @@ void ConfigWindow::slotBtnAddClicked()
         slotSetSelectedMarket(indx);
     }
     //
-    slotDataChanged(true);
+    slotMarketDataChanged(true);
     ui->edName->setFocus();
 };
 //--------------------------------------------------------------------------------------------------------
-void ConfigWindow::slotBtnRemoveClicked()
+void ConfigWindow::slotBtnRemoveMarketClicked()
 {
     int n=QMessageBox::warning(0,tr("Warning"),
                                tr("Do you want to remove market?"),
@@ -136,7 +136,7 @@ void ConfigWindow::slotBtnRemoveClicked()
         auto qml(ui->listViewMarket->selectionModel());
         auto lst (qml->selectedIndexes());
 
-// TODO: add check ticket data presents;
+// TODO: add check ticker data presents;
 
         if(lst.count() > 0){
             if(lst.count() > 1){
@@ -146,7 +146,7 @@ void ConfigWindow::slotBtnRemoveClicked()
             qml->select(lst[0],QItemSelectionModel::SelectionFlag::Clear);
             NeedSaveMarketsChanges();
             ClearWidgetsValues();
-            slotDataChanged(false);
+            slotMarketDataChanged(false);
 
         }
     }
@@ -169,7 +169,7 @@ void ConfigWindow::ClearWidgetsValues()
 }
 
 //--------------------------------------------------------------------------------------------------------
-void ConfigWindow::slotBtnSaveClicked()
+void ConfigWindow::slotBtnSaveMarketClicked()
 {
     if(bDataChanged){
         int n=QMessageBox::warning(0,tr("Warning"),
@@ -219,18 +219,30 @@ void ConfigWindow::slotBtnSaveClicked()
                   NeedSaveMarketsChanges();
                   modelMarket->dataChanged(lst[0],lst[0]);
 
+                  bAddingRow = false;
+                  slotMarketDataChanged(false);
 
+                  //qDebug() << "choiceSave";
             }
         }
-        if (n==QMessageBox::Cancel){
-            slotBtnCancelClicked();
+        else if (n==QMessageBox::Cancel){
+            slotBtnCancelMarketClicked();
+            bAddingRow = false;
+            //qDebug() << "choiceCancel";
+        }
+        else{
+            //qDebug() << "choiceNo";
         }
     }
-    bAddingRow = false;
-    slotDataChanged(false);
+    else{
+        bAddingRow = false;
+        slotMarketDataChanged(false);
+        //qDebug() << "choiceNoChanges";
+    }
+
 };
 //--------------------------------------------------------------------------------------------------------
-void ConfigWindow::slotBtnCancelClicked()
+void ConfigWindow::slotBtnCancelMarketClicked()
 {
     auto qml(ui->listViewMarket->selectionModel());
     auto lst (qml->selectedIndexes());
@@ -251,7 +263,7 @@ void ConfigWindow::slotBtnCancelClicked()
         {
             modelMarket->removeItem(r.row());
             ClearWidgetsValues();
-            slotDataChanged(false);
+            slotMarketDataChanged(false);
 
             qml->select(r,QItemSelectionModel::SelectionFlag::Clear) ;
         }
@@ -326,7 +338,7 @@ void ConfigWindow::slotSetSelectedMarket(const  QModelIndex& indx)
 
         bIsAboutChanged=false;
 
-        slotDataChanged(false);
+        slotMarketDataChanged(false);
     }
 }
 
@@ -338,5 +350,10 @@ void ConfigWindow::slotSetSelectedMarket(const  QModelIndex& indx)
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+void ConfigWindow::slotBtnAddTickerClicked(){}
+void ConfigWindow::slotBtnRemoveTickerClicked(){};
+void ConfigWindow::slotBtnSaveTickerClicked(){};
+void ConfigWindow::slotBtnCancelTickerClicked(){};
 
 //--------------------------------------------------------------------------------------------------------
