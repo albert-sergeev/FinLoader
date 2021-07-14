@@ -3,7 +3,7 @@
 
 #include <QAbstractListModel>
 #include <vector>
-#include "ticket.h"
+#include "ticker.h"
 
 class MarketsListModel : public QAbstractTableModel
 {

@@ -1,5 +1,5 @@
-#ifndef TICKET_H
-#define TICKET_H
+#ifndef Ticker_H
+#define Ticker_H
 
 #include<string>
 #include<memory>
@@ -7,7 +7,7 @@
 
 
 //REDO: warning. in multithread redo to atomic tipe.
-static int iTicketCounter {1};
+static int iTickerCounter {1};
 static int iMarketCounter {1};
 
 
@@ -104,49 +104,65 @@ public:
 ///
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class Ticket
+class Ticker
 {
 private:
 
-    std::string             sTicketName;
-    std::string             sTicketSign;
-    int                     iTicketID;
-    std::shared_ptr<Market> ptrMarket;
+    std::string             sTickerName;
+    std::string             sTickerSign;
+
+    std::string             sTickerSignFincert;
+    std::string             sTickerSignQuik;
+
+    int                     iTickerID;
+    int                     iMarketID;
+
+    bool                    bAutoLoad;
+    bool                    bUpToSys;
+
 
 public:
 
-    inline std::string              TicketName()    const   {return sTicketName;};
-    inline std::string              TicketSign()    const   {return sTicketSign;};
-    inline int                      TicketID()      const   {return iTicketID;};
-    inline int                      MarketID()      const   {return ptrMarket.get()->MarketID();};
-    inline std::shared_ptr<Market>  MarketShPtr()   const   {return ptrMarket;};
+    inline std::string              TickerName()        const   {return sTickerName;};
+    inline std::string              TickerSign()        const   {return sTickerSign;};
+    inline std::string              TickerSignFincert() const   {return sTickerSignFincert;};
+    inline std::string              TickerSignQuik()    const   {return sTickerSignQuik;};
+    inline int                      TickerID()          const   {return iTickerID;};
+    inline int                      MarketID()          const   {return iMarketID;};
+    inline bool                     AutoLoad()          const   {return bAutoLoad;};
+    inline bool                     UpToSys()           const   {return bUpToSys;};
+
+    inline void SetTickerName           (const std::string  TickerName) {sTickerName            = TickerName;};
+    inline void SetTickerSign           (const std::string  TickerSign) {sTickerSign            = TickerSign;};
+    inline void SetTickerSignFincert    (const std::string  TickerSign) {sTickerSignFincert     = TickerSign;};
+    inline void SetTickerSignQuik       (const std::string  TickerSign) {sTickerSignQuik        = TickerSign;};
+    inline void SetAutoLoad             (const bool         AutoLoad)   {bAutoLoad              = AutoLoad;};
+    inline void SetUpToSys              (const bool         UpToSys)    {bUpToSys              = UpToSys;};
 
 public:
     //--------------------------------------------------------------------------------------------------------
     // use only explicit constructor. Copy constructor by default is acceptable;
-    Ticket() = delete ;
+    Ticker() = delete ;
     //--------------------------------------------------------------------------------------------------------
-    Ticket(std::string TicketName,std::string TicketSign,std::shared_ptr<Market> Market, int TicketID)
+    Ticker(int TickerID, std::string TickerName,std::string TickerSign, int MarketID)
     {
-        if(!Market){
-            throw std::invalid_argument("Invalid null pointer to market in Ticket()");
+        if(MarketID <= 0){
+            throw std::invalid_argument("Invalid null pointer to market in Ticker()");
         }
         //
-        ptrMarket = Market;
+        sTickerName = TickerName;
+        sTickerSign = TickerSign;
+        iTickerID   = TickerID;
+        iMarketID = MarketID;
         //
-        sTicketName = TicketName;
-        sTicketSign = TicketSign;
-        //iMarketID = ptrMarket.get()->MarketID();
-        iTicketID   = TicketID;
-        //
-        if (TicketID >= iTicketCounter) iTicketCounter = TicketID + 1;
+        if (TickerID >= iTickerCounter) iTickerCounter = TickerID + 1;
     }
     //
-    Ticket(std::string TicketName,std::string TicketSign, std::shared_ptr<Market> Market):Ticket(TicketName,TicketSign, Market,iTicketCounter++){};
+    Ticker(std::string TickerName,std::string TickerSign, int MarketID):Ticker(iTickerCounter++,TickerName,TickerSign, MarketID){};
     //--------------------------------------------------------------------------------------------------------
 };
 
 
 
 
-#endif // TICKET_H
+#endif // Ticker_H

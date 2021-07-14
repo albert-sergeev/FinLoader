@@ -2,7 +2,7 @@
 #define STORAGE_H
 
 #include<filesystem>
-#include "ticket.h"
+#include "ticker.h"
 
 
 
@@ -31,14 +31,22 @@ public:
 public:
     //--------------------------------------------------------------------------------------------------------
     void Initialize();
+
     void LoadMarketConfig(std::vector<Market> & vMarketsLst);
     void SaveMarketConfig(std::vector<Market> & vMarketsLst);
     void SaveMarketConfig(std::vector<Market> && vMarketsLst);
+
+    void LoadTickerConfig(std::vector<Ticker> & /*vTickersLst*/) {};
+    void SaveTickerConfig(std::vector<Ticker> & /*vTickersLst*/) {};
+    void SaveTickerConfig(std::vector<Ticker> && /*vTickersLst*/) {};
 
 private:
     //--------------------------------------------------------------------------------------------------------
     void SaveMarketConfigV_1(std::vector<Market> & vMarketsLst);
     void ParsMarketConfigV_1(std::vector<Market> & vMarketsLst, std::ifstream &file);
+
+    void SaveTickerConfigV_1(std::vector<Ticker> & /*vTickersLst*/) {};
+    void ParsTickerConfigV_1(std::vector<Ticker> & /*vTickersLst*/, std::ifstream & /*file*/){};
 
 };
 
