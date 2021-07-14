@@ -21,6 +21,7 @@
 
 #include "bar.h"
 #include "marketslistmodel.h"
+#include "tickerslistmodel.h"
 #include "storage.h"
 
 
@@ -48,6 +49,9 @@ private:
     Storage stStore;
     std::vector<Market> vMarketsLst;
     MarketsListModel m_MarketLstModel;
+
+    std::vector<Ticker> vTickersLst;
+    TickersListModel m_TickerLstModel;
 
 
 public:

@@ -18,7 +18,8 @@ SOURCES += \
     mainwindow.cpp \
     marketslistmodel.cpp \
     storage.cpp \
-    ticker.cpp
+    ticker.cpp \
+    tickerslistmodel.cpp
 
 HEADERS += \
     bar.h \
@@ -27,7 +28,8 @@ HEADERS += \
     mainwindow.h \
     marketslistmodel.h \
     storage.h \
-    ticker.h
+    ticker.h \
+    tickerslistmodel.h
 
 FORMS += \
     configwindow.ui \

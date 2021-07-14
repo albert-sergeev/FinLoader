@@ -1,74 +1,72 @@
-#include "marketslistmodel.h"
-#include<iostream>
-#include<algorithm>
-//--------------------------------------------------------------------------------------------------------
-/*
-MarketsListModel::MarketsListModel(QObject *parent)
-    : QAbstractListModel(parent)
-{
-}*/
-//--------------------------------------------------------------------------------------------------------
-QVariant MarketsListModel::headerData(int nSection, Qt::Orientation orientation, int nRole) const
+#include "tickerslistmodel.h"
+
+//TickerListModel::TickerListModel()
+//{
+
+//}
+
+
+QVariant TickersListModel::headerData(int nSection, Qt::Orientation orientation, int nRole) const
 {
     if(nRole!=Qt::DisplayRole){
         return QVariant();
     }
     if(orientation==Qt::Horizontal){
-        return QString(tr("Market"));
+        return QString(tr("Ticker"));
     }
     else{
         return QString::number(nSection);
     }
 }
 //--------------------------------------------------------------------------------------------------------
-int MarketsListModel::rowCount(const QModelIndex &parent) const
+int TickersListModel::rowCount(const QModelIndex &parent) const
 {
     // For list models only the root node (an invalid parent) should return the list's size. For all
     // other (valid) parents, rowCount() should return 0 so that it does not become a tree model.
     if (parent.isValid())
         return 0;
-    return (int)vMarketsLst->size();
+    return (int)vTickersLst->size();
 }
 //--------------------------------------------------------------------------------------------------------
-QVariant MarketsListModel::data(const QModelIndex &index, int nRole) const
+QVariant TickersListModel::data(const QModelIndex &index, int nRole) const
 {
     if (!index.isValid())
         return QVariant();
 
-    if(index.row() < 0    || index.row() >= (int)vMarketsLst->size()) return QVariant();
+    if(index.row() < 0    || index.row() >= (int)vTickersLst->size()) return QVariant();
     if(index.column() < 0 || index.column() >= 7) return QVariant();
 
     if(nRole == Qt::DisplayRole || nRole==Qt::EditRole){
 
         if(index.column()       ==  1){
-            return QVariant::fromValue(QString::number(vMarketsLst->at(index.row()).MarketID()));
+            return QVariant::fromValue(QString::number(vTickersLst->at(index.row()).TickerID()));
         }
         else if(index.column()  ==  0){
-            return QVariant::fromValue(QString::fromStdString(vMarketsLst->at(index.row()).MarketName()));
+            return QVariant::fromValue(QString::fromStdString(vTickersLst->at(index.row()).TickerName()));
         }
         else if(index.column()  ==  2){
-            return QVariant::fromValue(QString::fromStdString(vMarketsLst->at(index.row()).MarketSign()));
+            return QVariant::fromValue(QString::fromStdString(vTickersLst->at(index.row()).TickerSign()));
         }
     }
     return  QVariant();
 }
 //--------------------------------------------------------------------------------------------------------
-Market & MarketsListModel::getMarket(const QModelIndex &index)
+Ticker & TickersListModel::getTicker(const QModelIndex &index)
 {
-    if(index.row() < 0    || index.row() >= (int)vMarketsLst->size()) {
+    if(index.row() < 0    || index.row() >= (int)vTickersLst->size()) {
         throw std::invalid_argument("Index out of range {MarketsListModel::getMarket}");
     }
-    return vMarketsLst->at(index.row());
+    return vTickersLst->at(index.row());
 
     //this->rowsAboutToBeInserted
 }
 //--------------------------------------------------------------------------------------------------------
-int MarketsListModel::AddRow(Market &m)
+int TickersListModel::AddRow(Ticker &t)
 {
-    beginInsertRows(QModelIndex(),(int)vMarketsLst->size(),(int)vMarketsLst->size());
-    vMarketsLst->push_back(m);
+    beginInsertRows(QModelIndex(),(int)vTickersLst->size(),(int)vTickersLst->size());
+    vTickersLst->push_back(t);
 
-    auto indx(this->index((int)vMarketsLst->size()-1,0));
+    auto indx(this->index((int)vTickersLst->size()-1,0));
     if(indx.isValid()){
         emit dataChanged(indx,indx);
         return  indx.row();
@@ -81,15 +79,15 @@ int MarketsListModel::AddRow(Market &m)
 }
 
 //--------------------------------------------------------------------------------------------------------
-bool MarketsListModel::removeItem(const int indx)
+bool TickersListModel::removeItem(const int indx)
 {
-    if(indx>=0 && indx < (int)vMarketsLst->size()){
+    if(indx>=0 && indx < (int)vTickersLst->size()){
 
-        std::copy(next(std::begin(*vMarketsLst),indx+1),end(*vMarketsLst),next(std::begin(*vMarketsLst)));
+        std::copy(next(std::begin(*vTickersLst),indx+1),end(*vTickersLst),next(std::begin(*vTickersLst)));
         //vMarketsLst->resize(vMarketsLst->size()-1);
-        vMarketsLst->erase(next(std::begin(*vMarketsLst),vMarketsLst->size()-1));
+        vTickersLst->erase(next(std::begin(*vTickersLst),vTickersLst->size()-1));
 
-        vMarketsLst->shrink_to_fit();
+        vTickersLst->shrink_to_fit();
 
 
         emit dataChanged(this->index(indx,0),this->index(indx+1,0));
@@ -113,7 +111,7 @@ bool MarketsListModel::removeItem(const int indx)
 //}
 //--------------------------------------------------------------------------------------------------------
 
-Qt::ItemFlags MarketsListModel::flags(const QModelIndex &indx)const
+Qt::ItemFlags TickersListModel::flags(const QModelIndex &indx)const
 {
     Qt::ItemFlags flgs=QAbstractTableModel::flags(indx);
     if(indx.isValid()) return flgs/*|Qt::ItemIsEditable*/;

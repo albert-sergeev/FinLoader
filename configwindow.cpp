@@ -345,10 +345,46 @@ void ConfigWindow::slotSetSelectedMarket(const  QModelIndex& indx)
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///market-tab work
+///ticker-tab work
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//--------------------------------------------------------------------------------------------------------
+void ConfigWindow::setTickerModel(TickersListModel *model)
+{
+    modelTicker = model;
+    ui->listViewMarket->setModel(model);
+
+
+
+
+    connect(ui->listViewMarket,SIGNAL(clicked(const QModelIndex&)),this,SLOT(slotSetSelectedTicker(const  QModelIndex&)));
+
+
+    //
+//    connect(ui->listViewMarket,SIGNAL(activated(const QModelIndex&)),this,SLOT(slotSetSelectedMarket(const  QModelIndex&)));
+//    connect(ui->listViewMarket,SIGNAL(pressed(const QModelIndex&)),this,SLOT(slotSetSelectedMarket(const  QModelIndex&)));
+//    connect(ui->listViewMarket,SIGNAL(doubleClicked(const QModelIndex&)),this,SLOT(slotSetSelectedMarket(const  QModelIndex&)));
+//    connect(ui->listViewMarket,SIGNAL(entered(const QModelIndex&)),this,SLOT(slotSetSelectedMarket(const  QModelIndex&)));
+    /////////
+
+
+    QItemSelectionModel  *qml =new QItemSelectionModel(modelMarket);
+    ui->listViewMarket->setSelectionModel(qml);
+
+
+    connect(qml,SIGNAL(currentRowChanged(const QModelIndex&,const QModelIndex&)),this,SLOT(slotSetSelectedMarket(const  QModelIndex&,const QModelIndex&)));
+
+
+    auto first_i(modelMarket->index(0,0));
+    if(first_i.isValid()){
+        qml->select(first_i,QItemSelectionModel::SelectionFlag::Select) ;
+        slotSetSelectedMarket(first_i);
+    }
+    ////
+}
+
 
 
 void ConfigWindow::slotBtnAddTickerClicked(){}

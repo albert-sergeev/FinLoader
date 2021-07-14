@@ -10,6 +10,8 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , vMarketsLst{}
     , m_MarketLstModel{vMarketsLst}
+    , vTickersLst{}
+    , m_TickerLstModel{vTickersLst}
     , ui(new Ui::MainWindow)
 {
 

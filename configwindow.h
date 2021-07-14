@@ -6,6 +6,7 @@
 #include <QTime>
 
 #include "marketslistmodel.h"
+#include "tickerslistmodel.h"
 #include "storage.h"
 
 namespace Ui {
@@ -31,6 +32,7 @@ private:
     //////////////////////////////////////////
 private:
     MarketsListModel *modelMarket;
+    TickersListModel *modelTicker;
     Storage stStore;
     bool bDataChanged;
     bool bAddingRow;
@@ -41,6 +43,8 @@ private:
 
 public:
     void setMarketModel(MarketsListModel *model);
+    void setTickerModel(TickersListModel *model);
+
 signals:
     void SendToMainLog(QString);
     void NeedSaveMarketsChanges();
