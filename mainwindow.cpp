@@ -57,11 +57,17 @@ void MainWindow::LoadSettings()
 
     m_settings.beginGroup("Settings");
         m_Language   = m_settings.value("Language","English").toString();
+
         m_settings.beginGroup("Mainwindow");
             int nWidth   = m_settings.value("Width", width()).toInt();
             int nHeight  = m_settings.value("Height",height()).toInt();
             m_sStyleName = m_settings.value("StyleName",style()->objectName()).toString();
         m_settings.endGroup();
+
+        m_settings.beginGroup("Configwindow");
+            iDefaultTickerMarket  = m_settings.value("DefaultTickerMarket",0).toInt();
+        m_settings.endGroup();
+
     m_settings.endGroup();
     //
     resize(nWidth,nHeight);
@@ -72,12 +78,19 @@ void MainWindow::SaveSettings()
 {
     //
     m_settings.beginGroup("Settings");
+
         m_settings.setValue("Language",m_Language);
+
         m_settings.beginGroup("Mainwindow");
             m_settings.setValue("Width", this->width());
             m_settings.setValue("Height",this->height());
             m_settings.setValue("StyleName",m_sStyleName);
         m_settings.endGroup();
+
+        m_settings.beginGroup("Configwindow");
+            m_settings.setValue("DefaultTickerMarket",iDefaultTickerMarket);
+        m_settings.endGroup();
+
     m_settings.endGroup();
 
 }
@@ -87,7 +100,7 @@ void MainWindow::LoadDataStorage()
     try{
         stStore.Initialize();
         stStore.LoadMarketConfig(vMarketsLst);
-
+        stStore.LoadTickerConfig(vTickersLst);
     }
     //catch (std::runtime_error &e){
     catch (std::exception &e){
@@ -111,8 +124,18 @@ void MainWindow::slotSaveMarketDataStorage()
     }
 }
 //--------------------------------------------------------------------------------------------------------------------------------
-void MainWindow::slotSaveTicketDataStorage()
+void MainWindow::slotSaveTickerDataStorage(const QModelIndex & indxL,const QModelIndex & indxR)
 {
+    try{
+        stStore.SaveTickerConfig(vTickersLst,indxL.row(),indxR.row());
+        qDebug()<<"store indexes: {"<<indxL.row()<<":"<<indxR.row()<<"}";
+    }
+    catch (std::exception &e){
+        //
+        int n=QMessageBox::critical(0,tr("Error during saving markets config!"),e.what());
+        if (n==QMessageBox::Ok){;}
+        //
+    }
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::SaveDataStorage()
@@ -474,12 +497,20 @@ void MainWindow::slotConfigWndow()
     pdoc->setWindowIcon(QPixmap(":/store/images/sc_config"));
 
    // vMarketsLst.push_back({"MOEX","MOEX"});
-    pdoc->setMarketModel(&m_MarketLstModel);
+    pdoc->setMarketModel(&m_MarketLstModel,iDefaultTickerMarket);
+    pdoc->setTickerModel(&m_TickerLstModel);
     ui->mdiArea->addSubWindow(pdoc);
 
     connect(pdoc,SIGNAL(SendToMainLog(QString)),this,SIGNAL(SendToLog(QString)));
     connect(pdoc,SIGNAL(NeedSaveMarketsChanges()),this,SLOT(slotSaveMarketDataStorage()));
+
+    connect(pdoc,SIGNAL(NeedSaveDefaultTickerMarket(int)),this,SLOT(slotStoreDefaultTickerMarket(int)));
+    //connect(pdoc,SIGNAL(NeedSaveTickerChanges(int)),      this,SLOT(slotSaveTickerDataStorage(int)));
+    connect(&m_TickerLstModel,SIGNAL(dataChanged(const QModelIndex &,const QModelIndex &)), this,SLOT(slotSaveTickerDataStorage(const QModelIndex &,const QModelIndex &)));
+
+
     connect(this,SIGNAL(SaveUnsavedConfigs()),pdoc,SLOT(slotBtnSaveMarketClicked()));
+    connect(this,SIGNAL(SaveUnsavedConfigs()),pdoc,SLOT(slotBtnSaveTickerClicked()));
 
     pdoc->show();
 }

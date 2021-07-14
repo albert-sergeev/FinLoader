@@ -111,7 +111,7 @@ private:
     std::string             sTickerName;
     std::string             sTickerSign;
 
-    std::string             sTickerSignFincert;
+    std::string             sTickerSignFinam;
     std::string             sTickerSignQuik;
 
     int                     iTickerID;
@@ -125,7 +125,7 @@ public:
 
     inline std::string              TickerName()        const   {return sTickerName;};
     inline std::string              TickerSign()        const   {return sTickerSign;};
-    inline std::string              TickerSignFincert() const   {return sTickerSignFincert;};
+    inline std::string              TickerSignFinam() const   {return sTickerSignFinam;};
     inline std::string              TickerSignQuik()    const   {return sTickerSignQuik;};
     inline int                      TickerID()          const   {return iTickerID;};
     inline int                      MarketID()          const   {return iMarketID;};
@@ -134,7 +134,7 @@ public:
 
     inline void SetTickerName           (const std::string  TickerName) {sTickerName            = TickerName;};
     inline void SetTickerSign           (const std::string  TickerSign) {sTickerSign            = TickerSign;};
-    inline void SetTickerSignFincert    (const std::string  TickerSign) {sTickerSignFincert     = TickerSign;};
+    inline void SetTickerSignFinam    (const std::string  TickerSign) {sTickerSignFinam     = TickerSign;};
     inline void SetTickerSignQuik       (const std::string  TickerSign) {sTickerSignQuik        = TickerSign;};
     inline void SetAutoLoad             (const bool         AutoLoad)   {bAutoLoad              = AutoLoad;};
     inline void SetUpToSys              (const bool         UpToSys)    {bUpToSys              = UpToSys;};
@@ -154,11 +154,30 @@ public:
         sTickerSign = TickerSign;
         iTickerID   = TickerID;
         iMarketID = MarketID;
+
+        sTickerSignFinam = TickerSign;
+        sTickerSignQuik = TickerSign;
+
+        bAutoLoad = true;
+        bUpToSys = false;
         //
         if (TickerID >= iTickerCounter) iTickerCounter = TickerID + 1;
     }
     //
     Ticker(std::string TickerName,std::string TickerSign, int MarketID):Ticker(iTickerCounter++,TickerName,TickerSign, MarketID){};
+    //--------------------------------------------------------------------------------------------------------
+    Ticker (const Ticker & t){
+        sTickerName = t.sTickerName;
+        sTickerSign = t.sTickerSign;
+        iTickerID   = t.iTickerID;
+        iMarketID = t.iMarketID;
+
+        sTickerSignFinam = t.sTickerSignFinam;
+        sTickerSignQuik = t.sTickerSignQuik;
+
+        bAutoLoad = t.bAutoLoad;
+        bUpToSys = t.bUpToSys;
+    }
     //--------------------------------------------------------------------------------------------------------
 };
 

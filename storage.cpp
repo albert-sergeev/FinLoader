@@ -1,6 +1,7 @@
 #include "storage.h"
 
 #include<filesystem>
+#include<iostream>
 #include<fstream>
 #include<ostream>
 
@@ -15,6 +16,9 @@ Storage::Storage():bInitialized{false}
 //--------------------------------------------------------------------------------------------------------
 void Storage::Initialize()
 {
+
+    /// for speed optimisation
+    std::ios::sync_with_stdio(false);
 
     //std::filesystem::path pathCurr;
     //std::filesystem::path pathDataDir;
@@ -58,17 +62,26 @@ void Storage::Initialize()
         throw std::runtime_error("./data/markets.dat - has wrong type");
     }
     ///========
+    pathTickersFile = std::filesystem::absolute(pathDataDir/"tickers.dat");
+    //
+    if(!std::filesystem::exists(pathTickersFile)){ // if no file - create new with defaults
+        std::ofstream fileTickers(pathTickersFile);
+        std::vector<Ticker> t;
+        SaveTickerConfig(t,0,0);
+        if(!std::filesystem::exists(pathTickersFile)){
+            throw std::runtime_error("Error create file: ./data/tickers.dat");
+        }
+    }
+    if(   !std::filesystem::is_regular_file(pathTickersFile)){
+        throw std::runtime_error("./data/tickerss.dat - has wrong type");
+    }
+    ///========
     bInitialized = true;
 }
 //--------------------------------------------------------------------------------------------------------
 void Storage::LoadMarketConfig(std::vector<Market> & vMarketsLst)
 {
     if (!bInitialized) Initialize();
-    //
-    ///=======
-    /// for speed optimisation
-    //std::ios::sync_with_stdio(false);
-    ///=======
     //
     std::string sBuff;
     std::istringstream iss{sBuff};
@@ -86,9 +99,6 @@ void Storage::LoadMarketConfig(std::vector<Market> & vMarketsLst)
         ss <<"error reading file: "<<pathMarkersFile;
         throw std::runtime_error(ss.str());
     }
-
-    ///=======
-    //std::ios::sync_with_stdio(true);
 }
 //--------------------------------------------------------------------------------------------------------
 void Storage::ParsMarketConfigV_1(std::vector<Market> & vMarketsLst, std::ifstream &file)
@@ -133,9 +143,6 @@ void Storage::SaveMarketConfig(std::vector<Market> && vMarketsLst)
 //--------------------------------------------------------------------------------------------------------
 void Storage::SaveMarketConfigV_1(std::vector<Market> & vMarketsLst)
 {
-    //
-    //std::ios::sync_with_stdio(false);
-    //
     std::ofstream fileMarket(pathMarkersFile);
     fileMarket <<"1\n";
     //
@@ -149,10 +156,131 @@ void Storage::SaveMarketConfigV_1(std::vector<Market> & vMarketsLst)
         fileMarket<<m.EndTime()<<" ";
         fileMarket<<"\n";
     }
-    //
-    //std::ios::sync_with_stdio(true);
-    //
 }
 //--------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------
+void Storage::SaveTickerConfig(std::vector<Ticker> & vTickersLst, int iLeft, int iRight)
+{
+    SaveTickerConfigV_1(vTickersLst,iLeft,iRight);
+};
+//--------------------------------------------------------------------------------------------------------
+void Storage::SaveTickerConfig(std::vector<Ticker> && vTickersLst, int iLeft, int iRight)
+{
+    SaveTickerConfig(vTickersLst,iLeft,iRight);
+};
+//--------------------------------------------------------------------------------------------------------
+void Storage::SaveTickerConfigV_1(std::vector<Ticker> & vTickersLst, int iLeft, int iRight)
+{
+    std::ofstream fileTicker(pathTickersFile,std::ios_base::app);
+    //fileTicker <<"1\n";
+    //
+    for(int i = iLeft; i < (int)vTickersLst.size() && i <= iRight; ++i){
+
+        fileTicker<<(++iTickerMark)<<",";
+
+        fileTicker<<vTickersLst[i].MarketID()<<",";
+        fileTicker<<vTickersLst[i].TickerID()<<",";
+
+        fileTicker<<vTickersLst[i].TickerName()<<",";
+        fileTicker<<vTickersLst[i].TickerSign()<<",";
+        fileTicker<<vTickersLst[i].TickerSignFinam()<<",";
+        fileTicker<<vTickersLst[i].TickerSignQuik()<<",";
+        fileTicker<<vTickersLst[i].AutoLoad()<<",";
+        fileTicker<<vTickersLst[i].UpToSys()<<",";
+
+        fileTicker<<"\n";
+    }
+};
+
+//--------------------------------------------------------------------------------------------------------
+void Storage::LoadTickerConfig(std::vector<Ticker> & vTickersLst)
+{
+    if (!bInitialized) Initialize();
+    //
+    std::string sBuff;
+    std::istringstream iss{sBuff};
+    std::ifstream fileTicker(pathTickersFile.c_str());
+
+    if (fileTicker.good()){
+        ParsTickerConfigV_1(vTickersLst,fileTicker);
+    }
+    else{
+        std::stringstream ss;
+        ss <<"error reading file: "<<pathTickersFile;
+        throw std::runtime_error(ss.str());
+    }
+
+
+//    if(std::getline(fileTicker,sBuff)){
+//        if(std::stol(sBuff) == 1){
+//            ParsTickerConfigV_1(vTickersLst,fileTicker);
+//        }
+//        else{
+//            throw std::runtime_error("wrong file format ./data/Tickers.dat!");
+//        }
+//    }
+//    else{
+//        std::stringstream ss;
+//        ss <<"error reading file: "<<pathTickersFile;
+//        throw std::runtime_error(ss.str());
+//    }
+
+};
+//--------------------------------------------------------------------------------------------------------
+void Storage::ParsTickerConfigV_1(std::vector<Ticker> & vTickersLst, std::ifstream & file)
+{
+    int iMark{0};
+
+    int iMarketID{0};
+    int iTickerID{0};
+
+
+    std::map<int,int> mM;
+
+    //
+    vTickersLst.clear();
+    //
+    std::string sBuff;
+    std::istringstream iss;
+    while (std::getline(file,sBuff)) {
+        // link stringstream
+        iss.clear();
+        iss.str(sBuff);
+        //
+        std::vector<std::string> vS{std::istream_iterator<StringDelimiter<','>>{iss},{}};
+
+        if(vS.size()<9){
+            std::stringstream ss;
+            ss <<"error parsing file. wrong format: "<<pathTickersFile;
+            throw std::runtime_error(ss.str());
+        }
+        copy(vS.begin(),vS.end(),std::ostream_iterator<std::string>(std::cout,","));std::cout<<"\n";
+
+        //
+        iMark                   =std::stoi(vS[0]);
+        iMarketID               =std::stoi(vS[1]);
+        iTickerID               =std::stoi(vS[2]);
+
+        Ticker t{iTickerID,vS[3],vS[4],iMarketID};
+
+        t.SetTickerSignFinam    (vS[5]);
+        t.SetTickerSignQuik     (vS[6]);
+        t.SetAutoLoad           (std::stoi(vS[7]));
+        t.SetUpToSys            (std::stoi(vS[8]));
+
+
+        auto ItM (mM.find(iTickerID));
+
+        if(ItM != mM.end()){
+           vTickersLst[ItM->second] = t;
+        }
+        else{
+            mM[iTickerID] = vTickersLst.size();
+            vTickersLst.push_back(t);
+        }
+    }
+
+
+};
+
 //--------------------------------------------------------------------------------------------------------

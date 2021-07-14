@@ -5,13 +5,14 @@
 #include<QDebug>
 #include <QKeyEvent>
 
+
 //--------------------------------------------------------------------------------------------------------
 ConfigWindow::ConfigWindow(QWidget *parent) :
     QWidget(parent)
     , modelMarket{nullptr}
-    , bDataChanged{false}
-    , bAddingRow{false}
-    , bIsAboutChanged(false)
+    , bDataMarketChanged{false}
+    , bAddingMarketRow{false}
+    , bIsAboutMarkerChanged(false)
     , ui(new Ui::ConfigWindow)
 {
     ui->setupUi(this);
@@ -47,6 +48,20 @@ ConfigWindow::ConfigWindow(QWidget *parent) :
     ///////////////////////////////////////////////////////////////////////
     // ticker-tab work
 
+    //
+    connect(ui->btnAddTicker,SIGNAL(clicked()),  this,SLOT(slotBtnAddTickerClicked()));
+    connect(ui->btnRemoveTicker,SIGNAL(clicked()), this,SLOT(slotBtnRemoveTickerClicked()));
+    connect(ui->btnSaveTicker,SIGNAL(clicked()),this,SLOT(slotBtnSaveTickerClicked()));
+    connect(ui->btnCancelTicker,SIGNAL(clicked()),this,SLOT(slotBtnCancelTickerClicked()));
+    //
+
+
+    connect(ui->edTickerName,SIGNAL(textChanged(const QString &)),this,SLOT(slotTickerDataChanged(const QString &)));
+    connect(ui->edTickerSign,SIGNAL(textChanged(const QString &)),this,SLOT(slotTickerDataChanged(const QString &)));
+
+    connect(ui->chkAutoLoadTicker,SIGNAL(stateChanged(int)),this,SLOT(slotTickerDataChanged(int)));
+    connect(ui->chkUpToSysTicker,SIGNAL(stateChanged(int)),this,SLOT(slotTickerDataChanged(int)));
+
 
 }
 //--------------------------------------------------------------------------------------------------------
@@ -74,20 +89,22 @@ void ConfigWindow::keyPressEvent(QKeyEvent *event)
 {
     if(event->key() == Qt::Key_Escape){
         slotBtnCancelMarketClicked();
+        slotBtnSaveTickerClicked();
     }
 }
 //--------------------------------------------------------------------------------------------------------
 void ConfigWindow::slotAboutQuit()
 {
-    if(bDataChanged){
+    if(bDataMarketChanged){
         slotBtnSaveMarketClicked();
+        slotBtnSaveTickerClicked();
     }
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-///ticker-tab work
+///market-tab work
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -95,21 +112,21 @@ void ConfigWindow::slotAboutQuit()
 //--------------------------------------------------------------------------------------------------------
 void ConfigWindow::slotMarketDataChanged(bool Changed )
 {
-    if (!bIsAboutChanged){
-        bDataChanged = Changed;
+    if (!bIsAboutMarkerChanged){
+        bDataMarketChanged = Changed;
 
-        ui->btnAddMaket->setEnabled(!bDataChanged);
+        ui->btnAddMaket->setEnabled(!bDataMarketChanged);
         //ui->btnDelMarket->setEnabled(bDataChanged);
-        ui->btnSaveMarket->setEnabled(bDataChanged);
-        ui->btnCancel->setEnabled(bDataChanged);
+        ui->btnSaveMarket->setEnabled(bDataMarketChanged);
+        ui->btnCancel->setEnabled(bDataMarketChanged);
 
-        ui->listViewMarket->setEnabled(!bDataChanged);
+        ui->listViewMarket->setEnabled(!bDataMarketChanged);
     }    
 }
 //--------------------------------------------------------------------------------------------------------
 void ConfigWindow::slotBtnAddMarketClicked()
 {
-    bAddingRow = true;
+    bAddingMarketRow = true;
 
     Market m{"",""};
     int i = modelMarket->AddRow(m);
@@ -145,7 +162,7 @@ void ConfigWindow::slotBtnRemoveMarketClicked()
             modelMarket->removeItem(lst[0].row());
             qml->select(lst[0],QItemSelectionModel::SelectionFlag::Clear);
             NeedSaveMarketsChanges();
-            ClearWidgetsValues();
+            ClearMarketWidgetsValues();
             slotMarketDataChanged(false);
 
         }
@@ -153,7 +170,7 @@ void ConfigWindow::slotBtnRemoveMarketClicked()
 };
 
 //--------------------------------------------------------------------------------------------------------
-void ConfigWindow::ClearWidgetsValues()
+void ConfigWindow::ClearMarketWidgetsValues()
 {
     ui->edName->setText("");
     ui->edSign->setText("");
@@ -171,7 +188,7 @@ void ConfigWindow::ClearWidgetsValues()
 //--------------------------------------------------------------------------------------------------------
 void ConfigWindow::slotBtnSaveMarketClicked()
 {
-    if(bDataChanged){
+    if(bDataMarketChanged){
         int n=QMessageBox::warning(0,tr("Warning"),
                                tr("Do you want to save changes?"),
                                QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel
@@ -219,7 +236,7 @@ void ConfigWindow::slotBtnSaveMarketClicked()
                   NeedSaveMarketsChanges();
                   modelMarket->dataChanged(lst[0],lst[0]);
 
-                  bAddingRow = false;
+                  bAddingMarketRow = false;
                   slotMarketDataChanged(false);
 
                   //qDebug() << "choiceSave";
@@ -227,7 +244,7 @@ void ConfigWindow::slotBtnSaveMarketClicked()
         }
         else if (n==QMessageBox::Cancel){
             slotBtnCancelMarketClicked();
-            bAddingRow = false;
+            bAddingMarketRow = false;
             //qDebug() << "choiceCancel";
         }
         else{
@@ -235,7 +252,7 @@ void ConfigWindow::slotBtnSaveMarketClicked()
         }
     }
     else{
-        bAddingRow = false;
+        bAddingMarketRow = false;
         slotMarketDataChanged(false);
         //qDebug() << "choiceNoChanges";
     }
@@ -247,7 +264,7 @@ void ConfigWindow::slotBtnCancelMarketClicked()
     auto qml(ui->listViewMarket->selectionModel());
     auto lst (qml->selectedIndexes());
 
-    if (!bAddingRow){
+    if (!bAddingMarketRow){
 
         if(lst.count() > 0){
             if(lst.count() > 1){
@@ -262,46 +279,65 @@ void ConfigWindow::slotBtnCancelMarketClicked()
         for(const auto & r:lst)
         {
             modelMarket->removeItem(r.row());
-            ClearWidgetsValues();
+            ClearMarketWidgetsValues();
             slotMarketDataChanged(false);
 
             qml->select(r,QItemSelectionModel::SelectionFlag::Clear) ;
         }
     }
 
-    bAddingRow=false;
+    bAddingMarketRow=false;
 };
 //--------------------------------------------------------------------------------------------------------
-void ConfigWindow::setMarketModel(MarketsListModel *model)
+void ConfigWindow::setMarketModel(MarketsListModel *model, int DefaultTickerMarket)
 {
     modelMarket = model;
     ui->listViewMarket->setModel(model);
 
 
+    ////////////////////////////////////////////////////
+    {
+        connect(ui->listViewMarket,SIGNAL(clicked(const QModelIndex&)),this,SLOT(slotSetSelectedMarket(const  QModelIndex&)));
 
-
-    connect(ui->listViewMarket,SIGNAL(clicked(const QModelIndex&)),this,SLOT(slotSetSelectedMarket(const  QModelIndex&)));
-    //
-//    connect(ui->listViewMarket,SIGNAL(activated(const QModelIndex&)),this,SLOT(slotSetSelectedMarket(const  QModelIndex&)));
-//    connect(ui->listViewMarket,SIGNAL(pressed(const QModelIndex&)),this,SLOT(slotSetSelectedMarket(const  QModelIndex&)));
-//    connect(ui->listViewMarket,SIGNAL(doubleClicked(const QModelIndex&)),this,SLOT(slotSetSelectedMarket(const  QModelIndex&)));
-//    connect(ui->listViewMarket,SIGNAL(entered(const QModelIndex&)),this,SLOT(slotSetSelectedMarket(const  QModelIndex&)));
-    /////////
-
-
-    QItemSelectionModel  *qml =new QItemSelectionModel(modelMarket);
-    ui->listViewMarket->setSelectionModel(qml);
-
-
-    connect(qml,SIGNAL(currentRowChanged(const QModelIndex&,const QModelIndex&)),this,SLOT(slotSetSelectedMarket(const  QModelIndex&,const QModelIndex&)));
-
-
-    auto first_i(modelMarket->index(0,0));
-    if(first_i.isValid()){
-        qml->select(first_i,QItemSelectionModel::SelectionFlag::Select) ;
-        slotSetSelectedMarket(first_i);
+        QItemSelectionModel  *qml =new QItemSelectionModel(modelMarket);
+        ui->listViewMarket->setSelectionModel(qml);
+        connect(qml,SIGNAL(currentRowChanged(const QModelIndex&,const QModelIndex&)),this,SLOT(slotSetSelectedMarket(const  QModelIndex&,const QModelIndex&)));
+        auto first_i(modelMarket->index(0,0));
+        if(first_i.isValid()){
+            qml->select(first_i,QItemSelectionModel::SelectionFlag::Select) ;
+            slotSetSelectedMarket(first_i);
+        }
     }
-    ////
+    ////////////////////////////////////////////////////
+    ui->cmbMarkets->setModel(model);
+
+    {
+
+        connect(ui->cmbMarkets,SIGNAL(activated(const int)),this,SLOT(slotSetSelectedTickersMarket(const  int)));
+
+        bool bWas{false};
+        for(int i = 0; i < modelMarket->rowCount(); i++){
+            auto idx(modelMarket->index(i,0));
+            if(idx.isValid()){
+                if(modelMarket->getMarket(idx).MarketID() == DefaultTickerMarket){
+                    //iDefaultTickerMarket = DefaultTickerMarket;
+                    ui->cmbMarkets->setCurrentIndex(i);
+                    slotSetSelectedTickersMarket(i);
+                    bWas = true;
+                    break;
+                }
+            }
+        }
+        if (!bWas){
+            auto idx(modelMarket->index(0,0));
+            if(idx.isValid()){
+                iDefaultTickerMarket = modelMarket->getMarket(idx).MarketID();
+                slotSetSelectedTickersMarket(0);
+            }
+        }
+    }
+    ////////////////////////////////////////////////////
+
 }
 //--------------------------------------------------------------------------------------------------------
 
@@ -314,7 +350,7 @@ void ConfigWindow::slotSetSelectedMarket(const  QModelIndex& indx)
     if (indx.isValid()){
         const Market& m=modelMarket->getMarket(indx);
 
-        bIsAboutChanged=true;
+        bIsAboutMarkerChanged=true;
 
         ui->edName->setText(QString::fromStdString(m.MarketName()));
         ui->edSign->setText(QString::fromStdString(m.MarketSign()));
@@ -336,7 +372,7 @@ void ConfigWindow::slotSetSelectedMarket(const  QModelIndex& indx)
         ui->dateTimeStart->setTime(tmS);
         ui->dateTimeEnd->setTime(tmE);
 
-        bIsAboutChanged=false;
+        bIsAboutMarkerChanged=false;
 
         slotMarketDataChanged(false);
     }
@@ -354,42 +390,254 @@ void ConfigWindow::slotSetSelectedMarket(const  QModelIndex& indx)
 void ConfigWindow::setTickerModel(TickersListModel *model)
 {
     modelTicker = model;
-    ui->listViewMarket->setModel(model);
+    proxyTickerModel.setSourceModel(model);
+    //ui->listViewTicker->setModel(&proxyTickerModel);
+    ui->listViewTicker->setModel(model);
 
 
 
 
-    connect(ui->listViewMarket,SIGNAL(clicked(const QModelIndex&)),this,SLOT(slotSetSelectedTicker(const  QModelIndex&)));
+    connect(ui->listViewTicker,SIGNAL(clicked(const QModelIndex&)),this,SLOT(slotSetSelectedTicker(const  QModelIndex&)));
 
-
-    //
-//    connect(ui->listViewMarket,SIGNAL(activated(const QModelIndex&)),this,SLOT(slotSetSelectedMarket(const  QModelIndex&)));
-//    connect(ui->listViewMarket,SIGNAL(pressed(const QModelIndex&)),this,SLOT(slotSetSelectedMarket(const  QModelIndex&)));
-//    connect(ui->listViewMarket,SIGNAL(doubleClicked(const QModelIndex&)),this,SLOT(slotSetSelectedMarket(const  QModelIndex&)));
-//    connect(ui->listViewMarket,SIGNAL(entered(const QModelIndex&)),this,SLOT(slotSetSelectedMarket(const  QModelIndex&)));
     /////////
 
 
-    QItemSelectionModel  *qml =new QItemSelectionModel(modelMarket);
-    ui->listViewMarket->setSelectionModel(qml);
+    //QItemSelectionModel  *qml =new QItemSelectionModel(&proxyTickerModel);
+    QItemSelectionModel  *qml =new QItemSelectionModel(model);
+    ui->listViewTicker->setSelectionModel(qml);
 
 
-    connect(qml,SIGNAL(currentRowChanged(const QModelIndex&,const QModelIndex&)),this,SLOT(slotSetSelectedMarket(const  QModelIndex&,const QModelIndex&)));
+    connect(qml,SIGNAL(currentRowChanged(const QModelIndex&,const QModelIndex&)),this,SLOT(slotSetSelectedTicker(const  QModelIndex&,const QModelIndex&)));
 
 
-    auto first_i(modelMarket->index(0,0));
+    //auto first_i(proxyTickerModel.index(0,0));
+    auto first_i(model->index(0,0));
     if(first_i.isValid()){
         qml->select(first_i,QItemSelectionModel::SelectionFlag::Select) ;
-        slotSetSelectedMarket(first_i);
+        slotSetSelectedTicker(first_i);
+    }
+    else{
+        slotTickerDataChanged(false);
+        //
+        setEnableTickerWidgets(false);
     }
     ////
 }
+//--------------------------------------------------------------------------------------------------------
+
+void ConfigWindow::slotSetSelectedTicker(const  QModelIndex& indx)
+{
 
 
+    //qDebug()<<"Enter slotSetSelectedMarket";
 
-void ConfigWindow::slotBtnAddTickerClicked(){}
-void ConfigWindow::slotBtnRemoveTickerClicked(){};
-void ConfigWindow::slotBtnSaveTickerClicked(){};
-void ConfigWindow::slotBtnCancelTickerClicked(){};
+    if (indx.isValid()){
+        const Ticker& t=modelTicker->getTicker(indx);
+
+        bIsAboutTickerChanged=true;
+
+        ui->edTickerName->setText(QString::fromStdString(t.TickerName()));
+        ui->edTickerSign->setText(QString::fromStdString(t.TickerSign()));
+        ui->edTickerSignFinam->setText(QString::fromStdString(t.TickerSignFinam()));
+        ui->edTickerSignQuik->setText(QString::fromStdString(t.TickerSignQuik()));
+
+
+        ui->chkAutoLoadTicker->setCheckState  (t.AutoLoad() ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
+        ui->chkUpToSysTicker->setCheckState   (t.UpToSys()  ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
+
+        bIsAboutTickerChanged=false;
+
+        slotTickerDataChanged(false);
+
+        setEnableTickerWidgets(true);;
+    }
+    else{
+        setEnableTickerWidgets(false);;
+    }
+}
+//--------------------------------------------------------------------------------------------------------
+void ConfigWindow::slotTickerDataChanged(bool Changed )
+{
+    if (!bIsAboutTickerChanged){
+        bDataTickerChanged = Changed;
+
+        ui->btnAddTicker->setEnabled(!bDataTickerChanged);
+        //ui->btnDelTicker->setEnabled(bDataTickerChanged);
+        ui->btnSaveTicker->setEnabled(bDataTickerChanged);
+        ui->btnCancelTicker->setEnabled(bDataTickerChanged);
+
+        ui->listViewTicker->setEnabled(!bDataTickerChanged);
+    }
+}
+//--------------------------------------------------------------------------------------------------------
+void ConfigWindow::slotSetSelectedTickersMarket(const  int i)
+{
+    //qDebug()<<"i: {"<<i<<"}";
+    if(i < modelMarket->rowCount()){
+        auto idx(modelMarket->index(i,0));
+        if(idx.isValid()){
+            if(modelMarket->getMarket(idx).MarketID() != iDefaultTickerMarket){
+                iDefaultTickerMarket = modelMarket->getMarket(idx).MarketID();
+                NeedSaveDefaultTickerMarket(iDefaultTickerMarket);
+            }
+        }
+    }
+}
+
+//--------------------------------------------------------------------------------------------------------
+void ConfigWindow::slotBtnAddTickerClicked()
+{
+    bAddingTickerRow = true;
+
+    Ticker t {"","",iDefaultTickerMarket};
+    int i = modelTicker->AddRow(t);
+
+    QItemSelectionModel  *qml =ui->listViewTicker->selectionModel();
+
+    auto indx(modelTicker->index(i,0));
+    if(indx.isValid() && qml){
+        qml->select(indx,QItemSelectionModel::SelectionFlag::ClearAndSelect) ;
+        slotSetSelectedTicker(indx);
+    }
+    //
+    slotTickerDataChanged(true);
+    ui->edTickerName->setFocus();
+
+}
+//--------------------------------------------------------------------------------------------------------
+void ConfigWindow::slotBtnRemoveTickerClicked()
+{
+    int n=QMessageBox::warning(0,tr("Warning"),
+                               tr("Do you want to remove ticker?"),
+                               QMessageBox::Yes|QMessageBox::Cancel
+                               );
+    if (n==QMessageBox::Yes){
+        auto qml(ui->listViewTicker->selectionModel());
+        auto lst (qml->selectedIndexes());
+
+// TODO: add check ticker data presents;
+
+        if(lst.count() > 0){
+            if(lst.count() > 1){
+                qml->select(lst[0],QItemSelectionModel::SelectionFlag::ClearAndSelect) ;
+            }
+
+            modelTicker->removeItem(lst[0].row());
+            qml->select(lst[0],QItemSelectionModel::SelectionFlag::Clear);
+
+            ClearTickerWidgetsValues();
+            slotTickerDataChanged(false);
+
+            setEnableTickerWidgets(false);
+
+        }
+    }
+};
+//--------------------------------------------------------------------------------------------------------
+void ConfigWindow::slotBtnSaveTickerClicked(){
+
+    if(bDataTickerChanged){
+        int n=QMessageBox::warning(0,tr("Warning"),
+                               tr("Do you want to save ticker changes?"),
+                               QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel
+                               );
+        if (n==QMessageBox::Yes){
+
+            auto qml(ui->listViewTicker->selectionModel());
+            auto lst (qml->selectedIndexes());
+
+            if(lst.count() > 0){
+                  if(lst.count() > 1){
+                      qml->select(lst[0],QItemSelectionModel::SelectionFlag::ClearAndSelect) ;
+                  }
+
+                  Ticker& t=modelTicker->getTicker(lst[0]);
+
+                  t.SetTickerName(ui->edTickerName->text().toStdString());
+                  t.SetTickerSign(ui->edTickerSign->text().toStdString());
+                  t.SetTickerSignFinam(ui->edTickerSignFinam->text().toStdString());
+                  t.SetTickerSignQuik(ui->edTickerSignQuik->text().toStdString());
+                  t.SetAutoLoad(ui->chkAutoLoadTicker->isChecked()? true:false);
+                  t.SetUpToSys(ui->chkUpToSysTicker->isChecked()? true:false);
+
+                  ///
+
+                  emit modelTicker->dataChanged(lst[0],lst[0]);
+                  //emit proxyTickerModel.dataChanged(lst[0],lst[0]);
+                  bAddingTickerRow = false;
+                  slotTickerDataChanged(false);
+                  //qDebug() << "choiceSave";
+            }
+        }
+        else if (n==QMessageBox::Cancel){
+            slotBtnCancelTickerClicked();
+            bAddingTickerRow = false;
+            slotTickerDataChanged(false);
+            //qDebug() << "choiceCancel";
+        }
+        else{
+            //qDebug() << "choiceNo";
+        }
+    }
+    else{
+        bAddingTickerRow = false;
+        //slotBtnCancelTickerClicked();
+        //qDebug() << "choiceNoChanges";
+    }
+};
+//--------------------------------------------------------------------------------------------------------
+void ConfigWindow::slotBtnCancelTickerClicked()
+{
+    auto qml(ui->listViewTicker->selectionModel());
+    auto lst (qml->selectedIndexes());
+
+    if (!bAddingTickerRow){
+
+        if(lst.count() > 0){
+            if(lst.count() > 1){
+                qml->select(lst[0],QItemSelectionModel::SelectionFlag::Select) ;
+            }
+            if(lst[0].isValid()){
+                slotSetSelectedTicker(lst[0]);
+            }
+        }
+    }
+    else{
+        for(const auto & r:lst)
+        {
+            modelTicker->removeItem(r.row());
+            qml->select(r,QItemSelectionModel::SelectionFlag::Clear) ;
+        }
+        ClearTickerWidgetsValues();
+        slotTickerDataChanged(false);
+        setEnableTickerWidgets(false);
+    }
+
+    bAddingMarketRow=false;
+};
+//--------------------------------------------------------------------------------------------------------
+void ConfigWindow::setEnableTickerWidgets(bool bEnable)
+{
+    ui->edTickerName->setEnabled(bEnable);
+    ui->edTickerSign->setEnabled(bEnable);
+    ui->edTickerSignFinam->setEnabled(bEnable);
+    ui->edTickerSignQuik->setEnabled(bEnable);
+    ui->chkAutoLoadTicker->setEnabled(bEnable);
+    ui->chkUpToSysTicker->setEnabled(bEnable);
+}
+
+//--------------------------------------------------------------------------------------------------------
+void ConfigWindow::ClearTickerWidgetsValues()
+{
+
+    ui->edTickerName->setText("");
+    ui->edTickerSign->setText("");
+    ui->edTickerSignFinam->setText("");
+    ui->edTickerSignQuik->setText("");
+
+    ui->chkAutoLoadTicker->setCheckState  (Qt::CheckState::Unchecked);
+    ui->chkUpToSysTicker->setCheckState   (Qt::CheckState::Unchecked);
+
+}
 
 //--------------------------------------------------------------------------------------------------------

@@ -90,7 +90,7 @@ bool TickersListModel::removeItem(const int indx)
         vTickersLst->shrink_to_fit();
 
 
-        emit dataChanged(this->index(indx,0),this->index(indx+1,0));
+        emit dataChanged(this->index(indx,0),this->index(indx,0));
         return  true;
     }
     return  false;

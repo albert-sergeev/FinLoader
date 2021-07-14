@@ -4,6 +4,7 @@
 //TODO: shrink includes
 #include <QWidget>
 #include <QTime>
+#include <QSortFilterProxyModel>
 
 #include "marketslistmodel.h"
 #include "tickerslistmodel.h"
@@ -17,8 +18,9 @@ class ConfigWindow : public QWidget
 {
     Q_OBJECT
 
-    //////////////////////////////////////////
-    /// common work part
+//////////////////////////////////////////
+/// common work part
+//////////////////////////////////////////
 public:
 
     explicit ConfigWindow(QWidget *parent = nullptr);
@@ -27,24 +29,28 @@ private:
     bool event(QEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
 
-    //////////////////////////////////////////
-    /// Market work part
-    //////////////////////////////////////////
 private:
     MarketsListModel *modelMarket;
     TickersListModel *modelTicker;
+    QSortFilterProxyModel proxyTickerModel;
+    //TickerProxyListModel proxyTickerModel;
+
+    int iDefaultTickerMarket;
     Storage stStore;
-    bool bDataChanged;
-    bool bAddingRow;
-    bool bIsAboutChanged;
+    bool bDataMarketChanged;
+    bool bAddingMarketRow;
+    bool bIsAboutMarkerChanged;
 
-    void ClearWidgetsValues();
+    bool bDataTickerChanged;
+    bool bAddingTickerRow;
+    bool bIsAboutTickerChanged;
 
+//////////////////////////////////////////
+/// Market work part
+//////////////////////////////////////////
 
 public:
-    void setMarketModel(MarketsListModel *model);
-    void setTickerModel(TickersListModel *model);
-
+    void setMarketModel(MarketsListModel *model,int iDefaultTickerMarket);
 signals:
     void SendToMainLog(QString);
     void NeedSaveMarketsChanges();
@@ -60,37 +66,35 @@ protected slots:
     void slotMarketDataChanged(int)               {slotMarketDataChanged(true);};
     void slotMarketDataChanged(const QString &)   {slotMarketDataChanged(true);};
     void slotMarketTimeChanged(const QTime &)     {slotMarketDataChanged(true);};
+    void ClearMarketWidgetsValues();
     void slotAboutQuit();
 
-    //////////////////////////////////////////
-    /// Ticker work part
-    //////////////////////////////////////////
-private:
-//    MarketsListModel *modelMarket;
-//    Storage stStore;
-//    bool bDataChanged;
-//    bool bAddingRow;
-//    bool bIsAboutChanged;
-
-//    void ClearWidgetsValues();
+//////////////////////////////////////////
+/// Ticker work part
+//////////////////////////////////////////
 
 public:
-    //void setMarketModel(MarketsListModel *model);
+    void setTickerModel(TickersListModel *model);
 signals:
-//    void SendToMainLog(QString);
-//    void NeedSaveMarketsChanges();
+    void NeedSaveTickerChanges(int);
+    void NeedSaveDefaultTickerMarket(int);
 public slots:
     void slotBtnAddTickerClicked();
     void slotBtnRemoveTickerClicked();
     void slotBtnSaveTickerClicked();
     void slotBtnCancelTickerClicked();
 protected slots:
-//    void slotSetSelectedMarket(const  QModelIndex& indx);
-//    void slotSetSelectedMarket(const  QModelIndex& indx,const  QModelIndex&) {slotSetSelectedMarket(indx);};
-//    void slotDataChanged(bool Changed=true);
-//    void slotDataChanged(int)               {slotDataChanged(true);};
-//    void slotDataChanged(const QString &)   {slotDataChanged(true);};
-//    void slotTimeChanged(const QTime &)     {slotDataChanged(true);};
+
+    void slotSetSelectedTickersMarket(const  int i);
+
+    void slotSetSelectedTicker(const  QModelIndex& indx);
+    void slotSetSelectedTicker(const  QModelIndex& indx,const  QModelIndex&) {slotSetSelectedTicker(indx);};
+    void slotTickerDataChanged(bool Changed=true);
+    void slotTickerDataChanged(int)               {slotTickerDataChanged(true);};
+    void slotTickerDataChanged(const QString &)   {slotTickerDataChanged(true);};
+    void ClearTickerWidgetsValues();
+    void setEnableTickerWidgets(bool);
+
 //    void slotAboutQuit();
 
 

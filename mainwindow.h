@@ -50,6 +50,7 @@ private:
     std::vector<Market> vMarketsLst;
     MarketsListModel m_MarketLstModel;
 
+    int iDefaultTickerMarket;
     std::vector<Ticker> vTickersLst;
     TickersListModel m_TickerLstModel;
 
@@ -73,7 +74,8 @@ protected:
 
 public slots:
     void slotSaveMarketDataStorage();
-    void slotSaveTicketDataStorage();
+    void slotSaveTickerDataStorage(const QModelIndex &,const QModelIndex &);
+    void slotStoreDefaultTickerMarket(int indx) {iDefaultTickerMarket = indx;};
 
 protected slots:
     void slotNotImpl    ();

@@ -2,6 +2,7 @@
 #define TICKERLISTMODEL_H
 
 #include <QAbstractTableModel>
+#include <QSortFilterProxyModel>
 #include "ticker.h"
 
 class TickersListModel : public QAbstractTableModel
@@ -37,5 +38,14 @@ public:
 
     Ticker & getTicker(const QModelIndex &index);
 };
+
+class TickerProxyListModel: public QSortFilterProxyModel
+{
+    Q_OBJECT
+public:
+    TickerProxyListModel (QObject *parent = nullptr): QSortFilterProxyModel(parent){};
+
+};
+
 
 #endif // TICKERLISTMODEL_H
