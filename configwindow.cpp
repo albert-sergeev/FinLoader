@@ -161,7 +161,8 @@ void ConfigWindow::slotBtnRemoveMarketClicked()
             if(lst.count() > 1){
                 qml->select(lst[0],QItemSelectionModel::SelectionFlag::ClearAndSelect) ;
             }
-            modelMarket->removeItem(lst[0].row());
+            //modelMarket->removeItem(lst[0].row());
+            modelMarket->removeRow(lst[0].row());
             qml->select(lst[0],QItemSelectionModel::SelectionFlag::Clear);
             NeedSaveMarketsChanges();
             ClearMarketWidgetsValues();
@@ -280,11 +281,20 @@ void ConfigWindow::slotBtnCancelMarketClicked()
     else{
         for(const auto & r:lst)
         {
-            modelMarket->removeItem(r.row());
+            modelMarket->removeRow(r.row());
             ClearMarketWidgetsValues();
             slotMarketDataChanged(false);
 
             qml->select(r,QItemSelectionModel::SelectionFlag::Clear) ;
+
+            // sel first
+            QItemSelectionModel  *qml =new QItemSelectionModel(modelMarket);
+            auto first_i(modelMarket->index(0,0));
+            if(first_i.isValid()){
+                qml->select(first_i,QItemSelectionModel::SelectionFlag::Select) ;
+                slotSetSelectedMarket(first_i);
+            }
+
         }
     }
 

@@ -58,8 +58,6 @@ const Ticker & TickersListModel::getTicker(const QModelIndex &index)
         throw std::invalid_argument("Index out of range {MarketsListModel::getMarket}");
     }
     return vTickersLst->at(index.row());
-
-    //this->rowsAboutToBeInserted
 }
 //--------------------------------------------------------------------------------------------------------
 bool TickersListModel::setData(const QModelIndex &index,const QVariant &value,int nRole)

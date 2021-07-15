@@ -59,8 +59,6 @@ Market & MarketsListModel::getMarket(const QModelIndex &index)
         throw std::invalid_argument("Index out of range {MarketsListModel::getMarket}");
     }
     return vMarketsLst->at(index.row());
-
-    //this->rowsAboutToBeInserted
 }
 //--------------------------------------------------------------------------------------------------------
 int MarketsListModel::AddRow(Market &m)
@@ -81,31 +79,44 @@ int MarketsListModel::AddRow(Market &m)
 }
 
 //--------------------------------------------------------------------------------------------------------
-bool MarketsListModel::removeItem(const int indx)
+bool MarketsListModel::removeRow(int indx,const QModelIndex &parent )
 {
+    if(parent.isValid()){
+        return false;
+    }
+
+    beginRemoveRows(parent,indx,indx);
+
     if(indx>=0 && indx < (int)vMarketsLst->size()){
 
-        vMarketsLst->erase(next(std::begin(*vMarketsLst),indx));
-        vMarketsLst->shrink_to_fit();
-        emit dataChanged(this->index(indx,0),this->index(indx+1,0));
-        return  true;
-    }
-    return  false;
-}
-//--------------------------------------------------------------------------------------------------------
-//bool MarketsListModel::setData(const QModelIndex &indx,const QVariant &value,
-//                        int nRole/*=Qt::DisplayRole*/)
-//{
-//    //if(false) {
-//    if(indx.isValid()&&nRole==Qt::DisplayRole) {
-//            //(*vMarketsLst)[indx.row()]
-//            value.value<QString>();
-//            emit dataChanged(indx,indx);
-//            return  true;
-//    }
-//    else   return false;
+        Market t {(*vMarketsLst)[indx]};
 
+        vMarketsLst->erase(next(std::begin(*vMarketsLst),indx));
+
+        vMarketsLst->shrink_to_fit();
+
+        endRemoveRows();
+
+        return true;
+    }
+    else{
+        endRemoveRows();
+        return false;
+    }
+}
+//bool MarketsListModel::removeItem(const int indx)
+//{
+//    if(indx>=0 && indx < (int)vMarketsLst->size()){
+
+
+//        vMarketsLst->erase(next(std::begin(*vMarketsLst),indx));
+//        vMarketsLst->shrink_to_fit();
+//        emit dataChanged(this->index(indx,0),this->index(indx+1,0));
+//        return  true;
+//    }
+//    return  false;
 //}
+
 //--------------------------------------------------------------------------------------------------------
 
 Qt::ItemFlags MarketsListModel::flags(const QModelIndex &indx)const
