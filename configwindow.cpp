@@ -63,6 +63,7 @@ ConfigWindow::ConfigWindow(QWidget *parent) :
     connect(ui->chkAutoLoadTicker,SIGNAL(stateChanged(int)),this,SLOT(slotTickerDataChanged(int)));
     connect(ui->chkUpToSysTicker,SIGNAL(stateChanged(int)),this,SLOT(slotTickerDataChanged(int)));
 
+
     ui->listViewTicker->setFocus();
 }
 //--------------------------------------------------------------------------------------------------------
@@ -451,10 +452,10 @@ void ConfigWindow::slotSetSelectedTicker(const  QModelIndex& indx)
 
         slotTickerDataChanged(false);
 
-        setEnableTickerWidgets(true);;
+        setEnableTickerWidgets(true);
     }
     else{
-        setEnableTickerWidgets(false);;
+        setEnableTickerWidgets(false);
     }
 }
 //--------------------------------------------------------------------------------------------------------
@@ -481,6 +482,20 @@ void ConfigWindow::slotSetSelectedTickersMarket(const  int i)
             if(modelMarket->getMarket(idx).MarketID() != iDefaultTickerMarket){
                 iDefaultTickerMarket = modelMarket->getMarket(idx).MarketID();
                 NeedSaveDefaultTickerMarket(iDefaultTickerMarket);
+                proxyTickerModel.setDefaultMarket(iDefaultTickerMarket);
+                // clear
+                ClearTickerWidgetsValues();
+                setEnableTickerWidgets(true);
+                slotTickerDataChanged(true);
+                // sel first item
+                QItemSelectionModel  *qml =new QItemSelectionModel(&proxyTickerModel);
+                auto first_i(proxyTickerModel.index(0,0));
+                if(first_i.isValid()){
+                    qml->select(first_i,QItemSelectionModel::SelectionFlag::Select) ;
+                    slotSetSelectedTicker(first_i);
+                    ui->listViewTicker->setFocus();
+                }
+
             }
         }
     }
@@ -501,20 +516,26 @@ void ConfigWindow::slotBtnAddTickerClicked()
 //--------------------------------------------------------------------------------------------------------
 void ConfigWindow::slotBtnRemoveTickerClicked()
 {
+    auto qml(ui->listViewTicker->selectionModel());
+    auto lst (qml->selectedIndexes());
+    QString qS;
+    if(lst.count()>0){
+          qS.fromStdString(proxyTickerModel.getTicker(lst[0]).TickerName());
+    }
+
     int n=QMessageBox::warning(0,tr("Warning"),
-                               tr("Do you want to remove ticker?"),
+                               tr("Do you want to remove ticker [") + qS +"] ?"
+                               ,
                                QMessageBox::Yes|QMessageBox::Cancel
                                );
     if (n==QMessageBox::Yes){
         if(!bAddingTickerRow){
-            auto qml(ui->listViewTicker->selectionModel());
-            auto lst (qml->selectedIndexes());
+
 
             // TODO: add check ticker data presents;
 
             for(auto el:lst){
-                //Ticker& t=modelTicker->getTicker(el);
-                //std::cout<<"{"<<t.MarketID()<<":"<<t.TickerID()<<":"<<t.TickerSign()<<":"<<t.TickerName()<<":"<<"}";
+
                 proxyTickerModel.removeRow(el.row());
                 //modelTicker->removeRow(el.row());
             }
@@ -589,8 +610,6 @@ void ConfigWindow::slotBtnSaveTickerClicked(){
                       t.SetAutoLoad(ui->chkAutoLoadTicker->isChecked()? true:false);
                       t.SetUpToSys(ui->chkUpToSysTicker->isChecked()? true:false);
                       ///
-                      //emit modelTicker->dataChanged(lst[0],lst[0]);
-                      //emit proxyTickerModel.dataChanged(lst[0],lst[0]);
                       proxyTickerModel.setData(lst[0],t,Qt::EditRole);
                 }
                 slotTickerDataChanged(false);
@@ -598,18 +617,13 @@ void ConfigWindow::slotBtnSaveTickerClicked(){
         }
         else if (n==QMessageBox::Cancel){
             slotBtnCancelTickerClicked();
-            //bAddingTickerRow = false;
-            //slotTickerDataChanged(false);
-            //qDebug() << "choiceCancel";
         }
         else{
-            //qDebug() << "choiceNo";
+            ;
         }
     }
     else{
         slotBtnCancelTickerClicked();
-        //bAddingTickerRow = false;
-        //qDebug() << "choiceNoChanges";
     }
 };
 //--------------------------------------------------------------------------------------------------------

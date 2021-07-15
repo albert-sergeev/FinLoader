@@ -47,6 +47,8 @@ class TickerProxyListModel: public QSortFilterProxyModel
 {
     Q_OBJECT
 
+private:
+    int iDefaultMarket;
 
 public:
     TickerProxyListModel (QObject *parent = nullptr): QSortFilterProxyModel(parent){};
@@ -76,7 +78,18 @@ public:
 
     bool filterAcceptsRow ( int source_row, const QModelIndex & source_parent ) const override
     {
+        QModelIndex indx= sourceModel()->index(source_row, 0, source_parent);
+        if(indx.isValid()){
+            return ((TickersListModel*)this->sourceModel())->getTicker(indx).MarketID() == iDefaultMarket;
+        }
         return QSortFilterProxyModel::filterAcceptsRow(source_row, source_parent);
+    }
+
+    void setDefaultMarket(int iMarket){
+        if (iMarket != iDefaultMarket){
+            iDefaultMarket = iMarket;
+            this->invalidate();
+        }
     }
 
 };
