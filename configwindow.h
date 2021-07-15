@@ -32,8 +32,8 @@ private:
 private:
     MarketsListModel *modelMarket;
     TickersListModel *modelTicker;
-    QSortFilterProxyModel proxyTickerModel;
-    //TickerProxyListModel proxyTickerModel;
+    //QSortFilterProxyModel proxyTickerModel;
+    TickerProxyListModel proxyTickerModel;
 
     int iDefaultTickerMarket;
     Storage stStore;

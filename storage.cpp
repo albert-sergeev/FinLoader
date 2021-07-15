@@ -278,26 +278,23 @@ void Storage::ParsTickerConfigV_1(std::vector<Ticker> & vTickersLst, std::ifstre
         t.SetUpToSys            (std::stoi(vS[9]));
 
 
-        auto ItM (mM.find(iTickerID));
+        auto ItM (mM.find(t.TickerID()));
 
         if(ItM != mM.end()){
             if (tp == op_type::update){
                 vTickersLst[ItM->second] = t;
-
-                //std::cout<<"update {"<<iMark<<":"<<t.MarketID()<<":"<<t.TickerID()<<":"<<t.TickerName()<<":"<<t.TickerSign()<<"}\n";
             }
             else{// do remove
+                mM[vTickersLst[vTickersLst.size()-1].TickerID()] = ItM->second;
                 vTickersLst[ItM->second] = vTickersLst[vTickersLst.size()-1];
                 vTickersLst.erase(next(begin(vTickersLst),vTickersLst.size()-1));
                 mM.erase(ItM);
-                //std::cout<<"remove {"<<iMark<<":"<<t.MarketID()<<":"<<t.TickerID()<<":"<<t.TickerName()<<":"<<t.TickerSign()<<"}\n";
             }
         }
         else{
             if (tp == op_type::update){
-                mM[iTickerID] = vTickersLst.size();
+                mM[t.TickerID()] = vTickersLst.size();
                 vTickersLst.push_back(t);
-                //std::cout<<"add {"<<iMark<<":"<<t.MarketID()<<":"<<t.TickerID()<<":"<<t.TickerName()<<":"<<t.TickerSign()<<"}\n";
             }
         }
     }

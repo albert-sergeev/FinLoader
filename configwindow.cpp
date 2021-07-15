@@ -392,10 +392,9 @@ void ConfigWindow::setTickerModel(TickersListModel *model)
 {
     modelTicker = model;
     proxyTickerModel.setSourceModel(model);
-    //ui->listViewTicker->setModel(&proxyTickerModel);
-    ui->listViewTicker->setModel(model);
+    ui->listViewTicker->setModel(&proxyTickerModel);
 
-
+    //ui->listViewTicker->setModel(model);
 
 
     connect(ui->listViewTicker,SIGNAL(clicked(const QModelIndex&)),this,SLOT(slotSetSelectedTicker(const  QModelIndex&)));
@@ -403,16 +402,16 @@ void ConfigWindow::setTickerModel(TickersListModel *model)
     /////////
 
 
-    //QItemSelectionModel  *qml =new QItemSelectionModel(&proxyTickerModel);
-    QItemSelectionModel  *qml =new QItemSelectionModel(model);
+    QItemSelectionModel  *qml =new QItemSelectionModel(&proxyTickerModel);
+    //QItemSelectionModel  *qml =new QItemSelectionModel(model);
     ui->listViewTicker->setSelectionModel(qml);
 
 
     connect(qml,SIGNAL(currentRowChanged(const QModelIndex&,const QModelIndex&)),this,SLOT(slotSetSelectedTicker(const  QModelIndex&,const QModelIndex&)));
 
 
-    //auto first_i(proxyTickerModel.index(0,0));
-    auto first_i(model->index(0,0));
+    auto first_i(proxyTickerModel.index(0,0));
+    //auto first_i(model->index(0,0));
     if(first_i.isValid()){
         qml->select(first_i,QItemSelectionModel::SelectionFlag::Select) ;
         slotSetSelectedTicker(first_i);
@@ -433,7 +432,9 @@ void ConfigWindow::slotSetSelectedTicker(const  QModelIndex& indx)
     //qDebug()<<"Enter slotSetSelectedMarket";
 
     if (indx.isValid()){
-        const Ticker& t=modelTicker->getTicker(indx);
+        //const Ticker& t=modelTicker->getTicker(indx);
+        const Ticker& t=proxyTickerModel.getTicker(indx);
+
 
         bIsAboutTickerChanged=true;
 
@@ -489,19 +490,6 @@ void ConfigWindow::slotSetSelectedTickersMarket(const  int i)
 void ConfigWindow::slotBtnAddTickerClicked()
 {
     bAddingTickerRow = true;
-
-
-
-//    Ticker t {"","",iDefaultTickerMarket};
-//    int i = modelTicker->AddRow(t);
-
-//    QItemSelectionModel  *qml =ui->listViewTicker->selectionModel();
-
-//    auto indx(modelTicker->index(i,0));
-//    if(indx.isValid() && qml){
-//        qml->select(indx,QItemSelectionModel::SelectionFlag::ClearAndSelect) ;
-//        slotSetSelectedTicker(indx);
-//    }
     //
     ClearTickerWidgetsValues();
     setEnableTickerWidgets(true);
@@ -527,7 +515,8 @@ void ConfigWindow::slotBtnRemoveTickerClicked()
             for(auto el:lst){
                 //Ticker& t=modelTicker->getTicker(el);
                 //std::cout<<"{"<<t.MarketID()<<":"<<t.TickerID()<<":"<<t.TickerSign()<<":"<<t.TickerName()<<":"<<"}";
-                modelTicker->removeRow(el.row());
+                proxyTickerModel.removeRow(el.row());
+                //modelTicker->removeRow(el.row());
             }
             ClearTickerWidgetsValues();
             slotTickerDataChanged(false);
@@ -564,11 +553,17 @@ void ConfigWindow::slotBtnSaveTickerClicked(){
                 t.SetAutoLoad(ui->chkAutoLoadTicker->isChecked()? true:false);
                 t.SetUpToSys(ui->chkUpToSysTicker->isChecked()? true:false);
 
-                int i = modelTicker->AddRow(t);
+                //int i = modelTicker->AddRow(t);
+                int i = proxyTickerModel.AddRow(t);
+
+
+                //proxyTickerModel
+
 
                 QItemSelectionModel  *qml =ui->listViewTicker->selectionModel();
 
-                auto indx(modelTicker->index(i,0));
+                //auto indx(modelTicker->index(i,0));
+                auto indx(proxyTickerModel.index(i,0));
                 if(indx.isValid() && qml){
                     qml->select(indx,QItemSelectionModel::SelectionFlag::ClearAndSelect) ;
                     slotSetSelectedTicker(indx);
@@ -584,7 +579,8 @@ void ConfigWindow::slotBtnSaveTickerClicked(){
                           qml->select(lst[0],QItemSelectionModel::SelectionFlag::ClearAndSelect) ;
                       }
 
-                      Ticker& t=modelTicker->getTicker(lst[0]);
+                      //Ticker& t=modelTicker->getTicker(lst[0]);
+                      Ticker t=proxyTickerModel.getTicker(lst[0]);
 
                       t.SetTickerName(ui->edTickerName->text().toStdString());
                       t.SetTickerSign(ui->edTickerSign->text().toStdString());
@@ -593,7 +589,9 @@ void ConfigWindow::slotBtnSaveTickerClicked(){
                       t.SetAutoLoad(ui->chkAutoLoadTicker->isChecked()? true:false);
                       t.SetUpToSys(ui->chkUpToSysTicker->isChecked()? true:false);
                       ///
-                      emit modelTicker->dataChanged(lst[0],lst[0]);
+                      //emit modelTicker->dataChanged(lst[0],lst[0]);
+                      //emit proxyTickerModel.dataChanged(lst[0],lst[0]);
+                      proxyTickerModel.setData(lst[0],t,Qt::EditRole);
                 }
                 slotTickerDataChanged(false);
             }
@@ -644,11 +642,7 @@ void ConfigWindow::slotBtnCancelTickerClicked()
         }
     }
     else{
-//        for(const auto & r:lst)
-//        {
-//            modelTicker->removeItem(r.row());
-//            qml->select(r,QItemSelectionModel::SelectionFlag::Clear) ;
-//        }
+
         ClearTickerWidgetsValues();
         slotTickerDataChanged(false);
         setEnableTickerWidgets(false);

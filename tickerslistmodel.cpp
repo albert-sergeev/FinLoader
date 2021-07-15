@@ -51,8 +51,8 @@ QVariant TickersListModel::data(const QModelIndex &index, int nRole) const
     }
     return  QVariant();
 }
-//--------------------------------------------------------------------------------------------------------
-Ticker & TickersListModel::getTicker(const QModelIndex &index)
+////--------------------------------------------------------------------------------------------------------
+const Ticker & TickersListModel::getTicker(const QModelIndex &index)
 {
     if(index.row() < 0    || index.row() >= (int)vTickersLst->size()) {
         throw std::invalid_argument("Index out of range {MarketsListModel::getMarket}");
@@ -60,6 +60,21 @@ Ticker & TickersListModel::getTicker(const QModelIndex &index)
     return vTickersLst->at(index.row());
 
     //this->rowsAboutToBeInserted
+}
+//--------------------------------------------------------------------------------------------------------
+bool TickersListModel::setData(const QModelIndex &index,const QVariant &value,int nRole)
+{
+        return QAbstractTableModel::setData(index,value,nRole);
+}
+//--------------------------------------------------------------------------------------------------------
+
+bool TickersListModel::setData(const QModelIndex& index,const Ticker &t,int role)
+{
+    if(index.isValid() && role == Qt::EditRole){
+        (*vTickersLst)[index.row()] = t;
+        emit dataChanged(index,index);
+    }
+    return  0;
 }
 //--------------------------------------------------------------------------------------------------------
 int TickersListModel::AddRow(Ticker &t)
