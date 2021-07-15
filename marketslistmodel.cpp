@@ -65,6 +65,7 @@ int MarketsListModel::AddRow(Market &m)
 {
     beginInsertRows(QModelIndex(),(int)vMarketsLst->size(),(int)vMarketsLst->size());
     vMarketsLst->push_back(m);
+    endInsertRows();
 
     auto indx(this->index((int)vMarketsLst->size()-1,0));
     if(indx.isValid()){
@@ -74,7 +75,7 @@ int MarketsListModel::AddRow(Market &m)
     else{
         throw std::runtime_error("Error adding market!");
     }
-    endInsertRows();
+
     return  0;
 }
 

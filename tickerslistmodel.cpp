@@ -79,6 +79,7 @@ int TickersListModel::AddRow(Ticker &t)
 {
     beginInsertRows(QModelIndex(),(int)vTickersLst->size(),(int)vTickersLst->size());
     vTickersLst->push_back(t);
+    endInsertRows();
 
     auto indx(this->index((int)vTickersLst->size()-1,0));
     if(indx.isValid()){
@@ -88,7 +89,7 @@ int TickersListModel::AddRow(Ticker &t)
     else{
         throw std::runtime_error("Error adding market!");
     }
-    endInsertRows();
+
     return  0;
 }
 

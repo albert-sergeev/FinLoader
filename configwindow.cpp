@@ -402,16 +402,14 @@ void ConfigWindow::slotSetSelectedMarket(const  QModelIndex& indx)
 void ConfigWindow::setTickerModel(TickersListModel *model)
 {
     modelTicker = model;
+    proxyTickerModel.setDefaultMarket(iDefaultTickerMarket);
     proxyTickerModel.setSourceModel(model);
     ui->listViewTicker->setModel(&proxyTickerModel);
-
-    //ui->listViewTicker->setModel(model);
 
 
     connect(ui->listViewTicker,SIGNAL(clicked(const QModelIndex&)),this,SLOT(slotSetSelectedTicker(const  QModelIndex&)));
 
     /////////
-
 
     QItemSelectionModel  *qml =new QItemSelectionModel(&proxyTickerModel);
     //QItemSelectionModel  *qml =new QItemSelectionModel(model);
@@ -460,7 +458,7 @@ void ConfigWindow::slotSetSelectedTicker(const  QModelIndex& indx)
 
         bIsAboutTickerChanged=false;
 
-        slotTickerDataChanged(false);
+        //slotTickerDataChanged(false);
 
         setEnableTickerWidgets(true);
     }
@@ -496,7 +494,7 @@ void ConfigWindow::slotSetSelectedTickersMarket(const  int i)
                 // clear
                 ClearTickerWidgetsValues();
                 setEnableTickerWidgets(true);
-                slotTickerDataChanged(true);
+                slotTickerDataChanged(false);
                 // sel first item
                 QItemSelectionModel  *qml =new QItemSelectionModel(&proxyTickerModel);
                 auto first_i(proxyTickerModel.index(0,0));
@@ -588,7 +586,7 @@ void ConfigWindow::slotBtnSaveTickerClicked(){
                 int i = proxyTickerModel.AddRow(t);
 
 
-                //proxyTickerModel
+                bAddingTickerRow = false;
 
 
                 QItemSelectionModel  *qml =ui->listViewTicker->selectionModel();
@@ -600,7 +598,8 @@ void ConfigWindow::slotBtnSaveTickerClicked(){
                     slotSetSelectedTicker(indx);
                     }
 
-                bAddingTickerRow = false;
+
+                slotTickerDataChanged(false);
             }
             else{
                 auto qml(ui->listViewTicker->selectionModel());
