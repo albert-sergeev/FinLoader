@@ -51,6 +51,8 @@ private:
     MarketsListModel m_MarketLstModel;
 
     int iDefaultTickerMarket;
+    bool bConfigTickerShowByName;
+    bool bConfigTickerSortByName;
     std::vector<Ticker> vTickersLst;
     TickersListModel m_TickerLstModel;
 
@@ -77,6 +79,8 @@ public slots:
     void slotTickerDataStorageUpdate(const QModelIndex &,const QModelIndex &);
     void slotTickerDataStorageRemove(const Ticker & tT);
     void slotStoreDefaultTickerMarket(int indx) {iDefaultTickerMarket = indx;};
+    void slotStoreConfigTickerShowByName(bool b) {bConfigTickerShowByName = b;};
+    void slotStoreConfigTickerSortByName(bool b) {bConfigTickerSortByName = b;};
 
 protected slots:
     void slotNotImpl    ();

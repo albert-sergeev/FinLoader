@@ -53,27 +53,44 @@ private:
 public:
     TickerProxyListModel (QObject *parent = nullptr): QSortFilterProxyModel(parent){};
 
-//    bool lessThan(const QModelIndex &, const QModelIndex &) const {
-//          return false;
-//       }
+    bool lessThan(const QModelIndex & L, const QModelIndex & R)  const override {
+
+            QVariant qvL = sourceModel()->data(L);
+            QVariant qvR = sourceModel()->data(R);
+
+            if ( qvL.isValid()  && qvR.isValid()){
+               if (qvL.userType()  == QVariant::String && qvR.userType()  == QVariant::String){
+                  return qvL.toString() < qvR.toString();
+               }
+               else if (qvL.userType()  == QVariant::Int && qvR.userType()  == QVariant::Int){
+                   return qvL.toInt() < qvR.toInt();
+                }
+            }
+            return false;
+    }
 
     const Ticker & getTicker(const QModelIndex &index){
-        return  ((TickersListModel*)this->sourceModel())->getTicker(index);
+        QModelIndex src_indx =  mapToSource(index);
+        return  ((TickersListModel*)this->sourceModel())->getTicker(src_indx);
     };
 
     bool setData(const QModelIndex &index,const QVariant &value, int role = Qt::DisplayRole) override
     {
-        return QSortFilterProxyModel::setData(index,value,role);
+        QModelIndex src_indx =  mapToSource(index);
+        return QSortFilterProxyModel::setData(src_indx,value,role);
     };
     bool setData(const QModelIndex& index,const Ticker &t,int role) {
-        return  ((TickersListModel*)this->sourceModel())->setData(index,t,role);
+        QModelIndex src_indx =  mapToSource(index);
+        return  ((TickersListModel*)this->sourceModel())->setData(src_indx,t,role);
     };
 
     int AddRow(Ticker &t){
-        return ((TickersListModel*)this->sourceModel())->AddRow(t);
+        int i_src= ((TickersListModel*)this->sourceModel())->AddRow(t);
+        return mapFromSource(sourceModel()->index(i_src,0)).row();
     }
-    bool removeRow(int indx,const QModelIndex &parent = QModelIndex()){
-        return ((TickersListModel*)this->sourceModel())->removeRow(indx,parent);
+    bool removeRow(int i,const QModelIndex &parent = QModelIndex()){
+        QModelIndex src_indx =  mapToSource(index(i,0));
+        return ((TickersListModel*)this->sourceModel())->removeRow(src_indx.row(),parent);
     }
 
     bool filterAcceptsRow ( int source_row, const QModelIndex & source_parent ) const override

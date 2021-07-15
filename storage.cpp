@@ -52,7 +52,7 @@ void Storage::Initialize()
     //
     if(!std::filesystem::exists(pathMarkersFile)){ // if no file - create new with defaults
         std::ofstream fileMarket(pathMarkersFile);
-        std::vector<Market> m{{"MOEXXXX","MOEX"}};
+        std::vector<Market> m{{"ММВБ","MICEX_SHR_T"}};
         SaveMarketConfig(m);
         if(!std::filesystem::exists(pathMarkersFile)){
             throw std::runtime_error("Error create file: ./data/markets.dat");

@@ -63,6 +63,8 @@ ConfigWindow::ConfigWindow(QWidget *parent) :
     connect(ui->chkAutoLoadTicker,SIGNAL(stateChanged(int)),this,SLOT(slotTickerDataChanged(int)));
     connect(ui->chkUpToSysTicker,SIGNAL(stateChanged(int)),this,SLOT(slotTickerDataChanged(int)));
 
+    connect(ui->chkShowByName,SIGNAL(stateChanged(int)),this,SLOT(slotShowByNamesChecked(int)));
+    connect(ui->chkSortByName,SIGNAL(stateChanged(int)),this,SLOT(slotSortByNamesChecked(int)));
 
     ui->listViewTicker->setFocus();
 }
@@ -399,12 +401,18 @@ void ConfigWindow::slotSetSelectedMarket(const  QModelIndex& indx)
 /// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //--------------------------------------------------------------------------------------------------------
-void ConfigWindow::setTickerModel(TickersListModel *model)
+void ConfigWindow::setTickerModel(TickersListModel *model,bool ShowByName,bool SortByName)
 {
+
     modelTicker = model;
     proxyTickerModel.setDefaultMarket(iDefaultTickerMarket);
     proxyTickerModel.setSourceModel(model);
     ui->listViewTicker->setModel(&proxyTickerModel);
+
+    ui->chkShowByName->setChecked(ShowByName);
+    ui->chkSortByName->setChecked(SortByName);
+    slotShowByNamesChecked(ShowByName);
+    slotSortByNamesChecked(SortByName);
 
 
     connect(ui->listViewTicker,SIGNAL(clicked(const QModelIndex&)),this,SLOT(slotSetSelectedTicker(const  QModelIndex&)));
@@ -683,6 +691,31 @@ void ConfigWindow::slotBtnCancelTickerClicked()
 
 
 };
+//--------------------------------------------------------------------------------------------------------
+void ConfigWindow::slotShowByNamesChecked(int Checked)
+{
+    if (Checked){
+        ui->listViewTicker->setModelColumn(0);
+    }
+    else{
+        ui->listViewTicker->setModelColumn(2);
+    }
+    proxyTickerModel.invalidate();
+    NeedSaveShowByNames(Checked);
+}
+//--------------------------------------------------------------------------------------------------------
+void ConfigWindow::slotSortByNamesChecked(int Checked)
+{
+    if (Checked){
+
+        proxyTickerModel.sort(0);
+    }
+    else{
+        proxyTickerModel.sort(2);
+    }
+    proxyTickerModel.invalidate();
+    NeedSaveSortByNames(Checked);
+}
 //--------------------------------------------------------------------------------------------------------
 void ConfigWindow::setEnableTickerWidgets(bool bEnable)
 {

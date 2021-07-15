@@ -65,7 +65,9 @@ void MainWindow::LoadSettings()
         m_settings.endGroup();
 
         m_settings.beginGroup("Configwindow");
-            iDefaultTickerMarket  = m_settings.value("DefaultTickerMarket",0).toInt();
+            iDefaultTickerMarket    = m_settings.value("DefaultTickerMarket",0).toInt();
+            bConfigTickerShowByName = m_settings.value("ConfigTickerShowByName",true).toBool();
+            bConfigTickerSortByName = m_settings.value("ConfigTickerSortByName",true).toBool();
         m_settings.endGroup();
 
     m_settings.endGroup();
@@ -89,6 +91,8 @@ void MainWindow::SaveSettings()
 
         m_settings.beginGroup("Configwindow");
             m_settings.setValue("DefaultTickerMarket",iDefaultTickerMarket);
+            m_settings.setValue("ConfigTickerShowByName",bConfigTickerShowByName);
+            m_settings.setValue("ConfigTickerSortByName",bConfigTickerSortByName);
         m_settings.endGroup();
 
     m_settings.endGroup();
@@ -515,14 +519,16 @@ void MainWindow::slotConfigWndow()
 
    // vMarketsLst.push_back({"MOEX","MOEX"});
     pdoc->setMarketModel(&m_MarketLstModel,iDefaultTickerMarket);
-    pdoc->setTickerModel(&m_TickerLstModel);
+    pdoc->setTickerModel(&m_TickerLstModel,bConfigTickerShowByName,bConfigTickerSortByName);
     ui->mdiArea->addSubWindow(pdoc);
 
     connect(pdoc,SIGNAL(SendToMainLog(QString)),this,SIGNAL(SendToLog(QString)));
     connect(pdoc,SIGNAL(NeedSaveMarketsChanges()),this,SLOT(slotSaveMarketDataStorage()));
 
     connect(pdoc,SIGNAL(NeedSaveDefaultTickerMarket(int)),this,SLOT(slotStoreDefaultTickerMarket(int)));
-    //connect(pdoc,SIGNAL(NeedSaveTickerChanges(int)),      this,SLOT(slotSaveTickerDataStorage(int)));
+    connect(pdoc,SIGNAL(NeedSaveShowByNames(bool)),this,SLOT(slotStoreConfigTickerShowByName(bool)));
+    connect(pdoc,SIGNAL(NeedSaveSortByNames(bool)),this,SLOT(slotStoreConfigTickerSortByName(bool)));
+
     connect(&m_TickerLstModel,SIGNAL(dataChanged(const QModelIndex &,const QModelIndex &)), this,SLOT(slotTickerDataStorageUpdate(const QModelIndex &,const QModelIndex &)));
     connect(&m_TickerLstModel,SIGNAL(dataRemoved(const Ticker &)), this,SLOT(slotTickerDataStorageRemove(const Ticker &)));
 

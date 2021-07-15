@@ -36,6 +36,7 @@ private:
     TickerProxyListModel proxyTickerModel;
 
     int iDefaultTickerMarket;
+
     Storage stStore;
     bool bDataMarketChanged;
     bool bAddingMarketRow;
@@ -74,10 +75,13 @@ protected slots:
 //////////////////////////////////////////
 
 public:
-    void setTickerModel(TickersListModel *model);
+    void setTickerModel(TickersListModel *model, bool ShowByName,bool SortByName);
 signals:
-    void NeedSaveTickerChanges(int);
+
     void NeedSaveDefaultTickerMarket(int);
+    void NeedSaveShowByNames(bool);
+    void NeedSaveSortByNames(bool);
+
 public slots:
     void slotBtnAddTickerClicked();
     void slotBtnRemoveTickerClicked();
@@ -92,6 +96,8 @@ protected slots:
     void slotTickerDataChanged(bool Changed=true);
     void slotTickerDataChanged(int)               {slotTickerDataChanged(true);};
     void slotTickerDataChanged(const QString &)   {slotTickerDataChanged(true);};
+    void slotShowByNamesChecked(int Checked);
+    void slotSortByNamesChecked(int Checked);
     void ClearTickerWidgetsValues();
     void setEnableTickerWidgets(bool);
 
