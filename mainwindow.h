@@ -74,7 +74,8 @@ protected:
 
 public slots:
     void slotSaveMarketDataStorage();
-    void slotSaveTickerDataStorage(const QModelIndex &,const QModelIndex &);
+    void slotTickerDataStorageUpdate(const QModelIndex &,const QModelIndex &);
+    void slotTickerDataStorageRemove(const Ticker & tT);
     void slotStoreDefaultTickerMarket(int indx) {iDefaultTickerMarket = indx;};
 
 protected slots:

@@ -1,4 +1,5 @@
 #include "tickerslistmodel.h"
+#include<iostream>
 
 //TickerListModel::TickerListModel()
 //{
@@ -79,37 +80,33 @@ int TickersListModel::AddRow(Ticker &t)
 }
 
 //--------------------------------------------------------------------------------------------------------
-bool TickersListModel::removeItem(const int indx)
+bool TickersListModel::removeRow(int indx,const QModelIndex &parent )
 {
+
+    if(parent.isValid()){
+        return false;
+    }
+
+    beginRemoveRows(parent,indx,indx);
+
     if(indx>=0 && indx < (int)vTickersLst->size()){
 
-        std::copy(next(std::begin(*vTickersLst),indx+1),end(*vTickersLst),next(std::begin(*vTickersLst)));
-        //vMarketsLst->resize(vMarketsLst->size()-1);
-        vTickersLst->erase(next(std::begin(*vTickersLst),vTickersLst->size()-1));
+        Ticker t {(*vTickersLst)[indx]};
+        //std::cout <<"["<<indx<<"] " << t.MarketID() << "," << t.TickerID() << "," << t.TickerName() << "," << t.TickerSign() << "\n";
+        vTickersLst->erase(next(std::begin(*vTickersLst),indx));
 
         vTickersLst->shrink_to_fit();
 
+        endRemoveRows();
 
-        emit dataChanged(this->index(indx,0),this->index(indx,0));
-        return  true;
+        emit dataRemoved(t);
+        return true;
     }
-    return  false;
+    else{
+        endRemoveRows();
+        return false;
+    }
 }
-//--------------------------------------------------------------------------------------------------------
-//bool MarketsListModel::setData(const QModelIndex &indx,const QVariant &value,
-//                        int nRole/*=Qt::DisplayRole*/)
-//{
-//    //if(false) {
-//    if(indx.isValid()&&nRole==Qt::DisplayRole) {
-//            //(*vMarketsLst)[indx.row()]
-//            value.value<QString>();
-//            emit dataChanged(indx,indx);
-//            return  true;
-//    }
-//    else   return false;
-
-//}
-//--------------------------------------------------------------------------------------------------------
 
 Qt::ItemFlags TickersListModel::flags(const QModelIndex &indx)const
 {

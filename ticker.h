@@ -125,7 +125,7 @@ public:
 
     inline std::string              TickerName()        const   {return sTickerName;};
     inline std::string              TickerSign()        const   {return sTickerSign;};
-    inline std::string              TickerSignFinam() const   {return sTickerSignFinam;};
+    inline std::string              TickerSignFinam()   const   {return sTickerSignFinam;};
     inline std::string              TickerSignQuik()    const   {return sTickerSignQuik;};
     inline int                      TickerID()          const   {return iTickerID;};
     inline int                      MarketID()          const   {return iMarketID;};
@@ -134,10 +134,10 @@ public:
 
     inline void SetTickerName           (const std::string  TickerName) {sTickerName            = TickerName;};
     inline void SetTickerSign           (const std::string  TickerSign) {sTickerSign            = TickerSign;};
-    inline void SetTickerSignFinam    (const std::string  TickerSign) {sTickerSignFinam     = TickerSign;};
+    inline void SetTickerSignFinam      (const std::string  TickerSign) {sTickerSignFinam       = TickerSign;};
     inline void SetTickerSignQuik       (const std::string  TickerSign) {sTickerSignQuik        = TickerSign;};
     inline void SetAutoLoad             (const bool         AutoLoad)   {bAutoLoad              = AutoLoad;};
-    inline void SetUpToSys              (const bool         UpToSys)    {bUpToSys              = UpToSys;};
+    inline void SetUpToSys              (const bool         UpToSys)    {bUpToSys               = UpToSys;};
 
 public:
     //--------------------------------------------------------------------------------------------------------
@@ -179,7 +179,34 @@ public:
         bUpToSys = t.bUpToSys;
     }
     //--------------------------------------------------------------------------------------------------------
+    Ticker & operator= (const Ticker & t){
+        sTickerName = t.sTickerName;
+        sTickerSign = t.sTickerSign;
+        iTickerID   = t.iTickerID;
+        iMarketID = t.iMarketID;
+
+        sTickerSignFinam = t.sTickerSignFinam;
+        sTickerSignQuik = t.sTickerSignQuik;
+
+        bAutoLoad = t.bAutoLoad;
+        bUpToSys = t.bUpToSys;
+        return  *this;
+    }
+    //--------------------------------------------------------------------------------------------------------
+
 };
+
+//std::ostream & operator<<(std::ostream &os, Ticker &t)
+//{
+
+//    os << t.MarketID() << ",";
+//    os << t.TickerID() << ",";
+//    os << t.TickerName() << ",";
+//    os << t.TickerSign() << ",";
+
+//    return  os;
+//}
+
 
 
 

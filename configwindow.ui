@@ -20,7 +20,7 @@
    <string>Form</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="1" column="0">
+   <item row="0" column="0">
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
       <number>0</number>
@@ -29,222 +29,142 @@
       <attribute name="title">
        <string>Tickers</string>
       </attribute>
-      <widget class="QListView" name="listViewTicker">
-       <property name="geometry">
-        <rect>
-         <x>20</x>
-         <y>80</y>
-         <width>221</width>
-         <height>271</height>
-        </rect>
-       </property>
-      </widget>
-      <widget class="QLabel" name="label_3">
-       <property name="geometry">
-        <rect>
-         <x>280</x>
-         <y>50</y>
-         <width>161</width>
-         <height>19</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Наименование бумаги</string>
-       </property>
-      </widget>
-      <widget class="QLabel" name="label_5">
-       <property name="geometry">
-        <rect>
-         <x>280</x>
-         <y>80</y>
-         <width>141</width>
-         <height>19</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Обозначение</string>
-       </property>
-      </widget>
-      <widget class="QLabel" name="label_7">
-       <property name="geometry">
-        <rect>
-         <x>280</x>
-         <y>110</y>
-         <width>161</width>
-         <height>19</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Обозначение в Finam</string>
-       </property>
-      </widget>
-      <widget class="QLabel" name="label_8">
-       <property name="geometry">
-        <rect>
-         <x>280</x>
-         <y>140</y>
-         <width>161</width>
-         <height>31</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Обозначение в Quik</string>
-       </property>
-      </widget>
-      <widget class="QLabel" name="label_9">
-       <property name="geometry">
-        <rect>
-         <x>280</x>
-         <y>180</y>
-         <width>121</width>
-         <height>19</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Автозагрузка</string>
-       </property>
-      </widget>
-      <widget class="QLabel" name="label_10">
-       <property name="geometry">
-        <rect>
-         <x>280</x>
-         <y>210</y>
-         <width>151</width>
-         <height>19</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Выгрузка в систему</string>
-       </property>
-      </widget>
-      <widget class="QLineEdit" name="edTickerName">
-       <property name="geometry">
-        <rect>
-         <x>480</x>
-         <y>50</y>
-         <width>113</width>
-         <height>27</height>
-        </rect>
-       </property>
-      </widget>
-      <widget class="QLineEdit" name="edTickerSign">
-       <property name="geometry">
-        <rect>
-         <x>480</x>
-         <y>80</y>
-         <width>113</width>
-         <height>27</height>
-        </rect>
-       </property>
-      </widget>
-      <widget class="QLineEdit" name="edTickerSignFinam">
-       <property name="geometry">
-        <rect>
-         <x>480</x>
-         <y>110</y>
-         <width>113</width>
-         <height>27</height>
-        </rect>
-       </property>
-      </widget>
-      <widget class="QLineEdit" name="edTickerSignQuik">
-       <property name="geometry">
-        <rect>
-         <x>480</x>
-         <y>140</y>
-         <width>113</width>
-         <height>27</height>
-        </rect>
-       </property>
-      </widget>
-      <widget class="QCheckBox" name="chkAutoLoadTicker">
-       <property name="geometry">
-        <rect>
-         <x>480</x>
-         <y>180</y>
-         <width>92</width>
-         <height>25</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string/>
-       </property>
-      </widget>
-      <widget class="QCheckBox" name="chkUpToSysTicker">
-       <property name="geometry">
-        <rect>
-         <x>480</x>
-         <y>210</y>
-         <width>92</width>
-         <height>25</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string/>
-       </property>
-      </widget>
-      <widget class="QPushButton" name="btnAddTicker">
-       <property name="geometry">
-        <rect>
-         <x>280</x>
-         <y>290</y>
-         <width>88</width>
-         <height>27</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Добавить</string>
-       </property>
-      </widget>
-      <widget class="QPushButton" name="btnRemoveTicker">
-       <property name="geometry">
-        <rect>
-         <x>380</x>
-         <y>290</y>
-         <width>88</width>
-         <height>27</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Удалить</string>
-       </property>
-      </widget>
-      <widget class="QPushButton" name="btnSaveTicker">
-       <property name="geometry">
-        <rect>
-         <x>480</x>
-         <y>290</y>
-         <width>88</width>
-         <height>27</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Сохранить</string>
-       </property>
-      </widget>
-      <widget class="QPushButton" name="btnCancelTicker">
-       <property name="geometry">
-        <rect>
-         <x>600</x>
-         <y>290</y>
-         <width>88</width>
-         <height>27</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>Отменить</string>
-       </property>
-      </widget>
-      <widget class="QComboBox" name="cmbMarkets">
-       <property name="geometry">
-        <rect>
-         <x>20</x>
-         <y>30</y>
-         <width>221</width>
-         <height>27</height>
-        </rect>
-       </property>
-      </widget>
+      <layout class="QHBoxLayout" name="horizontalLayout_2">
+       <item>
+        <layout class="QVBoxLayout" name="verticalLayout_3">
+         <item>
+          <widget class="QComboBox" name="cmbMarkets"/>
+         </item>
+         <item>
+          <widget class="QListView" name="listViewTicker"/>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="Line" name="line_2">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <layout class="QVBoxLayout" name="verticalLayout_2">
+         <item>
+          <layout class="QGridLayout" name="gridLayout_4">
+           <item row="0" column="0" colspan="2">
+            <widget class="QLabel" name="label_3">
+             <property name="text">
+              <string>Наименование бумаги</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0" colspan="2">
+            <widget class="QLabel" name="label_5">
+             <property name="text">
+              <string>Обозначение</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0" colspan="2">
+            <widget class="QLabel" name="label_7">
+             <property name="text">
+              <string>Обозначение в Finam</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0" colspan="2">
+            <widget class="QLabel" name="label_8">
+             <property name="text">
+              <string>Обозначение в Quik</string>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="0">
+            <widget class="QPushButton" name="btnAddTicker">
+             <property name="text">
+              <string>Добавить</string>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="1">
+            <widget class="QPushButton" name="btnRemoveTicker">
+             <property name="text">
+              <string>Удалить</string>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="2">
+            <widget class="QPushButton" name="btnSaveTicker">
+             <property name="text">
+              <string>Сохранить</string>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="3">
+            <widget class="QPushButton" name="btnCancelTicker">
+             <property name="text">
+              <string>Отменить</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="3">
+            <widget class="QCheckBox" name="chkAutoLoadTicker">
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="3">
+            <widget class="QCheckBox" name="chkUpToSysTicker">
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="2" colspan="2">
+            <widget class="QLineEdit" name="edTickerSignQuik"/>
+           </item>
+           <item row="2" column="2" colspan="2">
+            <widget class="QLineEdit" name="edTickerSignFinam"/>
+           </item>
+           <item row="1" column="2" colspan="2">
+            <widget class="QLineEdit" name="edTickerSign"/>
+           </item>
+           <item row="0" column="2" colspan="2">
+            <widget class="QLineEdit" name="edTickerName"/>
+           </item>
+           <item row="4" column="0" colspan="3">
+            <widget class="QLabel" name="label_9">
+             <property name="text">
+              <string>Автозагрузка</string>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="0" colspan="3">
+            <widget class="QLabel" name="label_10">
+             <property name="text">
+              <string>Выгрузка в систему</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <spacer name="verticalSpacer_2">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </item>
+      </layout>
      </widget>
      <widget class="QWidget" name="tabMarket">
       <attribute name="title">
@@ -420,6 +340,19 @@
   </layout>
  </widget>
  <tabstops>
+  <tabstop>tabWidget</tabstop>
+  <tabstop>cmbMarkets</tabstop>
+  <tabstop>listViewTicker</tabstop>
+  <tabstop>edTickerName</tabstop>
+  <tabstop>edTickerSign</tabstop>
+  <tabstop>edTickerSignFinam</tabstop>
+  <tabstop>edTickerSignQuik</tabstop>
+  <tabstop>chkAutoLoadTicker</tabstop>
+  <tabstop>chkUpToSysTicker</tabstop>
+  <tabstop>btnAddTicker</tabstop>
+  <tabstop>btnRemoveTicker</tabstop>
+  <tabstop>btnSaveTicker</tabstop>
+  <tabstop>btnCancelTicker</tabstop>
   <tabstop>listViewMarket</tabstop>
   <tabstop>edName</tabstop>
   <tabstop>edSign</tabstop>

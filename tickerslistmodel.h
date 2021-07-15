@@ -31,12 +31,14 @@ public:
     //bool setData(const QModelIndex &indx,const QVariant &value,int nRole=Qt::DisplayRole) override;
 
     int AddRow(Ticker &m);
-    bool removeItem(const int indx);
-
+    bool removeRow(int indx,const QModelIndex &parent = QModelIndex());
 
     Qt::ItemFlags flags(const QModelIndex &indx) const override;
 
     Ticker & getTicker(const QModelIndex &index);
+
+signals:
+    void dataRemoved(const Ticker &);
 };
 
 class TickerProxyListModel: public QSortFilterProxyModel

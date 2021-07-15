@@ -18,7 +18,7 @@ class Storage
     std::filesystem::path pathMarkersFile;
     std::filesystem::path pathTickersFile;
 
-    int iTickerMark{0};
+    int iTickerMark{1};
 
 public:
 
@@ -39,16 +39,20 @@ public:
     void SaveMarketConfig(std::vector<Market> & vMarketsLst);
     void SaveMarketConfig(std::vector<Market> && vMarketsLst);
 
+
+    enum op_type:int { update = 1, remove = 2 };
+
     void LoadTickerConfig(std::vector<Ticker> & /*vTickersLst*/) ;
-    void SaveTickerConfig(std::vector<Ticker> & /*vTickersLst*/, int iLeft, int iRight) ;
-    void SaveTickerConfig(std::vector<Ticker> && /*vTickersLst*/, int iLeft, int iRight) ;
+    void SaveTickerConfig(const Ticker & /*tT*/, op_type tp = op_type::update) ;
+    void SaveTickerConfig(Ticker && /*tT*/, op_type tp = op_type::update) ;
 
 private:
     //--------------------------------------------------------------------------------------------------------
     void SaveMarketConfigV_1(std::vector<Market> & vMarketsLst);
     void ParsMarketConfigV_1(std::vector<Market> & vMarketsLst, std::ifstream &file);
 
-    void SaveTickerConfigV_1(std::vector<Ticker> & /*vTickersLst*/, int iLeft, int iRight);
+    void FormatTickerConfigV_1();
+    void SaveTickerConfigV_1(const Ticker & /*tT*/, op_type tp = op_type::update);
     void ParsTickerConfigV_1(std::vector<Ticker> & /*vTickersLst*/, std::ifstream & /*file*/);
 
 };

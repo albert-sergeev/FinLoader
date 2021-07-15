@@ -124,11 +124,28 @@ void MainWindow::slotSaveMarketDataStorage()
     }
 }
 //--------------------------------------------------------------------------------------------------------------------------------
-void MainWindow::slotSaveTickerDataStorage(const QModelIndex & indxL,const QModelIndex & indxR)
+void MainWindow::slotTickerDataStorageUpdate(const QModelIndex & indxL,const QModelIndex & indxR)
 {
     try{
-        stStore.SaveTickerConfig(vTickersLst,indxL.row(),indxR.row());
-        qDebug()<<"store indexes: {"<<indxL.row()<<":"<<indxR.row()<<"}";
+        //qDebug()<<"store indexes: {"<<indxL.row()<<":"<<indxR.row()<<"}";
+        for (int i = indxL.row(); i <= indxR.row(); ++i){
+            stStore.SaveTickerConfig(vTickersLst[i]);
+        }
+    }
+    catch (std::exception &e){
+        //
+        int n=QMessageBox::critical(0,tr("Error during saving markets config!"),e.what());
+        if (n==QMessageBox::Ok){;}
+        //
+    }
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotTickerDataStorageRemove(const Ticker & tT)
+{
+    try{
+        //std::cout<<"remove ticker: {"<<tT.TickerID()<<":"<<tT.TickerSign()<<"}";
+        stStore.SaveTickerConfig(tT,Storage::op_type::remove);
+
     }
     catch (std::exception &e){
         //
@@ -506,7 +523,8 @@ void MainWindow::slotConfigWndow()
 
     connect(pdoc,SIGNAL(NeedSaveDefaultTickerMarket(int)),this,SLOT(slotStoreDefaultTickerMarket(int)));
     //connect(pdoc,SIGNAL(NeedSaveTickerChanges(int)),      this,SLOT(slotSaveTickerDataStorage(int)));
-    connect(&m_TickerLstModel,SIGNAL(dataChanged(const QModelIndex &,const QModelIndex &)), this,SLOT(slotSaveTickerDataStorage(const QModelIndex &,const QModelIndex &)));
+    connect(&m_TickerLstModel,SIGNAL(dataChanged(const QModelIndex &,const QModelIndex &)), this,SLOT(slotTickerDataStorageUpdate(const QModelIndex &,const QModelIndex &)));
+    connect(&m_TickerLstModel,SIGNAL(dataRemoved(const Ticker &)), this,SLOT(slotTickerDataStorageRemove(const Ticker &)));
 
 
     connect(this,SIGNAL(SaveUnsavedConfigs()),pdoc,SLOT(slotBtnSaveMarketClicked()));

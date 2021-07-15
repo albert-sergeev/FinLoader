@@ -85,13 +85,8 @@ bool MarketsListModel::removeItem(const int indx)
 {
     if(indx>=0 && indx < (int)vMarketsLst->size()){
 
-        std::copy(next(std::begin(*vMarketsLst),indx+1),end(*vMarketsLst),next(std::begin(*vMarketsLst)));
-        //vMarketsLst->resize(vMarketsLst->size()-1);
-        vMarketsLst->erase(next(std::begin(*vMarketsLst),vMarketsLst->size()-1));
-
+        vMarketsLst->erase(next(std::begin(*vMarketsLst),indx));
         vMarketsLst->shrink_to_fit();
-
-
         emit dataChanged(this->index(indx,0),this->index(indx+1,0));
         return  true;
     }

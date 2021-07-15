@@ -65,9 +65,7 @@ void Storage::Initialize()
     pathTickersFile = std::filesystem::absolute(pathDataDir/"tickers.dat");
     //
     if(!std::filesystem::exists(pathTickersFile)){ // if no file - create new with defaults
-        std::ofstream fileTickers(pathTickersFile);
-        std::vector<Ticker> t;
-        SaveTickerConfig(t,0,0);
+        FormatTickerConfigV_1();
         if(!std::filesystem::exists(pathTickersFile)){
             throw std::runtime_error("Error create file: ./data/tickers.dat");
         }
@@ -87,7 +85,7 @@ void Storage::LoadMarketConfig(std::vector<Market> & vMarketsLst)
     std::istringstream iss{sBuff};
     std::ifstream fileMarket(pathMarkersFile.c_str());
     if(std::getline(fileMarket,sBuff)){
-        if(std::stol(sBuff) == 1){
+        if(sBuff == "v1"){
             ParsMarketConfigV_1(vMarketsLst,fileMarket);
         }
         else{
@@ -144,7 +142,7 @@ void Storage::SaveMarketConfig(std::vector<Market> && vMarketsLst)
 void Storage::SaveMarketConfigV_1(std::vector<Market> & vMarketsLst)
 {
     std::ofstream fileMarket(pathMarkersFile);
-    fileMarket <<"1\n";
+    fileMarket <<"v1\n";
     //
     for(const auto & m:vMarketsLst){
         fileMarket<<m.MarketID()<<" ";
@@ -159,37 +157,43 @@ void Storage::SaveMarketConfigV_1(std::vector<Market> & vMarketsLst)
 }
 //--------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------
-void Storage::SaveTickerConfig(std::vector<Ticker> & vTickersLst, int iLeft, int iRight)
+void Storage::SaveTickerConfig(const Ticker & tT, op_type tp)
 {
-    SaveTickerConfigV_1(vTickersLst,iLeft,iRight);
+    SaveTickerConfigV_1(tT,tp);
 };
 //--------------------------------------------------------------------------------------------------------
-void Storage::SaveTickerConfig(std::vector<Ticker> && vTickersLst, int iLeft, int iRight)
+void Storage::SaveTickerConfig(Ticker && tT, op_type tp)
 {
-    SaveTickerConfig(vTickersLst,iLeft,iRight);
+    SaveTickerConfig(tT,tp);
 };
 //--------------------------------------------------------------------------------------------------------
-void Storage::SaveTickerConfigV_1(std::vector<Ticker> & vTickersLst, int iLeft, int iRight)
+void Storage::FormatTickerConfigV_1()
 {
-    std::ofstream fileTicker(pathTickersFile,std::ios_base::app);
-    //fileTicker <<"1\n";
-    //
-    for(int i = iLeft; i < (int)vTickersLst.size() && i <= iRight; ++i){
+    std::ofstream fileTicker(pathTickersFile);
+    fileTicker<<"v1\n";
+}
+//--------------------------------------------------------------------------------------------------------
+void Storage::SaveTickerConfigV_1(const Ticker & tT, op_type tp)
+{
 
-        fileTicker<<(++iTickerMark)<<",";
+        std::ofstream fileTicker(pathTickersFile,std::ios_base::app);
 
-        fileTicker<<vTickersLst[i].MarketID()<<",";
-        fileTicker<<vTickersLst[i].TickerID()<<",";
+        fileTicker<<(iTickerMark++)<<",";
 
-        fileTicker<<vTickersLst[i].TickerName()<<",";
-        fileTicker<<vTickersLst[i].TickerSign()<<",";
-        fileTicker<<vTickersLst[i].TickerSignFinam()<<",";
-        fileTicker<<vTickersLst[i].TickerSignQuik()<<",";
-        fileTicker<<vTickersLst[i].AutoLoad()<<",";
-        fileTicker<<vTickersLst[i].UpToSys()<<",";
+        fileTicker<<tp<<",";
+
+        fileTicker<<tT.MarketID()<<",";
+        fileTicker<<tT.TickerID()<<",";
+
+        fileTicker<<tT.TickerName()<<",";
+        fileTicker<<tT.TickerSign()<<",";
+        fileTicker<<tT.TickerSignFinam()<<",";
+        fileTicker<<tT.TickerSignQuik()<<",";
+        fileTicker<<tT.AutoLoad()<<",";
+        fileTicker<<tT.UpToSys()<<",";
 
         fileTicker<<"\n";
-    }
+
 };
 
 //--------------------------------------------------------------------------------------------------------
@@ -201,23 +205,8 @@ void Storage::LoadTickerConfig(std::vector<Ticker> & vTickersLst)
     std::istringstream iss{sBuff};
     std::ifstream fileTicker(pathTickersFile.c_str());
 
-    if (fileTicker.good()){
-        ParsTickerConfigV_1(vTickersLst,fileTicker);
-    }
-    else{
-        std::stringstream ss;
-        ss <<"error reading file: "<<pathTickersFile;
-        throw std::runtime_error(ss.str());
-    }
-
-
-//    if(std::getline(fileTicker,sBuff)){
-//        if(std::stol(sBuff) == 1){
-//            ParsTickerConfigV_1(vTickersLst,fileTicker);
-//        }
-//        else{
-//            throw std::runtime_error("wrong file format ./data/Tickers.dat!");
-//        }
+//    if (fileTicker.good()){
+//        ParsTickerConfigV_1(vTickersLst,fileTicker);
 //    }
 //    else{
 //        std::stringstream ss;
@@ -225,11 +214,27 @@ void Storage::LoadTickerConfig(std::vector<Ticker> & vTickersLst)
 //        throw std::runtime_error(ss.str());
 //    }
 
+
+    if(std::getline(fileTicker,sBuff)){
+        if(sBuff == "v1"){
+            ParsTickerConfigV_1(vTickersLst,fileTicker);
+        }
+        else{
+            throw std::runtime_error("wrong file format ./data/Tickers.dat!");
+        }
+    }
+    else{
+        std::stringstream ss;
+        ss <<"error reading file: "<<pathTickersFile;
+        throw std::runtime_error(ss.str());
+    }
+
 };
 //--------------------------------------------------------------------------------------------------------
 void Storage::ParsTickerConfigV_1(std::vector<Ticker> & vTickersLst, std::ifstream & file)
 {
     int iMark{0};
+    op_type tp;
 
     int iMarketID{0};
     int iTickerID{0};
@@ -249,34 +254,51 @@ void Storage::ParsTickerConfigV_1(std::vector<Ticker> & vTickersLst, std::ifstre
         //
         std::vector<std::string> vS{std::istream_iterator<StringDelimiter<','>>{iss},{}};
 
-        if(vS.size()<9){
+        if(vS.size()<10){
             std::stringstream ss;
             ss <<"error parsing file. wrong format: "<<pathTickersFile;
             throw std::runtime_error(ss.str());
         }
-        copy(vS.begin(),vS.end(),std::ostream_iterator<std::string>(std::cout,","));std::cout<<"\n";
+        //copy(vS.begin(),vS.end(),std::ostream_iterator<std::string>(std::cout,","));std::cout<<"\n";
 
         //
         iMark                   =std::stoi(vS[0]);
-        iMarketID               =std::stoi(vS[1]);
-        iTickerID               =std::stoi(vS[2]);
+        if (iTickerMark <= iMark) iTickerMark = iMark + 1;
 
-        Ticker t{iTickerID,vS[3],vS[4],iMarketID};
+        tp                      = std::stoi(vS[1]) == 2 ? op_type::remove : op_type::update;
 
-        t.SetTickerSignFinam    (vS[5]);
-        t.SetTickerSignQuik     (vS[6]);
-        t.SetAutoLoad           (std::stoi(vS[7]));
-        t.SetUpToSys            (std::stoi(vS[8]));
+        iMarketID               =std::stoi(vS[2]);
+        iTickerID               =std::stoi(vS[3]);
+
+        Ticker t{iTickerID,vS[4],vS[5],iMarketID};
+
+        t.SetTickerSignFinam    (vS[6]);
+        t.SetTickerSignQuik     (vS[7]);
+        t.SetAutoLoad           (std::stoi(vS[8]));
+        t.SetUpToSys            (std::stoi(vS[9]));
 
 
         auto ItM (mM.find(iTickerID));
 
         if(ItM != mM.end()){
-           vTickersLst[ItM->second] = t;
+            if (tp == op_type::update){
+                vTickersLst[ItM->second] = t;
+
+                //std::cout<<"update {"<<iMark<<":"<<t.MarketID()<<":"<<t.TickerID()<<":"<<t.TickerName()<<":"<<t.TickerSign()<<"}\n";
+            }
+            else{// do remove
+                vTickersLst[ItM->second] = vTickersLst[vTickersLst.size()-1];
+                vTickersLst.erase(next(begin(vTickersLst),vTickersLst.size()-1));
+                mM.erase(ItM);
+                //std::cout<<"remove {"<<iMark<<":"<<t.MarketID()<<":"<<t.TickerID()<<":"<<t.TickerName()<<":"<<t.TickerSign()<<"}\n";
+            }
         }
         else{
-            mM[iTickerID] = vTickersLst.size();
-            vTickersLst.push_back(t);
+            if (tp == op_type::update){
+                mM[iTickerID] = vTickersLst.size();
+                vTickersLst.push_back(t);
+                //std::cout<<"add {"<<iMark<<":"<<t.MarketID()<<":"<<t.TickerID()<<":"<<t.TickerName()<<":"<<t.TickerSign()<<"}\n";
+            }
         }
     }
 
