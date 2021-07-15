@@ -59,6 +59,8 @@ ConfigWindow::ConfigWindow(QWidget *parent) :
 
     connect(ui->edTickerName,SIGNAL(textChanged(const QString &)),this,SLOT(slotTickerDataChanged(const QString &)));
     connect(ui->edTickerSign,SIGNAL(textChanged(const QString &)),this,SLOT(slotTickerDataChanged(const QString &)));
+    connect(ui->edTickerSignFinam,SIGNAL(textChanged(const QString &)),this,SLOT(slotTickerDataChanged(const QString &)));
+    connect(ui->edTickerSignQuik,SIGNAL(textChanged(const QString &)),this,SLOT(slotTickerDataChanged(const QString &)));
 
     connect(ui->chkAutoLoadTicker,SIGNAL(stateChanged(int)),this,SLOT(slotTickerDataChanged(int)));
     connect(ui->chkUpToSysTicker,SIGNAL(stateChanged(int)),this,SLOT(slotTickerDataChanged(int)));
@@ -677,7 +679,7 @@ void ConfigWindow::slotBtnCancelTickerClicked()
         ClearTickerWidgetsValues();
         slotTickerDataChanged(false);
         setEnableTickerWidgets(false);
-        bAddingMarketRow=false;
+        bAddingTickerRow=false;
 
         auto qml(ui->listViewTicker->selectionModel());
         auto lst (qml->selectedIndexes());
