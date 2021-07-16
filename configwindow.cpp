@@ -83,6 +83,7 @@ ConfigWindow::~ConfigWindow()
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //--------------------------------------------------------------------------------------------------------
+// process quit event - used for save unsaved changes
 bool ConfigWindow::event(QEvent *event)
 {
     if(event->type() == QEvent::Close){
@@ -91,6 +92,7 @@ bool ConfigWindow::event(QEvent *event)
     return QWidget::event(event);
 }
 //--------------------------------------------------------------------------------------------------------
+// process ESC key event
 void ConfigWindow::keyPressEvent(QKeyEvent *event)
 {
     if(event->key() == Qt::Key_Escape){
@@ -99,6 +101,7 @@ void ConfigWindow::keyPressEvent(QKeyEvent *event)
     }
 }
 //--------------------------------------------------------------------------------------------------------
+// processer for quit event (see uper)
 void ConfigWindow::slotAboutQuit()
 {
     if(bDataMarketChanged){
@@ -115,7 +118,12 @@ void ConfigWindow::slotAboutQuit()
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
 //--------------------------------------------------------------------------------------------------------
+///
+/// \brief Process event when Market data changes: set enternal marker and set widgets enabled/disabled
+/// \param Changed
+///
 void ConfigWindow::slotMarketDataChanged(bool Changed )
 {
     if (!bIsAboutMarkerChanged){
@@ -130,6 +138,9 @@ void ConfigWindow::slotMarketDataChanged(bool Changed )
     }    
 }
 //--------------------------------------------------------------------------------------------------------
+///
+/// \brief Initiate process adding new market (need save or cancel later)
+///
 void ConfigWindow::slotBtnAddMarketClicked()
 {
     bAddingMarketRow = true;
@@ -149,6 +160,9 @@ void ConfigWindow::slotBtnAddMarketClicked()
     ui->edName->setFocus();
 };
 //--------------------------------------------------------------------------------------------------------
+///
+/// \brief Removing market (can be new or existing)
+///
 void ConfigWindow::slotBtnRemoveMarketClicked()
 {
     int n=QMessageBox::warning(0,tr("Warning"),
@@ -177,6 +191,9 @@ void ConfigWindow::slotBtnRemoveMarketClicked()
 };
 
 //--------------------------------------------------------------------------------------------------------
+///
+/// \brief Clear Market widget values. Used in other procedures
+///
 void ConfigWindow::ClearMarketWidgetsValues()
 {
     ui->edName->setText("");
@@ -193,6 +210,9 @@ void ConfigWindow::ClearMarketWidgetsValues()
 }
 
 //--------------------------------------------------------------------------------------------------------
+///
+/// \brief Main save market processer. Save new and existing markets. Can be used on exit form.
+///
 void ConfigWindow::slotBtnSaveMarketClicked()
 {
     if(bDataMarketChanged){
@@ -266,6 +286,9 @@ void ConfigWindow::slotBtnSaveMarketClicked()
 
 };
 //--------------------------------------------------------------------------------------------------------
+///
+/// \brief Undo changes or adding new Market
+///
 void ConfigWindow::slotBtnCancelMarketClicked()
 {
     auto qml(ui->listViewMarket->selectionModel());
@@ -305,6 +328,11 @@ void ConfigWindow::slotBtnCancelMarketClicked()
     bAddingMarketRow=false;
 };
 //--------------------------------------------------------------------------------------------------------
+///
+/// \brief Initialazing procedure. Set data for form. Mast be set during creating form (witn setTickerModel).
+/// \param model
+/// \param DefaultTickerMarket
+///
 void ConfigWindow::setMarketModel(MarketsListModel *model, int DefaultTickerMarket)
 {
     modelMarket = model;
@@ -356,7 +384,10 @@ void ConfigWindow::setMarketModel(MarketsListModel *model, int DefaultTickerMark
 
 }
 //--------------------------------------------------------------------------------------------------------
-
+///
+/// \brief Process event user select Market. Fill widgets with data.
+/// \param indx
+///
 void ConfigWindow::slotSetSelectedMarket(const  QModelIndex& indx)
 {
 
@@ -403,6 +434,12 @@ void ConfigWindow::slotSetSelectedMarket(const  QModelIndex& indx)
 /// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //--------------------------------------------------------------------------------------------------------
+///
+/// \brief Initialazing procedure. Set data for form. Mast be set during creating form (witn setMarketModel).
+/// \param model
+/// \param ShowByName
+/// \param SortByName
+///
 void ConfigWindow::setTickerModel(TickersListModel *model,bool ShowByName,bool SortByName)
 {
 
@@ -443,7 +480,10 @@ void ConfigWindow::setTickerModel(TickersListModel *model,bool ShowByName,bool S
     ////
 }
 //--------------------------------------------------------------------------------------------------------
-
+///
+/// \brief Process event user select Ticker. Fill widgets with data.
+/// \param indx
+///
 void ConfigWindow::slotSetSelectedTicker(const  QModelIndex& indx)
 {
 
@@ -477,6 +517,10 @@ void ConfigWindow::slotSetSelectedTicker(const  QModelIndex& indx)
     }
 }
 //--------------------------------------------------------------------------------------------------------
+///
+/// \brief Process event when Ticker data changes: set enternal marker and set widgets enabled/disabled
+/// \param Changed
+///
 void ConfigWindow::slotTickerDataChanged(bool Changed )
 {
     if (!bIsAboutTickerChanged){
@@ -491,6 +535,10 @@ void ConfigWindow::slotTickerDataChanged(bool Changed )
     }
 }
 //--------------------------------------------------------------------------------------------------------
+///
+/// \brief Process event user select Market for Ticker listview. Set filter for listview and save choise.
+/// \param i
+///
 void ConfigWindow::slotSetSelectedTickersMarket(const  int i)
 {
     //qDebug()<<"i: {"<<i<<"}";
@@ -520,6 +568,9 @@ void ConfigWindow::slotSetSelectedTickersMarket(const  int i)
 }
 
 //--------------------------------------------------------------------------------------------------------
+///
+/// \brief Begin process adding ticker
+///
 void ConfigWindow::slotBtnAddTickerClicked()
 {
     bAddingTickerRow = true;
@@ -532,6 +583,9 @@ void ConfigWindow::slotBtnAddTickerClicked()
     ui->edTickerName->setFocus();
 }
 //--------------------------------------------------------------------------------------------------------
+///
+/// \brief Process event removing Ticker. Can be new or exists
+///
 void ConfigWindow::slotBtnRemoveTickerClicked()
 {
     auto qml(ui->listViewTicker->selectionModel());
@@ -567,6 +621,9 @@ void ConfigWindow::slotBtnRemoveTickerClicked()
     }
 };
 //--------------------------------------------------------------------------------------------------------
+///
+/// \brief Main procedure for saving ticker changes. Can be new or existing. Can be used on exit form.
+///
 void ConfigWindow::slotBtnSaveTickerClicked(){
 
     if(bDataTickerChanged){
@@ -646,6 +703,9 @@ void ConfigWindow::slotBtnSaveTickerClicked(){
     }
 };
 //--------------------------------------------------------------------------------------------------------
+///
+/// \brief Undo ticker changes. Ticker can be new or existing
+///
 void ConfigWindow::slotBtnCancelTickerClicked()
 {
     auto qml(ui->listViewTicker->selectionModel());
@@ -694,6 +754,10 @@ void ConfigWindow::slotBtnCancelTickerClicked()
 
 };
 //--------------------------------------------------------------------------------------------------------
+///
+/// \brief Process event changing ticker listview show type
+/// \param Checked
+///
 void ConfigWindow::slotShowByNamesChecked(int Checked)
 {
     if (Checked){
@@ -706,6 +770,10 @@ void ConfigWindow::slotShowByNamesChecked(int Checked)
     NeedSaveShowByNames(Checked);
 }
 //--------------------------------------------------------------------------------------------------------
+///
+/// \brief Process event changing ticker listview sort type
+/// \param Checked
+///
 void ConfigWindow::slotSortByNamesChecked(int Checked)
 {
     if (Checked){
@@ -719,6 +787,10 @@ void ConfigWindow::slotSortByNamesChecked(int Checked)
     NeedSaveSortByNames(Checked);
 }
 //--------------------------------------------------------------------------------------------------------
+///
+/// \brief Set ticker widgets enable/disable. Used in other procedures
+/// \param bEnable
+///
 void ConfigWindow::setEnableTickerWidgets(bool bEnable)
 {
     ui->edTickerName->setEnabled(bEnable);
@@ -730,6 +802,9 @@ void ConfigWindow::setEnableTickerWidgets(bool bEnable)
 }
 
 //--------------------------------------------------------------------------------------------------------
+///
+/// \brief Clear ticker widgets data. Used in other procedures
+///
 void ConfigWindow::ClearTickerWidgetsValues()
 {
 
