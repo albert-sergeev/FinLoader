@@ -71,6 +71,13 @@ void MainWindow::LoadSettings()
             bConfigTickerSortByName = m_settings.value("ConfigTickerSortByName",true).toBool();
         m_settings.endGroup();
 
+        m_settings.beginGroup("ImportFinamForm");
+            qsDefaultOpenDir    = m_settings.value("DefaultOpenDir","").toString();
+            QString qs          = m_settings.value("ImportDelimiter",",").toString();
+            std::string s = qs.toStdString();
+            cImportDelimiter    = s.size()>0 ? s[0]: ',';
+        m_settings.endGroup();
+
     m_settings.endGroup();
     //
     resize(nWidth,nHeight);
@@ -94,6 +101,13 @@ void MainWindow::SaveSettings()
             m_settings.setValue("DefaultTickerMarket",iDefaultTickerMarket);
             m_settings.setValue("ConfigTickerShowByName",bConfigTickerShowByName);
             m_settings.setValue("ConfigTickerSortByName",bConfigTickerSortByName);
+        m_settings.endGroup();
+
+        m_settings.beginGroup("ImportFinamForm");
+            m_settings.setValue("DefaultOpenDir",qsDefaultOpenDir);
+            std::string s {" "}; s[0] = cImportDelimiter;
+            QString qs = QString::fromStdString(s);
+            m_settings.setValue("ImportDelimiter",qs);
         m_settings.endGroup();
 
     m_settings.endGroup();
@@ -548,9 +562,13 @@ void MainWindow::slotImportFinamWndow ()
     pdoc->setAttribute(Qt::WA_DeleteOnClose);
     pdoc->setWindowTitle(tr("Import"));
     pdoc->setWindowIcon(QPixmap(":/store/images/sc_open"));
+    pdoc->SetDefaultOpenDir(qsDefaultOpenDir);
+    pdoc->SetDelimiter(cImportDelimiter);
 
     ui->mdiArea->addSubWindow(pdoc);
     //
+    connect(pdoc,SIGNAL(OpenImportFilePathChanged(QString &)),this,SLOT(slotDefaultOpenDirChanged(QString &)));
+    connect(pdoc,SIGNAL(DelimiterHasChanged(char)),this,SLOT(slotImportDelimiterChanged(char)));
 
     //
     pdoc->show();
