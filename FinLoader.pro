@@ -14,6 +14,7 @@ SOURCES += \
     bar.cpp \
     configwindow.cpp \
     graph.cpp \
+    importfinamform.cpp \
     main.cpp \
     mainwindow.cpp \
     marketslistmodel.cpp \
@@ -25,6 +26,7 @@ HEADERS += \
     bar.h \
     configwindow.h \
     graph.h \
+    importfinamform.h \
     mainwindow.h \
     marketslistmodel.h \
     storage.h \
@@ -33,6 +35,7 @@ HEADERS += \
 
 FORMS += \
     configwindow.ui \
+    importfinamform.ui \
     mainwindow.ui
 
 TRANSLATIONS += \

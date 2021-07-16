@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "configwindow.h"
+#include "importfinamform.h"
 
 #include<QListView>
 
@@ -192,6 +193,7 @@ void MainWindow::InitAction()
     pacOpen->setStatusTip(tr("Load history data"));
     pacOpen->setWhatsThis(tr("Load history data"));
     pacOpen->setIcon(QPixmap(":/store/images/sc_open"));
+    connect(pacOpen,SIGNAL(triggered()),SLOT(slotImportFinamWndow()));
     //------------------------------------------------
     QAction * pacSave =new QAction("Save");
     pacSave->setText(tr("&Save"));
@@ -539,9 +541,21 @@ void MainWindow::slotConfigWndow()
     pdoc->show();
 }
 //--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotImportFinamWndow ()
+{
 
-/*
-*/
+    ImportFinamForm *pdoc=new ImportFinamForm;
+    pdoc->setAttribute(Qt::WA_DeleteOnClose);
+    pdoc->setWindowTitle(tr("Import"));
+    pdoc->setWindowIcon(QPixmap(":/store/images/sc_open"));
+
+    ui->mdiArea->addSubWindow(pdoc);
+    //
+
+    //
+    pdoc->show();
+}
+
 //--------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------

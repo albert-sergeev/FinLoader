@@ -83,6 +83,7 @@ public slots:
     void slotStoreConfigTickerSortByName(bool b) {bConfigTickerSortByName = b;};
 
 protected slots:
+
     void slotNotImpl    ();
     void slotNewDoc     ();
     void slotNewLogWnd  ();
@@ -95,6 +96,7 @@ protected slots:
     void slotSetActiveStyle     (QString);
     void slotSetActiveLang      (QString);
     void slotConfigWndow ();
+    void slotImportFinamWndow ();
 
 
 
