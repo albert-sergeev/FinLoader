@@ -101,32 +101,33 @@ void ImportFinamForm::slotEditDelimiterWgtChanged(const QString &)
 // preliminary check import file. Lookup for Ticker sign, time periods etc.
 void ImportFinamForm::slotPreparseImportFile()
 {
-    ///////////////
+    ////////////////////////////////////////////////////////////////////////////////////
     // <TICKER> | <PER> | <DATE> | <TIME> | <LAST> | <VOL>
     // <TICKER> | <PER> | <DATE> | <TIME> | <OPEN> | <HIGH> | <LOW> | <CLOSE> | <VOL>
 
     clearShowAreaOfFields();
-
-    const int fieldMax{9};
-    std::vector<int> fields =
-                        {   fieldType::TICKER,
-                            fieldType::PER,
-                            fieldType::DATE,
-                            fieldType::TIME,
-                            fieldType::OPEN,
-                            fieldType::HIGH,
-                            fieldType::LOW,
-                            fieldType::CLOSE,
-                            fieldType::VOL
-                        };
-
-
-    std::string sFinamSign;
-    std::istringstream signstream;
-    signstream.str(pathFile.filename().string());
-    std::getline(signstream,sFinamSign,'_');
-
     ui->edText->append( "====================================================\n");
+    ////////////////////////////////////////////////////////////////////////////////////
+
+
+    std::string sBuff;
+    std::istringstream iss;
+    std::stringstream oss;
+    std::istringstream issTmp;
+    std::ostringstream ossErr;
+
+    finamParseData parseDt(&issTmp,&ossErr);
+    parseDt.initDefaultFieldsValues(9);
+
+    {
+        std::string sSign;
+        std::istringstream signstream;
+        signstream.str(pathFile.filename().string());
+        std::getline(signstream,sSign,'_');
+        parseDt.setDefaultSign(sSign);
+    }
+
+
 
     if(std::filesystem::exists(pathFile)    &&
        std::filesystem::is_regular_file(pathFile)
@@ -135,10 +136,7 @@ void ImportFinamForm::slotPreparseImportFile()
 
         if(file.good()){
 
-            std::string sBuff;
-            std::istringstream iss;
 
-            std::stringstream oss;
 
             if (std::getline(file,sBuff)) {
                 // link stringstream
@@ -149,8 +147,8 @@ void ImportFinamForm::slotPreparseImportFile()
                 std::vector<std::string> vS;//{std::istream_iterator<StringDelimiter<cDelim>>{iss},{}};
                 std::string sWordBuff;
                 int iN{0};
-                //int IntervalDefault(Bar::eInterval::pTick);
-                int IntervalDefault(-1);
+
+
 
 
                 bool bWasHeader{true};
@@ -164,16 +162,16 @@ void ImportFinamForm::slotPreparseImportFile()
 
                 while (std::getline(iss,sWordBuff,cDelimiter)){
                     trim(sWordBuff);
-                    if      (bWasHeader && sWordBuff == "<TICKER>") {   fields[iN] = fieldType::TICKER; }
-                    else if (bWasHeader && sWordBuff == "<PER>")    {   fields[iN] = fieldType::PER;    IntervalDefault = -1;}
-                    else if (bWasHeader && sWordBuff == "<DATE>")   {   fields[iN] = fieldType::DATE;   iFieldMask ^= 1;}
-                    else if (bWasHeader && sWordBuff == "<TIME>")   {   fields[iN] = fieldType::TIME;   iFieldMask ^= 2;}
-                    else if (bWasHeader && sWordBuff == "<OPEN>")   {   fields[iN] = fieldType::OPEN;   iFieldMask ^= 4;}
-                    else if (bWasHeader && sWordBuff == "<HIGH>")   {   fields[iN] = fieldType::HIGH;   iFieldMask ^= 8;}
-                    else if (bWasHeader && sWordBuff == "<LOW>")    {   fields[iN] = fieldType::LOW;    iFieldMask ^= 16;}
-                    else if (bWasHeader && sWordBuff == "<CLOSE>")  {   fields[iN] = fieldType::CLOSE;  iFieldMask ^= 32;}
-                    else if (bWasHeader && sWordBuff == "<VOL>")    {   fields[iN] = fieldType::VOL;    iFieldMask ^= 64;}
-                    else if (bWasHeader && sWordBuff == "<LAST>")   {   fields[iN] = fieldType::LAST;   iFieldMask ^= 128;}
+                    if      (bWasHeader && sWordBuff == "<TICKER>") {   parseDt.fields()[iN] = finamParseData::fieldType::TICKER; }
+                    else if (bWasHeader && sWordBuff == "<PER>")    {   parseDt.fields()[iN] = finamParseData::fieldType::PER;    }
+                    else if (bWasHeader && sWordBuff == "<DATE>")   {   parseDt.fields()[iN] = finamParseData::fieldType::DATE;   iFieldMask ^= 1;}
+                    else if (bWasHeader && sWordBuff == "<TIME>")   {   parseDt.fields()[iN] = finamParseData::fieldType::TIME;   iFieldMask ^= 2;}
+                    else if (bWasHeader && sWordBuff == "<OPEN>")   {   parseDt.fields()[iN] = finamParseData::fieldType::OPEN;   iFieldMask ^= 4;}
+                    else if (bWasHeader && sWordBuff == "<HIGH>")   {   parseDt.fields()[iN] = finamParseData::fieldType::HIGH;   iFieldMask ^= 8;}
+                    else if (bWasHeader && sWordBuff == "<LOW>")    {   parseDt.fields()[iN] = finamParseData::fieldType::LOW;    iFieldMask ^= 16;}
+                    else if (bWasHeader && sWordBuff == "<CLOSE>")  {   parseDt.fields()[iN] = finamParseData::fieldType::CLOSE;  iFieldMask ^= 32;}
+                    else if (bWasHeader && sWordBuff == "<VOL>")    {   parseDt.fields()[iN] = finamParseData::fieldType::VOL;    iFieldMask ^= 64;}
+                    else if (bWasHeader && sWordBuff == "<LAST>")   {   parseDt.fields()[iN] = finamParseData::fieldType::LAST;   iFieldMask ^= 128;}
                     else {
                         if(iN == 0 || iN == 1){ // first column is sign or period
                             for(const unsigned char ch:sWordBuff){
@@ -200,7 +198,7 @@ void ImportFinamForm::slotPreparseImportFile()
                     }
                     vS.push_back(sWordBuff);
                     iN++;
-                    if (iN > fieldMax){
+                    if (iN > parseDt.ColMax()){
                         ui->edText->append(QString::fromStdString(sBuff));
                         ui->edText->append("Wrong file format - too many fields");
                         return;
@@ -227,20 +225,11 @@ void ImportFinamForm::slotPreparseImportFile()
                     oss <<"\n";
                 }
                 else{
-                    if (iN == 9){
-                        ;
-                    }
-                    else if (iN == 6){
-                        fields[4] = fieldType::LAST;
-                        fields[5] = fieldType::VOL;
-                        IntervalDefault = Bar::eInterval::pTick;
-                    }
-                    else{
+                    if (!parseDt.initDefaultFieldsValues(iN)){
                         ui->edText->append(QString::fromStdString(sBuff));
                         ui->edText->append("Wrong file format: wrong number of fields");
                         return;
                     }
-
                 }
 
                 /////////////////////////////////////////////////////////////
@@ -268,9 +257,8 @@ void ImportFinamForm::slotPreparseImportFile()
                 //===================
                 Bar bb(0,0,0,0,0,0);
                 {
-                    std::istringstream issTmp;
-                    std::ostringstream ossErr;
-                    if (!slotParseLine(fields, iss, issTmp,ossErr, bb, iN, IntervalDefault)){
+
+                    if (!slotParseLine(parseDt, iss, bb)){
                         ui->edText->append(QString::fromStdString(iss.str()));
                         ui->edText->append(QString::fromStdString(ossErr.str()));
                         return;
@@ -292,7 +280,7 @@ void ImportFinamForm::slotPreparseImportFile()
 
                     ui->dtStart->setDateTime(dt);
                 }
-                if (IntervalDefault <0 ) IntervalDefault = bb.Interval();
+
                 //
                 oss<<sBuff;
                 oss<<"...\n";
@@ -319,9 +307,7 @@ void ImportFinamForm::slotPreparseImportFile()
                 iss.str(sOldLine);
 
                 {
-                    std::istringstream issTmp;
-                    std::ostringstream ossErr;
-                    if (!slotParseLine(fields, iss, issTmp,ossErr, bb, iN, IntervalDefault)){
+                    if (!slotParseLine(parseDt, iss, bb)){
                         ui->edText->append(QString::fromStdString(iss.str()));
                         ui->edText->append(QString::fromStdString(ossErr.str()));
                         return;
@@ -343,9 +329,18 @@ void ImportFinamForm::slotPreparseImportFile()
                 oss<<qsT.toStdString();
                 oss<<"filename: "<<pathFile.filename().string();
 
+                /////////////////////////////////////////////////////////////
+                /////////////////////////////////////////////////////////////
+                // assign to ticker section
+                /////////////////////////////////////////////////////////////
+                /////////////////////////////////////////////////////////////
+
+                QModelIndex indx;
+                searchTickerBySign(parseDt.Sign(), indx);
+
                 //////////////////////
                 ui->edText->append(QString::fromStdString(oss.str()));
-                ui->edSign->setText("<"+QString::fromStdString(sFinamSign)+">");
+                ui->edSign->setText("<"+QString::fromStdString(parseDt.Sign())+">");
 
                 if(bb.Interval() == Bar::eInterval::pTick){
                     ui->btnImport->setText("Import");
@@ -429,133 +424,129 @@ void ImportFinamForm::showInterval(int Interval)
 }
 
 //--------------------------------------------------------------------------------------------------------
-bool ImportFinamForm::slotParseLine(std::vector<int> & fieldsType, std::istringstream & issLine, std::istringstream & iss, std::ostringstream & ossErr, Bar &b, int ColMax, int DefaultInterval)
+bool ImportFinamForm::slotParseLine(finamParseData & parseDt, std::istringstream & issLine, Bar &b)
 {
 
-    std::string sWordBuff;
-    std::string sSign;
-    int iInterval;
-    //std::istringstream iss; // stringstream needed becouse locale mismatch in std::stod (Qt and STL fight)
-    double dTmp;
+    parseDt.t_iCurrN = 0;
 
-    std::string sYear{"1990"};
-    std::string sMonth{"01"};
-    std::string sDay{"01"};
-
-    std::string sHour{"00"};
-    std::string sMin{"00"};
-    std::string sSec{"00"};
-
-    std::tm tp;
-    tp.tm_isdst = 0;
-
-    int iCurrN{0};
     try{
-        while (std::getline(issLine,sWordBuff,cDelimiter)){
-            trim(sWordBuff);
-            iss.clear();
-            iss.str(sWordBuff);
+        while (std::getline(issLine,parseDt.t_sWordBuff,cDelimiter)){
+            trim(parseDt.t_sWordBuff);
+            parseDt.issTmp().clear();
+            parseDt.issTmp().str(parseDt.t_sWordBuff);
 
-            switch(fieldsType[iCurrN]){
-            case fieldType::TICKER:
-                sSign = sWordBuff;
+            switch(parseDt.fields()[parseDt.t_iCurrN]){
+            case finamParseData::fieldType::TICKER:
+                parseDt.t_sSign = parseDt.t_sWordBuff;
+                if (parseDt.Sign().size() ==0){
+                    parseDt.setDefaultSign(parseDt.t_sSign);
+                }
+                else if(parseDt.Sign() != parseDt.t_sSign){
+                    parseDt.ossErr() << "Ticker sign mismatch";
+                    return false;
+                }
                 break;
-            case fieldType::PER:
-                if(sWordBuff == "day"){
-                    iInterval = Bar::eInterval::pDay;
+            case finamParseData::fieldType::PER:
+                if(parseDt.t_sWordBuff == "day"){
+                    parseDt.t_iInterval = Bar::eInterval::pDay;
                 }
                 else{
-                    iInterval = std::stoi(sWordBuff);
-                    if(             iInterval != Bar::eInterval::pTick
-                                &&  iInterval != Bar::eInterval::p1
-                                &&  iInterval != Bar::eInterval::p5
-                                &&  iInterval != Bar::eInterval::p10
-                                &&  iInterval != Bar::eInterval::p15
-                                &&  iInterval != Bar::eInterval::p30
-                                &&  iInterval != Bar::eInterval::p60
-                                &&  iInterval != Bar::eInterval::p120
-                                &&  iInterval != Bar::eInterval::p180
+                    parseDt.t_iInterval = std::stoi(parseDt.t_sWordBuff);
+                    if(             parseDt.t_iInterval != Bar::eInterval::pTick
+                                &&  parseDt.t_iInterval != Bar::eInterval::p1
+                                &&  parseDt.t_iInterval != Bar::eInterval::p5
+                                &&  parseDt.t_iInterval != Bar::eInterval::p10
+                                &&  parseDt.t_iInterval != Bar::eInterval::p15
+                                &&  parseDt.t_iInterval != Bar::eInterval::p30
+                                &&  parseDt.t_iInterval != Bar::eInterval::p60
+                                &&  parseDt.t_iInterval != Bar::eInterval::p120
+                                &&  parseDt.t_iInterval != Bar::eInterval::p180
                             ){
-                        ossErr << "Wrong file format: wrong period field value";
+                        parseDt.ossErr() << "Wrong file format: wrong period field value";
                         return false;
                     }
                 }
-                if (DefaultInterval >= 0){
-                    if(DefaultInterval != iInterval){
-                        ossErr << "Interval miscast";
+                if (parseDt.DefaultInterval() >= 0){
+                    if(parseDt.DefaultInterval() != parseDt.t_iInterval){
+                        parseDt.ossErr() << "Interval mismatch";
                         return false;
                     }
-                }
-                b.initInterval(iInterval);
-                break;
-            case fieldType::DATE:
-                //20210322,
-                if(sWordBuff.size()>=8){
-                    copy(sWordBuff.begin()    ,sWordBuff.begin() + 4,sYear.begin());
-                    copy(sWordBuff.begin() + 4,sWordBuff.begin() + 6,sMonth.begin());
-                    copy(sWordBuff.begin() + 6,sWordBuff.begin() + 8,sDay.begin());
-                    tp.tm_year = std::stoi(sYear);
-                    tp.tm_mon = std::stoi(sMonth);
-                    tp.tm_mday = std::stoi(sDay);
                 }
                 else{
-                    ossErr << "Wrong file format: wrong date field value";
+                    parseDt.setDefaultInterval(parseDt.t_iInterval);
+                }
+                b.initInterval(parseDt.t_iInterval);
+                break;
+            case finamParseData::fieldType::DATE:
+                //20210322,
+                if(parseDt.t_sWordBuff.size()>=8){
+                    copy(parseDt.t_sWordBuff.begin()    ,parseDt.t_sWordBuff.begin() + 4,parseDt.t_sYear.begin());
+                    copy(parseDt.t_sWordBuff.begin() + 4,parseDt.t_sWordBuff.begin() + 6,parseDt.t_sMonth.begin());
+                    copy(parseDt.t_sWordBuff.begin() + 6,parseDt.t_sWordBuff.begin() + 8,parseDt.t_sDay.begin());
+                    parseDt.t_tp.tm_year = std::stoi(parseDt.t_sYear);
+                    parseDt.t_tp.tm_mon = std::stoi(parseDt.t_sMonth);
+                    parseDt.t_tp.tm_mday = std::stoi(parseDt.t_sDay);
+                }
+                else{
+                    parseDt.ossErr() << "Wrong file format: wrong date field value";
                     return false;
                 }
                 break;
-            case fieldType::TIME:
+            case finamParseData::fieldType::TIME:
                 //095936
-                if(sWordBuff.size()>=6){
-                    copy(sWordBuff.begin()    ,sWordBuff.begin() + 2,sHour.begin());
-                    copy(sWordBuff.begin() + 2,sWordBuff.begin() + 4,sMin.begin());
-                    copy(sWordBuff.begin() + 4,sWordBuff.begin() + 6,sSec.begin());
-                    tp.tm_hour = std::stoi(sHour);
-                    tp.tm_min = std::stoi(sMin);
-                    tp.tm_sec = std::stoi(sSec);
+                if(parseDt.t_sWordBuff.size()>=6){
+                    copy(parseDt.t_sWordBuff.begin()    ,parseDt.t_sWordBuff.begin() + 2,parseDt.t_sHour.begin());
+                    copy(parseDt.t_sWordBuff.begin() + 2,parseDt.t_sWordBuff.begin() + 4,parseDt.t_sMin.begin());
+                    copy(parseDt.t_sWordBuff.begin() + 4,parseDt.t_sWordBuff.begin() + 6,parseDt.t_sSec.begin());
+                    parseDt.t_tp.tm_hour = std::stoi(parseDt.t_sHour);
+                    parseDt.t_tp.tm_min = std::stoi(parseDt.t_sMin);
+                    parseDt.t_tp.tm_sec = std::stoi(parseDt.t_sSec);
                 }
                 else{
-                    ossErr << "Wrong file format: wrong time field value";
+                    parseDt.ossErr() << "Wrong file format: wrong time field value";
                     return false;
                 }
 
                 break;
-            case fieldType::OPEN:
-                iss >> dTmp; b.setOpen (dTmp);
+            case finamParseData::fieldType::OPEN:
+                parseDt.issTmp() >> parseDt.t_dTmp; b.setOpen (parseDt.t_dTmp);
                 break;
-            case fieldType::HIGH:
-                iss >> dTmp; b.setHigh (dTmp);
+            case finamParseData::fieldType::HIGH:
+                parseDt.issTmp() >> parseDt.t_dTmp; b.setHigh (parseDt.t_dTmp);
                 break;
-            case fieldType::LOW:
-                iss >> dTmp; b.setLow (dTmp);
+            case finamParseData::fieldType::LOW:
+                parseDt.issTmp() >> parseDt.t_dTmp; b.setLow (parseDt.t_dTmp);
                 break;
-            case fieldType::CLOSE:
-                iss >> dTmp; b.setClose (dTmp);
+            case finamParseData::fieldType::CLOSE:
+                parseDt.issTmp() >> parseDt.t_dTmp; b.setClose (parseDt.t_dTmp);
                 break;
-            case fieldType::LAST:
-                iss >> dTmp;
-                b.setOpen   (dTmp);
+            case finamParseData::fieldType::LAST:
+                parseDt.issTmp() >> parseDt.t_dTmp;
+                b.setOpen   (parseDt.t_dTmp);
                 b.setHigh   (b.Open());
                 b.setLow    (b.Open());
                 b.setClose  (b.Open());
                 break;
-            case fieldType::VOL:
-                b.setVolume (std::stoi(sWordBuff));
+            case finamParseData::fieldType::VOL:
+                b.setVolume (std::stoi(parseDt.t_sWordBuff));
                 break;
             default:
-                ossErr << "Wrong file format: column parsing";
+                parseDt.ossErr() << "Wrong file format: column parsing";
                 return false;
                 break;
             }
-            iCurrN++;
-            if (iCurrN > ColMax){
-                ossErr << "Wrong file format: not equal column count";
+            parseDt.t_iCurrN++;
+            if (parseDt.t_iCurrN > parseDt.ColMax()){
+                parseDt.ossErr() << "Wrong file format: not equal column count";
                 return false;
             }
         }
-        b.setPeriod(std::mktime(&tp));
+        if (parseDt.DefaultInterval() < 0 ) parseDt.setDefaultInterval ( Bar::eInterval::pTick);
+
+        b.setPeriod(std::mktime(&parseDt.t_tp));
     }
     catch (std::exception &e){
-        ossErr << "Wrong file format";
+        parseDt.ossErr() << "Wrong file format";
         return false;
         }
 
@@ -695,5 +686,10 @@ void ImportFinamForm::slotShowByNamesChecked(int Checked)
 }
 
 //--------------------------------------------------------------------------------------------------------
+bool  ImportFinamForm::searchTickerBySign(std::string sSign, QModelIndex& indx)
+{
+
+    return true;
+}
 //--------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------
