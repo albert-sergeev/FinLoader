@@ -19,8 +19,8 @@ private:
     double dHigh;
     double dLow;
     double dClose;
-    int iValue;
-    const int iInterval;
+    int iVolume;
+    int iInterval;
     std::time_t tmPeriod;
 
 public:
@@ -29,9 +29,17 @@ public:
     inline double High()                    const   {return dHigh;};
     inline double Low()                     const   {return dLow;};
     inline double Close()                   const   {return dClose;};
-    inline int Value()                      const   {return iValue;};
+    inline int Volume()                      const   {return iVolume;};
     inline int Interval()                   const   {return iInterval;};
     inline std::time_t Period()             const   {return tmPeriod;};
+
+    inline void setOpen     (const double d)                   {dOpen   = d;};
+    inline void setHigh     (const double d)                   {dHigh   = d;};
+    inline void setLow      (const double d)                   {dLow    = d;};
+    inline void setClose    (const double d)                   {dClose  = d;};
+    inline void setVolume    (const int v)                      {iVolume  = v;};
+    inline void initInterval(const int iv)                     {iInterval = iv;};
+    inline void setPeriod   (const std::time_t tm)             {tmPeriod = DateAccommodate(tm,this->iInterval);};
 
 public:
     //--------------------------------------------------------------------------------------------------------
@@ -42,7 +50,7 @@ public:
     Bar() = delete ;
     //--------------------------------------------------------------------------------------------------------
     Bar (double Open, double High,double Low,double Close,int Value, std::time_t Period, int Interval = eInterval::pTick):
-        dOpen{Open},dHigh{High},dLow{Low},dClose{Close},iValue{Value},iInterval{Interval},
+        dOpen{Open},dHigh{High},dLow{Low},dClose{Close},iVolume{Value},iInterval{Interval},
         tmPeriod{Period}
     {
         // accomodate time to discret intervals (to up)
@@ -51,9 +59,22 @@ public:
     };
     //--------------------------------------------------------------------------------------------------------
     Bar (Bar &b):
-        dOpen{b.dOpen},dHigh{b.dHigh},dLow{b.dLow},dClose{b.dClose},iValue{b.iValue}, iInterval{b.iInterval}, tmPeriod{b.tmPeriod}
+        dOpen{b.dOpen},dHigh{b.dHigh},dLow{b.dLow},dClose{b.dClose},iVolume{b.iVolume}, iInterval{b.iInterval}, tmPeriod{b.tmPeriod}
     {
     };
+    //--------------------------------------------------------------------------------------------------------
+    Bar & reinit (const Bar &b)
+    {
+        dOpen       =   b.dOpen;
+        dHigh       =   b.dHigh;
+        dLow        =   b.dLow;
+        dClose      =   b.dClose;
+        iVolume      =   b.iVolume;
+        iInterval   =   b.iInterval;
+        tmPeriod    = b.tmPeriod;
+
+        return  *this;
+    }
     //--------------------------------------------------------------------------------------------------------
     Bar & operator= (const Bar &b)
     {
@@ -67,7 +88,7 @@ public:
         dHigh       =   b.dHigh;
         dLow        =   b.dLow;
         dClose      =   b.dClose;
-        iValue      =   b.iValue;
+        iVolume      =   b.iVolume;
         //iInterval   =   b.iInterval;
         tmPeriod    = b.tmPeriod;
 
@@ -92,7 +113,7 @@ public:
             dHigh       ==   b.dHigh    &&
             dLow        ==   b.dLow     &&
             dClose      ==   b.dClose   &&
-            iValue      ==   b.iValue   &&
+            iVolume      ==   b.iVolume   &&
             iInterval   ==   b.iInterval &&
             tmPeriod    ==   b.tmPeriod
                 )
@@ -129,7 +150,7 @@ public:
         if(dHigh    <   b.dHigh)    dHigh   = b.dHigh;  //  expand up
         if(dLow     >   b.dLow)     dLow    = b.dLow;   //  expand down
         dClose      =   b.dClose;                       //  last  event is in right element
-        iValue      +=   b.iValue;                      //  accumulate
+        iVolume      +=   b.iVolume;                      //  accumulate
         //iInterval   =   b.iInterval;                  //  const
         //
         return  *this;

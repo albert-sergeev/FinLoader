@@ -218,12 +218,15 @@
                 </widget>
                </item>
                <item row="0" column="1" colspan="2">
-                <widget class="QLineEdit" name="lineEdit_3">
+                <widget class="QLineEdit" name="edHigh">
                  <property name="minimumSize">
                   <size>
                    <width>75</width>
                    <height>0</height>
                   </size>
+                 </property>
+                 <property name="readOnly">
+                  <bool>true</bool>
                  </property>
                 </widget>
                </item>
@@ -247,12 +250,15 @@
                 </widget>
                </item>
                <item row="0" column="4">
-                <widget class="QLineEdit" name="lineEdit_5">
+                <widget class="QLineEdit" name="edOpen">
                  <property name="minimumSize">
                   <size>
                    <width>75</width>
                    <height>0</height>
                   </size>
+                 </property>
+                 <property name="readOnly">
+                  <bool>true</bool>
                  </property>
                 </widget>
                </item>
@@ -276,12 +282,15 @@
                 </widget>
                </item>
                <item row="1" column="1" colspan="2">
-                <widget class="QLineEdit" name="lineEdit_4">
+                <widget class="QLineEdit" name="edLow">
                  <property name="minimumSize">
                   <size>
                    <width>75</width>
                    <height>0</height>
                   </size>
+                 </property>
+                 <property name="readOnly">
+                  <bool>true</bool>
                  </property>
                 </widget>
                </item>
@@ -305,12 +314,15 @@
                 </widget>
                </item>
                <item row="1" column="4">
-                <widget class="QLineEdit" name="lineEdit_6">
+                <widget class="QLineEdit" name="edClose">
                  <property name="minimumSize">
                   <size>
                    <width>75</width>
                    <height>0</height>
                   </size>
+                 </property>
+                 <property name="readOnly">
+                  <bool>true</bool>
                  </property>
                 </widget>
                </item>
@@ -322,7 +334,11 @@
                 </widget>
                </item>
                <item row="2" column="2" colspan="3">
-                <widget class="QLineEdit" name="lineEdit_7"/>
+                <widget class="QLineEdit" name="edVolume">
+                 <property name="readOnly">
+                  <bool>true</bool>
+                 </property>
+                </widget>
                </item>
               </layout>
              </item>
@@ -898,7 +914,7 @@
   <tabstop>dateTimeEdit</tabstop>
   <tabstop>edFileName</tabstop>
   <tabstop>edText</tabstop>
-  <tabstop>lineEdit_3</tabstop>
+  <tabstop>edHigh</tabstop>
   <tabstop>radioButton_4</tabstop>
   <tabstop>radioButton_2</tabstop>
   <tabstop>radioButton_8</tabstop>
@@ -911,10 +927,10 @@
   <tabstop>radioButton_9</tabstop>
   <tabstop>radioButton_10</tabstop>
   <tabstop>radioButton_11</tabstop>
-  <tabstop>lineEdit_5</tabstop>
-  <tabstop>lineEdit_4</tabstop>
-  <tabstop>lineEdit_6</tabstop>
-  <tabstop>lineEdit_7</tabstop>
+  <tabstop>edOpen</tabstop>
+  <tabstop>edLow</tabstop>
+  <tabstop>edClose</tabstop>
+  <tabstop>edVolume</tabstop>
   <tabstop>dateTimeEdit_2</tabstop>
  </tabstops>
  <resources/>

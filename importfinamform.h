@@ -7,6 +7,7 @@
 #include "marketslistmodel.h"
 #include "tickerslistmodel.h"
 #include "storage.h"
+#include "bar.h"
 
 
 
@@ -30,6 +31,8 @@ private:
     TickerProxyListModel proxyTickerModel;
 
     int iDefaultTickerMarket;
+
+    enum fieldType:int {TICKER,PER,DATE,TIME,OPEN,HIGH,LOW,CLOSE,VOL,LAST};
 
 public:
     explicit ImportFinamForm(QWidget *parent = nullptr);
@@ -58,6 +61,7 @@ private slots:
     void slotSetSelectedTicker(const  QModelIndex& indx);
 
     void slotPreparseImportFile();
+    bool slotParseLine(std::vector<int> & fieldsType, std::istringstream & issLine, Bar &b, int ColMax, int DefaultInterval = (-1));
 
 private:
     Ui::ImportFinamForm *ui;

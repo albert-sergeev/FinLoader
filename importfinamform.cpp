@@ -12,6 +12,7 @@
 
 #include "storage.h"
 
+
 ImportFinamForm::ImportFinamForm(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::ImportFinamForm)
@@ -100,11 +101,37 @@ void ImportFinamForm::slotEditDelimiterWgtChanged(const QString &)
 void ImportFinamForm::slotPreparseImportFile()
 {
     ///////////////
+    // <TICKER> | <PER> | <DATE> | <TIME> | <LAST> | <VOL>
+    // <TICKER> | <PER> | <DATE> | <TIME> | <OPEN> | <HIGH> | <LOW> | <CLOSE> | <VOL>
+
+
+    const int fieldMax{9};
+    std::vector<int> fields =
+                        {   fieldType::TICKER,
+                            fieldType::PER,
+                            fieldType::DATE,
+                            fieldType::TIME,
+                            fieldType::OPEN,
+                            fieldType::HIGH,
+                            fieldType::LOW,
+                            fieldType::CLOSE,
+                            fieldType::VOL
+                        };
+
+
+    std::string sFinamSign;
+    std::istringstream signstream;
+    signstream.str(pathFile.filename().string());
+    std::getline(signstream,sFinamSign,'_');
 
     if(std::filesystem::exists(pathFile)    &&
        std::filesystem::is_regular_file(pathFile)
             ){
         std::ifstream file(pathFile);
+        //file.imbue(std::locale(""));
+        //std::locale().global(std::locale());
+        //std::setlocale(LC_NUMERIC,"en");
+
         if(file.good()){
 
             std::string sBuff;
@@ -117,23 +144,248 @@ void ImportFinamForm::slotPreparseImportFile()
                 iss.clear();
                 iss.str(sBuff);
                 //
-                //std::vector<std::string> vS{std::istream_iterator<StringDelimiter<cDelim>>{iss},{}};
+
                 std::vector<std::string> vS;//{std::istream_iterator<StringDelimiter<cDelim>>{iss},{}};
                 std::string sWordBuff;
+                int iN{0};
+                int IntervalDefault(Bar::eInterval::pTick);
+
+
+                bool bWasHeader{true};
+                int iFieldMask{0};
+
+                /////////////////////////////////////////////////////////////
+                /////////////////////////////////////////////////////////////
+                // parse header section
+                /////////////////////////////////////////////////////////////
+                /////////////////////////////////////////////////////////////
+
                 while (std::getline(iss,sWordBuff,cDelimiter)){
+                    trim(sWordBuff);
+                    if      (bWasHeader && sWordBuff == "<TICKER>") {   fields[iN] = fieldType::TICKER; }
+                    else if (bWasHeader && sWordBuff == "<PER>")    {   fields[iN] = fieldType::PER;    IntervalDefault = -1;}
+                    else if (bWasHeader && sWordBuff == "<DATE>")   {   fields[iN] = fieldType::DATE;   iFieldMask ^= 1;}
+                    else if (bWasHeader && sWordBuff == "<TIME>")   {   fields[iN] = fieldType::TIME;   iFieldMask ^= 2;}
+                    else if (bWasHeader && sWordBuff == "<OPEN>")   {   fields[iN] = fieldType::OPEN;   iFieldMask ^= 4;}
+                    else if (bWasHeader && sWordBuff == "<HIGH>")   {   fields[iN] = fieldType::HIGH;   iFieldMask ^= 8;}
+                    else if (bWasHeader && sWordBuff == "<LOW>")    {   fields[iN] = fieldType::LOW;    iFieldMask ^= 16;}
+                    else if (bWasHeader && sWordBuff == "<CLOSE>")  {   fields[iN] = fieldType::CLOSE;  iFieldMask ^= 32;}
+                    else if (bWasHeader && sWordBuff == "<VOL>")    {   fields[iN] = fieldType::VOL;    iFieldMask ^= 64;}
+                    else if (bWasHeader && sWordBuff == "<LAST>")   {   fields[iN] = fieldType::LAST;   iFieldMask ^= 128;}
+                    else {
+                        if(iN == 0 || iN == 1){ // first column is sign or period
+                            for(const unsigned char ch:sWordBuff){
+                                if (!std::isalnum(ch)){
+                                    ui->edText->append(QString::fromStdString(oss.str()));
+                                    ui->edText->append("Wrong file format 1");
+                                    return;
+                                }
+                            }
+                        }
+                        else{
+                            try{
+                                std::stod(sWordBuff);
+                            }
+                            catch (std::exception &e){
+                                ui->edText->append(QString::fromStdString(oss.str()));
+                                ui->edText->append("Wrong file format");
+                                return;
+                                }
+                        }
+                        //
+                        bWasHeader = false;
+                        //break;
+                    }
                     vS.push_back(sWordBuff);
+                    iN++;
+                    if (iN > fieldMax){
+                        ui->edText->append(QString::fromStdString(oss.str()));
+                        ui->edText->append("Wrong file format - too many fields");
+                        return;
+                    }
+                }
+                /////////////////////////////////////////////////////////////
+                /////////////////////////////////////////////////////////////
+                // analize header section
+                /////////////////////////////////////////////////////////////
+                /////////////////////////////////////////////////////////////
+
+                if (bWasHeader){
+                    if (iFieldMask != 127 && iFieldMask != 195) {
+                        ui->edText->append(QString::fromStdString(oss.str()));
+                        ui->edText->append("Wrong file format: missing fields!");
+                        return;
+                    }
+
+                    for(const auto &v:vS){
+                        oss<<v<<cDelimiter;
+                    }
+                    oss <<"\n";
+                }
+                else{
+                    if (iN == 9){
+                        ;
+                    }
+                    else if (iN == 6){
+                        fields[4] = fieldType::LAST;
+                        fields[5] = fieldType::VOL;
+                    }
+                    else{
+                        ui->edText->append(QString::fromStdString(oss.str()));
+                        ui->edText->append("Wrong file format: wrong number of fields");
+                        return;
+                    }
+
                 }
 
-                for(const auto &v:vS){
-                    oss<<v<<" | ";
+                /////////////////////////////////////////////////////////////
+                /////////////////////////////////////////////////////////////
+                // analize first rows section
+                /////////////////////////////////////////////////////////////
+                /////////////////////////////////////////////////////////////
+
+                //===================
+                if (bWasHeader){
+                    if (std::getline(file,sBuff)) {
+                        // link stringstream
+                        iss.clear();
+                        iss.str(sBuff);
+                    }
+                    else{
+                        ui->edText->append("Wrong file format: too fiew rows");
+                        return;
+                    }
                 }
+                else{
+                    iss.clear();
+                    iss.str(sBuff);
+                }
+                //===================
+                Bar bb(0,0,0,0,0,0);
+                if (!slotParseLine(fields,iss,bb, iN, IntervalDefault)){
+                    //ui->edText->append("Wrong file format");
+                    ui->edText->append(QString::fromStdString(iss.str()));
+                    return;
+                }
+
+
+                ui->edOpen->setText(QString::number(bb.Open()));
+                ui->edHigh->setText(QString::number(bb.High()));
+                ui->edLow->setText(QString::number(bb.Low()));
+                ui->edClose->setText(QString::number(bb.Close()));
+                ui->edVolume->setText(QString::number(bb.Volume()));
+
+                oss<<sBuff;
+
+
+
+                //////////////////////
                 ui->edText->append(QString::fromStdString(oss.str()));
+                ui->edSign->setText("<"+QString::fromStdString(sFinamSign)+">");
 
             }
 
         }
     }
 }
+
+//--------------------------------------------------------------------------------------------------------
+bool ImportFinamForm::slotParseLine(std::vector<int> & fieldsType, std::istringstream & issLine, Bar &b, int ColMax, int DefaultInterval)
+{
+
+    std::string sWordBuff;
+    std::string sSign;
+    int iInterval;
+    std::istringstream iss; // stringstream needed becouse locale mismatch in std::stod (Qt and STL fight)
+    double dTmp;
+
+
+    int iCurrN{0};
+    try{
+        while (std::getline(issLine,sWordBuff,cDelimiter)){
+            trim(sWordBuff);
+            iss.clear();
+            iss.str(sWordBuff);
+
+            switch(fieldsType[iCurrN]){
+            case fieldType::TICKER:
+                sSign = sWordBuff;
+                break;
+            case fieldType::PER:
+                if(sWordBuff == "day"){
+                    iInterval = Bar::eInterval::pDay;
+                }
+                else{
+                    iInterval = std::stoi(sWordBuff);
+                    if(             iInterval != Bar::eInterval::pTick
+                                &&  iInterval != Bar::eInterval::p1
+                                &&  iInterval != Bar::eInterval::p5
+                                &&  iInterval != Bar::eInterval::p10
+                                &&  iInterval != Bar::eInterval::p15
+                                &&  iInterval != Bar::eInterval::p30
+                                &&  iInterval != Bar::eInterval::p60
+                                &&  iInterval != Bar::eInterval::p120
+                                &&  iInterval != Bar::eInterval::p180
+                            ){
+                        ui->edText->append("Wrong file format: wrong period field value");
+                        return false;
+                    }
+                }
+                if (DefaultInterval >= 0){
+                    if(DefaultInterval != iInterval){
+                        ui->edText->append("Interval miscast");
+                        return false;
+                    }
+                }
+                b.initInterval(iInterval);
+                break;
+            case fieldType::DATE:
+                break;
+            case fieldType::TIME:
+                break;
+            case fieldType::OPEN:
+                iss >> dTmp; b.setOpen (dTmp);
+                break;
+            case fieldType::HIGH:
+                iss >> dTmp; b.setHigh (dTmp);
+                break;
+            case fieldType::LOW:
+                iss >> dTmp; b.setLow (dTmp);
+                break;
+            case fieldType::CLOSE:
+                iss >> dTmp; b.setClose (dTmp);
+                break;
+            case fieldType::LAST:
+                iss >> dTmp;
+                b.setOpen   (dTmp);
+                b.setHigh   (b.Open());
+                b.setLow    (b.Open());
+                b.setClose  (b.Open());
+                break;
+            case fieldType::VOL:
+                b.setVolume (std::stoi(sWordBuff));
+                break;
+            default:
+                ui->edText->append("Wrong file format: column parsing");
+                return false;
+                break;
+            }
+            iCurrN++;
+            if (iCurrN > ColMax){
+                ui->edText->append("Wrong file format: not equal column counnt");
+                return false;
+            }
+        }
+    }
+    catch (std::exception &e){
+        ui->edText->append("Wrong file format");
+        return false;
+        }
+
+    return  true;
+}
+
+
 //--------------------------------------------------------------------------------------------------------
 void ImportFinamForm::setMarketModel(MarketsListModel *model, int DefaultTickerMarket)
 {

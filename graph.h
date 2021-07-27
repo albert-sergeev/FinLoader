@@ -4,7 +4,8 @@
 #include<vector>
 #include<list>
 #include<map>
-#include<bar.h>
+
+#include "bar.h"
 
 /////////////////////////////////////////////
 /// \brief Class for store trade graphics
