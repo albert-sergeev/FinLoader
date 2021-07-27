@@ -233,9 +233,8 @@ void ImportFinamForm::slotPreparseImportFile()
                         return;
                     }
 
-                    for(const auto &v:vS){
-                        oss<<v<<cDelimiter;
-                    }
+                    oss<<vS[0];
+                    std::accumulate(next(vS.begin()),vS.end(),0,[&](auto &ss, const auto c){ oss<<" | "<<c; return  ss;});
                     oss <<"\n";
                 }
                 else{
@@ -270,19 +269,12 @@ void ImportFinamForm::slotPreparseImportFile()
                 }
                 //===================
                 Bar bb(0,0,0,0,0,0);
-                {
-
-                    if (!slotParseLine(parseDt, iss, bb)){
-                        ui->edText->append(QString::fromStdString(iss.str()));
-                        ui->edText->append(QString::fromStdString(ossErr.str()));
-                        return;
-                    }
+                if (!slotParseLine(parseDt, iss, bb)){
+                    ui->edText->append(QString::fromStdString(iss.str()));
+                    ui->edText->append(QString::fromStdString(ossErr.str()));
+                    return;
                 }
-                ui->edOpen->setText(QString::number(bb.Open()));
-                ui->edHigh->setText(QString::number(bb.High()));
-                ui->edLow->setText(QString::number(bb.Low()));
-                ui->edClose->setText(QString::number(bb.Close()));
-                ui->edVolume->setText(QString::number(bb.Volume()));
+
                 showInterval(bb.Interval());
 
                 {
@@ -320,13 +312,17 @@ void ImportFinamForm::slotPreparseImportFile()
                 iss.clear();
                 iss.str(sOldLine);
 
-                {
-                    if (!slotParseLine(parseDt, iss, bb)){
-                        ui->edText->append(QString::fromStdString(iss.str()));
-                        ui->edText->append(QString::fromStdString(ossErr.str()));
-                        return;
-                    }
+                if (!slotParseLine(parseDt, iss, bb)){
+                    ui->edText->append(QString::fromStdString(iss.str()));
+                    ui->edText->append(QString::fromStdString(ossErr.str()));
+                    return;
                 }
+
+                ui->edOpen->setText(QString::number(bb.Open()));
+                ui->edHigh->setText(QString::number(bb.High()));
+                ui->edLow->setText(QString::number(bb.Low()));
+                ui->edClose->setText(QString::number(bb.Close()));
+                ui->edVolume->setText(QString::number(bb.Volume()));
 
                 {
                     std::time_t tS (bb.Period());
@@ -385,7 +381,8 @@ void ImportFinamForm::slotPreparseImportFile()
 
                 //////////////////////
                 ui->edText->append(QString::fromStdString(oss.str()));
-                //ui->edSign->setText("<"+QString::fromStdString(parseDt.Sign())+">");
+
+
 
                 if(bb.Interval() == Bar::eInterval::pTick){
                     ui->btnImport->setText("Import");
