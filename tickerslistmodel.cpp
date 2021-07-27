@@ -148,6 +148,7 @@ bool TickersListModel::searchTickerByFinamSign(const std::string &sSign, QModelI
 
     return  true;
 }
+
 //--------------------------------------------------------------------------------------------------------
 bool TickersListModel::searchTickerByTickerID(const int TickerID, QModelIndex & indx)
 {

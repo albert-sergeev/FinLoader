@@ -33,6 +33,8 @@ ImportFinamForm::ImportFinamForm(QWidget *parent) :
 
     connect(ui->edDelimiter,SIGNAL(textChanged(const QString &)),this,SLOT(slotEditDelimiterWgtChanged(const QString &)));
 
+    ui->progressBar->setValue(0);
+
     clearShowAreaOfFields();
 }
 //--------------------------------------------------------------------------------------------------------
@@ -411,6 +413,7 @@ void ImportFinamForm::clearShowAreaOfFields()
     ui->edLow->setText("");
     ui->edClose->setText("");
     ui->edVolume->setText("");
+    ui->edInterval->setText("");
 
     const QDate dtS(1990,1,1);
     const QTime tmS(0,0,0);
@@ -426,40 +429,40 @@ void ImportFinamForm::showInterval(int Interval)
 {
     switch (Interval) {
     case Bar::eInterval::pTick:
-        ui->rbtnTick->setChecked(true);
+        ui->edInterval->setText("Tick");
         break;
     case Bar::eInterval::p1:
-        ui->rbtn1->setChecked(true);
+        ui->edInterval->setText("1 min");
         break;
     case Bar::eInterval::p5:
-        ui->rbtn5->setChecked(true);
+        ui->edInterval->setText("5 min");
         break;
     case Bar::eInterval::p10:
-        ui->rbtn10->setChecked(true);
+        ui->edInterval->setText("10 min");
         break;
     case Bar::eInterval::p15:
-        ui->rbtn15->setChecked(true);
+        ui->edInterval->setText("15 min");
         break;
     case Bar::eInterval::p30:
-        ui->rbtn30->setChecked(true);
+        ui->edInterval->setText("30 min");
         break;
     case Bar::eInterval::p60:
-        ui->rbtn60->setChecked(true);
+        ui->edInterval->setText("60 min");
         break;
     case Bar::eInterval::p120:
-        ui->rbtn120->setChecked(true);
+        ui->edInterval->setText("120 min");
         break;
     case Bar::eInterval::p180:
-        ui->rbtn180->setChecked(true);
+        ui->edInterval->setText("180 min");
         break;
     case Bar::eInterval::pDay:
-        ui->rbtnDay->setChecked(true);
+        ui->edInterval->setText("Day");
         break;
     case Bar::eInterval::pWeek:
-        ui->rbtnWeek->setChecked(true);
+        ui->edInterval->setText("Week");
         break;
     case Bar::eInterval::pMonth:
-        ui->rbtnMonth->setChecked(true);
+        ui->edInterval->setText("Month");
         break;
     default:
         ;
@@ -492,6 +495,12 @@ bool ImportFinamForm::slotParseLine(finamParseData & parseDt, std::istringstream
             case finamParseData::fieldType::PER:
                 if(parseDt.t_sWordBuff == "day"){
                     parseDt.t_iInterval = Bar::eInterval::pDay;
+                }
+                else if(parseDt.t_sWordBuff == "week"){
+                    parseDt.t_iInterval = Bar::eInterval::pWeek;
+                }
+                else if(parseDt.t_sWordBuff == "month"){
+                    parseDt.t_iInterval = Bar::eInterval::pMonth;
                 }
                 else{
                     parseDt.t_iInterval = std::stoi(parseDt.t_sWordBuff);
