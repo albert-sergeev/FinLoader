@@ -37,6 +37,8 @@ public:
 
     Qt::ItemFlags flags(const QModelIndex &indx) const override;
 
+    bool searchTickerByFinamSign(const std::string &sSign, QModelIndex & indx);
+    bool searchTickerByTickerID(const int TickerID, QModelIndex & indx);
 
 
 signals:
@@ -108,6 +110,7 @@ public:
             this->invalidate();
         }
     }
+
 
 };
 

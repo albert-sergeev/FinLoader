@@ -60,7 +60,11 @@
               </widget>
              </item>
              <item>
-              <widget class="QLineEdit" name="edFileName"/>
+              <widget class="QLineEdit" name="edFileName">
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+              </widget>
              </item>
              <item>
               <widget class="QPushButton" name="btnOpen">
@@ -104,6 +108,9 @@
              <width>140</width>
              <height>40</height>
             </size>
+           </property>
+           <property name="readOnly">
+            <bool>true</bool>
            </property>
           </widget>
          </item>

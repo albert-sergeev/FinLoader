@@ -554,10 +554,11 @@ void ConfigWindow::slotSetSelectedTickersMarket(const  int i)
                 setEnableTickerWidgets(true);
                 slotTickerDataChanged(false);
                 // sel first item
-                QItemSelectionModel  *qml =new QItemSelectionModel(&proxyTickerModel);
+                //QItemSelectionModel  *qml =new QItemSelectionModel(&proxyTickerModel);
+                QItemSelectionModel  *qml = ui->listViewTicker->selectionModel();
                 auto first_i(proxyTickerModel.index(0,0));
                 if(first_i.isValid()){
-                    qml->select(first_i,QItemSelectionModel::SelectionFlag::Select) ;
+                    qml->select(first_i,QItemSelectionModel::SelectionFlag::Select | QItemSelectionModel::Rows) ;
                     slotSetSelectedTicker(first_i);
                     ui->listViewTicker->setFocus();
                 }
@@ -661,7 +662,7 @@ void ConfigWindow::slotBtnSaveTickerClicked(){
                 //auto indx(modelTicker->index(i,0));
                 auto indx(proxyTickerModel.index(i,0));
                 if(indx.isValid() && qml){
-                    qml->select(indx,QItemSelectionModel::SelectionFlag::ClearAndSelect) ;
+                    qml->select(indx,QItemSelectionModel::SelectionFlag::ClearAndSelect | QItemSelectionModel::Rows) ;
                     slotSetSelectedTicker(indx);
                     }
 
@@ -673,7 +674,7 @@ void ConfigWindow::slotBtnSaveTickerClicked(){
                 auto lst (qml->selectedIndexes());
                 if(lst.count() > 0){
                       if(lst.count() > 1){
-                          qml->select(lst[0],QItemSelectionModel::SelectionFlag::ClearAndSelect) ;
+                          qml->select(lst[0],QItemSelectionModel::SelectionFlag::ClearAndSelect | QItemSelectionModel::Rows) ;
                       }
 
                       //Ticker& t=modelTicker->getTicker(lst[0]);
@@ -715,7 +716,7 @@ void ConfigWindow::slotBtnCancelTickerClicked()
 
         if(lst.count() > 0){
             if(lst.count() > 1){
-                qml->select(lst[0],QItemSelectionModel::SelectionFlag::Select) ;
+                qml->select(lst[0],QItemSelectionModel::SelectionFlag::Select | QItemSelectionModel::Rows) ;
             }
             if(lst[0].isValid()){
                 slotSetSelectedTicker(lst[0]);

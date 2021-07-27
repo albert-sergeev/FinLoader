@@ -127,3 +127,18 @@ Qt::ItemFlags MarketsListModel::flags(const QModelIndex &indx)const
     else return flgs;
 }
 //--------------------------------------------------------------------------------------------------------
+bool MarketsListModel::searchMarketByMarketID(const int MarketID, QModelIndex & indx)
+{
+    auto It = std::find_if(vMarketsLst->begin(),vMarketsLst->end(),[&](const auto &c){
+                        return c.MarketID() == MarketID;
+    });
+    if(It == vMarketsLst->end()){
+        return false;
+    }
+    /////////////////
+
+    indx = this->index(std::distance(vMarketsLst->begin(),It),0);
+
+    return  true;
+}
+//--------------------------------------------------------------------------------------------------------

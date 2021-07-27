@@ -70,7 +70,17 @@ void ImportFinamForm::slotBtnOpenClicked()
 
 //--------------------------------------------------------------------------------------------------------
 void ImportFinamForm::slotBtnCreateClicked(){};
-void ImportFinamForm::slotBtnImportClicked(){};
+void ImportFinamForm::slotBtnImportClicked()
+{
+    //                    Ticker t {proxyTickerModel.getTicker(indxProxyT)};
+    //                    iSelectedTickerId = t.TickerID();
+    //                    if (t.TickerSignFinam().size() == 0){
+
+    //                        t.SetTickerSignFinam(parseDt.Sign());
+    //                        proxyTickerModel.setData(indxProxyT,t,Qt::EditRole);
+
+    //                    }
+};
 //--------------------------------------------------------------------------------------------------------
 void ImportFinamForm::slotBtnTestClicked()
 {
@@ -109,6 +119,9 @@ void ImportFinamForm::slotPreparseImportFile()
     ui->edText->append( "====================================================\n");
     ////////////////////////////////////////////////////////////////////////////////////
 
+    iSelectedTickerId = 0;
+    sSelectedTickerSignFinam = "";
+
 
     std::string sBuff;
     std::istringstream iss;
@@ -117,6 +130,7 @@ void ImportFinamForm::slotPreparseImportFile()
     std::ostringstream ossErr;
 
     finamParseData parseDt(&issTmp,&ossErr);
+
     parseDt.initDefaultFieldsValues(9);
 
     {
@@ -327,20 +341,51 @@ void ImportFinamForm::slotPreparseImportFile()
                 oss<<"\n\r";
                 QString qsT{tr("Preliminary check was successfull\n")};
                 oss<<qsT.toStdString();
-                oss<<"filename: "<<pathFile.filename().string();
+                oss<<"filename: "<<pathFile.filename().string()<<"\n";
 
                 /////////////////////////////////////////////////////////////
                 /////////////////////////////////////////////////////////////
                 // assign to ticker section
                 /////////////////////////////////////////////////////////////
                 /////////////////////////////////////////////////////////////
+                sSelectedTickerSignFinam = parseDt.Sign();
 
-                QModelIndex indx;
-                searchTickerBySign(parseDt.Sign(), indx);
+                QModelIndex indxM;
+                QModelIndex indxT;
+                QModelIndex indxProxyT;
+                bool bFound{false};
+                if(modelTicker->searchTickerByFinamSign(parseDt.Sign(), indxT)){
+                    const Ticker &t {modelTicker->getTicker(indxT)};
+                    if(modelMarket->searchMarketByMarketID(t.MarketID(), indxM)){
+                        bFound = true;
+                    }
+                }
+                //
+                if(bFound && indxT.isValid()){
+                    ui->cmbMarket->setCurrentIndex(indxM.row());
+                    slotSetSelectedTickersMarket(indxM.row());
+
+                    indxProxyT = proxyTickerModel.mapFromSource(indxT);
+
+
+                    QItemSelectionModel  *qml = ui->viewTickers->selectionModel();
+
+                    ui->viewTickers->setCurrentIndex(indxProxyT);
+                    qml->select(indxProxyT,QItemSelectionModel::SelectionFlag::Select | QItemSelectionModel::Rows| QItemSelectionModel::Current) ;
+                    //slotSetSelectedTicker(indxProxyT);
+                    const Ticker &t {modelTicker->getTicker(indxT)};
+                    iSelectedTickerId = t.TickerID();
+
+                    ui->edSign->setText(QString::fromStdString(t.TickerSign()+" {"+sSelectedTickerSignFinam+"}"));
+                    ui->viewTickers->setFocus();
+                }
+                else{
+                    ui->edSign->setText(QString::fromStdString("{"+sSelectedTickerSignFinam+"}"));
+                }
 
                 //////////////////////
                 ui->edText->append(QString::fromStdString(oss.str()));
-                ui->edSign->setText("<"+QString::fromStdString(parseDt.Sign())+">");
+                //ui->edSign->setText("<"+QString::fromStdString(parseDt.Sign())+">");
 
                 if(bb.Interval() == Bar::eInterval::pTick){
                     ui->btnImport->setText("Import");
@@ -348,6 +393,7 @@ void ImportFinamForm::slotPreparseImportFile()
                 else{
                     ui->btnImport->setText("Check");
                 }
+
 
             }
             else
@@ -602,16 +648,14 @@ void ImportFinamForm::slotSetSelectedTickersMarket(const  int i)
                 iDefaultTickerMarket = modelMarket->getMarket(idx).MarketID();
                 //NeedSaveDefaultTickerMarket(iDefaultTickerMarket);
                 proxyTickerModel.setDefaultMarket(iDefaultTickerMarket);
-                // clear
-                //ClearTickerWidgetsValues();
-                //setEnableTickerWidgets(true);
-                //slotTickerDataChanged(false);
+
                 // sel first item
-                QItemSelectionModel  *qml =new QItemSelectionModel(&proxyTickerModel);
+
+                QItemSelectionModel  *qml = ui->viewTickers->selectionModel();
                 auto first_i(proxyTickerModel.index(0,0));
-                if(first_i.isValid()){
-                    qml->select(first_i,QItemSelectionModel::SelectionFlag::Select) ;
-                    //slotSetSelectedTicker(first_i);
+                if(first_i.isValid() && qml){
+                    qml->select(first_i,QItemSelectionModel::SelectionFlag::ClearAndSelect | QItemSelectionModel::Rows) ;
+                    slotSetSelectedTicker(first_i);
                     ui->viewTickers->setFocus();
                 }
 
@@ -645,8 +689,8 @@ void ImportFinamForm::setTickerModel(TickersListModel *model,bool /*ShowByName*/
 
     auto first_i(proxyTickerModel.index(0,0));
     //auto first_i(model->index(0,0));
-    if(first_i.isValid()){
-        qml->select(first_i,QItemSelectionModel::SelectionFlag::Select) ;
+    if(first_i.isValid() && qml){
+        qml->select(first_i,QItemSelectionModel::SelectionFlag::ClearAndSelect | QItemSelectionModel::Rows) ;
         slotSetSelectedTicker(first_i);
     }
     else{
@@ -666,9 +710,12 @@ void ImportFinamForm::slotSetSelectedTicker(const  QModelIndex& indx)
     if (indx.isValid()){
         //const Ticker& t=modelTicker->getTicker(indx);
         const Ticker& t=proxyTickerModel.getTicker(indx);
+        iSelectedTickerId = t.TickerID();
 
-        ui->edSign->setText(QString::fromStdString(t.TickerSign())+" {"+QString::fromStdString(t.TickerSignFinam())+"}");
-
+        if(t.TickerSignFinam().size() > 0)
+            ui->edSign->setText(QString::fromStdString(t.TickerSign())+" {"+QString::fromStdString(t.TickerSignFinam())+"}");
+        else
+            ui->edSign->setText(QString::fromStdString(t.TickerSign())+" {"+QString::fromStdString(sSelectedTickerSignFinam)+"}");
     }
 
 }
@@ -682,14 +729,12 @@ void ImportFinamForm::slotShowByNamesChecked(int Checked)
         ui->viewTickers->setModelColumn(2);
     }
     proxyTickerModel.invalidate();
-    //NeedSaveShowByNames(Checked);
 }
 
 //--------------------------------------------------------------------------------------------------------
-bool  ImportFinamForm::searchTickerBySign(std::string sSign, QModelIndex& indx)
-{
-
-    return true;
-}
+//bool  ImportFinamForm::searchTickerBySign(std::string sSign, QModelIndex& indx)
+//{
+//    return modelTicker->searchTickerByFinamSign(sSign,  indx);
+//}
 //--------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------

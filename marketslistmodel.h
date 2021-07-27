@@ -33,6 +33,8 @@ public:
 
     Market & getMarket(const QModelIndex &index);
 
+    bool searchMarketByMarketID(const int MarketID, QModelIndex & indx);
+
 };
 
 #endif // MARKETSLISTMODEL_H

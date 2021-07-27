@@ -112,6 +112,9 @@ private:
     TickersListModel *modelTicker;
     TickerProxyListModel proxyTickerModel;
 
+    int iSelectedTickerId{0};
+    std::string sSelectedTickerSignFinam{""};
+
     int iDefaultTickerMarket;
 
 
@@ -141,6 +144,7 @@ private slots:
 
     void slotSetSelectedTickersMarket(const  int i);
     void slotSetSelectedTicker(const  QModelIndex& indx);
+    void slotSetSelectedTicker(const  QModelIndex& indx,const  QModelIndex& ) {slotSetSelectedTicker(indx);};
 
     void slotPreparseImportFile();
     //bool slotParseLine(std::vector<int> & fieldsType, std::istringstream & issLine, std::istringstream & issTmp, std::ostringstream & ossErr, Bar &b, int ColMax, int DefaultInterval = (-1));
@@ -148,7 +152,7 @@ private slots:
 
 
 
-    bool  searchTickerBySign(std::string sSign, QModelIndex& indx);
+    //bool  searchTickerBySign(std::string sSign, QModelIndex& indx);
 
     void showInterval(int Interval);
     void clearShowAreaOfFields();
