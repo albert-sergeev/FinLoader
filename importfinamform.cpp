@@ -126,6 +126,8 @@ void ImportFinamForm::slotPreparseImportFile()
     signstream.str(pathFile.filename().string());
     std::getline(signstream,sFinamSign,'_');
 
+    ui->edText->append( "====================================================\n");
+
     if(std::filesystem::exists(pathFile)    &&
        std::filesystem::is_regular_file(pathFile)
             ){
@@ -147,7 +149,8 @@ void ImportFinamForm::slotPreparseImportFile()
                 std::vector<std::string> vS;//{std::istream_iterator<StringDelimiter<cDelim>>{iss},{}};
                 std::string sWordBuff;
                 int iN{0};
-                int IntervalDefault(Bar::eInterval::pTick);
+                //int IntervalDefault(Bar::eInterval::pTick);
+                int IntervalDefault(-1);
 
 
                 bool bWasHeader{true};
@@ -176,7 +179,7 @@ void ImportFinamForm::slotPreparseImportFile()
                             for(const unsigned char ch:sWordBuff){
                                 if (!std::isalnum(ch)){
                                     ui->edText->append(QString::fromStdString(sBuff));
-                                    ui->edText->append("Wrong file format 1");
+                                    ui->edText->append("Wrong file format");
                                     return;
                                 }
                             }
@@ -209,6 +212,8 @@ void ImportFinamForm::slotPreparseImportFile()
                 /////////////////////////////////////////////////////////////
                 /////////////////////////////////////////////////////////////
 
+                //oss << "====================================================\n";
+
                 if (bWasHeader){
                     if (iFieldMask != 127 && iFieldMask != 195) {
                         ui->edText->append(QString::fromStdString(sBuff));
@@ -228,6 +233,7 @@ void ImportFinamForm::slotPreparseImportFile()
                     else if (iN == 6){
                         fields[4] = fieldType::LAST;
                         fields[5] = fieldType::VOL;
+                        IntervalDefault = Bar::eInterval::pTick;
                     }
                     else{
                         ui->edText->append(QString::fromStdString(sBuff));
@@ -261,12 +267,14 @@ void ImportFinamForm::slotPreparseImportFile()
                 }
                 //===================
                 Bar bb(0,0,0,0,0,0);
-                std::istringstream issTmp;
-                std::ostringstream ossErr;
-                if (!slotParseLine(fields, iss, issTmp,ossErr, bb, iN, IntervalDefault)){
-                    ui->edText->append(QString::fromStdString(iss.str()));
-                    ui->edText->append(QString::fromStdString(ossErr.str()));
-                    return;
+                {
+                    std::istringstream issTmp;
+                    std::ostringstream ossErr;
+                    if (!slotParseLine(fields, iss, issTmp,ossErr, bb, iN, IntervalDefault)){
+                        ui->edText->append(QString::fromStdString(iss.str()));
+                        ui->edText->append(QString::fromStdString(ossErr.str()));
+                        return;
+                    }
                 }
                 ui->edOpen->setText(QString::number(bb.Open()));
                 ui->edHigh->setText(QString::number(bb.High()));
@@ -284,8 +292,10 @@ void ImportFinamForm::slotPreparseImportFile()
 
                     ui->dtStart->setDateTime(dt);
                 }
+                if (IntervalDefault <0 ) IntervalDefault = bb.Interval();
+                //
                 oss<<sBuff;
-                oss<<"...";
+                oss<<"...\n";
 
                 /////////////////////////////////////////////////////////////
                 /////////////////////////////////////////////////////////////
@@ -293,8 +303,45 @@ void ImportFinamForm::slotPreparseImportFile()
                 /////////////////////////////////////////////////////////////
                 /////////////////////////////////////////////////////////////
 
-//SBER,1,20210504,100100,298.7000000,298.9500000,298.5100000,298.7600000,514440
-                //file.seekg();
+
+                file.seekg(0,std::ios::end);
+                size_t filesize = file.tellg();
+                filesize = filesize > 500 ? filesize - 500: 0 ;
+                file.seekg(filesize, std::ios::beg);
+                //
+                std::string sOldLine{""};
+
+                while (std::getline(file,sBuff)) {
+                    sOldLine = sBuff;
+                }
+                // link stringstream
+                iss.clear();
+                iss.str(sOldLine);
+
+                {
+                    std::istringstream issTmp;
+                    std::ostringstream ossErr;
+                    if (!slotParseLine(fields, iss, issTmp,ossErr, bb, iN, IntervalDefault)){
+                        ui->edText->append(QString::fromStdString(iss.str()));
+                        ui->edText->append(QString::fromStdString(ossErr.str()));
+                        return;
+                    }
+                }
+
+                {
+                    std::time_t tS (bb.Period());
+                    std::tm* tmSt=localtime(&tS);
+                    const QDate dtS(tmSt->tm_year,tmSt->tm_mon,tmSt->tm_mday);
+                    const QTime tmS(tmSt->tm_hour,tmSt->tm_min,tmSt->tm_sec);
+                    QDateTime dt (dtS,tmS);
+
+                    ui->dtEnd->setDateTime(dt);
+                }
+                oss<<sOldLine;
+                oss<<"\n\r";
+                QString qsT{tr("Preliminary check was successfull\n")};
+                oss<<qsT.toStdString();
+                oss<<"filename: "<<pathFile.filename().string();
 
                 //////////////////////
                 ui->edText->append(QString::fromStdString(oss.str()));
