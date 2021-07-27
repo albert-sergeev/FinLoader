@@ -352,14 +352,23 @@ void ImportFinamForm::slotPreparseImportFile()
                 QModelIndex indxT;
                 QModelIndex indxProxyT;
                 bool bFound{false};
-                if(modelTicker->searchTickerByFinamSign(parseDt.Sign(), indxT)){
-                    const Ticker &t {modelTicker->getTicker(indxT)};
-                    if(modelMarket->searchMarketByMarketID(t.MarketID(), indxM)){
-                        bFound = true;
-                    }
+                bool bFoundFinam{false};
+                if(     modelTicker->searchTickerByFinamSign(parseDt.Sign(), indxT)){
+                    bFoundFinam = true;
+                }
+                else if(modelTicker->searchTickerBySign(parseDt.Sign(), indxT)){
+                    bFound = true;
                 }
                 //
-                if(bFound && indxT.isValid()){
+                if((bFound || bFoundFinam ) && indxT.isValid()){
+                    const Ticker &t {modelTicker->getTicker(indxT)};
+
+                    if(!modelMarket->searchMarketByMarketID(t.MarketID(), indxM)){
+                        ui->edText->append(QString::fromStdString(sBuff));
+                        ui->edText->append("Data integrity was broken! Ticker without market!");
+                        return;
+                    }
+
                     ui->cmbMarket->setCurrentIndex(indxM.row());
                     slotSetSelectedTickersMarket(indxM.row());
 
@@ -371,7 +380,7 @@ void ImportFinamForm::slotPreparseImportFile()
                     ui->viewTickers->setCurrentIndex(indxProxyT);
                     qml->select(indxProxyT,QItemSelectionModel::SelectionFlag::Select | QItemSelectionModel::Rows| QItemSelectionModel::Current) ;
                     //slotSetSelectedTicker(indxProxyT);
-                    const Ticker &t {modelTicker->getTicker(indxT)};
+
                     iSelectedTickerId = t.TickerID();
 
                     ui->edSign->setText(QString::fromStdString(t.TickerSign()+" {"+sSelectedTickerSignFinam+"}"));

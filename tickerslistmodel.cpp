@@ -129,18 +129,28 @@ Qt::ItemFlags TickersListModel::flags(const QModelIndex &indx)const
     else return flgs;
 }
 //--------------------------------------------------------------------------------------------------------
+bool TickersListModel::searchTickerBySign(const std::string &sSign, QModelIndex & indx)
+{
+    auto It = std::find_if(vTickersLst->begin(),vTickersLst->end(),[&](const auto &c){
+        return c.TickerSign() == sSign && c.TickerSignFinam() == "";
+        });
+    if(It == vTickersLst->end()){
+            return false;
+    }
+    /////////////////
+
+    indx = this->index(std::distance(vTickersLst->begin(),It),0);
+
+    return  true;
+}
+//--------------------------------------------------------------------------------------------------------
 bool TickersListModel::searchTickerByFinamSign(const std::string &sSign, QModelIndex & indx)
 {
     auto It = std::find_if(vTickersLst->begin(),vTickersLst->end(),[&](const auto &c){
                         return c.TickerSignFinam() == sSign;
     });
     if(It == vTickersLst->end()){
-        It = std::find_if(vTickersLst->begin(),vTickersLst->end(),[&](const auto &c){
-                                return c.TickerSign() == sSign && c.TickerSignFinam() == "";
-            });
-        if(It == vTickersLst->end()){
             return false;
-        }
     }
     /////////////////
 
