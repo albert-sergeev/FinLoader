@@ -61,7 +61,10 @@ private slots:
     void slotSetSelectedTicker(const  QModelIndex& indx);
 
     void slotPreparseImportFile();
-    bool slotParseLine(std::vector<int> & fieldsType, std::istringstream & issLine, Bar &b, int ColMax, int DefaultInterval = (-1));
+    bool slotParseLine(std::vector<int> & fieldsType, std::istringstream & issLine, std::istringstream & issTmp, std::ostringstream & ossErr, Bar &b, int ColMax, int DefaultInterval = (-1));
+
+    void showInterval(int Interval);
+    void clearShowAreaOfFields();
 
 private:
     Ui::ImportFinamForm *ui;

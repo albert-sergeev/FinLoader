@@ -459,7 +459,7 @@
                 </widget>
                </item>
                <item row="0" column="1">
-                <widget class="QDateTimeEdit" name="dateTimeEdit">
+                <widget class="QDateTimeEdit" name="dtStart">
                  <property name="minimumSize">
                   <size>
                    <width>0</width>
@@ -482,7 +482,7 @@
                 </widget>
                </item>
                <item row="1" column="1">
-                <widget class="QDateTimeEdit" name="dateTimeEdit_2">
+                <widget class="QDateTimeEdit" name="dtEnd">
                  <property name="minimumSize">
                   <size>
                    <width>0</width>
@@ -530,84 +530,90 @@
              <item>
               <layout class="QGridLayout" name="gridLayout">
                <item row="0" column="4">
-                <widget class="QRadioButton" name="radioButton_4">
+                <widget class="QRadioButton" name="rbtn15">
                  <property name="text">
                   <string>15</string>
                  </property>
                 </widget>
                </item>
                <item row="0" column="2">
-                <widget class="QRadioButton" name="radioButton_2">
+                <widget class="QRadioButton" name="rbtn5">
                  <property name="text">
                   <string>5</string>
                  </property>
                 </widget>
                </item>
                <item row="0" column="8">
-                <widget class="QRadioButton" name="radioButton_8">
+                <widget class="QRadioButton" name="rbtn180">
                  <property name="text">
                   <string>180</string>
                  </property>
                 </widget>
                </item>
                <item row="0" column="3">
-                <widget class="QRadioButton" name="radioButton_3">
+                <widget class="QRadioButton" name="rbtn10">
                  <property name="text">
                   <string>10</string>
                  </property>
                 </widget>
                </item>
                <item row="0" column="0">
-                <widget class="QRadioButton" name="rbtnTicks">
+                <widget class="QRadioButton" name="rbtnTick">
                  <property name="text">
                   <string>tick</string>
+                 </property>
+                 <property name="checkable">
+                  <bool>true</bool>
                  </property>
                 </widget>
                </item>
                <item row="0" column="6">
-                <widget class="QRadioButton" name="radioButton_6">
+                <widget class="QRadioButton" name="rbtn60">
                  <property name="text">
                   <string>60</string>
                  </property>
                 </widget>
                </item>
                <item row="0" column="7">
-                <widget class="QRadioButton" name="radioButton_7">
+                <widget class="QRadioButton" name="rbtn120">
                  <property name="text">
                   <string>120</string>
                  </property>
                 </widget>
                </item>
                <item row="0" column="1">
-                <widget class="QRadioButton" name="radioButton">
+                <widget class="QRadioButton" name="rbtn1">
                  <property name="text">
                   <string>1</string>
+                 </property>
+                 <property name="checkable">
+                  <bool>true</bool>
                  </property>
                 </widget>
                </item>
                <item row="0" column="5">
-                <widget class="QRadioButton" name="radioButton_5">
+                <widget class="QRadioButton" name="rbtn30">
                  <property name="text">
                   <string>30</string>
                  </property>
                 </widget>
                </item>
                <item row="2" column="0" colspan="3">
-                <widget class="QRadioButton" name="radioButton_9">
+                <widget class="QRadioButton" name="rbtnDay">
                  <property name="text">
                   <string>Day</string>
                  </property>
                 </widget>
                </item>
                <item row="2" column="3" colspan="3">
-                <widget class="QRadioButton" name="radioButton_10">
+                <widget class="QRadioButton" name="rbtnWeek">
                  <property name="text">
                   <string>Week</string>
                  </property>
                 </widget>
                </item>
                <item row="2" column="6" colspan="3">
-                <widget class="QRadioButton" name="radioButton_11">
+                <widget class="QRadioButton" name="rbtnMonth">
                  <property name="text">
                   <string>Month</string>
                  </property>
@@ -911,27 +917,27 @@
   <tabstop>edDelimiter</tabstop>
   <tabstop>cmbMarket</tabstop>
   <tabstop>viewTickers</tabstop>
-  <tabstop>dateTimeEdit</tabstop>
+  <tabstop>dtStart</tabstop>
   <tabstop>edFileName</tabstop>
   <tabstop>edText</tabstop>
   <tabstop>edHigh</tabstop>
-  <tabstop>radioButton_4</tabstop>
-  <tabstop>radioButton_2</tabstop>
-  <tabstop>radioButton_8</tabstop>
-  <tabstop>radioButton_3</tabstop>
-  <tabstop>rbtnTicks</tabstop>
-  <tabstop>radioButton_6</tabstop>
-  <tabstop>radioButton_7</tabstop>
-  <tabstop>radioButton</tabstop>
-  <tabstop>radioButton_5</tabstop>
-  <tabstop>radioButton_9</tabstop>
-  <tabstop>radioButton_10</tabstop>
-  <tabstop>radioButton_11</tabstop>
+  <tabstop>rbtn15</tabstop>
+  <tabstop>rbtn5</tabstop>
+  <tabstop>rbtn180</tabstop>
+  <tabstop>rbtn10</tabstop>
+  <tabstop>rbtnTick</tabstop>
+  <tabstop>rbtn60</tabstop>
+  <tabstop>rbtn120</tabstop>
+  <tabstop>rbtn1</tabstop>
+  <tabstop>rbtn30</tabstop>
+  <tabstop>rbtnDay</tabstop>
+  <tabstop>rbtnWeek</tabstop>
+  <tabstop>rbtnMonth</tabstop>
   <tabstop>edOpen</tabstop>
   <tabstop>edLow</tabstop>
   <tabstop>edClose</tabstop>
   <tabstop>edVolume</tabstop>
-  <tabstop>dateTimeEdit_2</tabstop>
+  <tabstop>dtEnd</tabstop>
  </tabstops>
  <resources/>
  <connections/>
