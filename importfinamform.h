@@ -4,6 +4,11 @@
 #include <QWidget>
 #include<filesystem>
 
+#include "marketslistmodel.h"
+#include "tickerslistmodel.h"
+#include "storage.h"
+
+
 
 
 namespace Ui {
@@ -20,6 +25,12 @@ private:
     std::filesystem::path pathDir;
     char cDelimiter{','};
 
+    MarketsListModel *modelMarket;
+    TickersListModel *modelTicker;
+    TickerProxyListModel proxyTickerModel;
+
+    int iDefaultTickerMarket;
+
 public:
     explicit ImportFinamForm(QWidget *parent = nullptr);
     ~ImportFinamForm();
@@ -27,6 +38,8 @@ public:
 public:
     void SetDefaultOpenDir(QString &s);
     void SetDelimiter(char c);
+    void setMarketModel(MarketsListModel *model, int DefaultTickerMarket);
+    void setTickerModel(TickersListModel *model,bool ShowByName,bool SortByName);
 
 signals:
     void OpenImportFilePathChanged(QString &);
@@ -39,6 +52,10 @@ private slots:
     void slotBtnTestClicked();
     void slotBtnImportClicked();
     void slotEditDelimiterWgtChanged(const QString &);
+    void slotShowByNamesChecked(int Checked);
+
+    void slotSetSelectedTickersMarket(const  int i);
+    void slotSetSelectedTicker(const  QModelIndex& indx);
 
     void slotPreparseImportFile();
 

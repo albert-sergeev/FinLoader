@@ -24,6 +24,11 @@ ImportFinamForm::ImportFinamForm(QWidget *parent) :
     connect(ui->btnImport,SIGNAL(clicked()),this,SLOT(slotBtnImportClicked()));
     connect(ui->btnTest,SIGNAL(clicked()),this,SLOT(slotBtnTestClicked()));
 
+    connect(ui->btnOpen,SIGNAL(pressed()),this,SLOT(slotBtnOpenClicked()));
+
+    connect(ui->chkShowByName,SIGNAL(stateChanged(int)),this,SLOT(slotShowByNamesChecked(int)));
+
+
 
     connect(ui->edDelimiter,SIGNAL(textChanged(const QString &)),this,SLOT(slotEditDelimiterWgtChanged(const QString &)));
 
@@ -130,10 +135,139 @@ void ImportFinamForm::slotPreparseImportFile()
     }
 }
 //--------------------------------------------------------------------------------------------------------
+void ImportFinamForm::setMarketModel(MarketsListModel *model, int DefaultTickerMarket)
+{
+    modelMarket = model;
+
+    //ui->viewTickets
+    ui->cmbMarket->setModel(modelMarket);
+
+
+
+
+    {
+
+        connect(ui->cmbMarket,SIGNAL(activated(const int)),this,SLOT(slotSetSelectedTickersMarket(const  int)));
+
+        bool bWas{false};
+        for(int i = 0; i < modelMarket->rowCount(); i++){
+            auto idx(modelMarket->index(i,0));
+            if(idx.isValid()){
+                if(modelMarket->getMarket(idx).MarketID() == DefaultTickerMarket){
+                    //iDefaultTickerMarket = DefaultTickerMarket;
+                    ui->cmbMarket->setCurrentIndex(i);
+                    slotSetSelectedTickersMarket(i);
+                    bWas = true;
+                    break;
+                }
+            }
+        }
+        if (!bWas){
+            auto idx(modelMarket->index(0,0));
+            if(idx.isValid()){
+                iDefaultTickerMarket = modelMarket->getMarket(idx).MarketID();
+                slotSetSelectedTickersMarket(0);
+            }
+        }
+    }
+    ////////////////////////////////////////////////////
+
+}
 //--------------------------------------------------------------------------------------------------------
+
+void ImportFinamForm::slotSetSelectedTickersMarket(const  int i)
+{
+    //qDebug()<<"i: {"<<i<<"}";
+    if(i < modelMarket->rowCount()){
+        auto idx(modelMarket->index(i,0));
+        if(idx.isValid()){
+            if(modelMarket->getMarket(idx).MarketID() != iDefaultTickerMarket){
+                iDefaultTickerMarket = modelMarket->getMarket(idx).MarketID();
+                //NeedSaveDefaultTickerMarket(iDefaultTickerMarket);
+                proxyTickerModel.setDefaultMarket(iDefaultTickerMarket);
+                // clear
+                //ClearTickerWidgetsValues();
+                //setEnableTickerWidgets(true);
+                //slotTickerDataChanged(false);
+                // sel first item
+                QItemSelectionModel  *qml =new QItemSelectionModel(&proxyTickerModel);
+                auto first_i(proxyTickerModel.index(0,0));
+                if(first_i.isValid()){
+                    qml->select(first_i,QItemSelectionModel::SelectionFlag::Select) ;
+                    //slotSetSelectedTicker(first_i);
+                    ui->viewTickers->setFocus();
+                }
+
+            }
+        }
+    }
+}
 //--------------------------------------------------------------------------------------------------------
+void ImportFinamForm::setTickerModel(TickersListModel *model,bool /*ShowByName*/,bool /*SortByName*/)
+{
+
+    modelTicker = model;
+    proxyTickerModel.setDefaultMarket(iDefaultTickerMarket);
+    proxyTickerModel.setSourceModel(model);
+    ui->viewTickers->setModel(&proxyTickerModel);
+    proxyTickerModel.sort(2);
+
+    slotShowByNamesChecked(ui->chkShowByName->isChecked());
+
+    connect(ui->viewTickers,SIGNAL(clicked(const QModelIndex&)),this,SLOT(slotSetSelectedTicker(const  QModelIndex&)));
+
+    /////////
+
+    QItemSelectionModel  *qml =new QItemSelectionModel(&proxyTickerModel);
+    //QItemSelectionModel  *qml =new QItemSelectionModel(model);
+    ui->viewTickers->setSelectionModel(qml);
+
+
+    connect(qml,SIGNAL(currentRowChanged(const QModelIndex&,const QModelIndex&)),this,SLOT(slotSetSelectedTicker(const  QModelIndex&,const QModelIndex&)));
+
+
+    auto first_i(proxyTickerModel.index(0,0));
+    //auto first_i(model->index(0,0));
+    if(first_i.isValid()){
+        qml->select(first_i,QItemSelectionModel::SelectionFlag::Select) ;
+        slotSetSelectedTicker(first_i);
+    }
+    else{
+//        slotTickerDataChanged(false);
+        //
+//        setEnableTickerWidgets(false);
+    }
+    ////
+}
 //--------------------------------------------------------------------------------------------------------
+void ImportFinamForm::slotSetSelectedTicker(const  QModelIndex& indx)
+{
+
+
+    //qDebug()<<"Enter slotSetSelectedMarket";
+
+    if (indx.isValid()){
+        //const Ticker& t=modelTicker->getTicker(indx);
+        const Ticker& t=proxyTickerModel.getTicker(indx);
+
+        ui->edSign->setText(QString::fromStdString(t.TickerSign())+" {"+QString::fromStdString(t.TickerSignFinam())+"}");
+
+    }
+
+}
 //--------------------------------------------------------------------------------------------------------
+void ImportFinamForm::slotShowByNamesChecked(int Checked)
+{
+    if (Checked){
+        ui->viewTickers->setModelColumn(0);
+    }
+    else{
+        ui->viewTickers->setModelColumn(2);
+    }
+    proxyTickerModel.invalidate();
+    //NeedSaveShowByNames(Checked);
+}
+
 //--------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------

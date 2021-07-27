@@ -565,6 +565,9 @@ void MainWindow::slotImportFinamWndow ()
     pdoc->SetDefaultOpenDir(qsDefaultOpenDir);
     pdoc->SetDelimiter(cImportDelimiter);
 
+    pdoc->setMarketModel(&m_MarketLstModel,iDefaultTickerMarket);
+    pdoc->setTickerModel(&m_TickerLstModel,bConfigTickerShowByName,bConfigTickerSortByName);
+
     ui->mdiArea->addSubWindow(pdoc);
     //
     connect(pdoc,SIGNAL(OpenImportFilePathChanged(QString &)),this,SLOT(slotDefaultOpenDirChanged(QString &)));
