@@ -180,14 +180,14 @@ void ImportFinamForm::slotPreparseImportFile()
                     trim(sWordBuff);
                     if      (bWasHeader && sWordBuff == "<TICKER>") {   parseDt.fields()[iN] = finamParseData::fieldType::TICKER; }
                     else if (bWasHeader && sWordBuff == "<PER>")    {   parseDt.fields()[iN] = finamParseData::fieldType::PER;    }
-                    else if (bWasHeader && sWordBuff == "<DATE>")   {   parseDt.fields()[iN] = finamParseData::fieldType::DATE;   iFieldMask ^= 1;}
-                    else if (bWasHeader && sWordBuff == "<TIME>")   {   parseDt.fields()[iN] = finamParseData::fieldType::TIME;   iFieldMask ^= 2;}
-                    else if (bWasHeader && sWordBuff == "<OPEN>")   {   parseDt.fields()[iN] = finamParseData::fieldType::OPEN;   iFieldMask ^= 4;}
-                    else if (bWasHeader && sWordBuff == "<HIGH>")   {   parseDt.fields()[iN] = finamParseData::fieldType::HIGH;   iFieldMask ^= 8;}
-                    else if (bWasHeader && sWordBuff == "<LOW>")    {   parseDt.fields()[iN] = finamParseData::fieldType::LOW;    iFieldMask ^= 16;}
-                    else if (bWasHeader && sWordBuff == "<CLOSE>")  {   parseDt.fields()[iN] = finamParseData::fieldType::CLOSE;  iFieldMask ^= 32;}
-                    else if (bWasHeader && sWordBuff == "<VOL>")    {   parseDt.fields()[iN] = finamParseData::fieldType::VOL;    iFieldMask ^= 64;}
-                    else if (bWasHeader && sWordBuff == "<LAST>")   {   parseDt.fields()[iN] = finamParseData::fieldType::LAST;   iFieldMask ^= 128;}
+                    else if (bWasHeader && sWordBuff == "<DATE>")   {   parseDt.fields()[iN] = finamParseData::fieldType::DATE;   iFieldMask |= 1;}
+                    else if (bWasHeader && sWordBuff == "<TIME>")   {   parseDt.fields()[iN] = finamParseData::fieldType::TIME;   iFieldMask |= 2;}
+                    else if (bWasHeader && sWordBuff == "<OPEN>")   {   parseDt.fields()[iN] = finamParseData::fieldType::OPEN;   iFieldMask |= 4;}
+                    else if (bWasHeader && sWordBuff == "<HIGH>")   {   parseDt.fields()[iN] = finamParseData::fieldType::HIGH;   iFieldMask |= 8;}
+                    else if (bWasHeader && sWordBuff == "<LOW>")    {   parseDt.fields()[iN] = finamParseData::fieldType::LOW;    iFieldMask |= 16;}
+                    else if (bWasHeader && sWordBuff == "<CLOSE>")  {   parseDt.fields()[iN] = finamParseData::fieldType::CLOSE;  iFieldMask |= 32;}
+                    else if (bWasHeader && sWordBuff == "<VOL>")    {   parseDt.fields()[iN] = finamParseData::fieldType::VOL;    iFieldMask |= 64;}
+                    else if (bWasHeader && sWordBuff == "<LAST>")   {   parseDt.fields()[iN] = finamParseData::fieldType::LAST;   iFieldMask |= 128;}
                     else {
                         if(iN == 0 || iN == 1){ // first column is sign or period
                             for(const unsigned char ch:sWordBuff){
