@@ -23,6 +23,7 @@
 #include "marketslistmodel.h"
 #include "tickerslistmodel.h"
 #include "storage.h"
+#include "threadpool.h"
 
 
 QT_BEGIN_NAMESPACE
@@ -45,6 +46,9 @@ private:
     QString m_sStyleName;
     QString m_Language;
     QTranslator m_translator;
+
+    // thread manipulation
+    ThreadPool thrdPool;
 
     // global storage objects
     QSettings m_settings;

@@ -19,6 +19,7 @@ SOURCES += \
     mainwindow.cpp \
     marketslistmodel.cpp \
     storage.cpp \
+    threadpool.cpp \
     ticker.cpp \
     tickerslistmodel.cpp
 
@@ -30,6 +31,7 @@ HEADERS += \
     mainwindow.h \
     marketslistmodel.h \
     storage.h \
+    threadpool.h \
     ticker.h \
     tickerslistmodel.h
 
