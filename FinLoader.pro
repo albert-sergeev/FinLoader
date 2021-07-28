@@ -21,7 +21,8 @@ SOURCES += \
     storage.cpp \
     threadpool.cpp \
     ticker.cpp \
-    tickerslistmodel.cpp
+    tickerslistmodel.cpp \
+    workerloaderfinam.cpp
 
 HEADERS += \
     bar.h \
@@ -33,7 +34,8 @@ HEADERS += \
     storage.h \
     threadpool.h \
     ticker.h \
-    tickerslistmodel.h
+    tickerslistmodel.h \
+    workerloaderfinam.h
 
 FORMS += \
     configwindow.ui \

@@ -72,17 +72,7 @@ void ImportFinamForm::slotBtnOpenClicked()
 
 //--------------------------------------------------------------------------------------------------------
 void ImportFinamForm::slotBtnCreateClicked(){};
-void ImportFinamForm::slotBtnImportClicked()
-{
-    //                    Ticker t {proxyTickerModel.getTicker(indxProxyT)};
-    //                    iSelectedTickerId = t.TickerID();
-    //                    if (t.TickerSignFinam().size() == 0){
 
-    //                        t.SetTickerSignFinam(parseDt.Sign());
-    //                        proxyTickerModel.setData(indxProxyT,t,Qt::EditRole);
-
-    //                    }
-};
 //--------------------------------------------------------------------------------------------------------
 void ImportFinamForm::slotBtnTestClicked()
 {
@@ -656,7 +646,7 @@ void ImportFinamForm::setMarketModel(MarketsListModel *model, int DefaultTickerM
 void ImportFinamForm::slotSetSelectedTickersMarket(const  int i)
 {
     //qDebug()<<"i: {"<<i<<"}";
-    if(i < modelMarket->rowCount()){
+    if(modelMarket !=nullptr && i < modelMarket->rowCount()){
         auto idx(modelMarket->index(i,0));
         if(idx.isValid()){
             if(modelMarket->getMarket(idx).MarketID() != iDefaultTickerMarket){
@@ -747,9 +737,17 @@ void ImportFinamForm::slotShowByNamesChecked(int Checked)
 }
 
 //--------------------------------------------------------------------------------------------------------
-//bool  ImportFinamForm::searchTickerBySign(std::string sSign, QModelIndex& indx)
-//{
-//    return modelTicker->searchTickerByFinamSign(sSign,  indx);
-//}
-//--------------------------------------------------------------------------------------------------------
+void ImportFinamForm::slotBtnImportClicked()
+{
+    //                    Ticker t {proxyTickerModel.getTicker(indxProxyT)};
+    //                    iSelectedTickerId = t.TickerID();
+    //                    if (t.TickerSignFinam().size() == 0){
+
+    //                        t.SetTickerSignFinam(parseDt.Sign());
+    //                        proxyTickerModel.setData(indxProxyT,t,Qt::EditRole);
+
+    //                    }
+
+    emit NeedParseImportFinamFile();
+};
 //--------------------------------------------------------------------------------------------------------

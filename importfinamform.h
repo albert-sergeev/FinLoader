@@ -132,6 +132,7 @@ public:
 signals:
     void OpenImportFilePathChanged(QString &);
     void DelimiterHasChanged(char c);
+    void NeedParseImportFinamFile();
 
 private slots:
 

@@ -48,7 +48,7 @@ private:
     QTranslator m_translator;
 
     // thread manipulation
-    ThreadPool thrdPool;
+    ThreadPool thrdPoolLoadFinam;
 
     // global storage objects
     QSettings m_settings;
@@ -97,6 +97,7 @@ public slots: // for config window
 public slots: // for import finam winow
     void slotDefaultOpenDirChanged(QString & s) {qsDefaultOpenDir = s;};
     void slotImportDelimiterChanged(char c)     {cImportDelimiter = c;};
+    void slotParseImportFinamFile();
 
 
 protected slots: // for main window

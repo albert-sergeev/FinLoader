@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 #include "configwindow.h"
 #include "importfinamform.h"
+#include "workerloaderfinam.h"
 
 #include<QListView>
 
@@ -573,11 +574,18 @@ void MainWindow::slotImportFinamWndow ()
     connect(pdoc,SIGNAL(OpenImportFilePathChanged(QString &)),this,SLOT(slotDefaultOpenDirChanged(QString &)));
     connect(pdoc,SIGNAL(DelimiterHasChanged(char)),this,SLOT(slotImportDelimiterChanged(char)));
 
+    connect(pdoc,SIGNAL(NeedParseImportFinamFile()),this,SLOT(slotParseImportFinamFile()));
     //
     pdoc->show();
 }
 
 //--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotParseImportFinamFile()
+{
+    qDebug()<<"do import";
+    thrdPoolLoadFinam.AddTask(workerLoaderFinam::worker);
+    qDebug()<<"threads: "<< thrdPoolLoadFinam.ActiveThreads();
+}
 //--------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------
