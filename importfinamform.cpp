@@ -645,8 +645,9 @@ void ImportFinamForm::setMarketModel(MarketsListModel *model, int DefaultTickerM
 
 void ImportFinamForm::slotSetSelectedTickersMarket(const  int i)
 {
+    if (modelMarket ==nullptr ||modelTicker ==nullptr ) return;
     //qDebug()<<"i: {"<<i<<"}";
-    if(modelMarket !=nullptr && i < modelMarket->rowCount()){
+    if( i < modelMarket->rowCount()){
         auto idx(modelMarket->index(i,0));
         if(idx.isValid()){
             if(modelMarket->getMarket(idx).MarketID() != iDefaultTickerMarket){
@@ -727,6 +728,8 @@ void ImportFinamForm::slotSetSelectedTicker(const  QModelIndex& indx)
 //--------------------------------------------------------------------------------------------------------
 void ImportFinamForm::slotShowByNamesChecked(int Checked)
 {
+    if (modelMarket ==nullptr ||modelTicker ==nullptr ) return;
+
     if (Checked){
         ui->viewTickers->setModelColumn(0);
     }

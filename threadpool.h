@@ -5,11 +5,31 @@
 #include<sstream>
 #include<thread>
 #include<atomic>
+#include<algorithm>
 #include<mutex>
 #include<future>
 #include<functional>
 #include<vector>
 #include<queue>
+#include<chrono>
+
+using namespace std::chrono_literals;
+
+/////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Utility class to threadsafe cout (for debug)
+///
+class CThreadFreeCout:public std::stringstream
+{
+    static inline std::mutex mut;
+public:
+    CThreadFreeCout(){;};
+
+    ~CThreadFreeCout(){
+        std::lock_guard<std::mutex> lk(mut);
+        std::cout<<this->rdbuf();
+        std::cout.flush();
+    }
+};
 
 /////////////////////////////////////////////////////////////////////////////////////////
 /// \brief Cover for safe join std::vector<std::thread>
@@ -66,15 +86,24 @@ private:
     int threadMaxCount;
     std::atomic_bool bQuit;
     std::mutex mut_qeue;
-    //std::queue<std::function<void()>> work_queue;
+    std::mutex mut_treads;
     std::queue<FuncWrapper> work_queue;
+
     std::vector<std::thread> threads;
-    //std::vector<std::thread> threads;
+    std::vector<std::future<int>>  vFuteresTrd;
+    std::vector<std::promise<int>> vPromisesTrd;
+
+    std::vector<std::thread> threadsDeleted;
+//    std::vector<std::future<int>>  vFuteresTrdDeleted;
+//    std::vector<std::promise<int>> vPromisesTrdDeleted;
+
     join_threads joiner;
+    join_threads joinerDeleted;
 
     //---------------------------------------------------------------------------------------------------
-    void worker(){
+    void worker(std::promise<int> && pr){
         while(!bQuit && !work_queue.empty()){
+
             FuncWrapper task;
             std::unique_lock lk(mut_qeue);
             if (!work_queue.empty()){
@@ -85,6 +114,29 @@ private:
                 task();
             }
         }
+//        {
+//            CThreadFreeCout fout;
+//            fout<<"worker pre out\n";
+//        }
+        try{
+            pr.set_value(1);
+        }
+        catch(std::exception &ex){
+            {
+            CThreadFreeCout fout;
+            fout<<"exeption!\n";
+            fout<<ex.what();
+            /*
+             * terminate called after throwing an instance of 'std::future_error'
+  what():  std::future_error: No associated state
+*/
+            }
+            throw;
+        }
+//        {
+//            CThreadFreeCout fout;
+//            fout<<"worker out\n";
+//        }
     };
     //---------------------------------------------------------------------------------------------------
 public:
@@ -93,11 +145,11 @@ public:
 
 public:
     //---------------------------------------------------------------------------------------------------
-    ThreadPool():bQuit{false},joiner{threads}{
+
+
+    ThreadPool():bQuit{false},joiner{threads},joinerDeleted{threadsDeleted}{
         threadMaxCount = std::thread::hardware_concurrency() > 0 ? std::thread::hardware_concurrency() : 1;
-        try{ // to check, create thread with empty task queue
-            threads.push_back(std::thread(&ThreadPool::worker,this));
-        }
+        try{ ;}
         catch(...){
             bQuit = true;
             throw;
@@ -109,47 +161,94 @@ public:
     }
     //---------------------------------------------------------------------------------------------------
     template<typename T>
-    void AddTask(T f){
-        {
-            std::packaged_task<typename std::result_of<T()>::type()> task(std::move(f));
-            std::future<typename std::result_of<T()>::type> res(task.get_future());
+    std::future<typename std::result_of<T()>::type> AddTask(T f)
+    {
 
-            std::unique_lock lk(mut_qeue);
-            work_queue.push(std::move(task));
-            //work_queue.push(std::function<void()>(f));
+//        {
+//            CThreadFreeCout fout;
+//            fout<<"shrinking in \n";
+//        }
+        ShrinkFinishedTreads();
+//        {
+//            CThreadFreeCout fout;
+//            fout<<"shrinking out \n";
+//        }
+
+        std::packaged_task<typename std::result_of<T()>::type()> task(std::move(f));
+        std::future<typename std::result_of<T()>::type> res(task.get_future());
+
+        {
+        std::unique_lock lk(mut_qeue);
+        work_queue.push(std::move(task));
         }
-        if(threadMaxCount > (int)threads.size()){
+
+
+        //if(threadMaxCount > (int)threads.size())
+        {
             try{
-                threads.push_back(std::thread(&ThreadPool::worker,this));
+                std::unique_lock lkT(mut_treads);
+                std::promise<int> pr;
+                vFuteresTrd.emplace_back(pr.get_future());
+                vPromisesTrd.emplace_back(std::move(pr));
+                int iInd = threads.size();
+
+                threads.emplace_back(std::thread(&ThreadPool::worker,this,std::move(vPromisesTrd[iInd])));
+
             }
             catch(...){
                 // Out of memory?
-                if(threads.size() <=0){
-                bQuit = true;
-                throw;
+                if(threads.size() <=0)
+                {
+                    bQuit = true;
+                    std::cout<<"can't create new thread";
+                    throw;
                 }
             }
         }
+        DeleteFinishedTreads();
+        return  res;
     }
     //---------------------------------------------------------------------------------------------------
+    void ShrinkFinishedTreads()
+    {
+        std::unique_lock lkT(mut_treads);
+        std::future_status stTmp;
+        for(int i = 0; i < (int)threads.size(); ++i){
+            if(!vFuteresTrd[i].valid() ||
+                    (stTmp = vFuteresTrd[i].wait_for(1ms)) == std::future_status::ready
+                    ){
+//                if(vFuteresTrd[i].valid()){
+//                    vFuteresTrd[i].get();
+//                }
+
+                threadsDeleted.emplace_back(std::move(threads[i]));
+                //vFuteresTrdDeleted.emplace_back(std::move(vFuteresTrd[i]));
+                //vPromisesTrdDeleted.emplace_back(std::move(vPromisesTrd[i]));
+
+                std::swap(threads[i],threads.back());
+                std::swap(vFuteresTrd[i],vFuteresTrd.back());
+                std::swap(vPromisesTrd[i],vPromisesTrd.back());
+
+                threads.pop_back();
+                vFuteresTrd.pop_back();
+                vPromisesTrd.pop_back();
+            }
+        }
+    }
+
     //---------------------------------------------------------------------------------------------------
+    void DeleteFinishedTreads(){
+        std::unique_lock lkT(mut_treads);
+        for(int i = 0; i < (int)threadsDeleted.size(); ++i){
+            threadsDeleted[i].join();
+        }
+        threadsDeleted.clear();
+        //vPromisesTrdDeleted.clear();
+        //vFuteresTrdDeleted.clear();
+    }
     //---------------------------------------------------------------------------------------------------
 };
 
-/////////////////////////////////////////////////////////////////////////////////////////
-/// \brief Utility class to threadsafe cout (for debug)
-///
-class CThreadFreeCout:public std::stringstream
-{
-    static inline std::mutex mut;
-public:
-    CThreadFreeCout(){;};
 
-    ~CThreadFreeCout(){
-        std::lock_guard<std::mutex> lk(mut);
-        std::cout<<this->rdbuf();
-        std::cout.flush();
-    }
-};
 
 #endif // THREADPOOL_H

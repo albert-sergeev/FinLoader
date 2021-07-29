@@ -582,9 +582,9 @@ void MainWindow::slotImportFinamWndow ()
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::slotParseImportFinamFile()
 {
-    qDebug()<<"do import";
+    //qDebug()<<"do import";
     thrdPoolLoadFinam.AddTask(workerLoaderFinam::worker);
-    qDebug()<<"threads: "<< thrdPoolLoadFinam.ActiveThreads();
+    //qDebug()<<"threads: "<< thrdPoolLoadFinam.ActiveThreads();
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------
