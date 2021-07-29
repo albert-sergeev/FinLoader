@@ -3,6 +3,7 @@
 
 #include<QFileDialog>
 #include<QDebug>
+#include<QStringList>
 
 #include<iostream>
 #include<filesystem>
@@ -59,24 +60,35 @@ void ImportFinamForm::SetDefaultOpenDir(QString &s)
 //--------------------------------------------------------------------------------------------------------
 void ImportFinamForm::slotBtnOpenClicked()
 {
+//    QFileDialog dlg (this,"Open file to import",
+//                    QString::fromStdString(pathDir.string()),
+//                    "*.txt");
+//    if (dlg.exec()){
+//        QStringList lst (dlg.selectedFiles());
+//        if (lst.size() == 1){
+//            QString str = lst.first();
 
     QString str=QFileDialog::getOpenFileName(0,"Open file to import",
-                                             QString::fromStdString(pathDir.string()),
-                                             "*.txt");
+                                                 QString::fromStdString(pathDir.string()),
+                                                 "*.txt");
     if (str.size()>0){
-        pathFile = str.toStdString();
-        if(std::filesystem::exists(pathFile)){
-            //
-            pathDir=pathFile.parent_path();
-            QString qsDir=QString::fromStdString(pathDir.string());;
-            OpenImportFilePathChanged(qsDir);
-            //
-            QString strFileToShow = QString::fromStdString(pathFile.filename().string());
-            ui->edFileName->setText(strFileToShow);
-            //
-            slotPreparseImportFile();
+        {
+            pathFile = str.toStdString();
+            if(std::filesystem::exists(pathFile)){
+                //
+                pathDir=pathFile.parent_path();
+                QString qsDir=QString::fromStdString(pathDir.string());;
+                OpenImportFilePathChanged(qsDir);
+                //
+                QString strFileToShow = QString::fromStdString(pathFile.filename().string());
+                ui->edFileName->setText(strFileToShow);
+                //
+                slotPreparseImportFile();
+            }
         }
     }
+//    dlg.deleteLater();
+
 }
 
 //--------------------------------------------------------------------------------------------------------
@@ -112,6 +124,7 @@ void ImportFinamForm::slotEditDelimiterWgtChanged(const QString &)
 // preliminary check import file. Lookup for Ticker sign, time periods etc.
 void ImportFinamForm::slotPreparseImportFile()
 {
+
     ////////////////////////////////////////////////////////////////////////////////////
     // <TICKER> | <PER> | <DATE> | <TIME> | <LAST> | <VOL>
     // <TICKER> | <PER> | <DATE> | <TIME> | <OPEN> | <HIGH> | <LOW> | <CLOSE> | <VOL>
@@ -122,6 +135,8 @@ void ImportFinamForm::slotPreparseImportFile()
 
     iSelectedTickerId = 0;
     sSelectedTickerSignFinam = "";
+
+
 
 
     std::string sBuff;
@@ -142,12 +157,12 @@ void ImportFinamForm::slotPreparseImportFile()
         parseDt.setDefaultSign(sSign);
     }
 
-
-
     if(std::filesystem::exists(pathFile)    &&
        std::filesystem::is_regular_file(pathFile)
             ){
         std::ifstream file(pathFile);
+
+
 
         if(file.good()){
 
