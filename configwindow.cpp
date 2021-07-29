@@ -8,12 +8,18 @@
 
 
 //--------------------------------------------------------------------------------------------------------
-ConfigWindow::ConfigWindow(QWidget *parent) :
+ConfigWindow::ConfigWindow(MarketsListModel *modelM,int DefaultTickerMarket,
+                           TickersListModel *modelT, bool ShowByName,bool SortByName,
+                           QWidget *parent) :
     QWidget(parent)
-    , modelMarket{nullptr}
     , bDataMarketChanged{false}
     , bAddingMarketRow{false}
     , bIsAboutMarkerChanged(false)
+    , bDataTickerChanged{false}
+    , bAddingTickerRow {false}
+    ,iDefaultTickerMarket{DefaultTickerMarket}
+    , modelMarket{modelM}
+    , modelTicker{modelT}
     , ui(new Ui::ConfigWindow)
 {
     ui->setupUi(this);
@@ -67,6 +73,14 @@ ConfigWindow::ConfigWindow(QWidget *parent) :
 
     connect(ui->chkShowByName,SIGNAL(stateChanged(int)),this,SLOT(slotShowByNamesChecked(int)));
     connect(ui->chkSortByName,SIGNAL(stateChanged(int)),this,SLOT(slotSortByNamesChecked(int)));
+
+    ui->chkShowByName->setChecked(ShowByName);
+    ui->chkSortByName->setChecked(SortByName);
+
+    setMarketModel();
+    setTickerModel();
+
+
 
     ui->listViewTicker->setFocus();
 }
@@ -333,10 +347,9 @@ void ConfigWindow::slotBtnCancelMarketClicked()
 /// \param model
 /// \param DefaultTickerMarket
 ///
-void ConfigWindow::setMarketModel(MarketsListModel *model, int DefaultTickerMarket)
+void ConfigWindow::setMarketModel()
 {
-    modelMarket = model;
-    ui->listViewMarket->setModel(model);
+    ui->listViewMarket->setModel(modelMarket);
 
 
     ////////////////////////////////////////////////////
@@ -353,7 +366,7 @@ void ConfigWindow::setMarketModel(MarketsListModel *model, int DefaultTickerMark
         }
     }
     ////////////////////////////////////////////////////
-    ui->cmbMarkets->setModel(model);
+    ui->cmbMarkets->setModel(modelMarket);
 
     {
 
@@ -363,8 +376,7 @@ void ConfigWindow::setMarketModel(MarketsListModel *model, int DefaultTickerMark
         for(int i = 0; i < modelMarket->rowCount(); i++){
             auto idx(modelMarket->index(i,0));
             if(idx.isValid()){
-                if(modelMarket->getMarket(idx).MarketID() == DefaultTickerMarket){
-                    //iDefaultTickerMarket = DefaultTickerMarket;
+                if(modelMarket->getMarket(idx).MarketID() == iDefaultTickerMarket){
                     ui->cmbMarkets->setCurrentIndex(i);
                     slotSetSelectedTickersMarket(i);
                     bWas = true;
@@ -375,7 +387,6 @@ void ConfigWindow::setMarketModel(MarketsListModel *model, int DefaultTickerMark
         if (!bWas){
             auto idx(modelMarket->index(0,0));
             if(idx.isValid()){
-                iDefaultTickerMarket = modelMarket->getMarket(idx).MarketID();
                 slotSetSelectedTickersMarket(0);
             }
         }
@@ -440,18 +451,26 @@ void ConfigWindow::slotSetSelectedMarket(const  QModelIndex& indx)
 /// \param ShowByName
 /// \param SortByName
 ///
-void ConfigWindow::setTickerModel(TickersListModel *model,bool ShowByName,bool SortByName)
+void ConfigWindow::setTickerModel()//TickersListModel *model,bool ShowByName,bool SortByName
 {
 
-    modelTicker = model;
+
     proxyTickerModel.setDefaultMarket(iDefaultTickerMarket);
-    proxyTickerModel.setSourceModel(model);
+    proxyTickerModel.setSourceModel(modelTicker);
     ui->listViewTicker->setModel(&proxyTickerModel);
 
-    ui->chkShowByName->setChecked(ShowByName);
-    ui->chkSortByName->setChecked(SortByName);
-    slotShowByNamesChecked(ShowByName);
-    slotSortByNamesChecked(SortByName);
+    if(ui->chkShowByName->isChecked())
+        ui->listViewTicker->setModelColumn(0);
+    else
+        ui->listViewTicker->setModelColumn(2);
+
+    if(ui->chkSortByName->isChecked())
+        proxyTickerModel.sort(0);
+    else
+        proxyTickerModel.sort(2);
+
+    proxyTickerModel.invalidate();
+
 
 
     connect(ui->listViewTicker,SIGNAL(clicked(const QModelIndex&)),this,SLOT(slotSetSelectedTicker(const  QModelIndex&)));
@@ -459,7 +478,6 @@ void ConfigWindow::setTickerModel(TickersListModel *model,bool ShowByName,bool S
     /////////
 
     QItemSelectionModel  *qml =new QItemSelectionModel(&proxyTickerModel);
-    //QItemSelectionModel  *qml =new QItemSelectionModel(model);
     ui->listViewTicker->setSelectionModel(qml);
 
 
@@ -467,7 +485,6 @@ void ConfigWindow::setTickerModel(TickersListModel *model,bool ShowByName,bool S
 
 
     auto first_i(proxyTickerModel.index(0,0));
-    //auto first_i(model->index(0,0));
     if(first_i.isValid()){
         qml->select(first_i,QItemSelectionModel::SelectionFlag::Select) ;
         slotSetSelectedTicker(first_i);

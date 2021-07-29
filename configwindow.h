@@ -23,19 +23,18 @@ class ConfigWindow : public QWidget
 //////////////////////////////////////////
 public:
 
-    explicit ConfigWindow(QWidget *parent = nullptr);
+    explicit ConfigWindow(MarketsListModel *modelM,int iDefaultTickerMarket,
+                          TickersListModel *modelT, bool ShowByName,bool SortByName,
+                          QWidget *parent = nullptr);
     ~ConfigWindow();
 private:
     bool event(QEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
 
 private:
-    MarketsListModel *modelMarket;
-    TickersListModel *modelTicker;
-    //QSortFilterProxyModel proxyTickerModel;
-    TickerProxyListModel proxyTickerModel;
 
-    int iDefaultTickerMarket;
+
+
 
     Storage stStore;
     bool bDataMarketChanged;
@@ -46,12 +45,19 @@ private:
     bool bAddingTickerRow;
     bool bIsAboutTickerChanged;
 
+    int iDefaultTickerMarket;
+    MarketsListModel *modelMarket;
+    TickersListModel *modelTicker;
+    TickerProxyListModel proxyTickerModel;
+
+
+
 //////////////////////////////////////////
 /// Market work part
 //////////////////////////////////////////
 
 public:
-    void setMarketModel(MarketsListModel *model,int iDefaultTickerMarket);
+
 signals:
     void SendToMainLog(QString);
     void NeedSaveMarketsChanges();
@@ -75,7 +81,7 @@ protected slots:
 //////////////////////////////////////////
 
 public:
-    void setTickerModel(TickersListModel *model, bool ShowByName,bool SortByName);
+
 signals:
 
     void NeedSaveDefaultTickerMarket(int);
@@ -105,6 +111,10 @@ protected slots:
 
 
 private:
+
+    void setMarketModel();
+    void setTickerModel();
+
     Ui::ConfigWindow *ui;
 };
 

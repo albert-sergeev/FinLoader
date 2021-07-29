@@ -13,8 +13,14 @@
 #include "storage.h"
 
 
-ImportFinamForm::ImportFinamForm(QWidget *parent) :
+ImportFinamForm::ImportFinamForm(MarketsListModel *modelM, int DefaultTickerMarket,
+                                 TickersListModel *modelT,
+                                 QWidget *parent) :
     QWidget(parent),
+    iDefaultTickerMarket{DefaultTickerMarket},
+    modelMarket{modelM},
+    modelTicker{modelT},
+
     ui(new Ui::ImportFinamForm)
 {
     ui->setupUi(this);
@@ -34,6 +40,9 @@ ImportFinamForm::ImportFinamForm(QWidget *parent) :
     connect(ui->edDelimiter,SIGNAL(textChanged(const QString &)),this,SLOT(slotEditDelimiterWgtChanged(const QString &)));
 
     ui->progressBar->setValue(0);
+
+    setMarketModel();
+    setTickerModel();
 
     clearShowAreaOfFields();
 }
@@ -606,9 +615,9 @@ bool ImportFinamForm::slotParseLine(finamParseData & parseDt, std::istringstream
 
 
 //--------------------------------------------------------------------------------------------------------
-void ImportFinamForm::setMarketModel(MarketsListModel *model, int DefaultTickerMarket)
+void ImportFinamForm::setMarketModel()//MarketsListModel *model, int DefaultTickerMarket
 {
-    modelMarket = model;
+
 
     //ui->viewTickets
     ui->cmbMarket->setModel(modelMarket);
@@ -621,7 +630,7 @@ void ImportFinamForm::setMarketModel(MarketsListModel *model, int DefaultTickerM
         for(int i = 0; i < modelMarket->rowCount(); i++){
             auto idx(modelMarket->index(i,0));
             if(idx.isValid()){
-                if(modelMarket->getMarket(idx).MarketID() == DefaultTickerMarket){
+                if(modelMarket->getMarket(idx).MarketID() == iDefaultTickerMarket){
                     //iDefaultTickerMarket = DefaultTickerMarket;
                     ui->cmbMarket->setCurrentIndex(i);
                     slotSetSelectedTickersMarket(i);
@@ -670,14 +679,13 @@ void ImportFinamForm::slotSetSelectedTickersMarket(const  int i)
     }
 }
 //--------------------------------------------------------------------------------------------------------
-void ImportFinamForm::setTickerModel(TickersListModel *model,bool /*ShowByName*/,bool /*SortByName*/)
+void ImportFinamForm::setTickerModel()//TickersListModel *model,bool /*ShowByName*/,bool /*SortByName*/
 {
 
-    modelTicker = model;
+    proxyTickerModel.setSourceModel(modelTicker);
     proxyTickerModel.setDefaultMarket(iDefaultTickerMarket);
-    proxyTickerModel.setSourceModel(model);
-    ui->viewTickers->setModel(&proxyTickerModel);
     proxyTickerModel.sort(2);
+    ui->viewTickers->setModel(&proxyTickerModel);
 
     slotShowByNamesChecked(ui->chkShowByName->isChecked());
 

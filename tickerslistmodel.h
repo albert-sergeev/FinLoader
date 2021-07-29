@@ -54,7 +54,7 @@ private:
     int iDefaultMarket;
 
 public:
-    TickerProxyListModel (QObject *parent = nullptr): QSortFilterProxyModel(parent){};
+    TickerProxyListModel (QObject *parent = nullptr): QSortFilterProxyModel(parent),iDefaultMarket(-1){};
 
     bool lessThan(const QModelIndex & L, const QModelIndex & R)  const override {
 

@@ -108,26 +108,28 @@ private:
     std::filesystem::path pathDir;
     char cDelimiter{','};
 
-    MarketsListModel *modelMarket;
-    TickersListModel *modelTicker;
+    int iDefaultTickerMarket;
+
+    MarketsListModel * const modelMarket;
+    TickersListModel * const modelTicker;
     TickerProxyListModel proxyTickerModel;
 
     int iSelectedTickerId{0};
     std::string sSelectedTickerSignFinam{""};
 
-    int iDefaultTickerMarket;
 
 
 
 public:
-    explicit ImportFinamForm(QWidget *parent = nullptr);
+    explicit ImportFinamForm(MarketsListModel *modelM, int DefaultTickerMarket,
+                             TickersListModel *modelT,/*bool ShowByName,bool SortByName,*/
+                             QWidget *parent = nullptr);
     ~ImportFinamForm();
 
 public:
     void SetDefaultOpenDir(QString &s);
     void SetDelimiter(char c);
-    void setMarketModel(MarketsListModel *model, int DefaultTickerMarket);
-    void setTickerModel(TickersListModel *model,bool ShowByName,bool SortByName);
+
 
 signals:
     void OpenImportFilePathChanged(QString &);
@@ -159,6 +161,12 @@ private slots:
     void clearShowAreaOfFields();
 
 private:
+
+//    void setMarketModel(MarketsListModel *model, int DefaultTickerMarket);
+//    void setTickerModel(TickersListModel *model,bool ShowByName,bool SortByName);
+    void setMarketModel();
+    void setTickerModel();
+
     Ui::ImportFinamForm *ui;
 };
 

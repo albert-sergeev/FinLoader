@@ -529,15 +529,13 @@ void MainWindow::slotSetActiveLang      (QString sL)
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::slotConfigWndow()
 {
-    ConfigWindow *pdoc=new ConfigWindow;
+    ConfigWindow *pdoc=new ConfigWindow(&m_MarketLstModel,iDefaultTickerMarket,
+                                        &m_TickerLstModel,bConfigTickerShowByName,bConfigTickerSortByName);
     pdoc->setAttribute(Qt::WA_DeleteOnClose);
     pdoc->setWindowTitle(tr("Config"));
     pdoc->setWindowIcon(QPixmap(":/store/images/sc_config"));
 
-   // vMarketsLst.push_back({"MOEX","MOEX"});
-    pdoc->setMarketModel(&m_MarketLstModel,iDefaultTickerMarket);
-    pdoc->setTickerModel(&m_TickerLstModel,bConfigTickerShowByName,bConfigTickerSortByName);
-    ui->mdiArea->addSubWindow(pdoc);
+   ui->mdiArea->addSubWindow(pdoc);
 
     connect(pdoc,SIGNAL(SendToMainLog(QString)),this,SIGNAL(SendToLog(QString)));
     connect(pdoc,SIGNAL(NeedSaveMarketsChanges()),this,SLOT(slotSaveMarketDataStorage()));
@@ -559,15 +557,13 @@ void MainWindow::slotConfigWndow()
 void MainWindow::slotImportFinamWndow ()
 {
 
-    ImportFinamForm *pdoc=new ImportFinamForm;
+    ImportFinamForm *pdoc=new ImportFinamForm (&m_MarketLstModel,iDefaultTickerMarket,&m_TickerLstModel/*,bConfigTickerShowByName,bConfigTickerSortByName*/);
     pdoc->setAttribute(Qt::WA_DeleteOnClose);
     pdoc->setWindowTitle(tr("Import"));
     pdoc->setWindowIcon(QPixmap(":/store/images/sc_open"));
     pdoc->SetDefaultOpenDir(qsDefaultOpenDir);
     pdoc->SetDelimiter(cImportDelimiter);
 
-    pdoc->setMarketModel(&m_MarketLstModel,iDefaultTickerMarket);
-    pdoc->setTickerModel(&m_TickerLstModel,bConfigTickerShowByName,bConfigTickerSortByName);
 
     ui->mdiArea->addSubWindow(pdoc);
     //
