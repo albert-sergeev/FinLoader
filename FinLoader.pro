@@ -2,8 +2,13 @@ QT       += core gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
+#QMAKE_CXXFLAGS += -std=gnu++0x -pthread
+#QMAKE_CFLAGS += -std=gnu++0x -pthread
+
 LIBS += -lstdc++fs
+LIBS += -pthread
 CONFIG += c++1z
+
 
 
 # You can make your code fail to compile if it uses deprecated APIs.
@@ -19,6 +24,7 @@ SOURCES += \
     mainwindow.cpp \
     marketslistmodel.cpp \
     storage.cpp \
+    threadfreecout.cpp \
     threadpool.cpp \
     ticker.cpp \
     tickerslistmodel.cpp \
@@ -32,6 +38,7 @@ HEADERS += \
     mainwindow.h \
     marketslistmodel.h \
     storage.h \
+    threadfreecout.h \
     threadpool.h \
     ticker.h \
     tickerslistmodel.h \

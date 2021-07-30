@@ -15,33 +15,35 @@
 
 using namespace std::chrono_literals;
 
-/////////////////////////////////////////////////////////////////////////////////////////
-/// \brief Utility class to threadsafe cout (for debug)
-///
-class CThreadFreeCout:public std::stringstream
-{
-    static inline std::mutex mut;
-public:
-    CThreadFreeCout(){;};
+#include "threadfreecout.h"
 
-    ~CThreadFreeCout(){
-        std::lock_guard<std::mutex> lk(mut);
-        std::cout<<this->rdbuf();
-        std::cout.flush();
-    }
+/////////////////////////////////////////////////////////////////////////////////////////
+/// \brief The flagInterrupt class
+///
+class flagInterrupt
+{
+    std::atomic<bool> bInt;
+public:
+    flagInterrupt(){};
+    void set()      {bInt.store(true);};
+    bool IsSet()    {return  bInt.load();};
 };
+
+inline thread_local flagInterrupt this_thread_flagInterrup;
 
 /////////////////////////////////////////////////////////////////////////////////////////
 /// \brief Cover for safe join std::vector<std::thread>
 ///
+template <typename ThreadType>
 class join_threads{
-    std::vector<std::thread> &threads;
+    std::vector<ThreadType> &threads;
 public:
     join_threads() = delete;
-    join_threads(std::vector<std::thread> & thr):threads{thr}{;};
+    join_threads(std::vector<ThreadType> & thr):threads{thr}{;};
     ~join_threads(){
         for(int i = 0 ; i < (int)threads.size(); ++i){
-            threads[i].join();
+            if(threads[i].joinable())
+                threads[i].join();
         }
     };
 };
@@ -66,6 +68,7 @@ public:
     template<typename F>
     FuncWrapper(F &&f): impl(new impl_type<F>(std::move(f))){};
     void operator()() {impl->call();};
+
     FuncWrapper() = default;
     FuncWrapper(FuncWrapper&& o):impl(std::move(o.impl)){};
     FuncWrapper& operator=(FuncWrapper&& o){impl = (std::move(o.impl)); return *this;};
@@ -90,18 +93,20 @@ private:
     std::queue<FuncWrapper> work_queue;
 
     std::vector<std::thread> threads;
-    std::vector<std::future<int>>  vFuteresTrd;
-    std::vector<std::promise<int>> vPromisesTrd;
-
     std::vector<std::thread> threadsDeleted;
-//    std::vector<std::future<int>>  vFuteresTrdDeleted;
-//    std::vector<std::promise<int>> vPromisesTrdDeleted;
 
-    join_threads joiner;
-    join_threads joinerDeleted;
+    join_threads<std::thread> joiner;
+    join_threads<std::thread> joinerDeleted;
+
+    std::vector<std::future<bool>>  vFutures;
+    std::vector<flagInterrupt *>  vInterruptFlags;
+
 
     //---------------------------------------------------------------------------------------------------
-    void worker(std::promise<int> && pr){
+    void worker(std::promise<bool> pr,std::promise<flagInterrupt *> prIt){
+
+        prIt.set_value(&this_thread_flagInterrup);
+
         while(!bQuit && !work_queue.empty()){
 
             FuncWrapper task;
@@ -114,29 +119,7 @@ private:
                 task();
             }
         }
-//        {
-//            CThreadFreeCout fout;
-//            fout<<"worker pre out\n";
-//        }
-        try{
-            pr.set_value(1);
-        }
-        catch(std::exception &ex){
-            {
-            CThreadFreeCout fout;
-            fout<<"exeption!\n";
-            fout<<ex.what();
-            /*
-             * terminate called after throwing an instance of 'std::future_error'
-  what():  std::future_error: No associated state
-*/
-            }
-            throw;
-        }
-//        {
-//            CThreadFreeCout fout;
-//            fout<<"worker out\n";
-//        }
+        pr.set_value(true);
     };
     //---------------------------------------------------------------------------------------------------
 public:
@@ -148,8 +131,15 @@ public:
 
 
     ThreadPool():bQuit{false},joiner{threads},joinerDeleted{threadsDeleted}{
+
         threadMaxCount = std::thread::hardware_concurrency() > 0 ? std::thread::hardware_concurrency() : 1;
-        try{ ;}
+        //std::cout <<"Max threads: "<<threadMaxCount<<"\n";
+        try{
+//            Interruptible_thread rhrd ([]{std::cout<<"here we are!\n";});
+//            Interruptible_thread rhrd1 (&ThreadPool::worker,this);
+//            rhrd.join();
+//            rhrd1.join();
+            ;}
         catch(...){
             bQuit = true;
             throw;
@@ -158,21 +148,20 @@ public:
     //---------------------------------------------------------------------------------------------------
     ~ThreadPool(){
         bQuit = true;
+        Interrupt();
+    }
+    //---------------------------------------------------------------------------------------------------
+    void Interrupt(){
+        for(auto &tt:vInterruptFlags){
+            tt->set();
+        }
     }
     //---------------------------------------------------------------------------------------------------
     template<typename T>
     std::future<typename std::result_of<T()>::type> AddTask(T f)
     {
 
-//        {
-//            CThreadFreeCout fout;
-//            fout<<"shrinking in \n";
-//        }
         ShrinkFinishedTreads();
-//        {
-//            CThreadFreeCout fout;
-//            fout<<"shrinking out \n";
-//        }
 
         std::packaged_task<typename std::result_of<T()>::type()> task(std::move(f));
         std::future<typename std::result_of<T()>::type> res(task.get_future());
@@ -182,17 +171,20 @@ public:
         work_queue.push(std::move(task));
         }
 
-
-        //if(threadMaxCount > (int)threads.size())
+        if(threadMaxCount > (int)threads.size())
         {
             try{
                 std::unique_lock lkT(mut_treads);
-                std::promise<int> pr;
-                vFuteresTrd.emplace_back(pr.get_future());
-                vPromisesTrd.emplace_back(std::move(pr));
-                int iInd = threads.size();
 
-                threads.emplace_back(std::thread(&ThreadPool::worker,this,std::move(vPromisesTrd[iInd])));
+                std::promise<bool> pr;
+                vFutures.push_back(pr.get_future());
+
+                std::promise<flagInterrupt *> pIt;
+                std::future<flagInterrupt *> f = pIt.get_future();
+
+                threads.emplace_back(std::thread(&ThreadPool::worker,this,std::move(pr),std::move(pIt)));
+
+                vInterruptFlags.push_back(f.get());
 
             }
             catch(...){
@@ -200,8 +192,7 @@ public:
                 if(threads.size() <=0)
                 {
                     bQuit = true;
-                    std::cout<<"can't create new thread";
-                    throw;
+                    throw std::runtime_error("can't create new thread");
                 }
             }
         }
@@ -209,31 +200,36 @@ public:
         return  res;
     }
     //---------------------------------------------------------------------------------------------------
+
+private:
+    //---------------------------------------------------------------------------------------------------
     void ShrinkFinishedTreads()
     {
+        {
         std::unique_lock lkT(mut_treads);
-        std::future_status stTmp;
-        for(int i = 0; i < (int)threads.size(); ++i){
-            if(!vFuteresTrd[i].valid() ||
-                    (stTmp = vFuteresTrd[i].wait_for(1ms)) == std::future_status::ready
-                    ){
-//                if(vFuteresTrd[i].valid()){
-//                    vFuteresTrd[i].get();
-//                }
 
-                threadsDeleted.emplace_back(std::move(threads[i]));
-                //vFuteresTrdDeleted.emplace_back(std::move(vFuteresTrd[i]));
-                //vPromisesTrdDeleted.emplace_back(std::move(vPromisesTrd[i]));
+            for(int i = 0; i < (int)threads.size(); ++i){
+                if(vFutures[i].wait_for(std::chrono::microseconds(1)) == std::future_status::ready){
+                //if(threads[i].IsFinished()){
 
-                std::swap(threads[i],threads.back());
-                std::swap(vFuteresTrd[i],vFuteresTrd.back());
-                std::swap(vPromisesTrd[i],vPromisesTrd.back());
+                    threadsDeleted.emplace_back(std::move(threads[i]));
 
-                threads.pop_back();
-                vFuteresTrd.pop_back();
-                vPromisesTrd.pop_back();
+                    std::swap(threads[i],threads.back());
+                    std::swap(vFutures[i],vFutures.back());
+                    //std::swap(vPromises[i],vPromises.back());
+                    std::swap(vInterruptFlags[i],vInterruptFlags.back());
+
+                    threads.pop_back();
+                    vFutures.pop_back();
+                    //vPromises.pop_back();
+                    vInterruptFlags.pop_back();
+                }
             }
         }
+//        {
+//            ThreadFreeCout fcout;
+//            fcout<<"assigned threads: "<<threads.size()<<"\n";
+//        }
     }
 
     //---------------------------------------------------------------------------------------------------
@@ -243,8 +239,6 @@ public:
             threadsDeleted[i].join();
         }
         threadsDeleted.clear();
-        //vPromisesTrdDeleted.clear();
-        //vFuteresTrdDeleted.clear();
     }
     //---------------------------------------------------------------------------------------------------
 };

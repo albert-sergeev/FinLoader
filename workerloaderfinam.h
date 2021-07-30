@@ -1,7 +1,7 @@
 #ifndef WORKERLOADERFINAM_H
 #define WORKERLOADERFINAM_H
 
-#include "threadpool.h"
+//#include "threadpool.h"
 
 
 class workerLoaderFinam
@@ -11,5 +11,7 @@ public:
 
     static void worker();
 };
+
+
 
 #endif // WORKERLOADERFINAM_H

@@ -1,8 +1,5 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include "configwindow.h"
-#include "importfinamform.h"
-#include "workerloaderfinam.h"
 
 #include<QListView>
 
@@ -578,6 +575,7 @@ void MainWindow::slotImportFinamWndow ()
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::slotParseImportFinamFile()
 {
+
     //qDebug()<<"do import";
     thrdPoolLoadFinam.AddTask(workerLoaderFinam::worker);
     //qDebug()<<"threads: "<< thrdPoolLoadFinam.ActiveThreads();

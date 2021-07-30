@@ -17,7 +17,10 @@
 #include <QStyleFactory>
 #include <QFile>
 #include <QTextEdit>
-//#include <>
+
+#include "configwindow.h"
+#include "importfinamform.h"
+#include "workerloaderfinam.h"
 
 #include "bar.h"
 #include "marketslistmodel.h"
@@ -29,6 +32,7 @@
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
+
 
 class MainWindow : public QMainWindow
 {
