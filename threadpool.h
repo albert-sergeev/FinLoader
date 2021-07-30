@@ -26,7 +26,7 @@ class flagInterrupt
 public:
     flagInterrupt(){};
     void set()      {bInt.store(true);};
-    bool IsSet()    {return  bInt.load();};
+    bool isSet()    {return  bInt.load();};
 };
 
 inline thread_local flagInterrupt this_thread_flagInterrup;
