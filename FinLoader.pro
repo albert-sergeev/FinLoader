@@ -17,6 +17,7 @@ CONFIG += c++1z
 
 SOURCES += \
     bar.cpp \
+    blockfreequeue.cpp \
     configwindow.cpp \
     graph.cpp \
     importfinamform.cpp \
@@ -32,6 +33,7 @@ SOURCES += \
 
 HEADERS += \
     bar.h \
+    blockfreequeue.h \
     configwindow.h \
     graph.h \
     importfinamform.h \
