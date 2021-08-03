@@ -9,6 +9,7 @@
 #include "storage.h"
 #include "bar.h"
 #include "datafinamloadtask.h"
+#include "threadfreecout.h"
 
 
 

@@ -868,12 +868,14 @@ void ImportFinamForm::slotBtnImportClicked()
             }
         }
         //////////////////////////////////////////////////////////////////////////////////////////////////////
+
         dataFinamLoadTask dataTask;
 
         dataTask.TickerID       = iSelectedTickerId;
         dataTask.iInterval      = iTimePeriod;
         dataTask.sSign          = sSelectedTickerSignFinam;
         dataTask.pathFileName   = pathFile;
+        dataTask.SetParentWnd(this);
 
 
         QDateTime qdtSt         = ui->dtStart->dateTime();
@@ -900,6 +902,8 @@ void ImportFinamForm::slotBtnImportClicked()
         dataTask.dtEnd = std::mktime(&tmEnd);
 
         emit NeedParseImportFinamFile(dataTask);
+
+
     }
     else{
         int n=QMessageBox::warning(0,tr("Warning"),tr("Select correct file to import!"),QMessageBox::Ok);

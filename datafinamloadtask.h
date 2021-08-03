@@ -4,6 +4,7 @@
 #include <string>
 #include <chrono>
 #include<filesystem>
+#include<QWidget>
 
 #include "storage.h"
 #include "blockfreequeue.h"
@@ -13,6 +14,7 @@ class dataFinamLoadTask
 {
 private:
     Storage * stStore;
+    QWidget * parentWnd;
 
 public:
     int             TickerID;
@@ -23,10 +25,15 @@ public:
     std::time_t     dtEnd;
     std::filesystem::path pathFileName;
 
+
+
     //--------------------------------------------------------------
-    dataFinamLoadTask(){;};
+    dataFinamLoadTask():stStore{nullptr},parentWnd{nullptr}{;};
     //--------------------------------------------------------------
     dataFinamLoadTask(const dataFinamLoadTask & o){
+
+        //parentWnd       = o.parentWnd;
+        stStore         = o.stStore;
 
         TickerID        = o.TickerID;
         sSign           = o.sSign;
@@ -34,12 +41,14 @@ public:
         bLoad           = o.bLoad;
         dtBegin         = o.dtBegin;
         dtEnd           = o.dtEnd;
-        stStore         = o.stStore;
         pathFileName    = o.pathFileName;
     };
     //--------------------------------------------------------------
     inline void SetStore(Storage * const stSt)      { stStore = stSt;};
     inline  Storage *  GetStorage() const           {return stStore;}
+
+    inline void SetParentWnd(QWidget * const wt)    { parentWnd = wt;};
+    inline  QWidget *  GetParentWnd() const         {return parentWnd;}
     //--------------------------------------------------------------
     dataFinamLoadTask& operator=(dataFinamLoadTask&) = delete;
 };
