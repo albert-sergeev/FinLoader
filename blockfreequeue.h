@@ -14,6 +14,9 @@
 /// freeing poped nodes may stall if to many processes do push/pop same time
 /// wich will lead to overuse of memory
 ///
+/// can lead to memory leaks if destructor has finished before operations have complited
+/// (i.e. be carefull to the order of initialization)
+///
 template<typename T>
 class BlockFreeQueue
 {

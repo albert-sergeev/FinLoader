@@ -55,11 +55,11 @@ private:
     QTranslator m_translator;
 
     // thread manipulation
-    ThreadPool thrdPoolLoadFinam;
     BlockFreeQueue<dataFinamLoadTask> queueFilamLoad;
     BlockFreeQueue<dataBuckgroundThreadAnswer> queueTrdAnswers;
     workerLoaderFinam wrkrLoadFinam;
 
+    ThreadPool thrdPoolLoadFinam;
 
     // global storage objects
     QSettings m_settings;
