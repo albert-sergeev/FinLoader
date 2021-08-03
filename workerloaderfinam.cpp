@@ -47,8 +47,8 @@ void workerLoaderFinam::worker(BlockFreeQueue<dataFinamLoadTask> & queueFilamLoa
         ss << "TickerID: <"<<data.TickerID<<">\n";
         ss << "Interval: <"<<data.iInterval<<">\n";
         ss << "file: <"<<data.pathFileName<<">\n";
-        ss << "Data begin: <"<<strB<<">\n";
-        ss << "Data end: <"<<strE<<">\n";
+        ss << "Begin date: <"<<strB<<">\n";
+        ss << "End date: <"<<strE<<">\n";
         dt.SetTextInfo(ss.str());
         queueTrdAnswers.Push(dt);
         ////////////////////////////////////////////////////////////

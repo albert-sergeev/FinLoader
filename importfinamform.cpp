@@ -47,6 +47,18 @@ ImportFinamForm::ImportFinamForm(MarketsListModel *modelM, int DefaultTickerMark
 
     clearShowAreaOfFields();
     slotSetWidgetsInLoadState(bInLoading);
+
+    QString str = tr("Welcome to the form for importing data from finam.ru.\n\r"
+                     "If you want to import data, first download the file with trading info from https://www.finam.ru/profile/moex-akcii/sberbank/export/ or a similar site and save it on your computer.\n"
+                     "Then select the file using the [...] button (see the top of this form). After that, in this text window, you will see the results of the file check.\n"
+                     "If all is well, then to load the data into the database, click the import button.\n\r"
+                     "Keep in mind that you can only import data with a tick period. Data with other periods can only be loaded into the database for verification.\n\r"
+                     "You can open several forms for import at once and load several papers at the same time even if import from quik is running\n\r");
+
+    ui->edText->append(str);
+
+    //Добро пожаловать в форму для импорта данных с сайта finam.ru. Если   вы хотите импортировать данные, сначала загрузите файл с котировками с финам или аналогичной площадки и сохраните его у себя на компьютере. Затем выберите файл с помощью кнопки открыть (см. вверху этой формы). После этого в этом текстовом окне вы увидите результаты проверки файла. Если все хорошо, то для загрузки данных в базу, нажмите кнопку импорт. Имейте ввиду, что импортировать можно только данные с периодом тик. Данные с другими периодами можно только загружены в базу для проверки.
+    //вы можете открыть сразу несколько форм для импорта и одновременно загружать несколько бумаг даже если  запущен импорт из quik
 }
 //--------------------------------------------------------------------------------------------------------
 ImportFinamForm::~ImportFinamForm()
@@ -142,7 +154,8 @@ void ImportFinamForm::slotPreparseImportFile()
     // <TICKER> | <PER> | <DATE> | <TIME> | <OPEN> | <HIGH> | <LOW> | <CLOSE> | <VOL>
 
     clearShowAreaOfFields();
-    ui->edText->append( "====================================================\n");
+    ui->edText->append( "====================================================");
+    ui->edText->append( "trying to parse the file:");
     ////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -938,7 +951,11 @@ void ImportFinamForm::SetProgressBarValue(int iVal)
 }
 //--------------------------------------------------------------------------------------------------------
 void ImportFinamForm::slotLoadingHasBegun(){
-    ui->edText->append(tr("Import started..."));
+    if(!bInChecking)
+        ui->edText->append(tr("Import started..."));
+    else
+        ui->edText->append(tr("Data verification started..."));
+
 }
 //--------------------------------------------------------------------------------------------------------
 void ImportFinamForm::slotLoadingActivity(){;}
@@ -947,10 +964,17 @@ void ImportFinamForm::slotLoadingHasFinished(bool bSuccess, QString qsErr){
 
 
     if (bSuccess){
-        ui->edText->append(tr("import has been complited successfuly.\n"));
+        if(!bInChecking)
+            ui->edText->append(tr("Import has been complited successfuly.\n"));
+        else
+            ui->edText->append(tr("Data verification has been complited successfuly.\n"));
     }
     else{
-        ui->edText->append(tr("import was complited with errors:"));
+        if(!bInChecking)
+            ui->edText->append(tr("Import was complited with errors:"));
+        else
+            ui->edText->append(tr("Data verification was complited with errors:"));
+
         ui->edText->append(qsErr);
         ui->edText->append("\n");
     }
