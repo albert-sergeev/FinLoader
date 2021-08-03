@@ -1,7 +1,8 @@
 #ifndef WORKERLOADERFINAM_H
 #define WORKERLOADERFINAM_H
 
-//#include "threadpool.h"
+#include"blockfreequeue.h"
+#include"datafinamloadtask.h"
 
 
 class workerLoaderFinam
@@ -9,7 +10,7 @@ class workerLoaderFinam
 public:
     workerLoaderFinam();
 
-    static void worker();
+    static void worker(BlockFreeQueue<dataFinamLoadTask> & queueFilamLoad);
 };
 
 

@@ -81,6 +81,8 @@ ConfigWindow::ConfigWindow(MarketsListModel *modelM,int DefaultTickerMarket,
     setTickerModel();
 
 
+    slotMarketDataChanged(false);
+    slotTickerDataChanged(false);
 
     ui->listViewTicker->setFocus();
 }

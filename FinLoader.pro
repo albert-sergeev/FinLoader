@@ -19,6 +19,7 @@ SOURCES += \
     bar.cpp \
     blockfreequeue.cpp \
     configwindow.cpp \
+    datafinamloadtask.cpp \
     graph.cpp \
     importfinamform.cpp \
     main.cpp \
@@ -35,6 +36,7 @@ HEADERS += \
     bar.h \
     blockfreequeue.h \
     configwindow.h \
+    datafinamloadtask.h \
     graph.h \
     importfinamform.h \
     mainwindow.h \

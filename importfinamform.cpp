@@ -4,14 +4,13 @@
 #include<QFileDialog>
 #include<QDebug>
 #include<QStringList>
+#include<QMessageBox>
 
 #include<iostream>
 #include<filesystem>
 #include<iostream>
 #include<fstream>
 #include<ostream>
-
-#include "storage.h"
 
 
 ImportFinamForm::ImportFinamForm(MarketsListModel *modelM, int DefaultTickerMarket,
@@ -133,8 +132,15 @@ void ImportFinamForm::slotPreparseImportFile()
     ui->edText->append( "====================================================\n");
     ////////////////////////////////////////////////////////////////////////////////////
 
-    iSelectedTickerId = 0;
-    sSelectedTickerSignFinam = "";
+
+    bReadyToImport              = false;
+    iTimePeriod                 = 0;
+    iSelectedTickerId           = 0;
+    iFoundTickerId              = 0;
+    //sSelectedTickerSignFinam    = "";
+    sFoundTickerSignFinam       = "";
+    bFoundTicker                = false;
+    bFoundTickerFinam           = false;
 
 
 
@@ -292,6 +298,7 @@ void ImportFinamForm::slotPreparseImportFile()
                 }
 
                 showInterval(bb.Interval());
+                iTimePeriod = bb.Interval();
 
                 {
                     std::time_t tS (bb.Period());
@@ -360,21 +367,21 @@ void ImportFinamForm::slotPreparseImportFile()
                 // assign to ticker section
                 /////////////////////////////////////////////////////////////
                 /////////////////////////////////////////////////////////////
-                sSelectedTickerSignFinam = parseDt.Sign();
+                sSelectedTickerSignFinam    = parseDt.Sign();
+                sFoundTickerSignFinam       = parseDt.Sign();
 
                 QModelIndex indxM;
                 QModelIndex indxT;
                 QModelIndex indxProxyT;
-                bool bFound{false};
-                bool bFoundFinam{false};
+
                 if(     modelTicker->searchTickerByFinamSign(parseDt.Sign(), indxT)){
-                    bFoundFinam = true;
+                    bFoundTickerFinam = true;
                 }
                 else if(modelTicker->searchTickerBySign(parseDt.Sign(), indxT)){
-                    bFound = true;
+                    bFoundTicker = true;
                 }
                 //
-                if((bFound || bFoundFinam ) && indxT.isValid()){
+                if((bFoundTicker || bFoundTickerFinam ) && indxT.isValid()){
                     const Ticker &t {modelTicker->getTicker(indxT)};
 
                     if(!modelMarket->searchMarketByMarketID(t.MarketID(), indxM)){
@@ -395,19 +402,21 @@ void ImportFinamForm::slotPreparseImportFile()
                     qml->select(indxProxyT,QItemSelectionModel::SelectionFlag::Select | QItemSelectionModel::Rows| QItemSelectionModel::Current) ;
                     //slotSetSelectedTicker(indxProxyT);
 
-                    iSelectedTickerId = t.TickerID();
+                    iSelectedTickerId   = t.TickerID();
+                    iFoundTickerId      = t.TickerID();
 
-                    ui->edSign->setText(QString::fromStdString(t.TickerSign()+" {"+sSelectedTickerSignFinam+"}"));
+                    ui->edSign->setText(QString::fromStdString(t.TickerSign()+" {"+sFoundTickerSignFinam+"}"));
                     ui->viewTickers->setFocus();
                 }
                 else{
-                    ui->edSign->setText(QString::fromStdString("{"+sSelectedTickerSignFinam+"}"));
+                    ui->edSign->setText(QString::fromStdString("{"+sFoundTickerSignFinam+"}"));
                 }
 
                 //////////////////////
                 ui->edText->append(QString::fromStdString(oss.str()));
 
 
+                bReadyToImport              = true;
 
                 if(bb.Interval() == Bar::eInterval::pTick){
                     ui->btnImport->setText("Import");
@@ -541,6 +550,7 @@ bool ImportFinamForm::slotParseLine(finamParseData & parseDt, std::istringstream
                         return false;
                     }
                 }
+
                 if (parseDt.DefaultInterval() >= 0){
                     if(parseDt.DefaultInterval() != parseDt.t_iInterval){
                         parseDt.ossErr() << "Interval mismatch";
@@ -676,7 +686,7 @@ void ImportFinamForm::slotSetSelectedTickersMarket(const  int i)
         if(idx.isValid()){
             if(modelMarket->getMarket(idx).MarketID() != iDefaultTickerMarket){
                 iDefaultTickerMarket = modelMarket->getMarket(idx).MarketID();
-                //NeedSaveDefaultTickerMarket(iDefaultTickerMarket);
+                NeedSaveDefaultTickerMarket(iDefaultTickerMarket);
                 proxyTickerModel.setDefaultMarket(iDefaultTickerMarket);
 
                 // sel first item
@@ -735,16 +745,19 @@ void ImportFinamForm::slotSetSelectedTicker(const  QModelIndex& indx)
 
 
     //qDebug()<<"Enter slotSetSelectedMarket";
+    iSelectedTickerId = 0;
+    sSelectedTickerSignFinam = "";
 
     if (indx.isValid()){
         //const Ticker& t=modelTicker->getTicker(indx);
         const Ticker& t=proxyTickerModel.getTicker(indx);
         iSelectedTickerId = t.TickerID();
+        sSelectedTickerSignFinam = t.TickerSignFinam();
 
         if(t.TickerSignFinam().size() > 0)
             ui->edSign->setText(QString::fromStdString(t.TickerSign())+" {"+QString::fromStdString(t.TickerSignFinam())+"}");
         else
-            ui->edSign->setText(QString::fromStdString(t.TickerSign())+" {"+QString::fromStdString(sSelectedTickerSignFinam)+"}");
+            ui->edSign->setText(QString::fromStdString(t.TickerSign())+" {"+QString::fromStdString(sFoundTickerSignFinam)+"}");
     }
 
 }
@@ -765,15 +778,131 @@ void ImportFinamForm::slotShowByNamesChecked(int Checked)
 //--------------------------------------------------------------------------------------------------------
 void ImportFinamForm::slotBtnImportClicked()
 {
-    //                    Ticker t {proxyTickerModel.getTicker(indxProxyT)};
-    //                    iSelectedTickerId = t.TickerID();
-    //                    if (t.TickerSignFinam().size() == 0){
 
-    //                        t.SetTickerSignFinam(parseDt.Sign());
-    //                        proxyTickerModel.setData(indxProxyT,t,Qt::EditRole);
+    if(bReadyToImport){
+        QItemSelectionModel  *qml = ui->viewTickers->selectionModel();
+        auto lst (qml->selectedIndexes());
+//        if(lst.count() > 1){
+//            int n=QMessageBox::warning(0,tr("Warning"),tr("Only one ticker to import must be selected!"),QMessageBox::Ok);
+//            if (n==QMessageBox::Ok){;}
+//            return;
+//        }
+        //
+        if(bFoundTickerFinam && iSelectedTickerId != iFoundTickerId){
+            QString sQuestion;
+            sQuestion = tr("Finam sign <") + QString::fromStdString(sFoundTickerSignFinam) + "> " +
+                    tr("has already bound to another ticker. Select correct ticker or go to tickers config and reset settings if neсessary.");
+            int n=QMessageBox::warning(0,tr("Warning"),sQuestion,QMessageBox::Ok);
+            if (n==QMessageBox::Ok){;}
+            return;
+        }
+        //
+        if(!bFoundTicker && !bFoundTickerFinam){
+            if(iSelectedTickerId == 0){
+                QString sQuestion;
+                sQuestion = tr("No ticker with <") + QString::fromStdString(sFoundTickerSignFinam) + "> " +
+                        tr("sign was foung in base! Create new?");
+                int n=QMessageBox::warning(0,tr("Warning"),sQuestion,QMessageBox::Yes | QMessageBox::No);
+                if (n==QMessageBox::Yes){
+                    //TODO: create new ticker
+                    Ticker t {  sFoundTickerSignFinam,sFoundTickerSignFinam,iDefaultTickerMarket};
+                    t.SetTickerSignFinam(sFoundTickerSignFinam);
+                    t.SetTickerSignQuik("");
+                    t.SetAutoLoad(true);
+                    t.SetUpToSys(false);
+                    int i = proxyTickerModel.AddRow(t);
 
-    //                    }
 
-    emit NeedParseImportFinamFile();
+                    QItemSelectionModel  *qml =ui->viewTickers->selectionModel();
+
+                    auto indx(proxyTickerModel.index(i,0));
+                    if(indx.isValid() && qml){
+                        qml->select(indx,QItemSelectionModel::SelectionFlag::ClearAndSelect | QItemSelectionModel::Rows) ;
+                        slotSetSelectedTicker(indx);
+                        }
+                }
+                else{return;}
+            }
+            else{
+                if (lst.size() > 0){
+
+                    Ticker t = proxyTickerModel.getTicker(lst[0]);
+                    QString sQuestion;
+
+                    sQuestion = tr("To associate data for the finam sign <")+QString::fromStdString(sFoundTickerSignFinam) + "> " +
+                                tr("to the ticker") + " <" + QString::fromStdString(t.TickerSign()) +">?";
+                    int n=QMessageBox::warning(0,tr("Warning"),sQuestion,QMessageBox::Yes | QMessageBox::No);
+                    if (n==QMessageBox::Yes){
+                        t.SetTickerSignFinam(sFoundTickerSignFinam);
+                        proxyTickerModel.setData(lst[0],t,Qt::EditRole);
+                    }
+                    else{return;}
+                }
+                else{
+                    int n=QMessageBox::warning(0,tr("Warning"),tr("Select correct file to import!"),QMessageBox::Ok);
+                    if (n==QMessageBox::Ok){;}
+                    return;
+                }
+            }
+        }
+        else if(!bFoundTickerFinam){
+            if(iSelectedTickerId != 0 && lst.size() > 0){
+
+                    Ticker t = proxyTickerModel.getTicker(lst[0]);
+                    QString sQuestion;
+
+                    sQuestion = tr("To associate data for the finam sign <")+QString::fromStdString(sFoundTickerSignFinam) + "> " +
+                                tr("to the ticker") + " <" + QString::fromStdString(t.TickerSign()) +">?";
+                    int n=QMessageBox::warning(0,tr("Warning"),sQuestion,QMessageBox::Yes | QMessageBox::No);
+                    if (n==QMessageBox::Yes){
+                        t.SetTickerSignFinam(sFoundTickerSignFinam);
+                        proxyTickerModel.setData(lst[0],t,Qt::EditRole);
+                    }
+                    else{return;}
+            }
+            else{
+                int n=QMessageBox::warning(0,tr("Warning"),tr("Select correct file to import!"),QMessageBox::Ok);
+                if (n==QMessageBox::Ok){;}
+                return;
+            }
+        }
+        //////////////////////////////////////////////////////////////////////////////////////////////////////
+        dataFinamLoadTask dataTask;
+
+        dataTask.TickerID       = iSelectedTickerId;
+        dataTask.iInterval      = iTimePeriod;
+        dataTask.sSign          = sSelectedTickerSignFinam;
+        dataTask.pathFileName   = pathFile;
+
+
+        QDateTime qdtSt         = ui->dtStart->dateTime();
+        QDateTime qdtEnd        = ui->dtEnd->dateTime();
+
+        std::tm   tmSt;
+        tmSt.tm_year    = qdtSt.date().year()       - 1900;
+        tmSt.tm_mon     = qdtSt.date().month()      - 1;
+        tmSt.tm_mday    = qdtSt.date().day();
+        tmSt.tm_hour    = qdtSt.time().hour();
+        tmSt.tm_min     = qdtSt.time().minute();
+        tmSt.tm_sec     = qdtSt.time().second();
+        tmSt.tm_isdst   = 0;
+        dataTask.dtBegin = std::mktime(&tmSt);
+
+        std::tm   tmEnd;
+        tmEnd.tm_year    = qdtEnd.date().year()     - 1900;
+        tmEnd.tm_mon     = qdtEnd.date().month()    - 1;
+        tmEnd.tm_mday    = qdtEnd.date().day();
+        tmEnd.tm_hour    = qdtEnd.time().hour();
+        tmEnd.tm_min     = qdtEnd.time().minute();
+        tmEnd.tm_sec     = qdtEnd.time().second();
+        tmEnd.tm_isdst   = 0;
+        dataTask.dtEnd = std::mktime(&tmEnd);
+
+        emit NeedParseImportFinamFile(dataTask);
+    }
+    else{
+        int n=QMessageBox::warning(0,tr("Warning"),tr("Select correct file to import!"),QMessageBox::Ok);
+        if (n==QMessageBox::Ok){;}
+    }
 };
 //--------------------------------------------------------------------------------------------------------

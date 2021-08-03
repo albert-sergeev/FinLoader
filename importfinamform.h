@@ -8,6 +8,7 @@
 #include "tickerslistmodel.h"
 #include "storage.h"
 #include "bar.h"
+#include "datafinamloadtask.h"
 
 
 
@@ -114,10 +115,14 @@ private:
     TickersListModel * const modelTicker;
     TickerProxyListModel proxyTickerModel;
 
+    bool bReadyToImport{false};
+    int iTimePeriod{0};
     int iSelectedTickerId{0};
+    int iFoundTickerId{0};
+    std::string sFoundTickerSignFinam{""};
     std::string sSelectedTickerSignFinam{""};
-
-
+    bool bFoundTicker{false};
+    bool bFoundTickerFinam{false};
 
 
 public:
@@ -134,7 +139,8 @@ public:
 signals:
     void OpenImportFilePathChanged(QString &);
     void DelimiterHasChanged(char c);
-    void NeedParseImportFinamFile();
+    void NeedParseImportFinamFile(dataFinamLoadTask &);
+    void NeedSaveDefaultTickerMarket(int);
 
 private slots:
 

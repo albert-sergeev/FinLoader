@@ -24,6 +24,9 @@ MainWindow::MainWindow(QWidget *parent)
     InitAction();
 
     LoadDataStorage();
+
+    connect(&m_TickerLstModel,SIGNAL(dataChanged(const QModelIndex &,const QModelIndex &)), this,SLOT(slotTickerDataStorageUpdate(const QModelIndex &,const QModelIndex &)));
+    connect(&m_TickerLstModel,SIGNAL(dataRemoved(const Ticker &)), this,SLOT(slotTickerDataStorageRemove(const Ticker &)));
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 MainWindow::~MainWindow()
@@ -541,9 +544,6 @@ void MainWindow::slotConfigWndow()
     connect(pdoc,SIGNAL(NeedSaveShowByNames(bool)),this,SLOT(slotStoreConfigTickerShowByName(bool)));
     connect(pdoc,SIGNAL(NeedSaveSortByNames(bool)),this,SLOT(slotStoreConfigTickerSortByName(bool)));
 
-    connect(&m_TickerLstModel,SIGNAL(dataChanged(const QModelIndex &,const QModelIndex &)), this,SLOT(slotTickerDataStorageUpdate(const QModelIndex &,const QModelIndex &)));
-    connect(&m_TickerLstModel,SIGNAL(dataRemoved(const Ticker &)), this,SLOT(slotTickerDataStorageRemove(const Ticker &)));
-
 
     connect(this,SIGNAL(SaveUnsavedConfigs()),pdoc,SLOT(slotBtnSaveMarketClicked()));
     connect(this,SIGNAL(SaveUnsavedConfigs()),pdoc,SLOT(slotBtnSaveTickerClicked()));
@@ -566,19 +566,23 @@ void MainWindow::slotImportFinamWndow ()
     //
     connect(pdoc,SIGNAL(OpenImportFilePathChanged(QString &)),this,SLOT(slotDefaultOpenDirChanged(QString &)));
     connect(pdoc,SIGNAL(DelimiterHasChanged(char)),this,SLOT(slotImportDelimiterChanged(char)));
+    connect(pdoc,SIGNAL(NeedSaveDefaultTickerMarket(int)),this,SLOT(slotStoreDefaultTickerMarket(int)));
 
-    connect(pdoc,SIGNAL(NeedParseImportFinamFile()),this,SLOT(slotParseImportFinamFile()));
+    connect(pdoc,SIGNAL(NeedParseImportFinamFile(dataFinamLoadTask &)),this,SLOT(slotParseImportFinamFile(dataFinamLoadTask &)));
+
     //
     pdoc->show();
 }
 
 //--------------------------------------------------------------------------------------------------------------------------------
-void MainWindow::slotParseImportFinamFile()
+void MainWindow::slotParseImportFinamFile(dataFinamLoadTask & dtTask)
 {
+    dtTask.SetStore(&stStore);
+    queueFilamLoad.Push(dataFinamLoadTask(dtTask));
 
-    //qDebug()<<"do import";
-    thrdPoolLoadFinam.AddTask(workerLoaderFinam::worker);
-    //qDebug()<<"threads: "<< thrdPoolLoadFinam.ActiveThreads();
+    thrdPoolLoadFinam.AddTask([&](){
+        workerLoaderFinam::worker(queueFilamLoad);
+        });
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------

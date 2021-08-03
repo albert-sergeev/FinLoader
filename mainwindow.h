@@ -27,6 +27,8 @@
 #include "tickerslistmodel.h"
 #include "storage.h"
 #include "threadpool.h"
+#include "datafinamloadtask.h"
+#include "blockfreequeue.h"
 
 
 QT_BEGIN_NAMESPACE
@@ -53,6 +55,9 @@ private:
 
     // thread manipulation
     ThreadPool thrdPoolLoadFinam;
+    BlockFreeQueue<dataFinamLoadTask> queueFilamLoad;
+    workerLoaderFinam wrkrLoadFinam;
+
 
     // global storage objects
     QSettings m_settings;
@@ -101,7 +106,7 @@ public slots: // for config window
 public slots: // for import finam winow
     void slotDefaultOpenDirChanged(QString & s) {qsDefaultOpenDir = s;};
     void slotImportDelimiterChanged(char c)     {cImportDelimiter = c;};
-    void slotParseImportFinamFile();
+    void slotParseImportFinamFile(dataFinamLoadTask &);
 
 
 protected slots: // for main window
