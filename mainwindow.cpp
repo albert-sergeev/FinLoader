@@ -49,21 +49,37 @@ void MainWindow::timerEvent(QTimerEvent * event)
 {
     bool bSuccess{false};
     auto pdata (queueTrdAnswers.Pop(bSuccess));
-    if(bSuccess){
+    while(bSuccess){
         auto data(*pdata.get());
-        if (data.AnswerType() == dataBuckgroundThreadAnswer::eAnswerType::famLoadCurrent){
-
-            QList<QMdiSubWindow*> lst = ui->mdiArea->subWindowList();
-
-            for(int i = 0; i < lst.size(); ++i){
-                if(lst.at(i)->widget() == data.GetParentWnd()) {
-                    auto wnd  (qobject_cast<ImportFinamForm *>(lst[i]->widget()));
-                    if(wnd){
+        QList<QMdiSubWindow*> lst = ui->mdiArea->subWindowList();
+        for(int i = 0; i < lst.size(); ++i){
+            if(lst.at(i)->widget() == data.GetParentWnd()) {
+                auto wnd  (qobject_cast<ImportFinamForm *>(lst[i]->widget()));
+                if(wnd){
+                    switch(data.AnswerType()){
+                    case dataBuckgroundThreadAnswer::eAnswerType::famLoadCurrent:
                         wnd->SetProgressBarValue(data.Percent());
+                        break;
+                    case dataBuckgroundThreadAnswer::eAnswerType::famLoadBegin:
+                        wnd->slotLoadingHasBegun();
+                        break;
+                    case dataBuckgroundThreadAnswer::eAnswerType::famLoadEnd:
+                        wnd->slotLoadingHasFinished(data.Successfull(),QString::fromStdString(data.GetErrString()));
+                        break;
+                    case dataBuckgroundThreadAnswer::eAnswerType::LoadActivity:
+                        wnd->slotLoadingActivity();
+                        break;
+                    case dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage:
+                        wnd->slotTextInfo(QString::fromStdString(data.GetTextInfo()));
+                        break;
+                    default:
+                        break;
                     }
+                    break;
                 }
             }
         }
+        pdata = queueTrdAnswers.Pop(bSuccess);
     }
     //
     QWidget::timerEvent(event);
@@ -594,6 +610,7 @@ void MainWindow::slotImportFinamWndow ()
     connect(pdoc,SIGNAL(NeedSaveDefaultTickerMarket(int)),this,SLOT(slotStoreDefaultTickerMarket(int)));
 
     connect(pdoc,SIGNAL(NeedParseImportFinamFile(dataFinamLoadTask &)),this,SLOT(slotParseImportFinamFile(dataFinamLoadTask &)));
+    connect(pdoc,SIGNAL(NeedToStopLoadings()),this,SLOT(slotStopFinamLoadings()));
 
     //
     pdoc->show();
@@ -610,6 +627,11 @@ void MainWindow::slotParseImportFinamFile(dataFinamLoadTask & dtTask)
         });
 }
 //--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotStopFinamLoadings()
+{
+    queueFilamLoad.clear();
+    thrdPoolLoadFinam.Interrupt();
+}
 //--------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------
 

@@ -19,67 +19,75 @@ workerLoaderFinam::workerLoaderFinam()
 void workerLoaderFinam::worker(BlockFreeQueue<dataFinamLoadTask> & queueFilamLoad,
                                BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers)
 {
-    ThreadFreeCout fout;
-    fout<<"workerLoaderFinam in\n";
+    //ThreadFreeCout fout;
+    //fout<<"workerLoaderFinam in\n";
 
+    bool bWasBreaked{false};
     bool bSuccess{false};
     auto pdata = queueFilamLoad.Pop(bSuccess);
     while(bSuccess){
+
         dataFinamLoadTask data(*pdata.get());
-        fout << "Loading <"<<data.sSign<<">\n";
-        fout << "TickerID: <"<<data.TickerID<<">\n";
-        fout << "Interval: <"<<data.iInterval<<">\n";
-        fout << "file: <"<<data.pathFileName<<">\n";
 
+        queueTrdAnswers.Push({dataBuckgroundThreadAnswer::eAnswerType::famLoadBegin,data.GetParentWnd()});
 
+        ////////////////////////////////////////////////////////////
+        dataBuckgroundThreadAnswer dt(dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage,data.GetParentWnd());
+        std::stringstream ss;
         char buffer[100];
         std::tm * ptmB = std::localtime(&data.dtBegin);
         std::strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", ptmB);
         std::string strB(buffer);
-        fout << "Data begin: <"<<strB<<">\n";
 
         std::tm * ptmE = std::localtime(&data.dtEnd);
         std::strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", ptmE);
         std::string strE(buffer);
-        fout << "Data end: <"<<strE<<">\n";
+
+        ss << "Loading <"<<data.sSign<<">\n";
+        ss << "TickerID: <"<<data.TickerID<<">\n";
+        ss << "Interval: <"<<data.iInterval<<">\n";
+        ss << "file: <"<<data.pathFileName<<">\n";
+        ss << "Data begin: <"<<strB<<">\n";
+        ss << "Data end: <"<<strE<<">\n";
+        dt.SetTextInfo(ss.str());
+        queueTrdAnswers.Push(dt);
         ////////////////////////////////////////////////////////////
-        queueTrdAnswers.Push({dataBuckgroundThreadAnswer::eAnswerType::famLoadBegin,data.GetParentWnd()});
         for (int i =0; i<1000; ++i){
             if(this_thread_flagInterrup.isSet())
             {
-                fout<<"exit on interrupt\n";
+                //fout<<"exit on interrupt\n";
+                dataBuckgroundThreadAnswer dt(dataBuckgroundThreadAnswer::eAnswerType::famLoadEnd,data.GetParentWnd());
+                dt.SetSuccessfull(false);
+                dt.SetErrString("loading process interrupted");
+                queueTrdAnswers.Push(dt);
+                bWasBreaked = true;
                 break;
             }
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            //// work area
             if (i %10 == 0){
                 dataBuckgroundThreadAnswer dt(dataBuckgroundThreadAnswer::eAnswerType::famLoadCurrent,data.GetParentWnd());
                 dt.SetPercent(i/10);
                 queueTrdAnswers.Push(dt);
             }
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             dataBuckgroundThreadAnswer dt(dataBuckgroundThreadAnswer::eAnswerType::LoadActivity,data.GetParentWnd());
             ///
-            std::this_thread::sleep_for(2ms);
+            std::this_thread::sleep_for(4ms);
 
         }
-        queueTrdAnswers.Push({dataBuckgroundThreadAnswer::eAnswerType::famLoadEnd,data.GetParentWnd()});
+        if (!bWasBreaked){
+            dataBuckgroundThreadAnswer dt(dataBuckgroundThreadAnswer::eAnswerType::famLoadEnd,data.GetParentWnd());
+            dt.SetSuccessfull(true);
+            queueTrdAnswers.Push(dt);
+            pdata = queueFilamLoad.Pop(bSuccess);
+        }
+        else{
+            break;
+        }
         //----------------------------------
-        pdata = queueFilamLoad.Pop(bSuccess);
     }
-
-    //    std::string str;
-    //    std::ostringstream ss(str);
-
-//    for ( int i=0; i < 50000000;++i){
-//        if(this_thread_flagInterrup.isSet())
-//        {
-//            fout<<"exit on interrupt\n";
-//            break;
-//        }
-//        ss<<i<<"ddd\n";
-//    }
-
-    //unsigned long t = (unsigned long)&this_thread_flagInterrup;
-    //fout<<"got in thread ["<<t<<"]\n";
-    fout<<"workerLoaderFinam out\n";
+    //fout<<"workerLoaderFinam out\n";
 }
 
 

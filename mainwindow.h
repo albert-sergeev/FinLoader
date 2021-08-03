@@ -110,6 +110,7 @@ public slots: // for import finam winow
     void slotDefaultOpenDirChanged(QString & s) {qsDefaultOpenDir = s;};
     void slotImportDelimiterChanged(char c)     {cImportDelimiter = c;};
     void slotParseImportFinamFile(dataFinamLoadTask &);
+    void slotStopFinamLoadings();
 
 
 protected slots: // for main window

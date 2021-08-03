@@ -105,7 +105,7 @@ class ImportFinamForm : public QWidget
     Q_OBJECT
 
 private:
-    //std::filesystem::directory_entry drCurr;
+
     std::filesystem::path pathFile;
     std::filesystem::path pathDir;
     char cDelimiter{','};
@@ -115,6 +115,10 @@ private:
     MarketsListModel * const modelMarket;
     TickersListModel * const modelTicker;
     TickerProxyListModel proxyTickerModel;
+
+    bool bInLoading{false};
+    bool bInChecking{false};
+
 
     bool bReadyToImport{false};
     int iTimePeriod{0};
@@ -136,14 +140,20 @@ public:
     void SetDefaultOpenDir(QString &s);
     void SetDelimiter(char c);
 
-    void SetProgressBarValue(int);
+public slots:
 
+    void SetProgressBarValue(int);
+    void slotLoadingHasBegun();
+    void slotLoadingHasFinished(bool bSuccess, QString qsErr);
+    void slotLoadingActivity();
+    void slotTextInfo(QString qsStr);
 
 signals:
     void OpenImportFilePathChanged(QString &);
+    void NeedSaveDefaultTickerMarket(int);
     void DelimiterHasChanged(char c);
     void NeedParseImportFinamFile(dataFinamLoadTask &);
-    void NeedSaveDefaultTickerMarket(int);
+    void NeedToStopLoadings();
 
 private slots:
 
@@ -159,20 +169,16 @@ private slots:
     void slotSetSelectedTicker(const  QModelIndex& indx,const  QModelIndex& ) {slotSetSelectedTicker(indx);};
 
     void slotPreparseImportFile();
-    //bool slotParseLine(std::vector<int> & fieldsType, std::istringstream & issLine, std::istringstream & issTmp, std::ostringstream & ossErr, Bar &b, int ColMax, int DefaultInterval = (-1));
     bool slotParseLine(finamParseData & parseDt, std::istringstream & issLine, Bar &b);
 
-
-
-    //bool  searchTickerBySign(std::string sSign, QModelIndex& indx);
 
     void showInterval(int Interval);
     void clearShowAreaOfFields();
 
+    void slotSetWidgetsInLoadState(bool);
+
 private:
 
-//    void setMarketModel(MarketsListModel *model, int DefaultTickerMarket);
-//    void setTickerModel(TickersListModel *model,bool ShowByName,bool SortByName);
     void setMarketModel();
     void setTickerModel();
 

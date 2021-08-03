@@ -45,6 +45,7 @@ ImportFinamForm::ImportFinamForm(MarketsListModel *modelM, int DefaultTickerMark
     setTickerModel();
 
     clearShowAreaOfFields();
+    slotSetWidgetsInLoadState(bInLoading);
 }
 //--------------------------------------------------------------------------------------------------------
 ImportFinamForm::~ImportFinamForm()
@@ -93,15 +94,15 @@ void ImportFinamForm::slotBtnOpenClicked()
 //--------------------------------------------------------------------------------------------------------
 void ImportFinamForm::slotBtnCreateClicked(){
 
-//    pathFile ="/home/albert/Загрузки/SBER_210501_210716(2) (копия).txt";
-//    pathDir=pathFile.parent_path();
-//    QString qsDir=QString::fromStdString(pathDir.string());;
-//    OpenImportFilePathChanged(qsDir);
-//    //
-//    QString strFileToShow = QString::fromStdString(pathFile.filename().string());
-//    ui->edFileName->setText(strFileToShow);
-//    //
-//    slotPreparseImportFile();
+    pathFile ="/home/albert/Загрузки/SBER_210501_210716(2) (копия).txt";
+    pathDir=pathFile.parent_path();
+    QString qsDir=QString::fromStdString(pathDir.string());;
+    OpenImportFilePathChanged(qsDir);
+    //
+    QString strFileToShow = QString::fromStdString(pathFile.filename().string());
+    ui->edFileName->setText(strFileToShow);
+    //
+    slotPreparseImportFile();
 };
 
 //--------------------------------------------------------------------------------------------------------
@@ -430,9 +431,11 @@ void ImportFinamForm::slotPreparseImportFile()
                 bReadyToImport              = true;
 
                 if(bb.Interval() == Bar::eInterval::pTick){
+                    bInChecking = false;
                     ui->btnImport->setText("Import");
                 }
                 else{
+                    bInChecking = true;
                     ui->btnImport->setText("Check");
                 }
 
@@ -789,66 +792,81 @@ void ImportFinamForm::slotShowByNamesChecked(int Checked)
 //--------------------------------------------------------------------------------------------------------
 void ImportFinamForm::slotBtnImportClicked()
 {
+    slotSetWidgetsInLoadState(bInLoading);
 
-
-    if(bReadyToImport){
-        QItemSelectionModel  *qml = ui->viewTickers->selectionModel();
-        auto lst (qml->selectedIndexes());
-//        if(lst.count() > 1){
-//            int n=QMessageBox::warning(0,tr("Warning"),tr("Only one ticker to import must be selected!"),QMessageBox::Ok);
-//            if (n==QMessageBox::Ok){;}
-//            return;
-//        }
-        //
-        if(bFoundTickerFinam && iSelectedTickerId != iFoundTickerId){
-            QString sQuestion;
-            sQuestion = tr("Finam sign <") + QString::fromStdString(sFoundTickerSignFinam) + "> " +
-                    tr("has already bound to another ticker. Select correct ticker or go to tickers config and reset settings if neсessary.");
-            int n=QMessageBox::warning(0,tr("Warning"),sQuestion,QMessageBox::Ok);
-            if (n==QMessageBox::Ok){;}
-            return;
-        }
-        //
-        if(!bFoundTicker && !bFoundTickerFinam){
-            if(iSelectedTickerId == 0){
+    if(!bInLoading){
+        if(bReadyToImport){
+            QItemSelectionModel  *qml = ui->viewTickers->selectionModel();
+            auto lst (qml->selectedIndexes());
+            if(bFoundTickerFinam && iSelectedTickerId != iFoundTickerId){
                 QString sQuestion;
-                sQuestion = tr("No ticker with <") + QString::fromStdString(sFoundTickerSignFinam) + "> " +
-                        tr("sign was foung in base! Create new?");
-                int n=QMessageBox::warning(0,tr("Warning"),sQuestion,QMessageBox::Yes | QMessageBox::No);
-                if (n==QMessageBox::Yes){
-                    //TODO: create new ticker
-                    Ticker t {  sFoundTickerSignFinam,sFoundTickerSignFinam,iDefaultTickerMarket};
-                    t.SetTickerSignFinam(sFoundTickerSignFinam);
-                    t.SetTickerSignQuik("");
-                    t.SetAutoLoad(true);
-                    t.SetUpToSys(false);
-                    int i = proxyTickerModel.AddRow(t);
-
-
-                    QItemSelectionModel  *qml =ui->viewTickers->selectionModel();
-
-                    auto indx(proxyTickerModel.index(i,0));
-                    if(indx.isValid() && qml){
-                        qml->select(indx,QItemSelectionModel::SelectionFlag::ClearAndSelect | QItemSelectionModel::Rows) ;
-                        slotSetSelectedTicker(indx);
-                        }
-                }
-                else{return;}
+                sQuestion = tr("Finam sign <") + QString::fromStdString(sFoundTickerSignFinam) + "> " +
+                        tr("has already bound to another ticker. Select correct ticker or go to tickers config and reset settings if neсessary.");
+                int n=QMessageBox::warning(0,tr("Warning"),sQuestion,QMessageBox::Ok);
+                if (n==QMessageBox::Ok){;}
+                return;
             }
-            else{
-                if (lst.size() > 0){
-
-                    Ticker t = proxyTickerModel.getTicker(lst[0]);
+            //
+            if(!bFoundTicker && !bFoundTickerFinam){
+                if(iSelectedTickerId == 0){
                     QString sQuestion;
-
-                    sQuestion = tr("To associate data for the finam sign <")+QString::fromStdString(sFoundTickerSignFinam) + "> " +
-                                tr("to the ticker") + " <" + QString::fromStdString(t.TickerSign()) +">?";
+                    sQuestion = tr("No ticker with <") + QString::fromStdString(sFoundTickerSignFinam) + "> " +
+                            tr("sign was foung in base! Create new?");
                     int n=QMessageBox::warning(0,tr("Warning"),sQuestion,QMessageBox::Yes | QMessageBox::No);
                     if (n==QMessageBox::Yes){
+                        Ticker t {  sFoundTickerSignFinam,sFoundTickerSignFinam,iDefaultTickerMarket};
                         t.SetTickerSignFinam(sFoundTickerSignFinam);
-                        proxyTickerModel.setData(lst[0],t,Qt::EditRole);
+                        t.SetTickerSignQuik("");
+                        t.SetAutoLoad(true);
+                        t.SetUpToSys(false);
+                        int i = proxyTickerModel.AddRow(t);
+
+                        QItemSelectionModel  *qml =ui->viewTickers->selectionModel();
+
+                        auto indx(proxyTickerModel.index(i,0));
+                        if(indx.isValid() && qml){
+                            qml->select(indx,QItemSelectionModel::SelectionFlag::ClearAndSelect | QItemSelectionModel::Rows) ;
+                            slotSetSelectedTicker(indx);
+                            }
                     }
                     else{return;}
+                }
+                else{
+                    if (lst.size() > 0){
+
+                        Ticker t = proxyTickerModel.getTicker(lst[0]);
+                        QString sQuestion;
+
+                        sQuestion = tr("To associate data for the finam sign <")+QString::fromStdString(sFoundTickerSignFinam) + "> " +
+                                    tr("to the ticker") + " <" + QString::fromStdString(t.TickerSign()) +">?";
+                        int n=QMessageBox::warning(0,tr("Warning"),sQuestion,QMessageBox::Yes | QMessageBox::No);
+                        if (n==QMessageBox::Yes){
+                            t.SetTickerSignFinam(sFoundTickerSignFinam);
+                            proxyTickerModel.setData(lst[0],t,Qt::EditRole);
+                        }
+                        else{return;}
+                    }
+                    else{
+                        int n=QMessageBox::warning(0,tr("Warning"),tr("Select correct file to import!"),QMessageBox::Ok);
+                        if (n==QMessageBox::Ok){;}
+                        return;
+                    }
+                }
+            }
+            else if(!bFoundTickerFinam){
+                if(iSelectedTickerId != 0 && lst.size() > 0){
+
+                        Ticker t = proxyTickerModel.getTicker(lst[0]);
+                        QString sQuestion;
+
+                        sQuestion = tr("To associate data for the finam sign <")+QString::fromStdString(sFoundTickerSignFinam) + "> " +
+                                    tr("to the ticker") + " <" + QString::fromStdString(t.TickerSign()) +">?";
+                        int n=QMessageBox::warning(0,tr("Warning"),sQuestion,QMessageBox::Yes | QMessageBox::No);
+                        if (n==QMessageBox::Yes){
+                            t.SetTickerSignFinam(sFoundTickerSignFinam);
+                            proxyTickerModel.setData(lst[0],t,Qt::EditRole);
+                        }
+                        else{return;}
                 }
                 else{
                     int n=QMessageBox::warning(0,tr("Warning"),tr("Select correct file to import!"),QMessageBox::Ok);
@@ -856,75 +874,114 @@ void ImportFinamForm::slotBtnImportClicked()
                     return;
                 }
             }
+            //////////////////////////////////////////////////////////////////////////////////////////////////////
+
+            dataFinamLoadTask dataTask;
+
+            dataTask.TickerID       = iSelectedTickerId;
+            dataTask.iInterval      = iTimePeriod;
+            dataTask.sSign          = sSelectedTickerSignFinam;
+            dataTask.pathFileName   = pathFile;
+            dataTask.SetParentWnd(this);
+
+            QDateTime qdtSt         = ui->dtStart->dateTime();
+            QDateTime qdtEnd        = ui->dtEnd->dateTime();
+
+            std::tm   tmSt;
+            tmSt.tm_year    = qdtSt.date().year()       - 1900;
+            tmSt.tm_mon     = qdtSt.date().month()      - 1;
+            tmSt.tm_mday    = qdtSt.date().day();
+            tmSt.tm_hour    = qdtSt.time().hour();
+            tmSt.tm_min     = qdtSt.time().minute();
+            tmSt.tm_sec     = qdtSt.time().second();
+            tmSt.tm_isdst   = 0;
+            dataTask.dtBegin = std::mktime(&tmSt);
+
+            std::tm   tmEnd;
+            tmEnd.tm_year    = qdtEnd.date().year()     - 1900;
+            tmEnd.tm_mon     = qdtEnd.date().month()    - 1;
+            tmEnd.tm_mday    = qdtEnd.date().day();
+            tmEnd.tm_hour    = qdtEnd.time().hour();
+            tmEnd.tm_min     = qdtEnd.time().minute();
+            tmEnd.tm_sec     = qdtEnd.time().second();
+            tmEnd.tm_isdst   = 0;
+            dataTask.dtEnd = std::mktime(&tmEnd);
+
+            emit NeedParseImportFinamFile(dataTask);
+
+            bInLoading = true;
+            slotSetWidgetsInLoadState(bInLoading);
+
         }
-        else if(!bFoundTickerFinam){
-            if(iSelectedTickerId != 0 && lst.size() > 0){
-
-                    Ticker t = proxyTickerModel.getTicker(lst[0]);
-                    QString sQuestion;
-
-                    sQuestion = tr("To associate data for the finam sign <")+QString::fromStdString(sFoundTickerSignFinam) + "> " +
-                                tr("to the ticker") + " <" + QString::fromStdString(t.TickerSign()) +">?";
-                    int n=QMessageBox::warning(0,tr("Warning"),sQuestion,QMessageBox::Yes | QMessageBox::No);
-                    if (n==QMessageBox::Yes){
-                        t.SetTickerSignFinam(sFoundTickerSignFinam);
-                        proxyTickerModel.setData(lst[0],t,Qt::EditRole);
-                    }
-                    else{return;}
-            }
-            else{
-                int n=QMessageBox::warning(0,tr("Warning"),tr("Select correct file to import!"),QMessageBox::Ok);
-                if (n==QMessageBox::Ok){;}
-                return;
-            }
+        else{
+            int n=QMessageBox::warning(0,tr("Warning"),tr("Select correct file to import!"),QMessageBox::Ok);
+            if (n==QMessageBox::Ok){;}
         }
-        //////////////////////////////////////////////////////////////////////////////////////////////////////
-
-        dataFinamLoadTask dataTask;
-
-        dataTask.TickerID       = iSelectedTickerId;
-        dataTask.iInterval      = iTimePeriod;
-        dataTask.sSign          = sSelectedTickerSignFinam;
-        dataTask.pathFileName   = pathFile;
-        dataTask.SetParentWnd(this);
-
-        QDateTime qdtSt         = ui->dtStart->dateTime();
-        QDateTime qdtEnd        = ui->dtEnd->dateTime();
-
-        std::tm   tmSt;
-        tmSt.tm_year    = qdtSt.date().year()       - 1900;
-        tmSt.tm_mon     = qdtSt.date().month()      - 1;
-        tmSt.tm_mday    = qdtSt.date().day();
-        tmSt.tm_hour    = qdtSt.time().hour();
-        tmSt.tm_min     = qdtSt.time().minute();
-        tmSt.tm_sec     = qdtSt.time().second();
-        tmSt.tm_isdst   = 0;
-        dataTask.dtBegin = std::mktime(&tmSt);
-
-        std::tm   tmEnd;
-        tmEnd.tm_year    = qdtEnd.date().year()     - 1900;
-        tmEnd.tm_mon     = qdtEnd.date().month()    - 1;
-        tmEnd.tm_mday    = qdtEnd.date().day();
-        tmEnd.tm_hour    = qdtEnd.time().hour();
-        tmEnd.tm_min     = qdtEnd.time().minute();
-        tmEnd.tm_sec     = qdtEnd.time().second();
-        tmEnd.tm_isdst   = 0;
-        dataTask.dtEnd = std::mktime(&tmEnd);
-
-        emit NeedParseImportFinamFile(dataTask);
-
-
     }
     else{
-        int n=QMessageBox::warning(0,tr("Warning"),tr("Select correct file to import!"),QMessageBox::Ok);
-        if (n==QMessageBox::Ok){;}
+        QString sQuestion = tr("Do you want to stop loading process?\n Warning: will be stopped all loadings from files!");
+        int n=QMessageBox::warning(0,tr("Warning"),sQuestion,QMessageBox::Yes | QMessageBox::No);
+        if (n==QMessageBox::Yes){
+            emit NeedToStopLoadings();
+        }
     }
 };
 //--------------------------------------------------------------------------------------------------------
 void ImportFinamForm::SetProgressBarValue(int iVal)
 {
-    if(iVal >=0 && iVal < 100){
+    if(iVal >=0 && iVal <= 100){
         ui->progressBar->setValue(iVal);
+    }
+}
+//--------------------------------------------------------------------------------------------------------
+void ImportFinamForm::slotLoadingHasBegun(){
+    ui->edText->append(tr("Import started..."));
+}
+//--------------------------------------------------------------------------------------------------------
+void ImportFinamForm::slotLoadingActivity(){;}
+//--------------------------------------------------------------------------------------------------------
+void ImportFinamForm::slotLoadingHasFinished(bool bSuccess, QString qsErr){
+
+
+    if (bSuccess){
+        ui->edText->append(tr("import has been complited successfuly.\n"));
+    }
+    else{
+        ui->edText->append(tr("import was complited with errors:"));
+        ui->edText->append(qsErr);
+        ui->edText->append("\n");
+    }
+
+    bInLoading = false;
+    slotSetWidgetsInLoadState(bInLoading);
+}
+//--------------------------------------------------------------------------------------------------------
+void ImportFinamForm::slotTextInfo(QString qsStr){
+    ui->edText->append(qsStr);
+}
+//--------------------------------------------------------------------------------------------------------
+void ImportFinamForm::slotSetWidgetsInLoadState(bool bInLoad)
+{
+    ui->btnCreate->setEnabled(!bInLoad);
+    ui->btnOpen->setEnabled(!bInLoad);
+    ui->btnTest->setEnabled(!bInLoad);
+    ui->edDelimiter->setEnabled(!bInLoad);
+    ui->dtStart->setEnabled(!bInLoad);
+    ui->dtEnd->setEnabled(!bInLoad);
+    ui->cmbMarket->setEnabled(!bInLoad);
+    ui->viewTickers->setEnabled(!bInLoad);
+    ui->chkShowByName->setEnabled(!bInLoad);
+
+    if(bInLoad){
+        ui->btnImport->setText(tr("Stop"));
+    }
+    else{
+        if(!bInChecking){
+            ui->btnImport->setText("Import");
+        }
+        else{
+            ui->btnImport->setText("Check");
+        }
     }
 }
 //--------------------------------------------------------------------------------------------------------
