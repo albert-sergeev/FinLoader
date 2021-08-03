@@ -35,9 +35,10 @@ ImportFinamForm::ImportFinamForm(MarketsListModel *modelM, int DefaultTickerMark
 
     connect(ui->chkShowByName,SIGNAL(stateChanged(int)),this,SLOT(slotShowByNamesChecked(int)));
 
-
-
     connect(ui->edDelimiter,SIGNAL(textChanged(const QString &)),this,SLOT(slotEditDelimiterWgtChanged(const QString &)));
+
+    connect(ui->dtStart,SIGNAL(dateTimeChanged(const QDateTime &)),this,SLOT(slotDateTimeStartChanged(const QDateTime &)));
+    connect(ui->dtEnd,SIGNAL(dateTimeChanged(const QDateTime &)),this,SLOT(slotDateTimeEndChanged(const QDateTime &)));
 
     ui->progressBar->setValue(0);
 
@@ -318,6 +319,7 @@ void ImportFinamForm::slotPreparseImportFile()
                     const QDate dtS(tmSt->tm_year,tmSt->tm_mon,tmSt->tm_mday);
                     const QTime tmS(tmSt->tm_hour,tmSt->tm_min,tmSt->tm_sec);
                     QDateTime dt (dtS,tmS);
+                    qdtMin = dt;
 
                     ui->dtStart->setDateTime(dt);
                 }
@@ -365,6 +367,7 @@ void ImportFinamForm::slotPreparseImportFile()
                     const QDate dtS(tmSt->tm_year,tmSt->tm_mon,tmSt->tm_mday);
                     const QTime tmS(tmSt->tm_hour,tmSt->tm_min,tmSt->tm_sec);
                     QDateTime dt (dtS,tmS);
+                    qdtMax = dt;
 
                     ui->dtEnd->setDateTime(dt);
                 }
@@ -982,6 +985,20 @@ void ImportFinamForm::slotSetWidgetsInLoadState(bool bInLoad)
         else{
             ui->btnImport->setText("Check");
         }
+    }
+}
+//--------------------------------------------------------------------------------------------------------
+void ImportFinamForm::slotDateTimeStartChanged(const QDateTime &)
+{
+    if(bReadyToImport && ui->dtStart->dateTime() < qdtMin){
+        ui->dtStart->setDateTime(qdtMin);
+    }
+}
+//--------------------------------------------------------------------------------------------------------
+void ImportFinamForm::slotDateTimeEndChanged(const QDateTime &)
+{
+    if(bReadyToImport && ui->dtEnd->dateTime() > qdtMax){
+        ui->dtEnd->setDateTime(qdtMax);
     }
 }
 //--------------------------------------------------------------------------------------------------------

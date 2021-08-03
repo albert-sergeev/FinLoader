@@ -2,6 +2,7 @@
 #define IMPORTFINAMFORM_H
 
 #include <QWidget>
+#include <QDateTime>
 #include<filesystem>
 
 #include "marketslistmodel.h"
@@ -129,6 +130,8 @@ private:
     bool bFoundTicker{false};
     bool bFoundTickerFinam{false};
 
+    QDateTime qdtMin;
+    QDateTime qdtMax;
 
 public:
     explicit ImportFinamForm(MarketsListModel *modelM, int DefaultTickerMarket,
@@ -163,6 +166,10 @@ private slots:
     void slotBtnImportClicked();
     void slotEditDelimiterWgtChanged(const QString &);
     void slotShowByNamesChecked(int Checked);
+
+    void slotDateTimeStartChanged(const QDateTime &);
+    void slotDateTimeEndChanged(const QDateTime &);
+
 
     void slotSetSelectedTickersMarket(const  int i);
     void slotSetSelectedTicker(const  QModelIndex& indx);
