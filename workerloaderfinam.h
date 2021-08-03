@@ -3,6 +3,7 @@
 
 #include"blockfreequeue.h"
 #include"datafinamloadtask.h"
+#include "databuckgroundthreadanswer.h"
 
 
 class workerLoaderFinam
@@ -10,7 +11,8 @@ class workerLoaderFinam
 public:
     workerLoaderFinam();
 
-    static void worker(BlockFreeQueue<dataFinamLoadTask> & queueFilamLoad);
+    static void worker(BlockFreeQueue<dataFinamLoadTask> & queueFilamLoad,
+                       BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers);
 };
 
 

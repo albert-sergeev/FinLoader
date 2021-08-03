@@ -91,7 +91,18 @@ void ImportFinamForm::slotBtnOpenClicked()
 }
 
 //--------------------------------------------------------------------------------------------------------
-void ImportFinamForm::slotBtnCreateClicked(){};
+void ImportFinamForm::slotBtnCreateClicked(){
+
+//    pathFile ="/home/albert/Загрузки/SBER_210501_210716(2) (копия).txt";
+//    pathDir=pathFile.parent_path();
+//    QString qsDir=QString::fromStdString(pathDir.string());;
+//    OpenImportFilePathChanged(qsDir);
+//    //
+//    QString strFileToShow = QString::fromStdString(pathFile.filename().string());
+//    ui->edFileName->setText(strFileToShow);
+//    //
+//    slotPreparseImportFile();
+};
 
 //--------------------------------------------------------------------------------------------------------
 void ImportFinamForm::slotBtnTestClicked()
@@ -877,7 +888,6 @@ void ImportFinamForm::slotBtnImportClicked()
         dataTask.pathFileName   = pathFile;
         dataTask.SetParentWnd(this);
 
-
         QDateTime qdtSt         = ui->dtStart->dateTime();
         QDateTime qdtEnd        = ui->dtEnd->dateTime();
 
@@ -910,4 +920,11 @@ void ImportFinamForm::slotBtnImportClicked()
         if (n==QMessageBox::Ok){;}
     }
 };
+//--------------------------------------------------------------------------------------------------------
+void ImportFinamForm::SetProgressBarValue(int iVal)
+{
+    if(iVal >=0 && iVal < 100){
+        ui->progressBar->setValue(iVal);
+    }
+}
 //--------------------------------------------------------------------------------------------------------

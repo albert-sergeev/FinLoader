@@ -28,6 +28,7 @@
 #include "storage.h"
 #include "threadpool.h"
 #include "datafinamloadtask.h"
+#include "databuckgroundthreadanswer.h"
 #include "blockfreequeue.h"
 
 
@@ -56,6 +57,7 @@ private:
     // thread manipulation
     ThreadPool thrdPoolLoadFinam;
     BlockFreeQueue<dataFinamLoadTask> queueFilamLoad;
+    BlockFreeQueue<dataBuckgroundThreadAnswer> queueTrdAnswers;
     workerLoaderFinam wrkrLoadFinam;
 
 
@@ -94,6 +96,7 @@ protected:
     void SaveDataStorage();
 
     bool event(QEvent *event) override;
+    void timerEvent(QTimerEvent * event) override;
 
 public slots: // for config window
     void slotSaveMarketDataStorage();

@@ -27,6 +27,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(&m_TickerLstModel,SIGNAL(dataChanged(const QModelIndex &,const QModelIndex &)), this,SLOT(slotTickerDataStorageUpdate(const QModelIndex &,const QModelIndex &)));
     connect(&m_TickerLstModel,SIGNAL(dataRemoved(const Ticker &)), this,SLOT(slotTickerDataStorageRemove(const Ticker &)));
+
+    startTimer(100); // timer to process GUID events
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 MainWindow::~MainWindow()
@@ -42,7 +44,30 @@ bool MainWindow::event(QEvent *event)
     }
     return QWidget::event(event);
 }
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::timerEvent(QTimerEvent * event)
+{
+    bool bSuccess{false};
+    auto pdata (queueTrdAnswers.Pop(bSuccess));
+    if(bSuccess){
+        auto data(*pdata.get());
+        if (data.AnswerType() == dataBuckgroundThreadAnswer::eAnswerType::famLoadCurrent){
 
+            QList<QMdiSubWindow*> lst = ui->mdiArea->subWindowList();
+
+            for(int i = 0; i < lst.size(); ++i){
+                if(lst.at(i)->widget() == data.GetParentWnd()) {
+                    auto wnd  (qobject_cast<ImportFinamForm *>(lst[i]->widget()));
+                    if(wnd){
+                        wnd->SetProgressBarValue(data.Percent());
+                    }
+                }
+            }
+        }
+    }
+    //
+    QWidget::timerEvent(event);
+}
 //--------------------------------------------------------------------------------------------------------------------------------
 ///
 /// \brief plug for future
@@ -581,7 +606,7 @@ void MainWindow::slotParseImportFinamFile(dataFinamLoadTask & dtTask)
     queueFilamLoad.Push(dataFinamLoadTask(dtTask));
 
     thrdPoolLoadFinam.AddTask([&](){
-        workerLoaderFinam::worker(queueFilamLoad);
+        workerLoaderFinam::worker(queueFilamLoad,queueTrdAnswers);
         });
 }
 //--------------------------------------------------------------------------------------------------------------------------------

@@ -7,6 +7,8 @@
 #include<sstream>
 #include<chrono>
 
+using namespace std::chrono_literals;
+
 
 workerLoaderFinam::workerLoaderFinam()
 {
@@ -14,13 +16,11 @@ workerLoaderFinam::workerLoaderFinam()
 }
 
 
-void workerLoaderFinam::worker(BlockFreeQueue<dataFinamLoadTask> & queueFilamLoad)
+void workerLoaderFinam::worker(BlockFreeQueue<dataFinamLoadTask> & queueFilamLoad,
+                               BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers)
 {
     ThreadFreeCout fout;
     fout<<"workerLoaderFinam in\n";
-
-//    std::string str;
-//    std::ostringstream ss(str);
 
     bool bSuccess{false};
     auto pdata = queueFilamLoad.Pop(bSuccess);
@@ -42,11 +42,31 @@ void workerLoaderFinam::worker(BlockFreeQueue<dataFinamLoadTask> & queueFilamLoa
         std::strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", ptmE);
         std::string strE(buffer);
         fout << "Data end: <"<<strE<<">\n";
+        ////////////////////////////////////////////////////////////
+        queueTrdAnswers.Push({dataBuckgroundThreadAnswer::eAnswerType::famLoadBegin,data.GetParentWnd()});
+        for (int i =0; i<1000; ++i){
+            if(this_thread_flagInterrup.isSet())
+            {
+                fout<<"exit on interrupt\n";
+                break;
+            }
+            if (i %10 == 0){
+                dataBuckgroundThreadAnswer dt(dataBuckgroundThreadAnswer::eAnswerType::famLoadCurrent,data.GetParentWnd());
+                dt.SetPercent(i/10);
+                queueTrdAnswers.Push(dt);
+            }
+            dataBuckgroundThreadAnswer dt(dataBuckgroundThreadAnswer::eAnswerType::LoadActivity,data.GetParentWnd());
+            ///
+            std::this_thread::sleep_for(2ms);
 
+        }
+        queueTrdAnswers.Push({dataBuckgroundThreadAnswer::eAnswerType::famLoadEnd,data.GetParentWnd()});
         //----------------------------------
         pdata = queueFilamLoad.Pop(bSuccess);
     }
 
+    //    std::string str;
+    //    std::ostringstream ss(str);
 
 //    for ( int i=0; i < 50000000;++i){
 //        if(this_thread_flagInterrup.isSet())

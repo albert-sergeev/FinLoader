@@ -136,6 +136,8 @@ public:
     void SetDefaultOpenDir(QString &s);
     void SetDelimiter(char c);
 
+    void SetProgressBarValue(int);
+
 
 signals:
     void OpenImportFilePathChanged(QString &);

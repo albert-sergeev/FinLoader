@@ -15,6 +15,7 @@ class dataFinamLoadTask
 private:
     Storage * stStore;
     QWidget * parentWnd;
+    //void*  parentWnd;
 
 public:
     int             TickerID;
@@ -32,7 +33,7 @@ public:
     //--------------------------------------------------------------
     dataFinamLoadTask(const dataFinamLoadTask & o){
 
-        //parentWnd       = o.parentWnd;
+        parentWnd       = o.parentWnd;
         stStore         = o.stStore;
 
         TickerID        = o.TickerID;
@@ -48,7 +49,7 @@ public:
     inline  Storage *  GetStorage() const           {return stStore;}
 
     inline void SetParentWnd(QWidget * const wt)    { parentWnd = wt;};
-    inline  QWidget *  GetParentWnd() const         {return parentWnd;}
+    inline  QWidget*  GetParentWnd() const             {return parentWnd;}
     //--------------------------------------------------------------
     dataFinamLoadTask& operator=(dataFinamLoadTask&) = delete;
 };
