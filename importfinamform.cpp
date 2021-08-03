@@ -779,6 +779,7 @@ void ImportFinamForm::slotShowByNamesChecked(int Checked)
 void ImportFinamForm::slotBtnImportClicked()
 {
 
+
     if(bReadyToImport){
         QItemSelectionModel  *qml = ui->viewTickers->selectionModel();
         auto lst (qml->selectedIndexes());
