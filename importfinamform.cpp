@@ -48,7 +48,7 @@ ImportFinamForm::ImportFinamForm(MarketsListModel *modelM, int DefaultTickerMark
     clearShowAreaOfFields();
     slotSetWidgetsInLoadState(bInLoading);
 
-    QString str = tr("Welcome to the form for importing data from finam.ru.\n\r"
+    QString str = tr("Welcome to the form for importing information on stock quotes.\n\r"
                      "If you want to import data, first download the file with trading info from https://www.finam.ru/profile/moex-akcii/sberbank/export/ or a similar site and save it on your computer.\n"
                      "Then select the file using the [...] button (see the top of this form). After that, in this text window, you will see the results of the file check.\n"
                      "If all is well, then to load the data into the database, click the import button.\n\r"

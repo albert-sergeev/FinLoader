@@ -52,7 +52,7 @@ void workerLoaderFinam::worker(BlockFreeQueue<dataFinamLoadTask> & queueFilamLoa
         dt.SetTextInfo(ss.str());
         queueTrdAnswers.Push(dt);
         ////////////////////////////////////////////////////////////
-        for (int i =0; i<1000; ++i){
+        for (int i =0; i<=1000; ++i){
             if(this_thread_flagInterrup.isSet())
             {
                 //fout<<"exit on interrupt\n";
