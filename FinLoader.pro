@@ -20,9 +20,9 @@ SOURCES += \
     blockfreequeue.cpp \
     configwindow.cpp \
     databuckgroundthreadanswer.cpp \
-    datafinamloadtask.cpp \
+    datafinloadtask.cpp \
     graph.cpp \
-    importfinamform.cpp \
+    importfinqotesform.cpp \
     main.cpp \
     mainwindow.cpp \
     marketslistmodel.cpp \
@@ -31,16 +31,16 @@ SOURCES += \
     threadpool.cpp \
     ticker.cpp \
     tickerslistmodel.cpp \
-    workerloaderfinam.cpp
+    workerloader.cpp
 
 HEADERS += \
     bar.h \
     blockfreequeue.h \
     configwindow.h \
     databuckgroundthreadanswer.h \
-    datafinamloadtask.h \
+    datafinloadtask.h \
     graph.h \
-    importfinamform.h \
+    importfinqotesform.h \
     mainwindow.h \
     marketslistmodel.h \
     storage.h \
@@ -48,11 +48,11 @@ HEADERS += \
     threadpool.h \
     ticker.h \
     tickerslistmodel.h \
-    workerloaderfinam.h
+    workerloader.h
 
 FORMS += \
     configwindow.ui \
-    importfinamform.ui \
+    importfinqotesform.ui \
     mainwindow.ui
 
 TRANSLATIONS += \

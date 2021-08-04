@@ -9,7 +9,7 @@
 #include "tickerslistmodel.h"
 #include "storage.h"
 #include "bar.h"
-#include "datafinamloadtask.h"
+#include "datafinloadtask.h"
 #include "threadfreecout.h"
 
 
@@ -101,7 +101,7 @@ public:
 
 };
 
-class ImportFinamForm : public QWidget
+class ImportFinQuotesForm : public QWidget
 {
     Q_OBJECT
 
@@ -134,10 +134,10 @@ private:
     QDateTime qdtMax;
 
 public:
-    explicit ImportFinamForm(MarketsListModel *modelM, int DefaultTickerMarket,
+    explicit ImportFinQuotesForm(MarketsListModel *modelM, int DefaultTickerMarket,
                              TickersListModel *modelT,/*bool ShowByName,bool SortByName,*/
                              QWidget *parent = nullptr);
-    ~ImportFinamForm();
+    ~ImportFinQuotesForm();
 
 public:
     void SetDefaultOpenDir(QString &s);
@@ -155,7 +155,7 @@ signals:
     void OpenImportFilePathChanged(QString &);
     void NeedSaveDefaultTickerMarket(int);
     void DelimiterHasChanged(char c);
-    void NeedParseImportFinamFile(dataFinamLoadTask &);
+    void NeedParseImportFinQuotesFile(dataFinLoadTask &);
     void NeedToStopLoadings();
 
 private slots:

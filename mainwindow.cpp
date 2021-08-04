@@ -54,7 +54,7 @@ void MainWindow::timerEvent(QTimerEvent * event)
         QList<QMdiSubWindow*> lst = ui->mdiArea->subWindowList();
         for(int i = 0; i < lst.size(); ++i){
             if(lst.at(i)->widget() == data.GetParentWnd()) {
-                auto wnd  (qobject_cast<ImportFinamForm *>(lst[i]->widget()));
+                auto wnd  (qobject_cast<ImportFinQuotesForm *>(lst[i]->widget()));
                 if(wnd){
                     switch(data.AnswerType()){
                     case dataBuckgroundThreadAnswer::eAnswerType::famLoadCurrent:
@@ -249,7 +249,7 @@ void MainWindow::InitAction()
     pacOpen->setStatusTip(tr("Load history data"));
     pacOpen->setWhatsThis(tr("Load history data"));
     pacOpen->setIcon(QPixmap(":/store/images/sc_open"));
-    connect(pacOpen,SIGNAL(triggered()),SLOT(slotImportFinamWndow()));
+    connect(pacOpen,SIGNAL(triggered()),SLOT(slotImportFinQuotesWndow()));
     //------------------------------------------------
     QAction * pacSave =new QAction("Save");
     pacSave->setText(tr("&Save"));
@@ -592,10 +592,10 @@ void MainWindow::slotConfigWndow()
     pdoc->show();
 }
 //--------------------------------------------------------------------------------------------------------------------------------
-void MainWindow::slotImportFinamWndow ()
+void MainWindow::slotImportFinQuotesWndow ()
 {
 
-    ImportFinamForm *pdoc=new ImportFinamForm (&m_MarketLstModel,iDefaultTickerMarket,&m_TickerLstModel/*,bConfigTickerShowByName,bConfigTickerSortByName*/);
+    ImportFinQuotesForm *pdoc=new ImportFinQuotesForm (&m_MarketLstModel,iDefaultTickerMarket,&m_TickerLstModel/*,bConfigTickerShowByName,bConfigTickerSortByName*/);
     pdoc->setAttribute(Qt::WA_DeleteOnClose);
     pdoc->setWindowTitle(tr("Import"));
     pdoc->setWindowIcon(QPixmap(":/store/images/sc_open"));
@@ -609,28 +609,28 @@ void MainWindow::slotImportFinamWndow ()
     connect(pdoc,SIGNAL(DelimiterHasChanged(char)),this,SLOT(slotImportDelimiterChanged(char)));
     connect(pdoc,SIGNAL(NeedSaveDefaultTickerMarket(int)),this,SLOT(slotStoreDefaultTickerMarket(int)));
 
-    connect(pdoc,SIGNAL(NeedParseImportFinamFile(dataFinamLoadTask &)),this,SLOT(slotParseImportFinamFile(dataFinamLoadTask &)));
-    connect(pdoc,SIGNAL(NeedToStopLoadings()),this,SLOT(slotStopFinamLoadings()));
+    connect(pdoc,SIGNAL(NeedParseImportFinQuotesFile(dataFinLoadTask &)),this,SLOT(slotParseImportFinQuotesFile(dataFinLoadTask &)));
+    connect(pdoc,SIGNAL(NeedToStopLoadings()),this,SLOT(slotStopFinQuotesLoadings()));
 
     //
     pdoc->show();
 }
 
 //--------------------------------------------------------------------------------------------------------------------------------
-void MainWindow::slotParseImportFinamFile(dataFinamLoadTask & dtTask)
+void MainWindow::slotParseImportFinQuotesFile(dataFinLoadTask & dtTask)
 {
     dtTask.SetStore(&stStore);
-    queueFilamLoad.Push(dataFinamLoadTask(dtTask));
+    queueFinQuotesLoad.Push(dataFinLoadTask(dtTask));
 
-    thrdPoolLoadFinam.AddTask([&](){
-        workerLoaderFinam::worker(queueFilamLoad,queueTrdAnswers);
+    thrdPoolLoadFinQuotes.AddTask([&](){
+        workerLoader::workerFinQuotesLoad(queueFinQuotesLoad,queueTrdAnswers,stStore);
         });
 }
 //--------------------------------------------------------------------------------------------------------------------------------
-void MainWindow::slotStopFinamLoadings()
+void MainWindow::slotStopFinQuotesLoadings()
 {
-    queueFilamLoad.clear();
-    thrdPoolLoadFinam.Interrupt();
+    queueFinQuotesLoad.clear();
+    thrdPoolLoadFinQuotes.Interrupt();
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------

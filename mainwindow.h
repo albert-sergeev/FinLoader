@@ -19,15 +19,15 @@
 #include <QTextEdit>
 
 #include "configwindow.h"
-#include "importfinamform.h"
-#include "workerloaderfinam.h"
+#include "importfinqotesform.h"
+#include "workerloader.h"
 
 #include "bar.h"
 #include "marketslistmodel.h"
 #include "tickerslistmodel.h"
 #include "storage.h"
 #include "threadpool.h"
-#include "datafinamloadtask.h"
+#include "datafinloadtask.h"
 #include "databuckgroundthreadanswer.h"
 #include "blockfreequeue.h"
 
@@ -55,11 +55,11 @@ private:
     QTranslator m_translator;
 
     // thread manipulation
-    BlockFreeQueue<dataFinamLoadTask> queueFilamLoad;
+    BlockFreeQueue<dataFinLoadTask> queueFinQuotesLoad;
     BlockFreeQueue<dataBuckgroundThreadAnswer> queueTrdAnswers;
-    workerLoaderFinam wrkrLoadFinam;
+    workerLoader wrkrLoadFinQuotes;
 
-    ThreadPool thrdPoolLoadFinam;
+    ThreadPool thrdPoolLoadFinQuotes;
 
     // global storage objects
     QSettings m_settings;
@@ -74,7 +74,7 @@ private:
     std::vector<Ticker> vTickersLst;
     TickersListModel m_TickerLstModel;
 
-    // for inport finam subwindow
+    // for inport FinQuotes subwindow
     QString qsDefaultOpenDir;
     char cImportDelimiter;
 
@@ -106,11 +106,11 @@ public slots: // for config window
     void slotStoreConfigTickerShowByName(bool b)    {bConfigTickerShowByName = b;};
     void slotStoreConfigTickerSortByName(bool b)    {bConfigTickerSortByName = b;};
 
-public slots: // for import finam winow
+public slots: // for import FinQuotes winow
     void slotDefaultOpenDirChanged(QString & s) {qsDefaultOpenDir = s;};
     void slotImportDelimiterChanged(char c)     {cImportDelimiter = c;};
-    void slotParseImportFinamFile(dataFinamLoadTask &);
-    void slotStopFinamLoadings();
+    void slotParseImportFinQuotesFile(dataFinLoadTask &);
+    void slotStopFinQuotesLoadings();
 
 
 protected slots: // for main window
@@ -126,7 +126,7 @@ protected slots: // for main window
     void slotSetActiveStyle     (QString);
     void slotSetActiveLang      (QString);
     void slotConfigWndow ();
-    void slotImportFinamWndow ();
+    void slotImportFinQuotesWndow ();
 
 
 private:

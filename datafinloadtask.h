@@ -10,7 +10,7 @@
 #include "blockfreequeue.h"
 
 
-class dataFinamLoadTask
+class dataFinLoadTask
 {
 private:
     Storage * stStore;
@@ -29,9 +29,9 @@ public:
 
 
     //--------------------------------------------------------------
-    dataFinamLoadTask():stStore{nullptr},parentWnd{nullptr}{;};
+    dataFinLoadTask():stStore{nullptr},parentWnd{nullptr}{;};
     //--------------------------------------------------------------
-    dataFinamLoadTask(const dataFinamLoadTask & o){
+    dataFinLoadTask(const dataFinLoadTask & o){
 
         parentWnd       = o.parentWnd;
         stStore         = o.stStore;
@@ -51,7 +51,7 @@ public:
     inline void SetParentWnd(QWidget * const wt)    { parentWnd = wt;};
     inline  QWidget*  GetParentWnd() const             {return parentWnd;}
     //--------------------------------------------------------------
-    dataFinamLoadTask& operator=(dataFinamLoadTask&) = delete;
+    dataFinLoadTask& operator=(dataFinLoadTask&) = delete;
 };
 
 #endif // DATAFINAMLOADTASK_H

@@ -1,10 +1,29 @@
 #ifndef STORAGE_H
 #define STORAGE_H
 
+#include<mutex>
+#include<shared_mutex>
 #include<filesystem>
 #include "ticker.h"
 
 
+////////////////////////////////////////////////////////////////////
+// file switch stages:
+//      1   2   3   4   5   6   (7)
+//  1.  W   L2  L2  U   W   W   (W)
+//  2.  U   W   W   W   L2  L2  (U)
+//  3.  U   U   S   L1  L1  L1  (U)
+//  4.  L1  L1  L1  U   U   S   (L1)
+//
+// Description:
+//  W   - write (append)
+//  U   - undefined (unused)
+//  L1  - read only (read order: first)
+//  L2  - read only (read order: second)
+//  S   - shrinked (compilation of L1 + L2)
+///////////////////////////////////////////////////////////////////
+/// \brief The Storage class
+///
 
 class Storage
 {
@@ -18,7 +37,15 @@ class Storage
     std::filesystem::path pathMarkersFile;
     std::filesystem::path pathTickersFile;
 
+    //---------------------------------------
+    // for tickers configs
     int iTickerMark{1};
+    //---------------------------------------
+    // for market quotes storage
+    std::shared_mutex mutexQuotesStoreInit;
+    std::vector<int> vInitializedTickers;
+    std::map<std::pair<int,std::time_t>,std::shared_mutex> mpStoreMutexes;
+    std::map<std::pair<int,std::time_t>,int> mpStoreStages;
 
 public:
 
@@ -39,12 +66,21 @@ public:
     void SaveMarketConfig(std::vector<Market> & vMarketsLst);
     void SaveMarketConfig(std::vector<Market> && vMarketsLst);
 
-
     enum op_type:int { update = 1, remove = 2 };
 
     void LoadTickerConfig(std::vector<Ticker> & /*vTickersLst*/) ;
     void SaveTickerConfig(const Ticker & /*tT*/, op_type tp = op_type::update) ;
     void SaveTickerConfig(Ticker && /*tT*/, op_type tp = op_type::update) ;
+
+
+
+    //--------------------------------------------------------------------------------------------------------
+    // stock quotes storage interface
+    //
+
+    bool InitializeTicker(int iTickerID);
+    int CreateAndGetFileStageForTicker(int iTickerID, std::time_t tMonth);
+
 
 private:
     //--------------------------------------------------------------------------------------------------------
@@ -54,6 +90,9 @@ private:
     void FormatTickerConfigV_1();
     void SaveTickerConfigV_1(const Ticker & /*tT*/, op_type tp = op_type::update);
     void ParsTickerConfigV_1(std::vector<Ticker> & /*vTickersLst*/, std::ifstream & /*file*/);
+    //--------------------------------------------------------------------------------------------------------
+
+    std::time_t dateCastToMonth(std::time_t);
 
 };
 

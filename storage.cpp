@@ -301,5 +301,41 @@ void Storage::ParsTickerConfigV_1(std::vector<Ticker> & vTickersLst, std::ifstre
 
 
 };
+//--------------------------------------------------------------------------------------------------------
 
+std::time_t Storage::dateCastToMonth(std::time_t t)
+{
+    std::tm* tmT = std::localtime(&t);
+    std::tm tmNew;
+
+    tmNew.tm_year   = tmT->tm_year;
+    tmNew.tm_mon    = tmT->tm_mon;
+    tmNew.tm_mday   = 1;
+    tmNew.tm_hour   = 0;
+    tmNew.tm_min    = 0;
+    tmNew.tm_sec    = 0;
+    tmNew.tm_isdst   = tmT->tm_isdst;
+
+    return std::mktime(&tmNew);
+}
+//--------------------------------------------------------------------------------------------------------
+bool Storage::InitializeTicker(int iTickerID)
+{
+    std::shared_lock lk(mutexQuotesStoreInit);
+    for (auto const &t:vInitializedTickers){
+        if (t == iTickerID){
+            return true;
+        }
+    }
+   // std::unique_lock ulk(lk);
+
+
+    return false;
+}
+//--------------------------------------------------------------------------------------------------------
+int Storage::CreateAndGetFileStageForTicker(int iTickerID, std::time_t tMonth)
+{}
+//--------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------

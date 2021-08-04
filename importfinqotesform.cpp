@@ -1,4 +1,4 @@
-#include "importfinamform.h"
+#include "importfinqotesform.h"
 #include "ui_importfinamform.h"
 
 #include<QFileDialog>
@@ -13,7 +13,7 @@
 #include<ostream>
 
 
-ImportFinamForm::ImportFinamForm(MarketsListModel *modelM, int DefaultTickerMarket,
+ImportFinQuotesForm::ImportFinQuotesForm(MarketsListModel *modelM, int DefaultTickerMarket,
                                  TickersListModel *modelT,
                                  QWidget *parent) :
     QWidget(parent),
@@ -61,17 +61,17 @@ ImportFinamForm::ImportFinamForm(MarketsListModel *modelM, int DefaultTickerMark
     //вы можете открыть сразу несколько форм для импорта и одновременно загружать несколько бумаг даже если  запущен импорт из quik
 }
 //--------------------------------------------------------------------------------------------------------
-ImportFinamForm::~ImportFinamForm()
+ImportFinQuotesForm::~ImportFinQuotesForm()
 {
     delete ui;
 }
 //--------------------------------------------------------------------------------------------------------
-void ImportFinamForm::SetDefaultOpenDir(QString &s)
+void ImportFinQuotesForm::SetDefaultOpenDir(QString &s)
 {
     pathDir = s.toStdString();
 }
 //--------------------------------------------------------------------------------------------------------
-void ImportFinamForm::slotBtnOpenClicked()
+void ImportFinQuotesForm::slotBtnOpenClicked()
 {
 //    QFileDialog dlg (this,"Open file to import",
 //                    QString::fromStdString(pathDir.string()),
@@ -105,7 +105,7 @@ void ImportFinamForm::slotBtnOpenClicked()
 }
 
 //--------------------------------------------------------------------------------------------------------
-void ImportFinamForm::slotBtnCreateClicked(){
+void ImportFinQuotesForm::slotBtnCreateClicked(){
 
     pathFile ="/home/albert/Загрузки/SBER_210501_210716(2) (копия).txt";
     pathDir=pathFile.parent_path();
@@ -119,12 +119,12 @@ void ImportFinamForm::slotBtnCreateClicked(){
 };
 
 //--------------------------------------------------------------------------------------------------------
-void ImportFinamForm::slotBtnTestClicked()
+void ImportFinQuotesForm::slotBtnTestClicked()
 {
     slotPreparseImportFile();
 };
 //--------------------------------------------------------------------------------------------------------
-void ImportFinamForm::SetDelimiter(char c)
+void ImportFinQuotesForm::SetDelimiter(char c)
 {
     cDelimiter = c;
     std::string s{" "};
@@ -132,7 +132,7 @@ void ImportFinamForm::SetDelimiter(char c)
     ui->edDelimiter->setText(QString::fromStdString(s));
 }
 //--------------------------------------------------------------------------------------------------------
-void ImportFinamForm::slotEditDelimiterWgtChanged(const QString &)
+void ImportFinQuotesForm::slotEditDelimiterWgtChanged(const QString &)
 {
     std::string sD = ui->edDelimiter->text().toStdString();
     if(sD.size()<=0){
@@ -146,7 +146,7 @@ void ImportFinamForm::slotEditDelimiterWgtChanged(const QString &)
 }
 //--------------------------------------------------------------------------------------------------------
 // preliminary check import file. Lookup for Ticker sign, time periods etc.
-void ImportFinamForm::slotPreparseImportFile()
+void ImportFinQuotesForm::slotPreparseImportFile()
 {
 
     ////////////////////////////////////////////////////////////////////////////////////
@@ -468,7 +468,7 @@ void ImportFinamForm::slotPreparseImportFile()
 
 }
 //--------------------------------------------------------------------------------------------------------
-void ImportFinamForm::clearShowAreaOfFields()
+void ImportFinQuotesForm::clearShowAreaOfFields()
 {
     ui->edOpen->setText("");
     ui->edHigh->setText("");
@@ -487,7 +487,7 @@ void ImportFinamForm::clearShowAreaOfFields()
     showInterval(-1);
 }
 //--------------------------------------------------------------------------------------------------------
-void ImportFinamForm::showInterval(int Interval)
+void ImportFinQuotesForm::showInterval(int Interval)
 {
     switch (Interval) {
     case Bar::eInterval::pTick:
@@ -532,7 +532,7 @@ void ImportFinamForm::showInterval(int Interval)
 }
 
 //--------------------------------------------------------------------------------------------------------
-bool ImportFinamForm::slotParseLine(finamParseData & parseDt, std::istringstream & issLine, Bar &b)
+bool ImportFinQuotesForm::slotParseLine(finamParseData & parseDt, std::istringstream & issLine, Bar &b)
 {
 
     parseDt.t_iCurrN = 0;
@@ -670,7 +670,7 @@ bool ImportFinamForm::slotParseLine(finamParseData & parseDt, std::istringstream
 
 
 //--------------------------------------------------------------------------------------------------------
-void ImportFinamForm::setMarketModel()//MarketsListModel *model, int DefaultTickerMarket
+void ImportFinQuotesForm::setMarketModel()//MarketsListModel *model, int DefaultTickerMarket
 {
 
 
@@ -707,7 +707,7 @@ void ImportFinamForm::setMarketModel()//MarketsListModel *model, int DefaultTick
 }
 //--------------------------------------------------------------------------------------------------------
 
-void ImportFinamForm::slotSetSelectedTickersMarket(const  int i)
+void ImportFinQuotesForm::slotSetSelectedTickersMarket(const  int i)
 {
     if (modelMarket ==nullptr ||modelTicker ==nullptr ) return;
     //qDebug()<<"i: {"<<i<<"}";
@@ -734,7 +734,7 @@ void ImportFinamForm::slotSetSelectedTickersMarket(const  int i)
     }
 }
 //--------------------------------------------------------------------------------------------------------
-void ImportFinamForm::setTickerModel()//TickersListModel *model,bool /*ShowByName*/,bool /*SortByName*/
+void ImportFinQuotesForm::setTickerModel()//TickersListModel *model,bool /*ShowByName*/,bool /*SortByName*/
 {
 
     proxyTickerModel.setSourceModel(modelTicker);
@@ -770,7 +770,7 @@ void ImportFinamForm::setTickerModel()//TickersListModel *model,bool /*ShowByNam
     ////
 }
 //--------------------------------------------------------------------------------------------------------
-void ImportFinamForm::slotSetSelectedTicker(const  QModelIndex& indx)
+void ImportFinQuotesForm::slotSetSelectedTicker(const  QModelIndex& indx)
 {
 
 
@@ -792,7 +792,7 @@ void ImportFinamForm::slotSetSelectedTicker(const  QModelIndex& indx)
 
 }
 //--------------------------------------------------------------------------------------------------------
-void ImportFinamForm::slotShowByNamesChecked(int Checked)
+void ImportFinQuotesForm::slotShowByNamesChecked(int Checked)
 {
     if (modelMarket ==nullptr ||modelTicker ==nullptr ) return;
 
@@ -806,7 +806,7 @@ void ImportFinamForm::slotShowByNamesChecked(int Checked)
 }
 
 //--------------------------------------------------------------------------------------------------------
-void ImportFinamForm::slotBtnImportClicked()
+void ImportFinQuotesForm::slotBtnImportClicked()
 {
     slotSetWidgetsInLoadState(bInLoading);
 
@@ -892,7 +892,7 @@ void ImportFinamForm::slotBtnImportClicked()
             }
             //////////////////////////////////////////////////////////////////////////////////////////////////////
 
-            dataFinamLoadTask dataTask;
+            dataFinLoadTask dataTask;
 
             dataTask.TickerID       = iSelectedTickerId;
             dataTask.iInterval      = iTimePeriod;
@@ -923,7 +923,7 @@ void ImportFinamForm::slotBtnImportClicked()
             tmEnd.tm_isdst   = 0;
             dataTask.dtEnd = std::mktime(&tmEnd);
 
-            emit NeedParseImportFinamFile(dataTask);
+            emit NeedParseImportFinQuotesFile(dataTask);
 
             bInLoading = true;
             slotSetWidgetsInLoadState(bInLoading);
@@ -943,14 +943,14 @@ void ImportFinamForm::slotBtnImportClicked()
     }
 };
 //--------------------------------------------------------------------------------------------------------
-void ImportFinamForm::SetProgressBarValue(int iVal)
+void ImportFinQuotesForm::SetProgressBarValue(int iVal)
 {
     if(iVal >=0 && iVal <= 100){
         ui->progressBar->setValue(iVal);
     }
 }
 //--------------------------------------------------------------------------------------------------------
-void ImportFinamForm::slotLoadingHasBegun(){
+void ImportFinQuotesForm::slotLoadingHasBegun(){
     if(!bInChecking)
         ui->edText->append(tr("Import started..."));
     else
@@ -958,9 +958,9 @@ void ImportFinamForm::slotLoadingHasBegun(){
 
 }
 //--------------------------------------------------------------------------------------------------------
-void ImportFinamForm::slotLoadingActivity(){;}
+void ImportFinQuotesForm::slotLoadingActivity(){;}
 //--------------------------------------------------------------------------------------------------------
-void ImportFinamForm::slotLoadingHasFinished(bool bSuccess, QString qsErr){
+void ImportFinQuotesForm::slotLoadingHasFinished(bool bSuccess, QString qsErr){
 
 
     if (bSuccess){
@@ -983,11 +983,11 @@ void ImportFinamForm::slotLoadingHasFinished(bool bSuccess, QString qsErr){
     slotSetWidgetsInLoadState(bInLoading);
 }
 //--------------------------------------------------------------------------------------------------------
-void ImportFinamForm::slotTextInfo(QString qsStr){
+void ImportFinQuotesForm::slotTextInfo(QString qsStr){
     ui->edText->append(qsStr);
 }
 //--------------------------------------------------------------------------------------------------------
-void ImportFinamForm::slotSetWidgetsInLoadState(bool bInLoad)
+void ImportFinQuotesForm::slotSetWidgetsInLoadState(bool bInLoad)
 {
     ui->btnCreate->setEnabled(!bInLoad);
     ui->btnOpen->setEnabled(!bInLoad);
@@ -1012,14 +1012,14 @@ void ImportFinamForm::slotSetWidgetsInLoadState(bool bInLoad)
     }
 }
 //--------------------------------------------------------------------------------------------------------
-void ImportFinamForm::slotDateTimeStartChanged(const QDateTime &)
+void ImportFinQuotesForm::slotDateTimeStartChanged(const QDateTime &)
 {
     if(bReadyToImport && ui->dtStart->dateTime() < qdtMin){
         ui->dtStart->setDateTime(qdtMin);
     }
 }
 //--------------------------------------------------------------------------------------------------------
-void ImportFinamForm::slotDateTimeEndChanged(const QDateTime &)
+void ImportFinQuotesForm::slotDateTimeEndChanged(const QDateTime &)
 {
     if(bReadyToImport && ui->dtEnd->dateTime() > qdtMax){
         ui->dtEnd->setDateTime(qdtMax);
