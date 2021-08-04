@@ -2,13 +2,41 @@
 
 #include<filesystem>
 #include<iostream>
+#include<regex>
+#include<iomanip>
 #include<fstream>
 #include<ostream>
+#include<chrono>
 
 //using namespace std::filesystem;
 
+////////////////////////////////////////////////////////////////////
+// file switch stages:
+//      1   2   3   4   5   6   (7)
+//  1.  W   L2  L2  U   W   W   (W)
+//  2.  U   W   W   W   L2  L2  (U)
+//  3.  U   U   S   L1  L1  L1  (U)
+//  4.  L1  L1  L1  U   U   S   (L1)
+//
+// Description:
+//  W   - write (append)
+//  U   - undefined (unused)
+//  L1  - read only (read order: first)
+//  L2  - read only (read order: second)
+//  S   - shrinked (compilation of L1 + L2)
+
+
 //--------------------------------------------------------------------------------------------------------
 Storage::Storage():bInitialized{false}
+    ,vStorageW  {1,2,2,2,1,1}
+    ,vStorageL1 {4,4,4,3,3,3}
+    ,vStorageL2 {0,1,1,0,2,2}
+    ,vStorageS  {0,0,3,0,0,4}
+
+    ,vStorage1  {true ,true ,true ,false,true ,true ,}
+    ,vStorage2  {false,true ,true ,true ,true ,true ,}
+    ,vStorage3  {false,false,true ,true ,true ,true ,}
+    ,vStorage4  {true ,true ,true ,false,false,true ,}
 {
 
 
@@ -52,7 +80,7 @@ void Storage::Initialize()
     //
     if(!std::filesystem::exists(pathMarkersFile)){ // if no file - create new with defaults
         std::ofstream fileMarket(pathMarkersFile);
-        std::vector<Market> m{{"ММВБ","MICEX_SHR_T"}};
+        std::vector<Market> m{{trim("ММВБ"),trim("MICEX_SHR_T")}};
         SaveMarketConfig(m);
         if(!std::filesystem::exists(pathMarkersFile)){
             throw std::runtime_error("Error create file: ./data/markets.dat");
@@ -319,7 +347,7 @@ std::time_t Storage::dateCastToMonth(std::time_t t)
     return std::mktime(&tmNew);
 }
 //--------------------------------------------------------------------------------------------------------
-bool Storage::InitializeTicker(int iTickerID)
+bool Storage::InitializeTicker(int iTickerID,std::stringstream & ssOut, bool bCheckOnly)
 {
     std::shared_lock lk(mutexQuotesStoreInit);
     for (auto const &t:vInitializedTickers){
@@ -327,15 +355,338 @@ bool Storage::InitializeTicker(int iTickerID)
             return true;
         }
     }
-   // std::unique_lock ulk(lk);
-
-
-    return false;
+    if (bCheckOnly) return false;
+    //
+    lk.unlock();
+    //
+    std::unique_lock<std::shared_mutex> ulk(mutexQuotesStoreInit);
+    for (auto const &t:vInitializedTickers){
+        if (t == iTickerID){
+            return true;
+        }
+    }
+    return  InitializeTickerEntry(iTickerID,ssOut);
 }
 //--------------------------------------------------------------------------------------------------------
-int Storage::CreateAndGetFileStageForTicker(int iTickerID, std::time_t tMonth)
-{}
+bool Storage::InitializeTickerEntry(int iTickerID,std::stringstream& ssOut){//private
+    ///========
+    if(!std::filesystem::exists(pathStorageDir) ||
+            !std::filesystem::is_directory(pathStorageDir)
+            ){
+        throw std::runtime_error("corrupted ./data  directory");
+    }
+    std::stringstream ssD;
+    ssD <<pathStorageDir.c_str();
+    ssD <<"/"<<iTickerID;
+    std::string sTickerDir(ssD.str());
+    //--
+    if(!std::filesystem::exists(sTickerDir)){
+        if(!std::filesystem::create_directory(sTickerDir)){
+            ssOut<< "Unable to create ./data/[TickerID] directory";
+            return false;
+        }
+    }
+    std::filesystem::path pathTickerDir = std::filesystem::absolute(sTickerDir);
+    if(!std::filesystem::is_directory(pathTickerDir)){
+        ssOut <<" ./data/[TickerID] - is not directory";
+        return false;
+    }
+    //////////////////
+    std::stringstream ssReg;
+    ssReg <<"^"<< iTickerID <<"_\\d\\d\\d\\d\\d\\d$";
+    const std::regex reControlfile {ssReg.str()};
+    std::vector<std::filesystem::directory_entry> vControlFiles;
+
+    std::string sYear{"1990"};
+    std::string sMonth{"00"};
+
+    std::copy_if(std::filesystem::directory_iterator{pathTickerDir},{},std::back_inserter(vControlFiles),[&reControlfile](const std::filesystem::directory_entry &c){
+                     if ( c.exists() && c.is_regular_file()){
+                         std::string ss(c.path().filename());
+                         if (std::sregex_token_iterator(ss.begin(),ss.end(),reControlfile) != std::sregex_token_iterator())
+                             return  true;
+                         else
+                            return false;
+                     }
+                     return false;
+                 });
+    //
+    for(const auto &f:vControlFiles){
+
+        std::string sBuff;
+        int iState{0};
+        std::ifstream ifCF(f.path());
+        if(ifCF.good()){
+            ifCF >>iState;
+            if(iState <=0 || iState > 6){
+                ssOut <<"control file "<< f.path().filename()<<" has invalid state value: <"<<iState<<">! Reset to 1.\n";
+                ifCF.close();
+                std::ofstream ofCF(f.path());
+                if(ofCF.good()){
+                    ofCF<<1;
+                }
+                else{
+
+                    ssOut<<"Broken File: "<<f.path();
+                    return false;
+                }
+            }
+        }
+        else{
+            ssOut<<"Broken File: "<<f.path();
+            return false;;
+        }
+
+        std::string sFileName(f.path().filename());
+
+        CreateDataFilesForEntry(f.path(),sFileName,iState,ssOut);
+        /////////////
+
+        std::copy( std::next(sFileName.begin(),sFileName.size()-6)
+                  ,std::next(sFileName.begin(),sFileName.size()-2)
+                  ,sYear.begin());
+        std::copy( std::next(sFileName.begin(),sFileName.size()-2)
+                  ,sFileName.end()
+                  ,sMonth.begin());
+
+        std::tm tmT;
+        tmT.tm_year = std::stoi(sYear)  - 1900;
+        tmT.tm_mon  = std::stoi(sMonth) - 1;
+        tmT.tm_mday = 1;
+        tmT.tm_hour = 0;
+        tmT.tm_min = 0;
+        tmT.tm_sec = 0;
+        tmT.tm_isdst = 0;
+        std::time_t t = std::mktime(&tmT);
+
+        std::pair<int,std::time_t> k{iTickerID,t};
+        mpStoreMutexes[k];
+    }
+    ///////////////////////////////////////////
+    for (auto const &t:vInitializedTickers){
+        if (t == iTickerID){
+            return true;
+        }
+    }
+    vInitializedTickers.push_back(iTickerID);
+    return true;
+
+}
 //--------------------------------------------------------------------------------------------------------
+void Storage::CreateDataFilesForEntry(std::string sFileName, std::string sFileNameShort, int iState,std::stringstream& ssOut){//private
+    std::stringstream ss;
+    ss <<sFileName<<"_1";
+    if(vStorage1[iState - 1] && !std::filesystem::exists(ss.str())){
+        if (sFileNameShort.size()>0)
+            ssOut <<"data file ["<< sFileNameShort << "_1] is absent! Recreate.\n";
+        std::ofstream ofF(ss.str());
+    }
+
+    ss.clear();
+    ss.str("");
+    ss <<sFileName<<"_2";
+    if(vStorage2[iState - 1] && !std::filesystem::exists(ss.str())){
+        if (sFileNameShort.size()>0)
+            ssOut <<"data file ["<< sFileNameShort << "_2] is absent! Recreate.\n";
+        std::ofstream ofF(ss.str());
+    }
+    ss.clear();
+    ss.str("");
+    ss <<sFileName<<"_3";
+    if(vStorage3[iState - 1] && !std::filesystem::exists(ss.str())){
+        if (sFileNameShort.size()>0)
+            ssOut <<"data file ["<< sFileNameShort << "_3] is absent! Recreate.\n";
+        std::ofstream ofF(ss.str());
+    }
+    ss.clear();
+    ss.str("");
+    ss <<sFileName<<"_4";
+    if(vStorage4[iState - 1] && !std::filesystem::exists(ss.str())){
+        if (sFileNameShort.size()>0)
+            ssOut <<"data file ["<< sFileNameShort << "_4] is absent! Recreate.\n";
+        std::ofstream ofF(ss.str());
+    }
+}
 //--------------------------------------------------------------------------------------------------------
+int Storage::CreateAndGetFileStageForTicker(int iTickerID, std::time_t tMonth, std::stringstream& ssOut)
+{
+
+    std::shared_lock lk(mutexQuotesStoreInit);
+    tMonth = dateCastToMonth(tMonth);
+    std::pair<int,std::time_t> k{iTickerID,tMonth};
+    auto It (mpStoreMutexes.find(k));
+    if(It != mpStoreMutexes.end()){
+        std::shared_lock entryLk(mpStoreMutexes[k]);
+        return GetStageEntryForTicker(iTickerID, tMonth, ssOut);
+    }
+    else{
+        lk.unlock();
+        std::unique_lock<std::shared_mutex> ulk(mutexQuotesStoreInit);
+        return CreateStageEntryForTicker(iTickerID, tMonth, ssOut);
+    }
+}
+//--------------------------------------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief must be set std::unique_lock<std::shared_mutex> ulk(mutexQuotesStoreInit) befour call!!!
+/// \param iTickerID
+/// \param tMonth
+/// \param ssOut
+/// \return
+///
+int  Storage::CreateStageEntryForTicker(int iTickerID, std::time_t tMonth,std::stringstream& ssOut) // private
+{
+
+    std::pair<int,std::time_t> k{iTickerID,tMonth};
+    auto It (mpStoreMutexes.find(k));
+    if(It != mpStoreMutexes.end()){
+        std::shared_lock entryLk(mpStoreMutexes[k]);
+        return GetStageEntryForTicker(iTickerID, tMonth, ssOut);
+    }
+    //////////////
+    std::tm * tmT = std::localtime(&tMonth);
+
+    std::stringstream ss;
+    ss <<pathStorageDir.c_str();
+    ss <<"/"<<iTickerID;
+    ss <<"/"<<iTickerID<<"_";
+    ss <<std::setfill('0');
+    ss <<std::right<< std::setw(4)<<tmT->tm_year+1900;
+    ss <<std::right<< std::setw(2)<<(tmT->tm_mon+1);
+    std::string sFileName(ss.str());
+
+    int iState{0};
+
+    std::ofstream ofCF(sFileName);
+    if(ofCF.good()){
+        ofCF<<1;
+        iState = 1;
+    }
+    else{
+        ssOut <<"Broken File: "<<sFileName;
+        return 0;
+    }
+
+    CreateDataFilesForEntry(sFileName,"",iState,ssOut);
+
+    mpStoreMutexes[k];
+
+    return iState;
+}
+//--------------------------------------------------------------------------------------------------------
+////////////////////////////////////////////////////////////////
+/// \brief must be set std::shared_lock entryLk(mpStoreMutexes[k]) befour call!!!
+/// \param iTickerID
+/// \param tMonth
+/// \param ssOut
+/// \return
+///
+int  Storage::GetStageEntryForTicker(int iTickerID, std::time_t tMonth,std::stringstream& ssOut) // private
+{
+
+    //
+    std::tm * tmT = std::localtime(&tMonth);
+
+    std::stringstream ss;
+    ss <<pathStorageDir.c_str();
+    ss <<"/"<<iTickerID;
+    ss <<"/"<<iTickerID<<"_";
+    ss <<std::setfill('0');
+    ss <<std::right<< std::setw(4)<<tmT->tm_year+1900;
+    ss <<std::right<< std::setw(2)<<(tmT->tm_mon+1);
+    std::string sFileName(ss.str());
+
+    int iState{0};
+    std::ifstream ifCF(sFileName);
+    if(ifCF.good()){
+        ifCF >>iState;
+        if(iState <=0 || iState > 6){
+            ssOut <<"control file "<< sFileName<<" has invalid state value: <"<<iState<<">! Reset to 1.\n";
+            ifCF.close();
+            std::ofstream ofCF(sFileName);
+            if(ofCF.good()){
+                ofCF<<1;
+                iState = 1;
+            }
+            else{
+                ssOut<<"Broken File: "<<sFileName;
+                return 0;
+            }
+        }
+    }
+    else{
+        ssOut<<"Broken File: "<<sFileName;
+        return 0;
+    }
+    return  iState;
+}
+//--------------------------------------------------------------------------------------------------------
+bool Storage::WriteBarToStore(int iTickerID, Bar &b, std::stringstream & ssOut)
+{
+    std::shared_lock lk(mutexQuotesStoreInit);
+    //
+    std::time_t tMonth = dateCastToMonth(b.Period());
+    std::pair<int,std::time_t> k{iTickerID,tMonth};
+    auto It (mpStoreMutexes.find(k));
+    if(It == mpStoreMutexes.end()){
+        lk.unlock();
+        std::unique_lock<std::shared_mutex> ulk(mutexQuotesStoreInit);
+        if(CreateStageEntryForTicker(iTickerID, tMonth, ssOut) == 0){
+            ssOut <<"cannot create data storage file for:"<<iTickerID;
+            return false;
+        }
+        ulk.unlock();
+        lk.lock();
+        It = mpStoreMutexes.find(k);
+        if(It == mpStoreMutexes.end()){
+            ssOut <<"Logic error during creating data storage file for:"<<iTickerID;
+            return false;
+        }
+    }
+    //
+    std::unique_lock entryLk(mpStoreMutexes[k]);
+    ////////////////////////////////////////////
+    int iStage = GetStageEntryForTicker(iTickerID, tMonth, ssOut);
+    if (iStage <1 || iStage >6){
+        ssOut <<"Cannot get state for data storage file for:"<<iTickerID;
+        return false;
+    }
+    std::tm * tmT = std::localtime(&tMonth);
+
+    std::stringstream ss;
+    ss <<pathStorageDir.c_str();
+    ss <<"/"<<iTickerID;
+    ss <<"/"<<iTickerID<<"_";
+    ss <<std::setfill('0');
+    ss <<std::right<< std::setw(4)<<tmT->tm_year+1900;
+    ss <<std::right<< std::setw(2)<<(tmT->tm_mon+1);
+    ss <<"_"<<vStorageW[iStage-1];
+    std::string sFileName(ss.str());
+    ///
+    //ssOut <<"File to write:"<<sFileName<<"\n";
+
+    //std::ofstream fileW (sFileName,std::ios_base::app | std::ios_base::binary);
+    std::ofstream fileW (sFileName, std::ios_base::binary);
+
+    data_type tp = data_type::new_sec;
+    fileW.write((char*)&tp,sizeof (tp));
+
+    double d = b.Open();
+    fileW.write((char*)&d,sizeof (d));
+    d = b.High();
+    fileW.write((char*)&d,sizeof (d));
+    d = b.Low();
+    fileW.write((char*)&d,sizeof (d));
+    d = b.Close();
+    fileW.write((char*)&d,sizeof (d));
+
+    int i = b.Volume();
+    fileW.write((char*)&i,sizeof (i));
+
+    time_t tT = b.Period();
+    fileW.write((char*)&tT,sizeof (tT));
+
+    ////////////////////////////////////////////
+    return true;
+}
 //--------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------

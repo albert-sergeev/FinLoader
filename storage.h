@@ -4,7 +4,10 @@
 #include<mutex>
 #include<shared_mutex>
 #include<filesystem>
+
 #include "ticker.h"
+#include "bar.h"
+#include "threadfreecout.h"
 
 
 ////////////////////////////////////////////////////////////////////
@@ -47,6 +50,18 @@ class Storage
     std::map<std::pair<int,std::time_t>,std::shared_mutex> mpStoreMutexes;
     std::map<std::pair<int,std::time_t>,int> mpStoreStages;
 
+    const std::vector<int> vStorageW;
+    const std::vector<int> vStorageL1;
+    const std::vector<int> vStorageL2;
+    const std::vector<int> vStorageS;
+
+    const std::vector<bool> vStorage1;
+    const std::vector<bool> vStorage2;
+    const std::vector<bool> vStorage3;
+    const std::vector<bool> vStorage4;
+
+    enum data_type:char { usual = 0, new_sec = 1, del_from = 2 , del_to = 3};
+
 public:
 
     inline std::string GetCurrentPath() {return  pathCurr;};
@@ -78,8 +93,9 @@ public:
     // stock quotes storage interface
     //
 
-    bool InitializeTicker(int iTickerID);
-    int CreateAndGetFileStageForTicker(int iTickerID, std::time_t tMonth);
+    bool InitializeTicker(int iTickerID,std::stringstream & ssOut, bool bCheckOnly = false);
+    int CreateAndGetFileStageForTicker(int iTickerID, std::time_t tMonth, std::stringstream & ssOut);
+    bool WriteBarToStore(int iTickerID, Bar &b, std::stringstream & ssOut);
 
 
 private:
@@ -91,6 +107,10 @@ private:
     void SaveTickerConfigV_1(const Ticker & /*tT*/, op_type tp = op_type::update);
     void ParsTickerConfigV_1(std::vector<Ticker> & /*vTickersLst*/, std::ifstream & /*file*/);
     //--------------------------------------------------------------------------------------------------------
+    bool InitializeTickerEntry(int iTickerID,std::stringstream & ssOut);
+    int CreateStageEntryForTicker(int iTickerID, std::time_t tMonth,std::stringstream& ssOut);
+    int GetStageEntryForTicker(int iTickerID, std::time_t tMonth,std::stringstream& ssOut);
+    void CreateDataFilesForEntry(std::string sFileName, std::string sFileNameShort, int iState,std::stringstream& ssOut);
 
     std::time_t dateCastToMonth(std::time_t);
 

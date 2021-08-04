@@ -125,18 +125,68 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueFi
         dt.SetTextInfo(ss.str());
         queueTrdAnswers.Push(dt);
         ////////////////////////////////////////////////////////////
-        if (!stStore.InitializeTicker(data.TickerID)){
+        std::stringstream ssErr;
+        if (!stStore.InitializeTicker(data.TickerID,ssErr)){
             dataBuckgroundThreadAnswer dt(dataBuckgroundThreadAnswer::eAnswerType::famLoadEnd,data.GetParentWnd());
             dt.SetSuccessfull(false);
-            dt.SetErrString("cannot initialize stock quotes storage for ticker");
+            ssErr<<"\ncannot initialize stock quotes storage for ticker";
+            dt.SetErrString(ssErr.str());
             queueTrdAnswers.Push(dt);
         }
         else{
-            dataBuckgroundThreadAnswer dtT (dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage,data.GetParentWnd());
-            dtT.SetTextInfo("Here we are!");
-            queueTrdAnswers.Push(dt);
+            dataBuckgroundThreadAnswer dtT1 (dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage,data.GetParentWnd());
+            dtT1.SetTextInfo(ssErr.str());
+            queueTrdAnswers.Push(dtT1);
+            ////////////////////////////////////////////////////////////////////////
+            std::tm tmT;
+            tmT.tm_year = 2020  - 1900;
+            tmT.tm_mon  = 03 - 1;
+            tmT.tm_mday = 1;
+            tmT.tm_hour = 0;
+            tmT.tm_min = 0;
+            tmT.tm_sec = 0;
+            tmT.tm_isdst = 0;
+            std::time_t t = std::mktime(&tmT);
+
+            std::stringstream ssOut;
+            stStore.CreateAndGetFileStageForTicker(data.TickerID, t, ssOut);
+
+            {
+                dataBuckgroundThreadAnswer dt (dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage,data.GetParentWnd());
+                dt.SetTextInfo(ssOut.str());
+                queueTrdAnswers.Push(dt);
+            }
+
+            ssOut.str("");
+            ssOut.clear();
+
+            std::tm tmT1;
+            tmT1.tm_year = 2021  - 1900;
+            tmT1.tm_mon  = 02 - 1;
+            tmT1.tm_mday = 15;
+            tmT1.tm_hour = 12;
+            tmT1.tm_min = 46;
+            tmT1.tm_sec = 33;
+            tmT1.tm_isdst = 0;
+            std::time_t t1 = std::mktime(&tmT1);
+
+            Bar b(1,2,3,4,100,t1);
+            if (stStore.WriteBarToStore(data.TickerID, b, ssOut)){
+                ssOut<<"write successful.\n";
+            }
+            else{
+                ssOut<<"write fail.\n";
+            }
+
+            {
+                dataBuckgroundThreadAnswer dt (dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage,data.GetParentWnd());
+                dt.SetTextInfo(ssOut.str());
+                queueTrdAnswers.Push(dt);
+            }
 
 
+
+            ////////////////////////////////////////////////////////////////////////
             dataBuckgroundThreadAnswer dt(dataBuckgroundThreadAnswer::eAnswerType::famLoadEnd,data.GetParentWnd());
             dt.SetSuccessfull(true);
             queueTrdAnswers.Push(dt);

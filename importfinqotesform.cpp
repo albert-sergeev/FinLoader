@@ -107,7 +107,7 @@ void ImportFinQuotesForm::slotBtnOpenClicked()
 //--------------------------------------------------------------------------------------------------------
 void ImportFinQuotesForm::slotBtnCreateClicked(){
 
-    pathFile ="/home/albert/Загрузки/SBER_210501_210716(2) (копия).txt";
+    pathFile ="/home/albert/Загрузки/SBER_210322_210330.txt";
     pathDir=pathFile.parent_path();
     QString qsDir=QString::fromStdString(pathDir.string());;
     OpenImportFilePathChanged(qsDir);
