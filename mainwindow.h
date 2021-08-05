@@ -30,6 +30,7 @@
 #include "datafinloadtask.h"
 #include "databuckgroundthreadanswer.h"
 #include "blockfreequeue.h"
+#include "bulbululator.h"
 
 
 QT_BEGIN_NAMESPACE
@@ -79,6 +80,8 @@ private:
     char cImportDelimiter;
 
 
+    std::vector<Bulbululator *> vBulbulators;
+
 
 public:
     MainWindow(QWidget *parent = nullptr);
@@ -127,6 +130,10 @@ protected slots: // for main window
     void slotSetActiveLang      (QString);
     void slotConfigWndow ();
     void slotImportFinQuotesWndow ();
+
+    void BulbululatorAddActive      (int TickerID);
+    void BulbululatorRemoveActive   (int TickerID);
+    void BulbululatorShowActivity   (int TickerID);
 
 
 private:

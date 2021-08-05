@@ -18,6 +18,7 @@ CONFIG += c++1z
 SOURCES += \
     bar.cpp \
     blockfreequeue.cpp \
+    bulbululator.cpp \
     configwindow.cpp \
     databuckgroundthreadanswer.cpp \
     datafinloadtask.cpp \
@@ -37,6 +38,7 @@ SOURCES += \
 HEADERS += \
     bar.h \
     blockfreequeue.h \
+    bulbululator.h \
     configwindow.h \
     databuckgroundthreadanswer.h \
     datafinloadtask.h \

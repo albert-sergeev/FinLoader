@@ -130,18 +130,24 @@ void ImportFinQuotesForm::SetDelimiter(char c)
     cDelimiter = c;
     std::string s{" "};
     s[0] = c;
+    trim(s);
     ui->edDelimiter->setText(QString::fromStdString(s));
 }
 //--------------------------------------------------------------------------------------------------------
 void ImportFinQuotesForm::slotEditDelimiterWgtChanged(const QString &)
 {
     std::string sD = ui->edDelimiter->text().toStdString();
+    trim(sD);
     if(sD.size()<=0){
         cDelimiter = ' ';
     }
     else{
         cDelimiter = sD[0];
     }
+    std::string s{" "};
+    s[0] = cDelimiter;
+    trim(s);
+    ui->edDelimiter->setText(QString::fromStdString(s));
     ///////////////
     emit DelimiterHasChanged(cDelimiter);
 }
@@ -242,6 +248,12 @@ void ImportFinQuotesForm::slotPreparseImportFile()
                                 if (!std::isalnum(ch)){
                                     ui->edText->append(QString::fromStdString(sBuff));
                                     ui->edText->append("Wrong file format");
+
+                                    std::stringstream ss;
+                                    ss << "you are using [";
+                                    ss << cDelimiter;
+                                    ss << "] delimiter. Maybe try another one? (See text box bolow)";
+                                    ui->edText->append(QString::fromStdString(ss.str()));
                                     return;
                                 }
                             }
@@ -253,6 +265,13 @@ void ImportFinQuotesForm::slotPreparseImportFile()
                             catch (std::exception &e){
                                 ui->edText->append(QString::fromStdString(sBuff));
                                 ui->edText->append("Wrong file format");
+
+                                std::stringstream ss;
+                                ss << "you are using [";
+                                ss << cDelimiter;
+                                ss << "] delimiter. Maybe try another one? (See text box bolow)";
+                                ui->edText->append(QString::fromStdString(ss.str()));
+
                                 return;
                                 }
                         }

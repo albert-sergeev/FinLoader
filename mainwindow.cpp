@@ -9,9 +9,9 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , thrdPoolLoadFinQuotes{(int)std::thread::hardware_concurrency()/2}
     , vMarketsLst{}
-    , m_MarketLstModel{vMarketsLst}
+    , m_MarketLstModel{vMarketsLst,this}
     , vTickersLst{}
-    , m_TickerLstModel{vTickersLst}    
+    , m_TickerLstModel{vTickersLst,this}
     , ui(new Ui::MainWindow)
 {
 
@@ -62,16 +62,14 @@ void MainWindow::timerEvent(QTimerEvent * event)
                         break;
                     case dataBuckgroundThreadAnswer::eAnswerType::famLoadBegin:
                         wnd->slotLoadingHasBegun();
+                        BulbululatorAddActive(data.TickerID());
                         break;
                     case dataBuckgroundThreadAnswer::eAnswerType::famLoadEnd:
                         wnd->slotLoadingHasFinished(data.Successfull(),QString::fromStdString(data.GetErrString()));
+                        BulbululatorRemoveActive(data.TickerID());
                         break;
                     case dataBuckgroundThreadAnswer::eAnswerType::LoadActivity:
-                        wnd->slotLoadingActivity();
-//                        {
-//                            ThreadFreeCout pcout;
-//                            pcout <<"activity\n";
-//                        }
+                        BulbululatorShowActivity(data.TickerID());
                         break;
                     case dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage:
                         wnd->slotTextInfo(QString::fromStdString(data.GetTextInfo()));
@@ -236,6 +234,8 @@ void MainWindow::slotSendTestText()
 ///
 void MainWindow::InitAction()
 {
+    this->setWindowTitle(tr("FinLoader"));
+
     //------------------------------------------------
     QAction * pacNewDoc =new QAction("newdoc");
     pacNewDoc->setText(tr("&New"));
@@ -337,9 +337,84 @@ void MainWindow::InitAction()
     tbr->addAction(pacLogWnd);
 
     this->addToolBar(tbr);
+    //------------------------------------------------
+//    Bulbululator * blbl1 = new Bulbululator();
+//    Bulbululator * blbl2 = new Bulbululator();
+//    blbl1->SetText("GAZP");
+//    blbl2->SetText("LKOH");
+
+
+//    ui->statusbar->addWidget(blbl1);
+//    ui->statusbar->addWidget(blbl2);
+    //------------------------------------------------
+
 
 }
 
+
+
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::BulbululatorShowActivity   (int /*TickerID*/){}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::BulbululatorRemoveActive   (int TickerID)
+{
+    bool bFound = false;
+    size_t i = 0;
+    while (i < vBulbulators.size()) {
+        if (vBulbulators[i] == nullptr){
+            vBulbulators.erase(std::next(vBulbulators.begin(),i));
+            continue;
+        }
+        if(vBulbulators[i]->TickerID() == TickerID){
+            bFound = true;
+            break;
+        }
+        i++;
+    }
+    if (bFound){
+        ui->statusbar->removeWidget(vBulbulators[i]);
+        vBulbulators.erase(std::next(vBulbulators.begin(),i));
+    }
+
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::BulbululatorAddActive      (int TickerID)
+{
+    bool bFound{false};
+    QString str;
+
+    for(const auto& t:vTickersLst){
+        if(t.TickerID() == TickerID){
+            str = QString::fromStdString(t.TickerSign());
+            bFound = true;
+            break;
+        }
+    }
+    if (!bFound) return;
+
+    bFound = false;
+    size_t i = 0;
+    while (i < vBulbulators.size()) {
+        if (vBulbulators[i] == nullptr){
+            vBulbulators.erase(std::next(vBulbulators.begin(),i));
+            continue;
+        }
+        if(vBulbulators[i]->TickerID() == TickerID){
+            bFound = true;
+            break;
+        }
+        i++;
+    }
+    if (!bFound){
+        Bulbululator * blbl = new Bulbululator();
+        if(blbl){
+            blbl->SetText(str);
+            blbl->SetTickerID(TickerID);
+            vBulbulators.push_back(blbl);
+            ui->statusbar->addWidget(blbl);
+        }
+    }
+}
 //--------------------------------------------------------------------------------------------------------------------------------
 ///
 /// \brief create NewDoc Window (for test purpouse)

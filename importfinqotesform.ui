@@ -458,14 +458,20 @@
                      <height>27</height>
                     </size>
                    </property>
+                   <property name="inputMask">
+                    <string/>
+                   </property>
                    <property name="text">
                     <string>,</string>
                    </property>
                    <property name="maxLength">
-                    <number>1</number>
+                    <number>3200</number>
                    </property>
                    <property name="alignment">
                     <set>Qt::AlignCenter</set>
+                   </property>
+                   <property name="clearButtonEnabled">
+                    <bool>false</bool>
                    </property>
                   </widget>
                  </item>

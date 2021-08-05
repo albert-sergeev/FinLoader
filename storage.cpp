@@ -574,8 +574,6 @@ int  Storage::CreateStageEntryForTicker(int iTickerID, std::time_t tMonth,std::s
     mpWriteMutexes[k];
     mpStoreStages[k] = iState;
 
-    {ThreadFreeCout pcout; pcout<<"CreateStageEntry out\n"<<iState<<"\n";}
-
     return iState;
 }
 //--------------------------------------------------------------------------------------------------------
@@ -863,7 +861,6 @@ bool Storage::WriteMemblockToStore(int iTickerID, std::time_t tMonth, char* cBuf
     //int iStage = GetStageEntryForTicker(iTickerID, tMonth, ssOut);
     int iStage = mpStoreStages.at(k);
     if (iStage <1 || iStage >6){
-        {ThreadFreeCout pcout; pcout<<"WriteMemblockToStore 4-2\n";}
         ssOut <<"\n\rCannot get state for data storage file for TickerID: "<<iTickerID;
         return false;
     }

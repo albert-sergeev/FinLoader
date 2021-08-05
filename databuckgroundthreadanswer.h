@@ -25,10 +25,13 @@ public:
     inline void SetPercent(const int i)             {iLoadPercent = i;};
     inline int  Percent()   const                   {return iLoadPercent;};
     //
+    //inline void SetTickerID(const int i)            {iTickerID = i;};
+    inline int  TickerID()   const                  {return iTickerID;};
+    //
     inline void SetParentWnd(QWidget * const wt)    { parentWnd = wt;};
     inline  QWidget *  GetParentWnd() const         {return parentWnd;}
     //-------------------------------------------------------------------------------
-    dataBuckgroundThreadAnswer(eAnswerType iType = eAnswerType::nop, QWidget * parent = nullptr):parentWnd{parent}{
+    dataBuckgroundThreadAnswer(int TickerID = 0, eAnswerType iType = eAnswerType::nop, QWidget * parent = nullptr):iTickerID{TickerID},parentWnd{parent}{
         iAnswerType = iType;
         bSuccessfull = false;
     };
@@ -41,6 +44,8 @@ public:
         strErr          = o.strErr;
         strTextInfo     = o.strTextInfo;
 
+        iTickerID       = o.iTickerID;
+
         parentWnd       = o.parentWnd;
     };
 
@@ -51,6 +56,8 @@ private:
     bool bSuccessfull;
     std::string strErr;
     std::string strTextInfo;
+
+    int iTickerID;
 
     QWidget * parentWnd;
 };
