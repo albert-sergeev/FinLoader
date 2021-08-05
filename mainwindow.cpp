@@ -7,13 +7,13 @@
 //--------------------------------------------------------------------------------------------------------------------------------
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
+    , thrdPoolLoadFinQuotes{(int)std::thread::hardware_concurrency()/2}
     , vMarketsLst{}
     , m_MarketLstModel{vMarketsLst}
     , vTickersLst{}
-    , m_TickerLstModel{vTickersLst}
+    , m_TickerLstModel{vTickersLst}    
     , ui(new Ui::MainWindow)
 {
-
 
     ui->setupUi(this);
 

@@ -130,9 +130,12 @@ public:
     //---------------------------------------------------------------------------------------------------
 
 
-    ThreadPool():bQuit{false},joiner{threads},joinerDeleted{threadsDeleted}{
+    ThreadPool(int MaxThreads = std::thread::hardware_concurrency())
+        :bQuit{false},joiner{threads},joinerDeleted{threadsDeleted}{
 
-        threadMaxCount = std::thread::hardware_concurrency() > 0 ? std::thread::hardware_concurrency() : 2;
+        MaxThreads = MaxThreads > (int)std::thread::hardware_concurrency() ?  std::thread::hardware_concurrency() : MaxThreads;
+        threadMaxCount = MaxThreads > 0 ? MaxThreads : 1;
+
         //std::cout <<"Max threads: "<<threadMaxCount<<"\n";
         try{
 //            Interruptible_thread rhrd ([]{std::cout<<"here we are!\n";});
