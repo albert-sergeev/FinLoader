@@ -68,6 +68,10 @@ void MainWindow::timerEvent(QTimerEvent * event)
                         break;
                     case dataBuckgroundThreadAnswer::eAnswerType::LoadActivity:
                         wnd->slotLoadingActivity();
+//                        {
+//                            ThreadFreeCout pcout;
+//                            pcout <<"activity\n";
+//                        }
                         break;
                     case dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage:
                         wnd->slotTextInfo(QString::fromStdString(data.GetTextInfo()));

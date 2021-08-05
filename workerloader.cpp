@@ -121,6 +121,8 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueFi
         queueTrdAnswers.Push({dataBuckgroundThreadAnswer::eAnswerType::famLoadBegin,data.GetParentWnd()});
 
         std::chrono::time_point dtStart(std::chrono::steady_clock::now());
+        std::chrono::time_point dtActivity(std::chrono::steady_clock::now());
+        milliseconds tActivityCount = std::chrono::steady_clock::now() - dtActivity;
         bool bWasSuccessfull{false};
 
         ////////////////////////////////////////////////////////////
@@ -311,6 +313,8 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueFi
                         memcpy(cOutBuff + iOutBuffPointer,&bM.Period(), sizeof (bM.Period()));          iOutBuffPointer += sizeof (bM.Period());
 
                         ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                        //// send completion percentage
+                        ///
                         currsize = file.tellg();
                         iCurrProgress = int(100*(currsize/(double)filesize));
                         if(iProgressSent < iCurrProgress){
@@ -318,7 +322,16 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueFi
                             dt.SetPercent(iCurrProgress);
                             queueTrdAnswers.Push(dt);
                         }
-                        ////
+                        //// send every 0.5 sec activity
+                        ///
+                        tActivityCount = std::chrono::steady_clock::now() - dtActivity;
+                        if (tActivityCount > 5000ms){
+                            dtActivity = std::chrono::steady_clock::now();
+                            dataBuckgroundThreadAnswer dt(dataBuckgroundThreadAnswer::eAnswerType::LoadActivity,data.GetParentWnd());
+                            queueTrdAnswers.Push(dt);
+                        }
+                        //// check thread interrupt
+                        ///
                         if(this_thread_flagInterrup.isSet()){
                             //fout<<"exit on interrupt\n";
                             dataBuckgroundThreadAnswer dt(dataBuckgroundThreadAnswer::eAnswerType::famLoadEnd,data.GetParentWnd());
