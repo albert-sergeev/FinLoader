@@ -26,12 +26,14 @@ public:
     std::time_t     dtEnd;
     std::filesystem::path pathFileName;
 
+    dataFinQuotesParse parseData;
+
 
 
     //--------------------------------------------------------------
-    dataFinLoadTask():stStore{nullptr},parentWnd{nullptr}{;};
+    dataFinLoadTask():stStore{nullptr},parentWnd{nullptr},parseData{nullptr,nullptr}{;};
     //--------------------------------------------------------------
-    dataFinLoadTask(const dataFinLoadTask & o){
+    dataFinLoadTask(const dataFinLoadTask & o):parseData{nullptr,nullptr}{
 
         parentWnd       = o.parentWnd;
         stStore         = o.stStore;
@@ -43,6 +45,8 @@ public:
         dtBegin         = o.dtBegin;
         dtEnd           = o.dtEnd;
         pathFileName    = o.pathFileName;
+
+        parseData       = o.parseData;
     };
     //--------------------------------------------------------------
     inline void SetStore(Storage * const stSt)      { stStore = stSt;};

@@ -461,6 +461,7 @@ bool Storage::InitializeTickerEntry(int iTickerID,std::stringstream& ssOut){//pr
 
         std::pair<int,std::time_t> k{iTickerID,t};
         mpStoreMutexes[k];
+        mpWriteMutexes[k];
     }
     ///////////////////////////////////////////
     for (auto const &t:vInitializedTickers){
@@ -569,6 +570,7 @@ int  Storage::CreateStageEntryForTicker(int iTickerID, std::time_t tMonth,std::s
     CreateDataFilesForEntry(sFileName,"",iState,ssOut);
 
     mpStoreMutexes[k];
+    mpWriteMutexes[k];
 
     return iState;
 }
@@ -643,7 +645,8 @@ bool Storage::WriteBarToStore(int iTickerID, Bar &b, std::stringstream & ssOut)
         }
     }
     //
-    std::unique_lock entryLk(mpStoreMutexes[k]);
+    std::shared_lock entryLk(mpStoreMutexes[k]);
+    std::unique_lock entryWriteLk (mpWriteMutexes[k]);
     ////////////////////////////////////////////
     int iStage = GetStageEntryForTicker(iTickerID, tMonth, ssOut);
     if (iStage <1 || iStage >6){
@@ -664,11 +667,11 @@ bool Storage::WriteBarToStore(int iTickerID, Bar &b, std::stringstream & ssOut)
     ///
     //ssOut <<"File to write:"<<sFileName<<"\n";
 
-    //std::ofstream fileW (sFileName,std::ios_base::app | std::ios_base::binary);
-    std::ofstream fileW (sFileName, std::ios_base::binary);
+    std::ofstream fileW (sFileName,std::ios_base::app | std::ios_base::binary);
 
     data_type tp = data_type::new_sec;
     fileW.write((char*)&tp,sizeof (tp));
+
 
     double d = b.Open();
     fileW.write((char*)&d,sizeof (d));
@@ -689,4 +692,140 @@ bool Storage::WriteBarToStore(int iTickerID, Bar &b, std::stringstream & ssOut)
     return true;
 }
 //--------------------------------------------------------------------------------------------------------
+bool Storage::slotParseLine(dataFinQuotesParse & parseDt, std::istringstream & issLine, Bar &b)
+{
+
+    parseDt.t_iCurrN = 0;
+
+    try{
+        while (std::getline(issLine,parseDt.t_sWordBuff,parseDt.Delimiter())){
+            trim(parseDt.t_sWordBuff);
+            parseDt.issTmp().clear();
+            parseDt.issTmp().str(parseDt.t_sWordBuff);
+
+            switch(parseDt.fields()[parseDt.t_iCurrN]){
+            case dataFinQuotesParse::fieldType::TICKER:
+                parseDt.t_sSign = parseDt.t_sWordBuff;
+                if (parseDt.Sign().size() ==0){
+                    parseDt.setDefaultSign(parseDt.t_sSign);
+                }
+                else if(parseDt.Sign() != parseDt.t_sSign){
+                    parseDt.ossErr() << "Ticker sign mismatch";
+                    return false;
+                }
+                break;
+            case dataFinQuotesParse::fieldType::PER:
+                if(parseDt.t_sWordBuff == "day"){
+                    parseDt.t_iInterval = Bar::eInterval::pDay;
+                }
+                else if(parseDt.t_sWordBuff == "week"){
+                    parseDt.t_iInterval = Bar::eInterval::pWeek;
+                }
+                else if(parseDt.t_sWordBuff == "month"){
+                    parseDt.t_iInterval = Bar::eInterval::pMonth;
+                }
+                else{
+                    parseDt.t_iInterval = std::stoi(parseDt.t_sWordBuff);
+                    if(             parseDt.t_iInterval != Bar::eInterval::pTick
+                                &&  parseDt.t_iInterval != Bar::eInterval::p1
+                                &&  parseDt.t_iInterval != Bar::eInterval::p5
+                                &&  parseDt.t_iInterval != Bar::eInterval::p10
+                                &&  parseDt.t_iInterval != Bar::eInterval::p15
+                                &&  parseDt.t_iInterval != Bar::eInterval::p30
+                                &&  parseDt.t_iInterval != Bar::eInterval::p60
+                                &&  parseDt.t_iInterval != Bar::eInterval::p120
+                                &&  parseDt.t_iInterval != Bar::eInterval::p180
+                            ){
+                        parseDt.ossErr() << "Wrong file format: wrong period field value";
+                        return false;
+                    }
+                }
+
+                if (parseDt.DefaultInterval() >= 0){
+                    if(parseDt.DefaultInterval() != parseDt.t_iInterval){
+                        parseDt.ossErr() << "Interval mismatch";
+                        return false;
+                    }
+                }
+                else{
+                    parseDt.setDefaultInterval(parseDt.t_iInterval);
+                }
+                b.initInterval(parseDt.t_iInterval);
+                break;
+            case dataFinQuotesParse::fieldType::DATE:
+                //20210322,
+                if(parseDt.t_sWordBuff.size()>=8){
+                    copy(parseDt.t_sWordBuff.begin()    ,parseDt.t_sWordBuff.begin() + 4,parseDt.t_sYear.begin());
+                    copy(parseDt.t_sWordBuff.begin() + 4,parseDt.t_sWordBuff.begin() + 6,parseDt.t_sMonth.begin());
+                    copy(parseDt.t_sWordBuff.begin() + 6,parseDt.t_sWordBuff.begin() + 8,parseDt.t_sDay.begin());
+                    parseDt.t_tp.tm_year = std::stoi(parseDt.t_sYear);
+                    parseDt.t_tp.tm_mon = std::stoi(parseDt.t_sMonth);
+                    parseDt.t_tp.tm_mday = std::stoi(parseDt.t_sDay);
+                }
+                else{
+                    parseDt.ossErr() << "Wrong file format: wrong date field value";
+                    return false;
+                }
+                break;
+            case dataFinQuotesParse::fieldType::TIME:
+                //095936
+                if(parseDt.t_sWordBuff.size()>=6){
+                    copy(parseDt.t_sWordBuff.begin()    ,parseDt.t_sWordBuff.begin() + 2,parseDt.t_sHour.begin());
+                    copy(parseDt.t_sWordBuff.begin() + 2,parseDt.t_sWordBuff.begin() + 4,parseDt.t_sMin.begin());
+                    copy(parseDt.t_sWordBuff.begin() + 4,parseDt.t_sWordBuff.begin() + 6,parseDt.t_sSec.begin());
+                    parseDt.t_tp.tm_hour = std::stoi(parseDt.t_sHour);
+                    parseDt.t_tp.tm_min = std::stoi(parseDt.t_sMin);
+                    parseDt.t_tp.tm_sec = std::stoi(parseDt.t_sSec);
+                }
+                else{
+                    parseDt.ossErr() << "Wrong file format: wrong time field value";
+                    return false;
+                }
+
+                break;
+            case dataFinQuotesParse::fieldType::OPEN:
+                parseDt.issTmp() >> parseDt.t_dTmp; b.setOpen (parseDt.t_dTmp);
+                break;
+            case dataFinQuotesParse::fieldType::HIGH:
+                parseDt.issTmp() >> parseDt.t_dTmp; b.setHigh (parseDt.t_dTmp);
+                break;
+            case dataFinQuotesParse::fieldType::LOW:
+                parseDt.issTmp() >> parseDt.t_dTmp; b.setLow (parseDt.t_dTmp);
+                break;
+            case dataFinQuotesParse::fieldType::CLOSE:
+                parseDt.issTmp() >> parseDt.t_dTmp; b.setClose (parseDt.t_dTmp);
+                break;
+            case dataFinQuotesParse::fieldType::LAST:
+                parseDt.issTmp() >> parseDt.t_dTmp;
+                b.setOpen   (parseDt.t_dTmp);
+                b.setHigh   (b.Open());
+                b.setLow    (b.Open());
+                b.setClose  (b.Open());
+                break;
+            case dataFinQuotesParse::fieldType::VOL:
+                b.setVolume (std::stoi(parseDt.t_sWordBuff));
+                break;
+            default:
+                parseDt.ossErr() << "Wrong file format: column parsing";
+                return false;
+                break;
+            }
+            parseDt.t_iCurrN++;
+            if (parseDt.t_iCurrN > parseDt.ColMax()){
+                parseDt.ossErr() << "Wrong file format: not equal column count";
+                return false;
+            }
+        }
+        if (parseDt.DefaultInterval() < 0 ) parseDt.setDefaultInterval ( Bar::eInterval::pTick);
+
+        b.setPeriod(std::mktime(&parseDt.t_tp));
+    }
+    catch (std::exception &e){
+        parseDt.ossErr() << "Wrong file format";
+        return false;
+        }
+
+    return  true;
+}
+
 //--------------------------------------------------------------------------------------------------------

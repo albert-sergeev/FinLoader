@@ -4,6 +4,7 @@
 #include"blockfreequeue.h"
 #include"datafinloadtask.h"
 #include "databuckgroundthreadanswer.h"
+#include "datafinquotesparse.h"
 
 
 class workerLoader

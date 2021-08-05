@@ -8,6 +8,7 @@
 #include "ticker.h"
 #include "bar.h"
 #include "threadfreecout.h"
+#include "datafinquotesparse.h"
 
 
 ////////////////////////////////////////////////////////////////////
@@ -48,6 +49,7 @@ class Storage
     std::shared_mutex mutexQuotesStoreInit;
     std::vector<int> vInitializedTickers;
     std::map<std::pair<int,std::time_t>,std::shared_mutex> mpStoreMutexes;
+    std::map<std::pair<int,std::time_t>,std::shared_mutex> mpWriteMutexes;
     std::map<std::pair<int,std::time_t>,int> mpStoreStages;
 
     const std::vector<int> vStorageW;
@@ -97,6 +99,7 @@ public:
     int CreateAndGetFileStageForTicker(int iTickerID, std::time_t tMonth, std::stringstream & ssOut);
     bool WriteBarToStore(int iTickerID, Bar &b, std::stringstream & ssOut);
 
+    static bool slotParseLine(dataFinQuotesParse & parseDt, std::istringstream & issLine, Bar &b);
 
 private:
     //--------------------------------------------------------------------------------------------------------
@@ -112,7 +115,9 @@ private:
     int GetStageEntryForTicker(int iTickerID, std::time_t tMonth,std::stringstream& ssOut);
     void CreateDataFilesForEntry(std::string sFileName, std::string sFileNameShort, int iState,std::stringstream& ssOut);
 
-    std::time_t dateCastToMonth(std::time_t);
+
+
+    static std::time_t dateCastToMonth(std::time_t);
 
 };
 

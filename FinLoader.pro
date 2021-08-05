@@ -21,6 +21,7 @@ SOURCES += \
     configwindow.cpp \
     databuckgroundthreadanswer.cpp \
     datafinloadtask.cpp \
+    datafinquotesparse.cpp \
     graph.cpp \
     importfinqotesform.cpp \
     main.cpp \
@@ -39,6 +40,7 @@ HEADERS += \
     configwindow.h \
     databuckgroundthreadanswer.h \
     datafinloadtask.h \
+    datafinquotesparse.h \
     graph.h \
     importfinqotesform.h \
     mainwindow.h \
