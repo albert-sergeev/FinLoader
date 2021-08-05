@@ -13,12 +13,18 @@ public:
     workerLoader();
 
 
-    static void workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueFinQuotesLoad,
+    static void workerDataBaseWork(BlockFreeQueue<dataFinLoadTask> & queueFinQuotesLoad,
                        BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
                        Storage &stStore);
 
+private:
+    static void workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueFinQuotesLoad,
+                       BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
+                       Storage &stStore,dataFinLoadTask & data);
+
     static void workerEtalon(BlockFreeQueue<dataFinLoadTask> & queueFinQuotesLoad,
                        BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers);
+
 };
 
 

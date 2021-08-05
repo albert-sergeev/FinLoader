@@ -627,7 +627,7 @@ void MainWindow::slotParseImportFinQuotesFile(dataFinLoadTask & dtTask)
     queueFinQuotesLoad.Push(dataFinLoadTask(dtTask));
 
     thrdPoolLoadFinQuotes.AddTask([&](){
-        workerLoader::workerFinQuotesLoad(queueFinQuotesLoad,queueTrdAnswers,stStore);
+        workerLoader::workerDataBaseWork(queueFinQuotesLoad,queueTrdAnswers,stStore);
         });
 }
 //--------------------------------------------------------------------------------------------------------------------------------

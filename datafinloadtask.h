@@ -18,6 +18,9 @@ private:
     //void*  parentWnd;
 
 public:
+
+    enum TaskType:int { finQuotesImport = 1, finQuotesLoadFromStorage = 2, storageOptimisation = 3, };
+
     int             TickerID;
     std::string     sSign;
     int             iInterval;
@@ -28,10 +31,10 @@ public:
 
     dataFinQuotesParse parseData;
 
-
+    TaskType taskType;
 
     //--------------------------------------------------------------
-    dataFinLoadTask():stStore{nullptr},parentWnd{nullptr},parseData{nullptr,nullptr}{;};
+    dataFinLoadTask():stStore{nullptr},parentWnd{nullptr},parseData{nullptr,nullptr},taskType{TaskType::finQuotesImport}{;};
     //--------------------------------------------------------------
     dataFinLoadTask(const dataFinLoadTask & o):parseData{nullptr,nullptr}{
 
@@ -47,6 +50,8 @@ public:
         pathFileName    = o.pathFileName;
 
         parseData       = o.parseData;
+
+        taskType        = o.taskType;
     };
     //--------------------------------------------------------------
     inline void SetStore(Storage * const stSt)      { stStore = stSt;};
