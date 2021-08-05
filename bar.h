@@ -5,25 +5,23 @@
 #include <sstream>
 #include <chrono>
 
-
-
+class BarMemcopier;
 
 ////
 /// \brief Main class for store trade operations data for decent time period
 ///
 class Bar
 {
-
-
-    char   cStage;
     double dOpen;
     double dHigh;
     double dLow;
     double dClose;
-    int iVolume;
+    unsigned long iVolume;
     std::time_t tmPeriod;
 
     int iInterval;
+
+    friend class BarMemcopier;
 
 public:
 
@@ -31,7 +29,7 @@ public:
     inline double High()                    const   {return dHigh;};
     inline double Low()                     const   {return dLow;};
     inline double Close()                   const   {return dClose;};
-    inline int Volume()                     const   {return iVolume;};
+    inline unsigned long Volume()                     const   {return iVolume;};
     inline int Interval()                   const   {return iInterval;};
     inline std::time_t Period()             const   {return tmPeriod;};
 
@@ -39,7 +37,7 @@ public:
     inline void setHigh     (const double d)                   {dHigh   = d;};
     inline void setLow      (const double d)                   {dLow    = d;};
     inline void setClose    (const double d)                   {dClose  = d;};
-    inline void setVolume    (const int v)                     {iVolume = v;};
+    inline void setVolume   (const unsigned long v)            {iVolume = v;};
     inline void initInterval(const int iv)                     {iInterval    = iv;};
     inline void setPeriod   (const std::time_t tm)             {tmPeriod = DateAccommodate(tm,this->iInterval);};
 
@@ -51,7 +49,7 @@ public:
     //--------------------------------------------------------------------------------------------------------
     Bar() = delete ;
     //--------------------------------------------------------------------------------------------------------
-    Bar (double Open, double High,double Low,double Close,int Value, std::time_t Period, int Interval = eInterval::pTick):
+    Bar (double Open, double High,double Low,double Close,unsigned long Value, std::time_t Period, int Interval = eInterval::pTick):
         dOpen{Open},dHigh{High},dLow{Low},dClose{Close},iVolume{Value},tmPeriod{Period}
         ,iInterval{Interval}
     {
@@ -208,5 +206,26 @@ private:
     //--------------------------------------------------------------------------------------------------------
 
 };
+
+class BarMemcopier{
+
+    Bar &bb;
+
+public:
+
+    BarMemcopier(Bar &b):bb{b}{;}
+
+    inline double& Open()            {return bb.dOpen;};
+    inline double& High()            {return bb.dHigh;};
+    inline double& Low()             {return bb.dLow;};
+    inline double& Close()           {return bb.dClose;};
+    inline unsigned long& Volume()   {return bb.iVolume;};
+    inline std::time_t& Period()     {return bb.tmPeriod;};
+
+    BarMemcopier() = delete;
+    BarMemcopier(BarMemcopier&) = delete;
+    BarMemcopier& operator= (BarMemcopier&) = delete;
+};
+
 
 #endif // BAR_H

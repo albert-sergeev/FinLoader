@@ -462,6 +462,7 @@ bool Storage::InitializeTickerEntry(int iTickerID,std::stringstream& ssOut){//pr
         std::pair<int,std::time_t> k{iTickerID,t};
         mpStoreMutexes[k];
         mpWriteMutexes[k];
+        mpStoreStages[k] = iState;
     }
     ///////////////////////////////////////////
     for (auto const &t:vInitializedTickers){
@@ -517,7 +518,7 @@ int Storage::CreateAndGetFileStageForTicker(int iTickerID, std::time_t tMonth, s
     std::pair<int,std::time_t> k{iTickerID,tMonth};
     auto It (mpStoreMutexes.find(k));
     if(It != mpStoreMutexes.end()){
-        std::shared_lock entryLk(mpStoreMutexes[k]);
+        std::shared_lock entryLk(mpStoreMutexes.at(k));
         return GetStageEntryForTicker(iTickerID, tMonth, ssOut);
     }
     else{
@@ -540,7 +541,7 @@ int  Storage::CreateStageEntryForTicker(int iTickerID, std::time_t tMonth,std::s
     std::pair<int,std::time_t> k{iTickerID,tMonth};
     auto It (mpStoreMutexes.find(k));
     if(It != mpStoreMutexes.end()){
-        std::shared_lock entryLk(mpStoreMutexes[k]);
+        std::shared_lock entryLk(mpStoreMutexes.at(k));
         return GetStageEntryForTicker(iTickerID, tMonth, ssOut);
     }
     //////////////
@@ -571,6 +572,9 @@ int  Storage::CreateStageEntryForTicker(int iTickerID, std::time_t tMonth,std::s
 
     mpStoreMutexes[k];
     mpWriteMutexes[k];
+    mpStoreStages[k] = iState;
+
+    {ThreadFreeCout pcout; pcout<<"CreateStageEntry out\n"<<iState<<"\n";}
 
     return iState;
 }
@@ -584,9 +588,9 @@ int  Storage::CreateStageEntryForTicker(int iTickerID, std::time_t tMonth,std::s
 ///
 int  Storage::GetStageEntryForTicker(int iTickerID, std::time_t tMonth,std::stringstream& ssOut) // private
 {
-
     //
     std::tm * tmT = std::localtime(&tMonth);
+    std::pair<int,std::time_t> k{iTickerID,tMonth};
 
     std::stringstream ss;
     ss <<pathStorageDir.c_str();
@@ -598,32 +602,32 @@ int  Storage::GetStageEntryForTicker(int iTickerID, std::time_t tMonth,std::stri
     std::string sFileName(ss.str());
 
     int iState{0};
-    std::ifstream ifCF(sFileName);
-    if(ifCF.good()){
+    std::ifstream ifCF(sFileName, std::ios_base::in);
+    //if(ifCF.good()){
+    if(ifCF){
         ifCF >>iState;
         if(iState <=0 || iState > 6){
-            ssOut <<"control file "<< sFileName<<" has invalid state value: <"<<iState<<">! Reset to 1.\n";
-            ifCF.close();
-            std::ofstream ofCF(sFileName);
-            if(ofCF.good()){
-                ofCF<<1;
-                iState = 1;
-            }
-            else{
-                ssOut<<"Broken File: "<<sFileName;
-                return 0;
-            }
+            ssOut <<"control file "<< sFileName<<" has invalid state value: <"<<iState<<">!\n";
+            return 0;
         }
     }
     else{
-        ssOut<<"Broken File: "<<sFileName;
+        ifCF >>iState;
+        if (ifCF.rdstate() == std::ios_base::goodbit) { ssOut << "stream state is goodbit\n";}
+        if (ifCF.rdstate() == std::ios_base::badbit) { ssOut << "stream state is badbit\n";}
+        if (ifCF.rdstate() == std::ios_base::failbit) { ssOut << "stream state is failbit\n";}
+        if (ifCF.rdstate() == std::ios_base::eofbit) { ssOut << "stream state is eofbit\n";}
+        ssOut<<"state: ["<<iState<<"]\n";
+        ssOut<<"Broken control file: "<<sFileName;
         return 0;
     }
+    mpStoreStages[k] = iState;
     return  iState;
 }
 //--------------------------------------------------------------------------------------------------------
 bool Storage::WriteBarToStore(int iTickerID, Bar &b, std::stringstream & ssOut)
 {
+
     std::shared_lock lk(mutexQuotesStoreInit);
     //
     std::time_t tMonth = dateCastToMonth(b.Period());
@@ -645,10 +649,11 @@ bool Storage::WriteBarToStore(int iTickerID, Bar &b, std::stringstream & ssOut)
         }
     }
     //
-    std::shared_lock entryLk(mpStoreMutexes[k]);
-    std::unique_lock entryWriteLk (mpWriteMutexes[k]);
+    std::shared_lock entryLk(mpStoreMutexes.at(k));
+    std::unique_lock entryWriteLk (mpWriteMutexes.at(k));
     ////////////////////////////////////////////
-    int iStage = GetStageEntryForTicker(iTickerID, tMonth, ssOut);
+    //int iStage = GetStageEntryForTicker(iTickerID, tMonth, ssOut);
+    int iStage = mpStoreStages.at(k);
     if (iStage <1 || iStage >6){
         ssOut <<"Cannot get state for data storage file for:"<<iTickerID;
         return false;
@@ -672,7 +677,6 @@ bool Storage::WriteBarToStore(int iTickerID, Bar &b, std::stringstream & ssOut)
     data_type tp = data_type::new_sec;
     fileW.write((char*)&tp,sizeof (tp));
 
-
     double d = b.Open();
     fileW.write((char*)&d,sizeof (d));
     d = b.High();
@@ -682,7 +686,7 @@ bool Storage::WriteBarToStore(int iTickerID, Bar &b, std::stringstream & ssOut)
     d = b.Close();
     fileW.write((char*)&d,sizeof (d));
 
-    int i = b.Volume();
+    unsigned long i = b.Volume();
     fileW.write((char*)&i,sizeof (i));
 
     time_t tT = b.Period();
@@ -828,4 +832,63 @@ bool Storage::slotParseLine(dataFinQuotesParse & parseDt, std::istringstream & i
     return  true;
 }
 
+//--------------------------------------------------------------------------------------------------------
+
+bool Storage::WriteMemblockToStore(int iTickerID, std::time_t tMonth, char* cBuff,size_t length, std::stringstream & ssOut)
+{
+    std::shared_lock lk(mutexQuotesStoreInit);
+    //
+    tMonth = dateCastToMonth(tMonth);
+    std::pair<int,std::time_t> k{iTickerID,tMonth};
+    auto It (mpStoreMutexes.find(k));
+    if(It == mpStoreMutexes.end()){
+        lk.unlock();
+        std::unique_lock<std::shared_mutex> ulk(mutexQuotesStoreInit);
+        if(CreateStageEntryForTicker(iTickerID, tMonth, ssOut) == 0){
+            ssOut <<"cannot create data storage file for TickerID: "<<iTickerID;
+            return false;
+        }
+        ulk.unlock();
+        lk.lock();
+        It = mpStoreMutexes.find(k);
+        if(It == mpStoreMutexes.end()){
+            ssOut <<"Logic error during creating data storage file for TickerID: "<<iTickerID;
+            return false;
+        }
+    }
+
+    std::shared_lock entryLk(mpStoreMutexes.at(k));
+    std::unique_lock entryWriteLk (mpWriteMutexes.at(k));
+    ////////////////////////////////////////////
+    //int iStage = GetStageEntryForTicker(iTickerID, tMonth, ssOut);
+    int iStage = mpStoreStages.at(k);
+    if (iStage <1 || iStage >6){
+        {ThreadFreeCout pcout; pcout<<"WriteMemblockToStore 4-2\n";}
+        ssOut <<"\n\rCannot get state for data storage file for TickerID: "<<iTickerID;
+        return false;
+    }
+    std::tm * tmT = std::localtime(&tMonth);
+
+    std::stringstream ss;
+    ss <<pathStorageDir.c_str();
+    ss <<"/"<<iTickerID;
+    ss <<"/"<<iTickerID<<"_";
+    ss <<std::setfill('0');
+    ss <<std::right<< std::setw(4)<<tmT->tm_year+1900;
+    ss <<std::right<< std::setw(2)<<(tmT->tm_mon+1);
+    ss <<"_"<<vStorageW[iStage-1];
+    std::string sFileName(ss.str());
+    ///
+
+    std::ofstream fileW (sFileName,std::ios_base::app | std::ios_base::binary);
+
+    if(!fileW.write(cBuff,length)){
+        ssOut <<"Unsuccessful write operation\n";
+        return false;
+    }
+
+    ////////////////////////////////////////////
+    return true;
+
+}
 //--------------------------------------------------------------------------------------------------------

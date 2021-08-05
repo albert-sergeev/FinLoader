@@ -95,12 +95,17 @@ void workerLoader::workerEtalon(BlockFreeQueue<dataFinLoadTask> & queueFilLoad,
     //fout<<"workerLoaderFinam out\n";
 }
 
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Thread task for upload fin quotes data from file
+/// \param queueFilLoad
+/// \param queueTrdAnswers
+/// \param stStore
+///
 void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueFilLoad,
                                 BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
                                  Storage & stStore)
 {
-    //ThreadFreeCout fout;
-    //fout<<"workerLoaderFinam in\n";
 
     bool bWasBreaked{false};
     bool bSuccess{false};
@@ -152,17 +157,38 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueFi
                 dtT.SetTextInfo(ssErr.str());
                 queueTrdAnswers.Push(dtT);
             }
-            ////////////////////////////////////////////////////////////////////////
-            //  4. Передача в write уже подготовленного буфера
-            //  6. Проверка как будет быстрее, все сразу писать или частями
-            //  7. Передача в wtite очериеди ответов и посылка currPercent оттуда
-            //  8. добавить количество потоков в инициализацию threadpool
             ///////////////////////////////////////////////////////////////////////////
 
             std::istringstream issTmp;
             std::ostringstream ossErr;
+            Bar bb(0,0,0,0,0,0);
+            BarMemcopier bM(bb);
 
-            //dataFinQuotesParse parseDt(data.parseData,&issTmp,&ossErr);
+            //const int iOutBuffMax {1024};
+            //const int iOutBuffMax {32768};
+            const int iOutBuffMax {524288};
+            //const int iOutBuffMax {2097152};
+            //const int iOutBuffMax {3145727};
+
+            char cOutBuff[iOutBuffMax];
+            int iOutBuffPointer {0};
+            int iSecChangedPointer {0};
+            int iBlockSize (  sizeof (Storage::data_type)
+                            + sizeof (bb.Open())
+                            + sizeof (bb.High())
+                            + sizeof (bb.Low())
+                            + sizeof (bb.Close())
+                            + sizeof (bb.Volume())
+                            + sizeof (bb.Period())
+                            );
+
+            std::time_t tMonth{0};
+            std::time_t tSec{0};
+            std::time_t tCurrentMonth{0};
+            std::time_t tCurrentSec{0};
+
+            Storage::data_type iState{Storage::data_type::new_sec};
+
             dataFinQuotesParse parseDt(&issTmp,&ossErr);
             parseDt = data.parseData;
 
@@ -190,9 +216,15 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueFi
                         queueTrdAnswers.Push(dt);
                     }
                     /////////////////////////////
+
+//                    std::vector<char> vBigBuff(filesize+1);
+//                    fileR.read(vBigBuff.data(), filesize);
+//                    std::istringstream file(vBigBuff.data());
+
+                    /////////////////////////////
                     std::string sBuff;
                     std::istringstream iss;
-                    Bar bb(0,0,0,0,0,0);
+
 
                     bWasSuccessfull = true;
 
@@ -218,6 +250,65 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueFi
                         ////////////////////////////////////////////////////////////////////////////////////////////////////////////
                         ///
                         /// storage work
+                        tMonth  = Storage::dateCastToMonth(bb.Period());
+                        tSec    = bb.Period();
+
+                        /// init new storage file or buffer is full
+                        if (tMonth !=  tCurrentMonth){
+                            if (iOutBuffPointer >0){
+                                // do write
+                                if(!stStore.WriteMemblockToStore(data.TickerID, tMonth, cOutBuff,iOutBuffPointer, ssErr)){
+                                    dataBuckgroundThreadAnswer dt(dataBuckgroundThreadAnswer::eAnswerType::famLoadEnd,data.GetParentWnd());
+                                    dt.SetSuccessfull(false);
+                                    ssErr<<"\n\rError writing file.\n";
+                                    dt.SetErrString(ssErr.str());
+                                    queueTrdAnswers.Push(dt);
+                                    bWasSuccessfull = false;
+                                    break;
+                                }
+                            }
+                            tCurrentMonth   = tMonth;
+                            iOutBuffPointer = 0;
+                            iSecChangedPointer = 0;
+                        }
+                        else if( iOutBuffPointer + iBlockSize*4 > iOutBuffMax){ // do write to iSecChangedPointer
+
+                            if (iSecChangedPointer == 0){
+                                // if everything is within one second, copy the entire block
+                                iSecChangedPointer = iOutBuffPointer;
+                                // TODO: lock database file to correct continue
+                            }
+                            if(!stStore.WriteMemblockToStore(data.TickerID, tMonth, cOutBuff,iSecChangedPointer, ssErr)){
+                                dataBuckgroundThreadAnswer dt(dataBuckgroundThreadAnswer::eAnswerType::famLoadEnd,data.GetParentWnd());
+                                dt.SetSuccessfull(false);
+                                ssErr<<"\n\rError writing file.\n";
+                                dt.SetErrString(ssErr.str());
+                                queueTrdAnswers.Push(dt);
+                                bWasSuccessfull = false;
+                                break;
+                            }
+
+                            memcpy(cOutBuff, cOutBuff + iSecChangedPointer,   iOutBuffPointer - iSecChangedPointer);
+
+                            iOutBuffPointer = iOutBuffPointer - iSecChangedPointer;
+                            iSecChangedPointer = 0;                        }
+                        //
+                        if (tSec != tCurrentSec){
+                            iState = Storage::data_type::new_sec;
+                            tCurrentSec = tSec;
+                            iSecChangedPointer = iOutBuffPointer;
+                        }
+                        else{
+                            iState = Storage::data_type::usual;
+                        }
+
+                        memcpy(cOutBuff + iOutBuffPointer,&iState,   sizeof (Storage::data_type));      iOutBuffPointer += sizeof (Storage::data_type);
+                        memcpy(cOutBuff + iOutBuffPointer,&bM.Open(),   sizeof (bM.Open()));            iOutBuffPointer += sizeof (bM.Open());
+                        memcpy(cOutBuff + iOutBuffPointer,&bM.High(),   sizeof (bM.High()));            iOutBuffPointer += sizeof (bM.High());
+                        memcpy(cOutBuff + iOutBuffPointer,&bM.Low(),    sizeof (bM.Low()));             iOutBuffPointer += sizeof (bM.Low());
+                        memcpy(cOutBuff + iOutBuffPointer,&bM.Close(),  sizeof (bM.Close()));           iOutBuffPointer += sizeof (bM.Close());
+                        memcpy(cOutBuff + iOutBuffPointer,&bM.Volume(), sizeof (bM.Volume()));          iOutBuffPointer += sizeof (bM.Volume());
+                        memcpy(cOutBuff + iOutBuffPointer,&bM.Period(), sizeof (bM.Period()));          iOutBuffPointer += sizeof (bM.Period());
 
                         ////////////////////////////////////////////////////////////////////////////////////////////////////////////
                         currsize = file.tellg();
@@ -239,13 +330,27 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueFi
                             break;
                         }
                     }
+                    if (bWasSuccessfull && iOutBuffPointer>0){
+                        ////////////////////////
+                        /// write tail
+                        if(!stStore.WriteMemblockToStore(data.TickerID, tMonth, cOutBuff,iOutBuffPointer, ssErr)){
+                            dataBuckgroundThreadAnswer dt(dataBuckgroundThreadAnswer::eAnswerType::famLoadEnd,data.GetParentWnd());
+                            dt.SetSuccessfull(false);
+                            ssErr<<"\n\rError writing file.\n";
+                            dt.SetErrString(ssErr.str());
+                            queueTrdAnswers.Push(dt);
+                            bWasSuccessfull = false;
+                            break;
+                        }
+                        /// ////////////////////////
+                    }
                 }
             }
             /////
             if (!bFileOpened){
                 dataBuckgroundThreadAnswer dt(dataBuckgroundThreadAnswer::eAnswerType::famLoadEnd,data.GetParentWnd());
                 dt.SetSuccessfull(false);
-                ssErr<<"\ncannot open file :"<<data.pathFileName<<"\n";
+                ssErr<<"\n\rcannot open file :"<<data.pathFileName<<"\n";
                 dt.SetErrString(ssErr.str());
                 queueTrdAnswers.Push(dt);
             }
@@ -253,10 +358,12 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueFi
             ////////////////////////////////////////////////////////////////////////
             if(bWasSuccessfull){
                 std::chrono::time_point dtStop(std::chrono::steady_clock::now());
-                milliseconds tCount = dtStop - dtStart;
+                //milliseconds tCount = dtStop - dtStart;
+                seconds tCount = dtStop - dtStart;
                 {
                     std::stringstream ss;
-                    ss << "Load time: "<<tCount.count()<<" milliseconds\n";
+                    //ss << "Load time: "<<tCount.count()<<" milliseconds\n";
+                    ss << "Load time: "<<tCount.count()<<" seconds\n";
                     dataBuckgroundThreadAnswer dt (dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage,data.GetParentWnd());
                     dt.SetTextInfo(ss.str());
                     queueTrdAnswers.Push(dt);
@@ -279,77 +386,9 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueFi
         }
         //----------------------------------
     }
-    //fout<<"workerLoaderFinam out\n";
 }
 
-
-//        for (int i =0; i<=1000; ++i){
-//            if(this_thread_flagInterrup.isSet())
-//            {
-//                //fout<<"exit on interrupt\n";
-//                dataBuckgroundThreadAnswer dt(dataBuckgroundThreadAnswer::eAnswerType::famLoadEnd,data.GetParentWnd());
-//                dt.SetSuccessfull(false);
-//                dt.SetErrString("loading process interrupted");
-//                queueTrdAnswers.Push(dt);
-//                bWasBreaked = true;
-//                break;
-//            }
-//            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//            //// work area
-//            if (i %10 == 0){
-//                dataBuckgroundThreadAnswer dt(dataBuckgroundThreadAnswer::eAnswerType::famLoadCurrent,data.GetParentWnd());
-//                dt.SetPercent(i/10);
-//                queueTrdAnswers.Push(dt);
-//            }
-//            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//            dataBuckgroundThreadAnswer dt(dataBuckgroundThreadAnswer::eAnswerType::LoadActivity,data.GetParentWnd());
-//            ///
-//            //std::this_thread::sleep_for(4ms);
-
-//        }
-
-//            std::tm tmT;
-//            tmT.tm_year = 2020  - 1900;
-//            tmT.tm_mon  = 03 - 1;
-//            tmT.tm_mday = 1;
-//            tmT.tm_hour = 0;
-//            tmT.tm_min = 0;
-//            tmT.tm_sec = 0;
-//            tmT.tm_isdst = 0;
-//            std::time_t t = std::mktime(&tmT);
-
-//            std::stringstream ssOut;
-//            stStore.CreateAndGetFileStageForTicker(data.TickerID, t, ssOut);
-
-//            {
-//                dataBuckgroundThreadAnswer dt (dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage,data.GetParentWnd());
-//                dt.SetTextInfo(ssOut.str());
-//                queueTrdAnswers.Push(dt);
-//            }
-
-//            ssOut.str("");
-//            ssOut.clear();
-
-//            std::tm tmT1;
-//            tmT1.tm_year = 2021  - 1900;
-//            tmT1.tm_mon  = 02 - 1;
-//            tmT1.tm_mday = 15;
-//            tmT1.tm_hour = 12;
-//            tmT1.tm_min = 46;
-//            tmT1.tm_sec = 33;
-//            tmT1.tm_isdst = 0;
-//            std::time_t t1 = std::mktime(&tmT1);
-
-//            Bar b(1,2,3,4,100,t1);
-//            if (stStore.WriteBarToStore(data.TickerID, b, ssOut)){
-//                ssOut<<"write successful.\n";
-//            }
-//            else{
-//                ssOut<<"write fail.\n";
-//            }
-
-//            {
-//                dataBuckgroundThreadAnswer dt (dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage,data.GetParentWnd());
-//                dt.SetTextInfo(ssOut.str());
-//                queueTrdAnswers.Push(dt);
-//            }
+////////////////////////////////////////////////////////////////////////
+//  8. добавить количество потоков в инициализацию threadpool
+//  10. сигналы бульбулятору
+//  9. добавить очередь задач на оптимизацию данных

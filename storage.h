@@ -62,13 +62,16 @@ class Storage
     const std::vector<bool> vStorage3;
     const std::vector<bool> vStorage4;
 
-    enum data_type:char { usual = 0, new_sec = 1, del_from = 2 , del_to = 3};
+
 
 public:
 
     inline std::string GetCurrentPath() {return  pathCurr;};
     inline std::string GetDataPath()    {return  pathDataDir;};
     inline std::string GetStoragePath() {return  pathStorageDir;};
+
+
+    enum data_type:char { usual = 0, new_sec = 1, del_from = 2 , del_to = 3};
 
 
 public:
@@ -98,8 +101,11 @@ public:
     bool InitializeTicker(int iTickerID,std::stringstream & ssOut, bool bCheckOnly = false);
     int CreateAndGetFileStageForTicker(int iTickerID, std::time_t tMonth, std::stringstream & ssOut);
     bool WriteBarToStore(int iTickerID, Bar &b, std::stringstream & ssOut);
+    bool WriteMemblockToStore(int iTickerID, std::time_t tMonth, char* cBuff,size_t length, std::stringstream & ssOut);
 
     static bool slotParseLine(dataFinQuotesParse & parseDt, std::istringstream & issLine, Bar &b);
+
+    static std::time_t dateCastToMonth(std::time_t);
 
 private:
     //--------------------------------------------------------------------------------------------------------
@@ -117,7 +123,7 @@ private:
 
 
 
-    static std::time_t dateCastToMonth(std::time_t);
+
 
 };
 
