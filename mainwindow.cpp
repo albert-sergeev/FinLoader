@@ -337,24 +337,32 @@ void MainWindow::InitAction()
     tbr->addAction(pacLogWnd);
 
     this->addToolBar(tbr);
-    //------------------------------------------------
-//    Bulbululator * blbl1 = new Bulbululator();
-//    Bulbululator * blbl2 = new Bulbululator();
-//    blbl1->SetText("GAZP");
-//    blbl2->SetText("LKOH");
 
-
-//    ui->statusbar->addWidget(blbl1);
-//    ui->statusbar->addWidget(blbl2);
     //------------------------------------------------
 
 
 }
 
-
-
 //--------------------------------------------------------------------------------------------------------------------------------
-void MainWindow::BulbululatorShowActivity   (int /*TickerID*/){}
+void MainWindow::BulbululatorShowActivity   (int TickerID)
+{
+    bool bFound = false;
+    size_t i = 0;
+    while (i < vBulbulators.size()) {
+        if (vBulbulators[i] == nullptr){
+            vBulbulators.erase(std::next(vBulbulators.begin(),i));
+            continue;
+        }
+        if(vBulbulators[i]->TickerID() == TickerID){
+            bFound = true;
+            break;
+        }
+        i++;
+    }
+    if (bFound){
+        vBulbulators[i]->Bubble();
+    }
+}
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::BulbululatorRemoveActive   (int TickerID)
 {
