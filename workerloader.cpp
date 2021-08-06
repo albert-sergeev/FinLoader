@@ -220,7 +220,7 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
 
         char cOutBuff[iOutBuffMax];
         int iOutBuffPointer {0};
-        int iSecChangedPointer {0};
+        //int iSecChangedPointer {0};
         int iBlockSize (  sizeof (Storage::data_type)
                         + sizeof (bb.Open())
                         + sizeof (bb.High())
@@ -317,16 +317,16 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
                         }
                         tCurrentMonth   = tMonth;
                         iOutBuffPointer = 0;
-                        iSecChangedPointer = 0;
+                        //iSecChangedPointer = 0;
                     }
                     else if( iOutBuffPointer + iBlockSize*4 > iOutBuffMax){ // do write to iSecChangedPointer
 
-                        if (iSecChangedPointer == 0){
-                            // if everything is within one second, copy the entire block
-                            iSecChangedPointer = iOutBuffPointer;
-                            // TODO: lock database file to correct continue
-                        }
-                        if(!stStore.WriteMemblockToStore(data.TickerID, tMonth, cOutBuff,iSecChangedPointer, ssErr)){
+//                        if (iSecChangedPointer == 0){
+//                            // if everything is within one second, copy the entire block
+//                            iSecChangedPointer = iOutBuffPointer;
+//                            // TODO: lock database file to correct continue
+//                        }
+                        if(!stStore.WriteMemblockToStore(data.TickerID, tMonth, cOutBuff,iOutBuffPointer/*iSecChangedPointer*/, ssErr)){
                             dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famLoadEnd,data.GetParentWnd());
                             dt.SetSuccessfull(false);
                             ssErr<<"\n\rError writing file.\n";
@@ -336,15 +336,16 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
                             break;
                         }
 
-                        memcpy(cOutBuff, cOutBuff + iSecChangedPointer,   iOutBuffPointer - iSecChangedPointer);
-
-                        iOutBuffPointer = iOutBuffPointer - iSecChangedPointer;
-                        iSecChangedPointer = 0;                        }
+                        iOutBuffPointer = 0;
+                        //memcpy(cOutBuff, cOutBuff + iSecChangedPointer,   iOutBuffPointer - iSecChangedPointer);
+                        //iOutBuffPointer = iOutBuffPointer - iSecChangedPointer;
+                        //iSecChangedPointer = 0;
+                    }
                     //
                     if (tSec != tCurrentSec){
                         iState = Storage::data_type::new_sec;
                         tCurrentSec = tSec;
-                        iSecChangedPointer = iOutBuffPointer;
+                        //iSecChangedPointer = iOutBuffPointer;
                     }
                     else{
                         iState = Storage::data_type::usual;

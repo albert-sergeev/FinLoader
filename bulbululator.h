@@ -4,7 +4,16 @@
 #include <QWidget>
 #include <QLabel>
 #include <QDockWidget>
-#include<QParallelAnimationGroup>
+#include <QParallelAnimationGroup>
+
+
+#include <chrono>
+
+using namespace std::chrono_literals;
+using seconds=std::chrono::duration<double>;
+using milliseconds=std::chrono::duration<double,
+    std::ratio_multiply<seconds::period,std::milli>
+    >;
 
 class Bulbululator : public QWidget
 {
@@ -12,7 +21,12 @@ class Bulbululator : public QWidget
 
     QLabel *lbl;
     int iTickerID;
+    bool bBlink;
+    QPalette defPallete;
+    std::chrono::time_point<std::chrono::steady_clock> dtStartBlink;
 
+    //--------------------
+    //QLabel *buble;
     QWidget *buble;
 
     QParallelAnimationGroup pag;
@@ -30,6 +44,9 @@ public:
     void Bubble();
 
 signals:
+
+private:
+    void timerEvent(QTimerEvent * event) override;
 
 };
 
