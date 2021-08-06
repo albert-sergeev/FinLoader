@@ -120,6 +120,9 @@ private:
     bool                    bAutoLoad;
     bool                    bUpToSys;
 
+    bool                    bBulbululator;
+    bool                    bBuble;
+
 
 public:
 
@@ -131,13 +134,17 @@ public:
     inline int                      MarketID()          const   {return iMarketID;};
     inline bool                     AutoLoad()          const   {return bAutoLoad;};
     inline bool                     UpToSys()           const   {return bUpToSys;};
+    inline bool                     Bulbululator()      const   {return bBulbululator;};
+    inline bool                     Buble()             const   {return bBuble;};
 
-    inline void SetTickerName           (const std::string  TickerName) {sTickerName            = TickerName;};
-    inline void SetTickerSign           (const std::string  TickerSign) {sTickerSign            = TickerSign;};
-    inline void SetTickerSignFinam      (const std::string  TickerSign) {sTickerSignFinam       = TickerSign;};
-    inline void SetTickerSignQuik       (const std::string  TickerSign) {sTickerSignQuik        = TickerSign;};
-    inline void SetAutoLoad             (const bool         AutoLoad)   {bAutoLoad              = AutoLoad;};
-    inline void SetUpToSys              (const bool         UpToSys)    {bUpToSys               = UpToSys;};
+    inline void SetTickerName           (const std::string  TickerName)     {sTickerName            = TickerName;};
+    inline void SetTickerSign           (const std::string  TickerSign)     {sTickerSign            = TickerSign;};
+    inline void SetTickerSignFinam      (const std::string  TickerSign)     {sTickerSignFinam       = TickerSign;};
+    inline void SetTickerSignQuik       (const std::string  TickerSign)     {sTickerSignQuik        = TickerSign;};
+    inline void SetAutoLoad             (const bool         AutoLoad)       {bAutoLoad              = AutoLoad;};
+    inline void SetUpToSys              (const bool         UpToSys)        {bUpToSys               = UpToSys;};
+    inline void SetBulbululator         (const bool         Bulbululator)   {bBulbululator          = Bulbululator;};
+    inline void SetBuble                (const bool         Buble)          {bBuble                 = Buble;};
 
 public:
     //--------------------------------------------------------------------------------------------------------
@@ -158,8 +165,11 @@ public:
         sTickerSignFinam = TickerSign;
         sTickerSignQuik = TickerSign;
 
-        bAutoLoad = true;
-        bUpToSys = false;
+        bAutoLoad       = true;
+        bUpToSys        = false;
+
+        bBulbululator   = true;
+        bBuble          = true;
         //
         if (TickerID >= iTickerCounter) iTickerCounter = TickerID + 1;
     }
@@ -177,6 +187,9 @@ public:
 
         bAutoLoad = t.bAutoLoad;
         bUpToSys = t.bUpToSys;
+
+        bBulbululator   = t.bBulbululator;
+        bBuble          = t.bBuble;
     }
     //--------------------------------------------------------------------------------------------------------
     Ticker & operator= (const Ticker & t){
@@ -190,6 +203,10 @@ public:
 
         bAutoLoad = t.bAutoLoad;
         bUpToSys = t.bUpToSys;
+
+        bBulbululator   = t.bBulbululator;
+        bBuble          = t.bBuble;
+
         return  *this;
     }
     //--------------------------------------------------------------------------------------------------------

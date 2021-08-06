@@ -7,11 +7,11 @@
 //--------------------------------------------------------------------------------------------------------------------------------
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
-    , thrdPoolLoadFinQuotes{(int)std::thread::hardware_concurrency()/2}
     , vMarketsLst{}
     , m_MarketLstModel{vMarketsLst,this}
     , vTickersLst{}
     , m_TickerLstModel{vTickersLst,this}
+    , thrdPoolLoadFinQuotes{(int)std::thread::hardware_concurrency()/2}
     , ui(new Ui::MainWindow)
 {
 
@@ -41,6 +41,13 @@ bool MainWindow::event(QEvent *event)
 {
     if(event->type() == QEvent::Close){
         SaveUnsavedConfigs();
+
+        for(auto w: vBulbululators){
+            if(w!=nullptr){
+                w->close();
+            }
+        }
+
     }
     return QWidget::event(event);
 }
@@ -348,19 +355,19 @@ void MainWindow::BulbululatorShowActivity   (int TickerID)
 {
     bool bFound = false;
     size_t i = 0;
-    while (i < vBulbulators.size()) {
-        if (vBulbulators[i] == nullptr){
-            vBulbulators.erase(std::next(vBulbulators.begin(),i));
+    while (i < vBulbululators.size()) {
+        if (vBulbululators[i] == nullptr){
+            vBulbululators.erase(std::next(vBulbululators.begin(),i));
             continue;
         }
-        if(vBulbulators[i]->TickerID() == TickerID){
+        if(vBulbululators[i]->TickerID() == TickerID){
             bFound = true;
             break;
         }
         i++;
     }
     if (bFound){
-        vBulbulators[i]->Bubble();
+        vBulbululators[i]->Bubble();
     }
 }
 //--------------------------------------------------------------------------------------------------------------------------------
@@ -368,20 +375,21 @@ void MainWindow::BulbululatorRemoveActive   (int TickerID)
 {
     bool bFound = false;
     size_t i = 0;
-    while (i < vBulbulators.size()) {
-        if (vBulbulators[i] == nullptr){
-            vBulbulators.erase(std::next(vBulbulators.begin(),i));
+    while (i < vBulbululators.size()) {
+        if (vBulbululators[i] == nullptr){
+            vBulbululators.erase(std::next(vBulbululators.begin(),i));
             continue;
         }
-        if(vBulbulators[i]->TickerID() == TickerID){
+        if(vBulbululators[i]->TickerID() == TickerID){
             bFound = true;
             break;
         }
         i++;
     }
     if (bFound){
-        ui->statusbar->removeWidget(vBulbulators[i]);
-        vBulbulators.erase(std::next(vBulbulators.begin(),i));
+        vBulbululators[i]->close();
+        ui->statusbar->removeWidget(vBulbululators[i]);
+        vBulbululators.erase(std::next(vBulbululators.begin(),i));
     }
 
 }
@@ -390,24 +398,26 @@ void MainWindow::BulbululatorAddActive      (int TickerID)
 {
     bool bFound{false};
     QString str;
+    bool bBulbulator{false};
 
     for(const auto& t:vTickersLst){
         if(t.TickerID() == TickerID){
             str = QString::fromStdString(t.TickerSign());
             bFound = true;
+            bBulbulator = t.Bulbululator();
             break;
         }
     }
-    if (!bFound) return;
+    if (!bFound || !bBulbulator) return;
 
     bFound = false;
     size_t i = 0;
-    while (i < vBulbulators.size()) {
-        if (vBulbulators[i] == nullptr){
-            vBulbulators.erase(std::next(vBulbulators.begin(),i));
+    while (i < vBulbululators.size()) {
+        if (vBulbululators[i] == nullptr){
+            vBulbululators.erase(std::next(vBulbululators.begin(),i));
             continue;
         }
-        if(vBulbulators[i]->TickerID() == TickerID){
+        if(vBulbululators[i]->TickerID() == TickerID){
             bFound = true;
             break;
         }
@@ -418,8 +428,9 @@ void MainWindow::BulbululatorAddActive      (int TickerID)
         if(blbl){
             blbl->SetText(str);
             blbl->SetTickerID(TickerID);
-            vBulbulators.push_back(blbl);
+            vBulbululators.push_back(blbl);
             ui->statusbar->addWidget(blbl);
+            vBulbululators.back()->Bubble();
         }
     }
 }

@@ -15,28 +15,39 @@ using milliseconds=std::chrono::duration<double,
     std::ratio_multiply<seconds::period,std::milli>
     >;
 
+class Buble : public QWidget
+{
+    Q_OBJECT
+public:
+    explicit Buble(QWidget *parent = nullptr);
+    ~Buble();
+
+private:
+    void paintEvent(QPaintEvent *event) override;
+};
+
 class Bulbululator : public QWidget
 {
     Q_OBJECT
 
-    QLabel *lbl;
+    QLabel *lblMain;
     int iTickerID;
     bool bBlink;
     QPalette defPallete;
     std::chrono::time_point<std::chrono::steady_clock> dtStartBlink;
 
     //--------------------
-    //QLabel *buble;
-    QWidget *buble;
+//    Buble bubleB;
+//    bool bStartBuble{false};
 
-    QParallelAnimationGroup pag;
+//    QParallelAnimationGroup pag;
 
 public:
     explicit Bulbululator(QWidget *parent = nullptr);
     ~Bulbululator();
     //---------------------------
 
-    void SetText(QString sTxt){lbl->setText(sTxt);}
+    void SetText(QString sTxt){lblMain->setText(sTxt);}
 
     inline void SetTickerID(const int TickerID)     {iTickerID = TickerID;}
     inline int  TickerID()      const               {return iTickerID;}
@@ -47,7 +58,10 @@ signals:
 
 private:
     void timerEvent(QTimerEvent * event) override;
+    bool event(QEvent *event) override;
 
 };
+
+
 
 #endif // BULBULULATOR_H

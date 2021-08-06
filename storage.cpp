@@ -219,6 +219,8 @@ void Storage::SaveTickerConfigV_1(const Ticker & tT, op_type tp)
         fileTicker<<tT.TickerSignQuik()<<",";
         fileTicker<<tT.AutoLoad()<<",";
         fileTicker<<tT.UpToSys()<<",";
+        fileTicker<<tT.Bulbululator()<<",";
+        fileTicker<<tT.Buble()<<",";
 
         fileTicker<<"\n";
 
@@ -282,7 +284,7 @@ void Storage::ParsTickerConfigV_1(std::vector<Ticker> & vTickersLst, std::ifstre
         //
         std::vector<std::string> vS{std::istream_iterator<StringDelimiter<','>>{iss},{}};
 
-        if(vS.size()<10){
+        if(vS.size()<12){
             std::stringstream ss;
             ss <<"error parsing file. wrong format: "<<pathTickersFile;
             throw std::runtime_error(ss.str());
@@ -304,6 +306,8 @@ void Storage::ParsTickerConfigV_1(std::vector<Ticker> & vTickersLst, std::ifstre
         t.SetTickerSignQuik     (vS[7]);
         t.SetAutoLoad           (std::stoi(vS[8]));
         t.SetUpToSys            (std::stoi(vS[9]));
+        t.SetBulbululator       (std::stoi(vS[10]));
+        t.SetBuble            (std::stoi(vS[11]));
 
 
         auto ItM (mM.find(t.TickerID()));

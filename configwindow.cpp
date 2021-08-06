@@ -70,6 +70,8 @@ ConfigWindow::ConfigWindow(MarketsListModel *modelM,int DefaultTickerMarket,
 
     connect(ui->chkAutoLoadTicker,SIGNAL(stateChanged(int)),this,SLOT(slotTickerDataChanged(int)));
     connect(ui->chkUpToSysTicker,SIGNAL(stateChanged(int)),this,SLOT(slotTickerDataChanged(int)));
+    connect(ui->chkBulblulator,SIGNAL(stateChanged(int)),this,SLOT(slotTickerDataChanged(int)));
+
 
     connect(ui->chkShowByName,SIGNAL(stateChanged(int)),this,SLOT(slotShowByNamesChecked(int)));
     connect(ui->chkSortByName,SIGNAL(stateChanged(int)),this,SLOT(slotSortByNamesChecked(int)));
@@ -525,6 +527,8 @@ void ConfigWindow::slotSetSelectedTicker(const  QModelIndex& indx)
         ui->chkAutoLoadTicker->setCheckState  (t.AutoLoad() ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
         ui->chkUpToSysTicker->setCheckState   (t.UpToSys()  ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
 
+        ui->chkBulblulator->setCheckState  (t.Bulbululator() ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
+
         bIsAboutTickerChanged=false;
 
         //slotTickerDataChanged(false);
@@ -668,6 +672,7 @@ void ConfigWindow::slotBtnSaveTickerClicked(){
                 t.SetTickerSignQuik(ui->edTickerSignQuik->text().toStdString());
                 t.SetAutoLoad(ui->chkAutoLoadTicker->isChecked()? true:false);
                 t.SetUpToSys(ui->chkUpToSysTicker->isChecked()? true:false);
+                t.SetBulbululator(ui->chkBulblulator->isChecked()? true:false);
 
                 //int i = modelTicker->AddRow(t);
                 int i = proxyTickerModel.AddRow(t);
@@ -705,6 +710,7 @@ void ConfigWindow::slotBtnSaveTickerClicked(){
                       t.SetTickerSignQuik(ui->edTickerSignQuik->text().toStdString());
                       t.SetAutoLoad(ui->chkAutoLoadTicker->isChecked()? true:false);
                       t.SetUpToSys(ui->chkUpToSysTicker->isChecked()? true:false);
+                      t.SetBulbululator(ui->chkBulblulator->isChecked()? true:false);
                       ///
                       proxyTickerModel.setData(lst[0],t,Qt::EditRole);
                 }

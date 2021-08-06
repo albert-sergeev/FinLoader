@@ -60,7 +60,6 @@ private:
     BlockFreeQueue<dataBuckgroundThreadAnswer> queueTrdAnswers;
     workerLoader wrkrLoadFinQuotes;
 
-    ThreadPool thrdPoolLoadFinQuotes;
 
     // global storage objects
     QSettings m_settings;
@@ -80,9 +79,11 @@ private:
     char cImportDelimiter;
 
 
-    std::vector<Bulbululator *> vBulbulators;
+    std::vector<Bulbululator *> vBulbululators;
 
-
+    ///////////////////////////////////
+    ThreadPool thrdPoolLoadFinQuotes;
+    ///////////////////////////////////
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();

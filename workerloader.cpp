@@ -214,7 +214,8 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
 
         //const int iOutBuffMax {1024};
         //const int iOutBuffMax {32768};
-        const int iOutBuffMax {524288};
+        const int iOutBuffMax {65535};
+        //const int iOutBuffMax {524288};
         //const int iOutBuffMax {2097152};
         //const int iOutBuffMax {3145727};
 
