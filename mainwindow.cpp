@@ -56,38 +56,41 @@ void MainWindow::timerEvent(QTimerEvent * event)
 {
     bool bSuccess{false};
     auto pdata (queueTrdAnswers.Pop(bSuccess));
+    ImportFinQuotesForm * wnd{nullptr};
     while(bSuccess){
         auto data(*pdata.get());
         QList<QMdiSubWindow*> lst = ui->mdiArea->subWindowList();
         for(int i = 0; i < lst.size(); ++i){
             if(lst.at(i)->widget() == data.GetParentWnd()) {
-                auto wnd  (qobject_cast<ImportFinQuotesForm *>(lst[i]->widget()));
+                wnd = qobject_cast<ImportFinQuotesForm *>(lst[i]->widget());
                 if(wnd){
-                    switch(data.AnswerType()){
-                    case dataBuckgroundThreadAnswer::eAnswerType::famLoadCurrent:
-                        wnd->SetProgressBarValue(data.Percent());
-                        break;
-                    case dataBuckgroundThreadAnswer::eAnswerType::famLoadBegin:
-                        wnd->slotLoadingHasBegun();
-                        BulbululatorAddActive(data.TickerID());
-                        break;
-                    case dataBuckgroundThreadAnswer::eAnswerType::famLoadEnd:
-                        wnd->slotLoadingHasFinished(data.Successfull(),QString::fromStdString(data.GetErrString()));
-                        BulbululatorRemoveActive(data.TickerID());
-                        break;
-                    case dataBuckgroundThreadAnswer::eAnswerType::LoadActivity:
-                        BulbululatorShowActivity(data.TickerID());
-                        break;
-                    case dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage:
-                        wnd->slotTextInfo(QString::fromStdString(data.GetTextInfo()));
-                        break;
-                    default:
-                        break;
-                    }
                     break;
                 }
             }
         }
+        ////////////////
+        switch(data.AnswerType()){
+        case dataBuckgroundThreadAnswer::eAnswerType::famLoadCurrent:
+            if(wnd) wnd->SetProgressBarValue(data.Percent());
+            break;
+        case dataBuckgroundThreadAnswer::eAnswerType::famLoadBegin:
+            if(wnd) wnd->slotLoadingHasBegun();
+            BulbululatorAddActive(data.TickerID());
+            break;
+        case dataBuckgroundThreadAnswer::eAnswerType::famLoadEnd:
+            if(wnd) wnd->slotLoadingHasFinished(data.Successfull(),QString::fromStdString(data.GetErrString()));
+            BulbululatorRemoveActive(data.TickerID());
+            break;
+        case dataBuckgroundThreadAnswer::eAnswerType::LoadActivity:
+            BulbululatorShowActivity(data.TickerID());
+            break;
+        case dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage:
+            if(wnd) wnd->slotTextInfo(QString::fromStdString(data.GetTextInfo()));
+            break;
+        default:
+            break;
+        }
+        //////////////////////////////////////////////
         pdata = queueTrdAnswers.Pop(bSuccess);
     }
     //
