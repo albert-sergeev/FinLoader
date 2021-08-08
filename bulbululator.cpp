@@ -67,12 +67,13 @@ void Bulbululator::Bubble()
         bBlink = true;
 
         //QColor colorGreen(0, 255, 0, 128);
-        QColor colorDarkGreen(0, 59, 56, 128);
+        //QColor colorDarkGreen(0, 59, 56, 128);
+        QColor colorDarkGreen(0, 100, 52,200);
 
         QPalette p = this->palette();
         //p.setColor(QPalette::WindowText,Qt::green); // text
-        p.setColor(QPalette::Window,Qt::green);
-        //p.setColor(QPalette::Window,colorDarkGreen);
+        //p.setColor(QPalette::Window,Qt::green);
+        p.setColor(QPalette::Window,colorDarkGreen);
         lblMain->setAutoFillBackground(true);
         lblMain->setPalette(p);
     }

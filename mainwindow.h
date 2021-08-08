@@ -31,6 +31,8 @@
 #include "databuckgroundthreadanswer.h"
 #include "blockfreequeue.h"
 #include "bulbululator.h"
+#include "styledswitcher.h"
+
 
 
 QT_BEGIN_NAMESPACE
@@ -54,6 +56,9 @@ private:
     QString m_sStyleName;
     QString m_Language;
     QTranslator m_translator;
+
+    // for docked bar
+    StyledSwitcher * sSwitcherMarkets;
 
     // thread manipulation
     BlockFreeQueue<dataFinLoadTask> queueFinQuotesLoad;
@@ -135,6 +140,9 @@ protected slots: // for main window
     void BulbululatorAddActive      (int TickerID);
     void BulbululatorRemoveActive   (int TickerID);
     void BulbululatorShowActivity   (int TickerID);
+
+    void slotDocbarShowAllChanged   (int);
+    void slotDocbarShowMarketChanged   (int);
 
 
 private:

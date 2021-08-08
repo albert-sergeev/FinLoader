@@ -29,6 +29,7 @@ SOURCES += \
     mainwindow.cpp \
     marketslistmodel.cpp \
     storage.cpp \
+    styledswitcher.cpp \
     threadfreecout.cpp \
     threadpool.cpp \
     ticker.cpp \
@@ -48,6 +49,7 @@ HEADERS += \
     mainwindow.h \
     marketslistmodel.h \
     storage.h \
+    styledswitcher.h \
     threadfreecout.h \
     threadpool.h \
     ticker.h \
