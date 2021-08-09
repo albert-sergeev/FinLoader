@@ -180,6 +180,9 @@ protected slots: // for main window
     void ListViewShowActivity(int TickerID);
     void ListViewActivityTermination();
 
+    void slotSetSelectedTicker(const  QModelIndex&);
+    void slotSetSelectedTicker(const  int iTickerID);
+
 
 private:
     Ui::MainWindow *ui;

@@ -134,6 +134,10 @@ bool Bulbululator::event(QEvent *event)
 //        ThreadFreeCout pcout;
 //        pcout <<"do close buble\n";
     }
+    else if(event->type() == QEvent::MouseButtonDblClick){
+        emit DoubleClicked(iTickerID);
+    }
+
     return QWidget::event(event);
 }
 

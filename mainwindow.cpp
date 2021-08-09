@@ -448,6 +448,8 @@ void MainWindow::InitAction()
     if (bTickerBarButtonsHidden)
         ui->widgetTickerButtonBar->hide();
 
+    //------------------------------------------------
+    connect(ui->lstView,SIGNAL(clicked(const QModelIndex&)),this,SLOT(slotSetSelectedTicker(const  QModelIndex&)));
 }
 
 //--------------------------------------------------------------------------------------------------------------------------------
@@ -490,6 +492,7 @@ void MainWindow::BulbululatorRemoveActive   (int TickerID)
     }
     if (bFound){
         vBulbululators[i]->close();
+        disconnect(vBulbululators[i],SIGNAL(DoubleClicked(const int)),this,SLOT(slotSetSelectedTicker(const  int)));
         ui->statusbar->removeWidget(vBulbululators[i]);
         vBulbululators.erase(std::next(vBulbululators.begin(),i));
     }
@@ -527,6 +530,8 @@ void MainWindow::BulbululatorAddActive      (int TickerID)
     }
     if (!bFound){
         Bulbululator * blbl = new Bulbululator();
+        connect(blbl,SIGNAL(DoubleClicked(const int)),this,SLOT(slotSetSelectedTicker(const  int)));
+
         if(blbl){
             blbl->SetText(str);
             blbl->SetTickerID(TickerID);
@@ -944,6 +949,21 @@ void MainWindow::ListViewActivityTermination()
             /////
             qActivityQueue.pop();
         }
+    }
+
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotSetSelectedTicker(const  QModelIndex& indx)
+{
+    const Ticker &t = proxyTickerModel.getTicker(indx);
+    slotSetSelectedTicker(t.TickerID());
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotSetSelectedTicker(const  int iTickerID)
+{
+    {
+        ThreadFreeCout pcout;
+        pcout <<"selected TickerID: "<< iTickerID<<"\n";
     }
 
 }

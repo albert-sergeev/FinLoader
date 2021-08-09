@@ -56,6 +56,8 @@ public:
 
 signals:
 
+    void DoubleClicked(const int TickerID);
+
 private:
     void timerEvent(QTimerEvent * event) override;
     bool event(QEvent *event) override;
