@@ -1,5 +1,5 @@
 #include "importfinqotesform.h"
-#include "ui_importfinamform.h"
+#include "ui_importfinqotesform.h"
 
 #include<QFileDialog>
 #include<QDebug>
@@ -26,6 +26,20 @@ ImportFinQuotesForm::ImportFinQuotesForm(MarketsListModel *modelM, int DefaultTi
 {
     ui->setupUi(this);
     //
+    QColor colorDarkGreen(0, 100, 52,50);
+    QColor colorDarkRed(31, 53, 200,40);
+    //-------------------------------------------------------------
+
+    QHBoxLayout *lt1 = new QHBoxLayout();
+    lt1->setMargin(0);
+
+    ui->wtShowByName->setLayout(lt1);
+    swtShowByName = new StyledSwitcher(tr("Show by name "),tr(" Show by ticker"),true,10,this);
+    lt1->addWidget(swtShowByName);
+    swtShowByName->SetOnColor(QPalette::Window,colorDarkGreen);
+    swtShowByName->SetOffColor(QPalette::Window,colorDarkRed);
+
+    /////////////////////////////////
 
     connect(ui->btnOpen,SIGNAL(clicked()),this,SLOT(slotBtnOpenClicked()));
     connect(ui->btnCreate,SIGNAL(clicked()),this,SLOT(slotBtnCreateClicked()));
@@ -34,7 +48,7 @@ ImportFinQuotesForm::ImportFinQuotesForm(MarketsListModel *modelM, int DefaultTi
 
     connect(ui->btnOpen,SIGNAL(pressed()),this,SLOT(slotBtnOpenClicked()));
 
-    connect(ui->chkShowByName,SIGNAL(stateChanged(int)),this,SLOT(slotShowByNamesChecked(int)));
+    connect(swtShowByName,SIGNAL(stateChanged(int)),this,SLOT(slotShowByNamesChecked(int)));
 
     connect(ui->edDelimiter,SIGNAL(textChanged(const QString &)),this,SLOT(slotEditDelimiterWgtChanged(const QString &)));
 
@@ -627,7 +641,7 @@ void ImportFinQuotesForm::setTickerModel()//TickersListModel *model,bool /*ShowB
     proxyTickerModel.sort(2);
     ui->viewTickers->setModel(&proxyTickerModel);
 
-    slotShowByNamesChecked(ui->chkShowByName->isChecked());
+    slotShowByNamesChecked(swtShowByName->isChecked());
 
     connect(ui->viewTickers,SIGNAL(clicked(const QModelIndex&)),this,SLOT(slotSetSelectedTicker(const  QModelIndex&)));
 
@@ -884,7 +898,7 @@ void ImportFinQuotesForm::slotSetWidgetsInLoadState(bool bInLoad)
     ui->dtEnd->setEnabled(!bInLoad);
     ui->cmbMarket->setEnabled(!bInLoad);
     ui->viewTickers->setEnabled(!bInLoad);
-    ui->chkShowByName->setEnabled(!bInLoad);
+    swtShowByName->setEnabled(!bInLoad);
 
     if(bInLoad){
         ui->btnImport->setText(tr("Stop"));

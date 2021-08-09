@@ -11,6 +11,7 @@
 #include "bar.h"
 #include "datafinloadtask.h"
 #include "threadfreecout.h"
+#include "configwindow.h"
 
 
 
@@ -25,6 +26,9 @@ class ImportFinQuotesForm : public QWidget
     Q_OBJECT
 
 private:
+
+    StyledSwitcher * swtShowByName;
+
 
     std::filesystem::path pathFile;
     std::filesystem::path pathDir;
