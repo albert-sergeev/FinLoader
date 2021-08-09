@@ -12,7 +12,7 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>376</width>
+    <width>550</width>
     <height>307</height>
    </size>
   </property>
@@ -36,25 +36,37 @@
           <widget class="QComboBox" name="cmbMarkets"/>
          </item>
          <item>
-          <widget class="QListView" name="listViewTicker"/>
+          <widget class="QListView" name="listViewTicker">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>0</height>
+            </size>
+           </property>
+          </widget>
          </item>
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_3">
            <item>
             <layout class="QHBoxLayout" name="horizontalLayout_2">
              <item>
-              <widget class="QCheckBox" name="chkShowByName">
-               <property name="text">
-                <string>Show  by Name</string>
-               </property>
-              </widget>
+              <widget class="QWidget" name="wtShowByNameTicker" native="true"/>
              </item>
              <item>
-              <widget class="QCheckBox" name="chkSortByName">
-               <property name="text">
-                <string>Sort by Name</string>
+              <spacer name="horizontalSpacer_2">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
                </property>
-              </widget>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+             <item>
+              <widget class="QWidget" name="wtSortByNameTicker" native="true"/>
              </item>
             </layout>
            </item>
@@ -86,10 +98,50 @@
         <layout class="QVBoxLayout" name="verticalLayout_2">
          <item>
           <layout class="QGridLayout" name="gridLayout_4">
+           <item row="5" column="0" colspan="3">
+            <widget class="QLabel" name="label_10">
+             <property name="text">
+              <string>Выгрузка в систему</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="2" colspan="3">
+            <widget class="QLineEdit" name="edTickerName"/>
+           </item>
+           <item row="2" column="2" colspan="3">
+            <widget class="QLineEdit" name="edTickerSignFinam"/>
+           </item>
            <item row="0" column="0" colspan="2">
             <widget class="QLabel" name="label_3">
              <property name="text">
               <string>Наименование бумаги</string>
+             </property>
+            </widget>
+           </item>
+           <item row="7" column="2">
+            <widget class="QPushButton" name="btnSaveTicker">
+             <property name="text">
+              <string>Сохранить</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="2" colspan="3">
+            <widget class="QLineEdit" name="edTickerSign"/>
+           </item>
+           <item row="6" column="0" colspan="3">
+            <widget class="QLabel" name="label_11">
+             <property name="text">
+              <string>Индикатор активности</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="2" colspan="3">
+            <widget class="QLineEdit" name="edTickerSignQuik"/>
+           </item>
+           <item row="7" column="0">
+            <widget class="QPushButton" name="btnAddTicker">
+             <property name="text">
+              <string>Добавить</string>
              </property>
             </widget>
            </item>
@@ -100,57 +152,10 @@
              </property>
             </widget>
            </item>
-           <item row="3" column="2" colspan="2">
-            <widget class="QLineEdit" name="edTickerSignQuik"/>
-           </item>
-           <item row="7" column="2">
-            <widget class="QPushButton" name="btnSaveTicker">
+           <item row="7" column="1">
+            <widget class="QPushButton" name="btnRemoveTicker">
              <property name="text">
-              <string>Сохранить</string>
-             </property>
-            </widget>
-           </item>
-           <item row="5" column="0" colspan="3">
-            <widget class="QLabel" name="label_10">
-             <property name="text">
-              <string>Выгрузка в систему</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0" colspan="2">
-            <widget class="QLabel" name="label_5">
-             <property name="text">
-              <string>Обозначение</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="2" colspan="2">
-            <widget class="QLineEdit" name="edTickerSign"/>
-           </item>
-           <item row="0" column="2" colspan="2">
-            <widget class="QLineEdit" name="edTickerName"/>
-           </item>
-           <item row="2" column="2" colspan="2">
-            <widget class="QLineEdit" name="edTickerSignFinam"/>
-           </item>
-           <item row="2" column="0" colspan="2">
-            <widget class="QLabel" name="label_7">
-             <property name="text">
-              <string>Обозначение в Finam</string>
-             </property>
-            </widget>
-           </item>
-           <item row="7" column="3">
-            <widget class="QPushButton" name="btnCancelTicker">
-             <property name="text">
-              <string>Отменить</string>
-             </property>
-            </widget>
-           </item>
-           <item row="7" column="0">
-            <widget class="QPushButton" name="btnAddTicker">
-             <property name="text">
-              <string>Добавить</string>
+              <string>Удалить</string>
              </property>
             </widget>
            </item>
@@ -161,38 +166,33 @@
              </property>
             </widget>
            </item>
-           <item row="7" column="1">
-            <widget class="QPushButton" name="btnRemoveTicker">
+           <item row="2" column="0" colspan="2">
+            <widget class="QLabel" name="label_7">
              <property name="text">
-              <string>Удалить</string>
+              <string>Обозначение в Finam</string>
              </property>
             </widget>
            </item>
-           <item row="4" column="3">
-            <widget class="QCheckBox" name="chkAutoLoadTicker">
+           <item row="1" column="0" colspan="2">
+            <widget class="QLabel" name="label_5">
              <property name="text">
-              <string/>
+              <string>Обозначение</string>
              </property>
             </widget>
            </item>
            <item row="5" column="3">
-            <widget class="QCheckBox" name="chkUpToSysTicker">
-             <property name="text">
-              <string/>
-             </property>
-            </widget>
+            <widget class="QWidget" name="wtUpToSysTicker" native="true"/>
            </item>
-           <item row="6" column="0" colspan="3">
-            <widget class="QLabel" name="label_11">
-             <property name="text">
-              <string>Индикатор активности</string>
-             </property>
-            </widget>
+           <item row="4" column="3">
+            <widget class="QWidget" name="wtAutoLoadTicker" native="true"/>
            </item>
            <item row="6" column="3">
-            <widget class="QCheckBox" name="chkBulblulator">
+            <widget class="QWidget" name="wtBulblulatorTicker" native="true"/>
+           </item>
+           <item row="7" column="3">
+            <widget class="QPushButton" name="btnCancelTicker">
              <property name="text">
-              <string/>
+              <string>Отменить</string>
              </property>
             </widget>
            </item>
@@ -251,16 +251,27 @@
         <layout class="QVBoxLayout" name="verticalLayout">
          <item>
           <layout class="QGridLayout" name="gridLayout_2">
-           <item row="0" column="0">
-            <widget class="QLabel" name="label">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
+           <item row="5" column="0">
+            <widget class="QLabel" name="label_4">
              <property name="text">
-              <string>Название площадки</string>
+              <string>Окончание торгов</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1" colspan="3">
+            <widget class="QLineEdit" name="edSign"/>
+           </item>
+           <item row="4" column="0">
+            <widget class="QLabel" name="label_2">
+             <property name="text">
+              <string>Начало торгов</string>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="1">
+            <widget class="QPushButton" name="btnDelMarket">
+             <property name="text">
+              <string>Удалить</string>
              </property>
             </widget>
            </item>
@@ -277,19 +288,22 @@
              </property>
             </widget>
            </item>
-           <item row="4" column="0">
-            <widget class="QLabel" name="label_2">
+           <item row="6" column="3">
+            <widget class="QPushButton" name="btnCancel">
              <property name="text">
-              <string>Начало торгов</string>
+              <string>Отменить</string>
              </property>
             </widget>
            </item>
-           <item row="5" column="0">
-            <widget class="QLabel" name="label_4">
+           <item row="6" column="2">
+            <widget class="QPushButton" name="btnSaveMarket">
              <property name="text">
-              <string>Окончание торгов</string>
+              <string>Сохранить</string>
              </property>
             </widget>
+           </item>
+           <item row="0" column="1" colspan="3">
+            <widget class="QLineEdit" name="edName"/>
            </item>
            <item row="6" column="0">
             <widget class="QPushButton" name="btnAddMaket">
@@ -304,48 +318,23 @@
              </property>
             </widget>
            </item>
-           <item row="6" column="1">
-            <widget class="QPushButton" name="btnDelMarket">
-             <property name="text">
-              <string>Удалить</string>
-             </property>
-            </widget>
-           </item>
-           <item row="6" column="2">
-            <widget class="QPushButton" name="btnSaveMarket">
-             <property name="text">
-              <string>Сохранить</string>
-             </property>
-            </widget>
-           </item>
-           <item row="6" column="3">
-            <widget class="QPushButton" name="btnCancel">
-             <property name="text">
-              <string>Отменить</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="0" colspan="3">
-            <widget class="QCheckBox" name="chkAutoLoad">
+           <item row="2" column="0">
+            <widget class="QLabel" name="label_12">
              <property name="text">
               <string>Загрузка данных  из Quik</string>
              </property>
             </widget>
            </item>
-           <item row="3" column="0" colspan="4">
-            <widget class="QCheckBox" name="chkUpToSys">
+           <item row="0" column="0">
+            <widget class="QLabel" name="label">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
              <property name="text">
-              <string>Выгрузка данных в торговую систему</string>
-             </property>
-            </widget>
-           </item>
-           <item row="4" column="1" colspan="3">
-            <widget class="QDateTimeEdit" name="dateTimeStart">
-             <property name="currentSection">
-              <enum>QDateTimeEdit::HourSection</enum>
-             </property>
-             <property name="displayFormat">
-              <string>HH:mm</string>
+              <string>Название площадки</string>
              </property>
             </widget>
            </item>
@@ -359,11 +348,35 @@
              </property>
             </widget>
            </item>
-           <item row="1" column="1" colspan="3">
-            <widget class="QLineEdit" name="edSign"/>
+           <item row="4" column="1" colspan="3">
+            <widget class="QDateTimeEdit" name="dateTimeStart">
+             <property name="currentSection">
+              <enum>QDateTimeEdit::HourSection</enum>
+             </property>
+             <property name="displayFormat">
+              <string>HH:mm</string>
+             </property>
+            </widget>
            </item>
-           <item row="0" column="1" colspan="3">
-            <widget class="QLineEdit" name="edName"/>
+           <item row="3" column="0">
+            <widget class="QLabel" name="label_13">
+             <property name="text">
+              <string>Выгрузка данных в торговую систему</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="3">
+            <widget class="QWidget" name="wtAutoLoadWholeMarket" native="true">
+             <property name="minimumSize">
+              <size>
+               <width>15</width>
+               <height>15</height>
+              </size>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="3">
+            <widget class="QWidget" name="wtUpToSysWholeMarket" native="true"/>
            </item>
           </layout>
          </item>
@@ -396,17 +409,12 @@
   <tabstop>edTickerSign</tabstop>
   <tabstop>edTickerSignFinam</tabstop>
   <tabstop>edTickerSignQuik</tabstop>
-  <tabstop>chkAutoLoadTicker</tabstop>
-  <tabstop>chkUpToSysTicker</tabstop>
   <tabstop>btnAddTicker</tabstop>
   <tabstop>btnRemoveTicker</tabstop>
   <tabstop>btnSaveTicker</tabstop>
-  <tabstop>btnCancelTicker</tabstop>
   <tabstop>listViewMarket</tabstop>
   <tabstop>edName</tabstop>
   <tabstop>edSign</tabstop>
-  <tabstop>chkAutoLoad</tabstop>
-  <tabstop>chkUpToSys</tabstop>
   <tabstop>dateTimeStart</tabstop>
   <tabstop>dateTimeEnd</tabstop>
   <tabstop>btnAddMaket</tabstop>

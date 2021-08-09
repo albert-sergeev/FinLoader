@@ -30,21 +30,21 @@ MainWindow::MainWindow(QWidget *parent)
     connect(&m_TickerLstModel,SIGNAL(dataRemoved(const Ticker &)), this,SLOT(slotTickerDataStorageRemove(const Ticker &)));
 
     //-------------------------------------------------------------
-    QHBoxLayout *lt = new QHBoxLayout();
-    lt->setMargin(0);
-    ui->wtSwitch1->setLayout(lt);
-    sSwitcherMarkets = new StyledSwitcher(tr("Show all"),tr("Active"),true,10);
-    QColor colorDarkGreen(0, 100, 52,200);
-    //QColor colorDarkGreen(0, 59, 56, 28);
-    sSwitcherMarkets->SetOnColor(QPalette::Window,colorDarkGreen);
-    //QColor colorDarkRed(132, 0, 0);
-    //QColor colorDarkRed(0, 100, 52);
-    //QColor colorDarkRed(0, 100, 26);
-    //QColor colorDarkRed(0, 100, 100,48);
-    QColor colorDarkRed(31, 53, 200,40);
-    sSwitcherMarkets->SetOffColor(QPalette::Window,colorDarkRed);
-    lt->addWidget(sSwitcherMarkets);
-    lt->addStretch();
+//    QHBoxLayout *lt = new QHBoxLayout();
+//    lt->setMargin(0);
+//    ui->wtSwitch1->setLayout(lt);
+//    sSwitcherMarkets = new StyledSwitcher(tr("Show all"),tr("Active"),true,10);
+//    QColor colorDarkGreen(0, 100, 52,200);
+//    //QColor colorDarkGreen(0, 59, 56, 28);
+//    sSwitcherMarkets->SetOnColor(QPalette::Window,colorDarkGreen);
+//    //QColor colorDarkRed(132, 0, 0);
+//    //QColor colorDarkRed(0, 100, 52);
+//    //QColor colorDarkRed(0, 100, 26);
+//    //QColor colorDarkRed(0, 100, 100,48);
+//    QColor colorDarkRed(31, 53, 200,40);
+//    sSwitcherMarkets->SetOffColor(QPalette::Window,colorDarkRed);
+//    lt->addWidget(sSwitcherMarkets);
+//    lt->addStretch();
     //-------------------------------------------------------------
 
     connect(ui->checkBox,SIGNAL(stateChanged(int)),this,SLOT(slotDocbarShowAllChanged(int)));
@@ -757,9 +757,9 @@ void MainWindow::slotStopFinQuotesLoadings()
     thrdPoolLoadFinQuotes.Interrupt();
 }
 //--------------------------------------------------------------------------------------------------------------------------------
-void MainWindow::slotDocbarShowAllChanged   (int i)
+void MainWindow::slotDocbarShowAllChanged   (int /*i*/)
 {
-    sSwitcherMarkets->SetChecked(i);
+    //sSwitcherMarkets->setChecked(i);
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::slotDocbarShowMarketChanged   (int)

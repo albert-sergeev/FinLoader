@@ -27,6 +27,12 @@ protected slots:
 
     void slotStateOnActivated(bool);
     void slotStateOffActivated(bool);
+    void slotButtonClicked();
+
+private: signals:
+
+    void DoChangeStateOn();
+    void DoChangeStateOff();
 
 
 public:
@@ -34,7 +40,10 @@ public:
     ~StyledSwitcher();
 
     inline bool isChecked()    const                {return bChecked;};
-    void SetChecked(bool bChecked);
+    //void setChecked(bool bChecked);
+    void setCheckState(Qt::CheckState state);
+    void setChecked(bool bState);
+
 
     void SetOnColor(const QPalette::ColorRole role, const QColor q) ;
     void SetOffColor(const QPalette::ColorRole role, const QColor q) ;

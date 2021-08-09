@@ -29,6 +29,7 @@ StyledSwitcher::StyledSwitcher(QString Left,QString Right,bool InitState, int bt
     int iLblMax = iWL > iWR ? iWL : iWR;
 
     this->setFixedSize(iLblMax + btnWidth,lblL->fontMetrics().boundingRect(Left).height()+2);
+    this->setMinimumWidth(iLblMax + btnWidth);
 
     btnP=new QPushButton(this);
     btnP->setAutoFillBackground(true);
@@ -56,13 +57,21 @@ StyledSwitcher::StyledSwitcher(QString Left,QString Right,bool InitState, int bt
     stateOff->assignProperty(lblL,"geometry",recLblLOff);
     stateOff->assignProperty(lblR,"geometry",recLblROff);
 
+    connect(stateOn,SIGNAL(activeChanged(bool)),this,SLOT(slotStateOnActivated(bool)));
+    connect(stateOff,SIGNAL(activeChanged(bool)),this,SLOT(slotStateOffActivated(bool)));
+
+
+
     if (bChecked)
         psm->setInitialState(stateOn);
     else
         psm->setInitialState(stateOff);
 
-    QSignalTransition * ptrans1 = stateOff->addTransition(btnP,SIGNAL(clicked()),stateOn);
-    QSignalTransition * ptrans2 = stateOn->addTransition(btnP,SIGNAL(clicked()),stateOff);
+//    QSignalTransition * ptrans1 = stateOff->addTransition(btnP,SIGNAL(clicked()),stateOn);
+//    QSignalTransition * ptrans2 = stateOn->addTransition(btnP,SIGNAL(clicked()),stateOff);
+
+    QSignalTransition * ptrans1 = stateOff->addTransition(this,SIGNAL(DoChangeStateOn()),stateOn);
+    QSignalTransition * ptrans2 = stateOn->addTransition(this,SIGNAL(DoChangeStateOff()),stateOff);
 
 
     QPropertyAnimation* anim1_1 =new QPropertyAnimation (btnP,"geometry",this);
@@ -82,11 +91,9 @@ StyledSwitcher::StyledSwitcher(QString Left,QString Right,bool InitState, int bt
     psm->start();
 
 
-    //stateOn->activeChanged
 
-    connect(stateOn,SIGNAL(activeChanged(bool)),this,SLOT(slotStateOnActivated(bool)));
-    connect(stateOff,SIGNAL(activeChanged(bool)),this,SLOT(slotStateOffActivated(bool)));
 
+    connect(btnP,SIGNAL(clicked()),this,SLOT(slotButtonClicked()));
 
     QPalette p = btnP->palette();
     p.setColor(QPalette::Window,Qt::black);
@@ -96,18 +103,33 @@ StyledSwitcher::StyledSwitcher(QString Left,QString Right,bool InitState, int bt
 
 };
 //------------------------------------------------------
+void StyledSwitcher::slotButtonClicked()
+{
+    bChecked = !bChecked;
+    if (bChecked)
+        emit DoChangeStateOn();
+    else
+        emit DoChangeStateOff();
+    emit stateChanged(bChecked);
+
+}
+//------------------------------------------------------
 void StyledSwitcher::slotStateOnActivated(bool bActive)
 {
     if (bActive){
-        bChecked = true;
-        emit stateChanged(1);
+        //bChecked = true;
+        if (!bChecked){//redone because init problems
+            emit DoChangeStateOff();
+        }
     }
 }
 void StyledSwitcher::slotStateOffActivated(bool bActive)
 {
     if (bActive){
-        bChecked = false;
-        emit stateChanged(0);
+//        bChecked = false;
+        if (bChecked){//redone because init problems
+            emit DoChangeStateOn();
+        }
     }
 }
 //------------------------------------------------------
@@ -147,17 +169,29 @@ void StyledSwitcher::SetOffColor(const QPalette::ColorRole role,  const QColor q
     lblR->setPalette(p);
 }
 //------------------------------------------------------
-void StyledSwitcher::SetChecked(bool bNewChecked)
+
+void StyledSwitcher::setChecked(bool bState)
 {
-    if(bNewChecked){
-        if (!bChecked){
-            btnP->click();
-        }
+    if (bState){
+        setCheckState(Qt::CheckState::Checked);
     }
     else{
+        setCheckState(Qt::CheckState::Unchecked);
+    }
+}
+
+//------------------------------------------------------
+void StyledSwitcher::setCheckState(Qt::CheckState state)
+{
+    if (     (state == Qt::CheckState::Checked && !bChecked)
+          || (state != Qt::CheckState::Checked && bChecked)
+            ){
+        bChecked = !bChecked;
         if (bChecked){
-            btnP->click();
+            emit DoChangeStateOn();
+        }
+        else{
+            emit DoChangeStateOff();
         }
     }
 }
-//------------------------------------------------------

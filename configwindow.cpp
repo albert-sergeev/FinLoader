@@ -17,6 +17,7 @@ ConfigWindow::ConfigWindow(MarketsListModel *modelM,int DefaultTickerMarket,
     , bIsAboutMarkerChanged(false)
     , bDataTickerChanged{false}
     , bAddingTickerRow {false}
+    , bIsAboutTickerChanged{false}
     ,iDefaultTickerMarket{DefaultTickerMarket}
     , modelMarket{modelM}
     , modelTicker{modelT}
@@ -33,6 +34,65 @@ ConfigWindow::ConfigWindow(MarketsListModel *modelM,int DefaultTickerMarket,
         //
     }
 
+    //-------------------------------------------------------------
+    QColor colorDarkGreen(0, 100, 52,50);
+    QColor colorDarkRed(31, 53, 200,40);
+    //-------------------------------------------------------------
+    // for ticker
+    //-------------------------------------------------------------
+    QHBoxLayout *lt1 = new QHBoxLayout();
+    lt1->setMargin(0);
+    ui->wtAutoLoadTicker->setLayout(lt1);
+    swtAutoLoadTicker = new StyledSwitcher(tr("On "),tr(" Off"),true,10,this);
+    lt1->addWidget(swtAutoLoadTicker);
+    //-------------------------------------------------------------
+    QHBoxLayout *lt2 = new QHBoxLayout();
+    lt2->setMargin(0);
+    ui->wtUpToSysTicker->setLayout(lt2);
+    swtUpToSysTicker = new StyledSwitcher(tr("On "),tr(" Off"),true,10,this);
+    lt2->addWidget(swtUpToSysTicker);
+    //-------------------------------------------------------------
+    QHBoxLayout *lt3 = new QHBoxLayout();
+    lt3->setMargin(0);
+    ui->wtBulblulatorTicker->setLayout(lt3);
+    swtBulbululatorTicker = new StyledSwitcher(tr("On "),tr(" Off"),true,10,this);
+    lt3->addWidget(swtBulbululatorTicker);
+    //-------------------------------------------------------------
+    QHBoxLayout *lt4 = new QHBoxLayout();
+    lt4->setMargin(0);
+    ui->wtShowByNameTicker->setLayout(lt4);
+    swtShowByNameTicker = new StyledSwitcher(tr("Show by name"),tr("Show by ticker"),true,10,this);
+    lt4->addWidget(swtShowByNameTicker);
+    swtShowByNameTicker->SetOnColor(QPalette::Window,colorDarkGreen);
+    swtShowByNameTicker->SetOffColor(QPalette::Window,colorDarkRed);
+    //-------------------------------------------------------------
+    QHBoxLayout *lt5 = new QHBoxLayout();
+    lt5->setMargin(0);
+    ui->wtSortByNameTicker->setLayout(lt5);
+    swtSortByNameTicker = new StyledSwitcher(tr("Sort by name"),tr("Sort by ticker"),true,10,this);
+    lt5->addWidget(swtSortByNameTicker);
+    swtSortByNameTicker->SetOnColor(QPalette::Window,colorDarkGreen);
+    swtSortByNameTicker->SetOffColor(QPalette::Window,colorDarkRed);
+    //-------------------------------------------------------------
+    //-------------------------------------------------------------
+    // for market
+    //-------------------------------------------------------------
+    //-------------------------------------------------------------
+    QHBoxLayout *lt6 = new QHBoxLayout();
+    lt6->setMargin(0);
+    ui->wtAutoLoadWholeMarket->setLayout(lt6);
+    swtAutoLoadWholeMarket = new StyledSwitcher(tr("On "),tr(" Off"),true,10,this);
+    lt6->addWidget(swtAutoLoadWholeMarket);
+    //-------------------------------------------------------------
+    QHBoxLayout *lt7 = new QHBoxLayout();
+    lt7->setMargin(0);
+    ui->wtUpToSysWholeMarket->setLayout(lt7);
+    swtUpToSysWholeMarket = new StyledSwitcher(tr("On "),tr(" Off"),true,10,this);
+    lt7->addWidget(swtUpToSysWholeMarket);
+    //-------------------------------------------------------------
+
+
+
     ///////////////////////////////////////////////////////////////////////
     // market-tab work
 
@@ -47,8 +107,8 @@ ConfigWindow::ConfigWindow(MarketsListModel *modelM,int DefaultTickerMarket,
     connect(ui->edName,SIGNAL(textChanged(const QString &)),this,SLOT(slotMarketDataChanged(const QString &)));
     connect(ui->edSign,SIGNAL(textChanged(const QString &)),this,SLOT(slotMarketDataChanged(const QString &)));
 
-    connect(ui->chkAutoLoad,SIGNAL(stateChanged(int)),this,SLOT(slotMarketDataChanged(int)));
-    connect(ui->chkUpToSys,SIGNAL(stateChanged(int)),this,SLOT(slotMarketDataChanged(int)));
+    connect(swtAutoLoadWholeMarket,SIGNAL(stateChanged(int)),this,SLOT(slotMarketDataChanged(int)));
+    connect(swtUpToSysWholeMarket,SIGNAL(stateChanged(int)),this,SLOT(slotMarketDataChanged(int)));
     connect(ui->dateTimeStart,SIGNAL(timeChanged(const QTime &)),this,SLOT(slotMarketTimeChanged(const QTime &)));
     connect(ui->dateTimeEnd,SIGNAL(timeChanged(const QTime &)),this,SLOT(slotMarketTimeChanged(const QTime &)));
 
@@ -68,16 +128,16 @@ ConfigWindow::ConfigWindow(MarketsListModel *modelM,int DefaultTickerMarket,
     connect(ui->edTickerSignFinam,SIGNAL(textChanged(const QString &)),this,SLOT(slotTickerDataChanged(const QString &)));
     connect(ui->edTickerSignQuik,SIGNAL(textChanged(const QString &)),this,SLOT(slotTickerDataChanged(const QString &)));
 
-    connect(ui->chkAutoLoadTicker,SIGNAL(stateChanged(int)),this,SLOT(slotTickerDataChanged(int)));
-    connect(ui->chkUpToSysTicker,SIGNAL(stateChanged(int)),this,SLOT(slotTickerDataChanged(int)));
-    connect(ui->chkBulblulator,SIGNAL(stateChanged(int)),this,SLOT(slotTickerDataChanged(int)));
+    connect(swtAutoLoadTicker,SIGNAL(stateChanged(int)),this,SLOT(slotTickerDataChanged(int)));
+    connect(swtUpToSysTicker,SIGNAL(stateChanged(int)),this,SLOT(slotTickerDataChanged(int)));
+    connect(swtBulbululatorTicker,SIGNAL(stateChanged(int)),this,SLOT(slotTickerDataChanged(int)));
 
 
-    connect(ui->chkShowByName,SIGNAL(stateChanged(int)),this,SLOT(slotShowByNamesChecked(int)));
-    connect(ui->chkSortByName,SIGNAL(stateChanged(int)),this,SLOT(slotSortByNamesChecked(int)));
+    connect(swtShowByNameTicker,SIGNAL(stateChanged(int)),this,SLOT(slotShowByNamesChecked(int)));
+    connect(swtSortByNameTicker,SIGNAL(stateChanged(int)),this,SLOT(slotSortByNamesChecked(int)));
 
-    ui->chkShowByName->setChecked(ShowByName);
-    ui->chkSortByName->setChecked(SortByName);
+    swtShowByNameTicker->setChecked(ShowByName);
+    swtSortByNameTicker->setChecked(SortByName);
 
     setMarketModel();
     setTickerModel();
@@ -217,8 +277,9 @@ void ConfigWindow::ClearMarketWidgetsValues()
     ui->edName->setText("");
     ui->edSign->setText("");
 
-    ui->chkAutoLoad->setCheckState  (Qt::CheckState::Unchecked);
-    ui->chkUpToSys->setCheckState   (Qt::CheckState::Unchecked);
+
+    swtAutoLoadWholeMarket->setCheckState  (Qt::CheckState::Unchecked);
+    swtUpToSysWholeMarket->setCheckState   (Qt::CheckState::Unchecked);
 
     const QTime tmS(0,0,0);
     const QTime tmE(0,0,0);
@@ -235,7 +296,7 @@ void ConfigWindow::slotBtnSaveMarketClicked()
 {
     if(bDataMarketChanged){
         int n=QMessageBox::warning(0,tr("Warning"),
-                               tr("Do you want to save changes?"),
+                               tr("Do you want to save market changes?"),
                                QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel
                                );
         if (n==QMessageBox::Yes){
@@ -252,8 +313,8 @@ void ConfigWindow::slotBtnSaveMarketClicked()
 
                   m.SetMarketName(ui->edName->text().toStdString());
                   m.SetMarketSign(ui->edSign->text().toStdString());
-                  m.SetAutoLoad(ui->chkAutoLoad->isChecked()? true:false);
-                  m.SetUpToSys(ui->chkUpToSys->isChecked()? true:false);
+                  m.SetAutoLoad(swtAutoLoadWholeMarket->isChecked()? true:false);
+                  m.SetUpToSys(swtUpToSysWholeMarket->isChecked()? true:false);
                   //
                   const QTime tmS(ui->dateTimeStart->time());
                   std::tm tmSt;
@@ -283,6 +344,8 @@ void ConfigWindow::slotBtnSaveMarketClicked()
 
                   bAddingMarketRow = false;
                   slotMarketDataChanged(false);
+
+                  ui->listViewMarket->setFocus();
 
                   //qDebug() << "choiceSave";
             }
@@ -342,6 +405,8 @@ void ConfigWindow::slotBtnCancelMarketClicked()
 
         }
     }
+    ui->listViewMarket->setFocus();
+
 
     bAddingMarketRow=false;
 };
@@ -418,8 +483,8 @@ void ConfigWindow::slotSetSelectedMarket(const  QModelIndex& indx)
         ui->edSign->setText(QString::fromStdString(m.MarketSign()));
 
 
-        ui->chkAutoLoad->setCheckState  (m.AutoLoad() ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
-        ui->chkUpToSys->setCheckState   (m.UpToSys()  ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
+        swtAutoLoadWholeMarket->setCheckState  (m.AutoLoad() ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
+        swtUpToSysWholeMarket->setCheckState   (m.UpToSys()  ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
 
 
 
@@ -463,12 +528,12 @@ void ConfigWindow::setTickerModel()//TickersListModel *model,bool ShowByName,boo
     proxyTickerModel.setSourceModel(modelTicker);
     ui->listViewTicker->setModel(&proxyTickerModel);
 
-    if(ui->chkShowByName->isChecked())
+    if(swtShowByNameTicker->isChecked())
         ui->listViewTicker->setModelColumn(0);
     else
         ui->listViewTicker->setModelColumn(2);
 
-    if(ui->chkSortByName->isChecked())
+    if(swtSortByNameTicker->isChecked())
         proxyTickerModel.sort(0);
     else
         proxyTickerModel.sort(2);
@@ -524,10 +589,10 @@ void ConfigWindow::slotSetSelectedTicker(const  QModelIndex& indx)
         ui->edTickerSignQuik->setText(QString::fromStdString(t.TickerSignQuik()));
 
 
-        ui->chkAutoLoadTicker->setCheckState  (t.AutoLoad() ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
-        ui->chkUpToSysTicker->setCheckState   (t.UpToSys()  ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
+        swtAutoLoadTicker->setCheckState  (t.AutoLoad() ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
+        swtUpToSysTicker->setCheckState   (t.UpToSys()  ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
 
-        ui->chkBulblulator->setCheckState  (t.Bulbululator() ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
+        swtBulbululatorTicker->setCheckState  (t.Bulbululator() ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
 
         bIsAboutTickerChanged=false;
 
@@ -603,7 +668,7 @@ void ConfigWindow::slotBtnAddTickerClicked()
     setEnableTickerWidgets(true);
     slotTickerDataChanged(true);
 
-    ui->chkAutoLoadTicker->setChecked(true);
+    swtAutoLoadTicker->setCheckState( Qt::CheckState::Checked);
     ui->edTickerName->setFocus();
 }
 //--------------------------------------------------------------------------------------------------------
@@ -670,9 +735,9 @@ void ConfigWindow::slotBtnSaveTickerClicked(){
                             iDefaultTickerMarket};
                 t.SetTickerSignFinam(ui->edTickerSignFinam->text().toStdString());
                 t.SetTickerSignQuik(ui->edTickerSignQuik->text().toStdString());
-                t.SetAutoLoad(ui->chkAutoLoadTicker->isChecked()? true:false);
-                t.SetUpToSys(ui->chkUpToSysTicker->isChecked()? true:false);
-                t.SetBulbululator(ui->chkBulblulator->isChecked()? true:false);
+                t.SetAutoLoad(swtAutoLoadTicker->isChecked()? true:false);
+                t.SetUpToSys(swtUpToSysTicker->isChecked()? true:false);
+                t.SetBulbululator(swtBulbululatorTicker->isChecked()? true:false);
 
                 //int i = modelTicker->AddRow(t);
                 int i = proxyTickerModel.AddRow(t);
@@ -689,7 +754,6 @@ void ConfigWindow::slotBtnSaveTickerClicked(){
                     qml->select(indx,QItemSelectionModel::SelectionFlag::ClearAndSelect | QItemSelectionModel::Rows) ;
                     slotSetSelectedTicker(indx);
                     }
-
 
                 slotTickerDataChanged(false);
             }
@@ -708,14 +772,16 @@ void ConfigWindow::slotBtnSaveTickerClicked(){
                       t.SetTickerSign(ui->edTickerSign->text().toStdString());
                       t.SetTickerSignFinam(ui->edTickerSignFinam->text().toStdString());
                       t.SetTickerSignQuik(ui->edTickerSignQuik->text().toStdString());
-                      t.SetAutoLoad(ui->chkAutoLoadTicker->isChecked()? true:false);
-                      t.SetUpToSys(ui->chkUpToSysTicker->isChecked()? true:false);
-                      t.SetBulbululator(ui->chkBulblulator->isChecked()? true:false);
+                      t.SetAutoLoad(swtAutoLoadTicker->isChecked()? true:false);
+                      t.SetUpToSys(swtUpToSysTicker->isChecked()? true:false);
+                      t.SetBulbululator(swtBulbululatorTicker->isChecked()? true:false);
                       ///
                       proxyTickerModel.setData(lst[0],t,Qt::EditRole);
                 }
+
                 slotTickerDataChanged(false);
             }
+            ui->listViewTicker->setFocus();
         }
         else if (n==QMessageBox::Cancel){
             slotBtnCancelTickerClicked();
@@ -776,6 +842,7 @@ void ConfigWindow::slotBtnCancelTickerClicked()
               slotSetSelectedTicker(lst[0]);
         }
     }
+    ui->listViewTicker->setFocus();
 
 
 };
@@ -823,8 +890,9 @@ void ConfigWindow::setEnableTickerWidgets(bool bEnable)
     ui->edTickerSign->setEnabled(bEnable);
     ui->edTickerSignFinam->setEnabled(bEnable);
     ui->edTickerSignQuik->setEnabled(bEnable);
-    ui->chkAutoLoadTicker->setEnabled(bEnable);
-    ui->chkUpToSysTicker->setEnabled(bEnable);
+    swtAutoLoadTicker->setEnabled(bEnable);
+    swtUpToSysTicker->setEnabled(bEnable);
+    swtBulbululatorTicker->setEnabled(bEnable);
 }
 
 //--------------------------------------------------------------------------------------------------------
@@ -839,8 +907,9 @@ void ConfigWindow::ClearTickerWidgetsValues()
     ui->edTickerSignFinam->setText("");
     ui->edTickerSignQuik->setText("");
 
-    ui->chkAutoLoadTicker->setCheckState  (Qt::CheckState::Unchecked);
-    ui->chkUpToSysTicker->setCheckState   (Qt::CheckState::Unchecked);
+    swtAutoLoadTicker->setCheckState  (Qt::CheckState::Unchecked);
+    swtUpToSysTicker->setCheckState   (Qt::CheckState::Unchecked);
+    swtBulbululatorTicker->setCheckState   (Qt::CheckState::Unchecked);
 
 }
 

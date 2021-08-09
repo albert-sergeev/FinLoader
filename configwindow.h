@@ -9,6 +9,7 @@
 #include "marketslistmodel.h"
 #include "tickerslistmodel.h"
 #include "storage.h"
+#include "styledswitcher.h"
 
 namespace Ui {
 class ConfigWindow;
@@ -44,6 +45,16 @@ private:
     bool bDataTickerChanged;
     bool bAddingTickerRow;
     bool bIsAboutTickerChanged;
+
+    StyledSwitcher *swtAutoLoadTicker;
+    StyledSwitcher *swtUpToSysTicker;
+    StyledSwitcher *swtBulbululatorTicker;
+
+    StyledSwitcher *swtShowByNameTicker;
+    StyledSwitcher *swtSortByNameTicker;
+
+    StyledSwitcher *swtAutoLoadWholeMarket;
+    StyledSwitcher *swtUpToSysWholeMarket;
 
     int iDefaultTickerMarket;
     MarketsListModel *modelMarket;
