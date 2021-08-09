@@ -12,13 +12,16 @@ class TickersListModel : public QAbstractTableModel
 
 public:
 
-    explicit TickersListModel(std::vector<Ticker> &v,std::vector<Market> &m, QObject *parent = nullptr):
-        QAbstractTableModel{parent},vTickersLst{&v},vMarketsLst{&m}{};
+    explicit TickersListModel(std::vector<Ticker> &v,std::vector<Market> &m,
+                              std::map<int,std::pair<bool,std::chrono::time_point<std::chrono::steady_clock>>> &mS,
+                              QObject *parent = nullptr):
+        QAbstractTableModel{parent},vTickersLst{&v},vMarketsLst{&m},mBlinkedState{&mS}{};
 
 private:
 
     std::vector<Ticker> * vTickersLst; //init in const by ref
     std::vector<Market> * vMarketsLst; //init in const by ref
+    std::map<int,std::pair<bool,std::chrono::time_point<std::chrono::steady_clock>>> *mBlinkedState; //init in const by ref
 
 private:
     QString getMarketNameByID(const int i) const ;
@@ -30,7 +33,7 @@ public:
 
     // Basic functionality:
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
-    int columnCount(const QModelIndex &/*indx=QModelIndex()*/) const  override{return 7;};
+    int columnCount(const QModelIndex &/*indx*/=QModelIndex()) const  override{return 5;};
 
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
     const Ticker & getTicker(const QModelIndex &index);
@@ -46,6 +49,8 @@ public:
     bool searchTickerByFinamSign(const std::string &sSign, QModelIndex & indx);
     bool searchTickerBySign(const std::string &sSign, QModelIndex & indx);
     bool searchTickerByTickerID(const int TickerID, QModelIndex & indx);
+
+    void blinkTicker(int iTickerID);
 
 
 signals:

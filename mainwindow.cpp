@@ -5,13 +5,16 @@
 #include<QHBoxLayout>
 
 
+
+
+
 //--------------------------------------------------------------------------------------------------------------------------------
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , vMarketsLst{}
     , m_MarketLstModel{vMarketsLst,this}
     , vTickersLst{}
-    , m_TickerLstModel{vTickersLst,vMarketsLst,this}
+    , m_TickerLstModel{vTickersLst,vMarketsLst,mBlinkedState,this}
     , thrdPoolLoadFinQuotes{(int)std::thread::hardware_concurrency()/2}
     , ui(new Ui::MainWindow)
 {
@@ -134,6 +137,8 @@ void MainWindow::timerEvent(QTimerEvent * event)
         //////////////////////////////////////////////
         pdata = queueTrdAnswers.Pop(bSuccess);
     }
+    //////////////////
+    ListViewActivityTermination();
     //
     QWidget::timerEvent(event);
 }
@@ -453,6 +458,8 @@ void MainWindow::BulbululatorShowActivity   (int TickerID)
     if (bFound){
         vBulbululators[i]->Bubble();
     }
+    //----------------------
+    ListViewShowActivity(TickerID);
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::BulbululatorRemoveActive   (int TickerID)
@@ -890,9 +897,33 @@ void MainWindow::slotTickersBarStateChanged()
     }
 }
 //--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::ListViewShowActivity(int TickerID){
+    std::chrono::time_point<std::chrono::steady_clock> tNow = std::chrono::steady_clock::now();
 
-void MainWindow::ListBewShowActivity(int TickerID){
-    //qActivityQueue.push(std::make_pair(TickerID,std::chrono::steady_clock::now()));
-    //std::chrono::time_point dtStop(std::chrono::steady_clock::now());
+    auto It (mBlinkedState.find(TickerID));
+    if (It  == mBlinkedState.end() ||
+            (milliseconds(tNow - It->second.second)).count() > 200
+            ){
+        mBlinkedState[TickerID] = std::make_pair(true, tNow);
+        m_TickerLstModel.blinkTicker(TickerID);
+        qActivityQueue.push(std::make_pair(TickerID,tNow));
+    }
 }
+//--------------------------------------------------------------------------------------------------------------------------------
 
+void MainWindow::ListViewActivityTermination()
+{
+    if (!qActivityQueue.empty()){
+        std::chrono::time_point dtNow(std::chrono::steady_clock::now());
+
+        if (milliseconds (dtNow - qActivityQueue.front().second).count() >100 ){
+            //
+            mBlinkedState[qActivityQueue.front().first].first = false;
+            m_TickerLstModel.blinkTicker(qActivityQueue.front().first);
+            /////
+            qActivityQueue.pop();
+        }
+    }
+
+}
+//--------------------------------------------------------------------------------------------------------------------------------

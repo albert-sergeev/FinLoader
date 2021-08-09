@@ -19,6 +19,7 @@
 #include <QTextEdit>
 
 #include <queue>
+#include <chrono>
 #include <utility>
 
 #include "configwindow.h"
@@ -42,6 +43,12 @@ namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
 
+using seconds=std::chrono::duration<double>;
+using milliseconds=std::chrono::duration<double,
+    std::ratio_multiply<seconds::period,std::milli>
+    >;
+
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -55,6 +62,9 @@ private:
     bool bToolBarOnLoadIsHidden;
     bool bTickerBarOnLoadIsHidden;
     bool bStatusBarOnLoadIsHidden;
+    //------------------------------------------------
+    std::queue<std::pair<int,std::chrono::time_point<std::chrono::steady_clock>>> qActivityQueue;
+    std::map<int,std::pair<bool,std::chrono::time_point<std::chrono::steady_clock>>> mBlinkedState;
     //------------------------------------------------
     QMenu * m_mnuWindows;
     QMenu * m_mnuStyles;
@@ -98,7 +108,7 @@ private:
 
 
     std::vector<Bulbululator *> vBulbululators;
-    std::queue<std::pair<int,std::time_t>> qActivityQueue;
+
 
     ///////////////////////////////////
     ThreadPool thrdPoolLoadFinQuotes;
@@ -164,7 +174,8 @@ protected slots: // for main window
     void slotStatusBarStateChanged();
     void slotTickersBarStateChanged();
 
-    void ListBewShowActivity(int TickerID);
+    void ListViewShowActivity(int TickerID);
+    void ListViewActivityTermination();
 
 
 private:

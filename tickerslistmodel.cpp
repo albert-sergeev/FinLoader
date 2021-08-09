@@ -2,6 +2,8 @@
 #include "storage.h"
 #include<iostream>
 
+#include<QColor>
+
 //TickerListModel::TickerListModel()
 //{
 
@@ -63,7 +65,35 @@ QVariant TickersListModel::data(const QModelIndex &index, int nRole) const
                                        +getMarketNameByID(t.MarketID())+"}");
         }
     }
+
+    if(nRole == Qt::BackgroundColorRole){
+        const Ticker & t ( vTickersLst->at(index.row()));
+        auto It (mBlinkedState->find(t.TickerID()));
+        if (It != mBlinkedState->end() && It->second.first){
+            //QColor colorDarkGreen(0, 100, 52,200);
+            QColor colorDarkGreen(0, 100, 52,150);
+            return QVariant(colorDarkGreen);
+            //return QVariant(QColor(Qt::green));
+        }
+        else{
+            return  QVariant();
+        }
+
+    }
     return  QVariant();
+}
+////--------------------------------------------------------------------------------------------------------
+void TickersListModel::blinkTicker(int TickerID){
+
+    auto It = std::find_if(vTickersLst->begin(),vTickersLst->end(),[&](const Ticker &t){
+                        return t.TickerID() == TickerID;});
+    if (It != vTickersLst->end()){
+        QVector<int> vV {Qt::BackgroundColorRole};
+        QModelIndex indexBeg = this->index(std::distance(vTickersLst->begin(),It),0);
+        QModelIndex indexEnd = this->index(std::distance(vTickersLst->begin(),It),4);
+        emit dataChanged(indexBeg,indexEnd,vV);
+    }
+
 }
 ////--------------------------------------------------------------------------------------------------------
 QString TickersListModel::getMarketNameByID(const int ID) const
@@ -145,7 +175,7 @@ bool TickersListModel::removeRow(int indx,const QModelIndex &parent )
         return false;
     }
 }
-
+//--------------------------------------------------------------------------------------------------------
 Qt::ItemFlags TickersListModel::flags(const QModelIndex &indx)const
 {
     Qt::ItemFlags flgs=QAbstractTableModel::flags(indx);
