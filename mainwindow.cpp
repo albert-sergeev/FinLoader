@@ -18,6 +18,27 @@ MainWindow::MainWindow(QWidget *parent)
 
     ui->setupUi(this);
 
+    //-------------------------------------------------------------
+    QColor colorDarkGreen(0, 100, 52,50);
+    QColor colorDarkRed(31, 53, 200,40);
+    //-------------------------------------------------------------
+    QHBoxLayout *lt1 = new QHBoxLayout();
+    lt1->setMargin(0);
+    ui->wtShowAll->setLayout(lt1);
+    swtShowAll = new StyledSwitcher(tr("Show all"),tr(" Active"),true,10,this);
+    lt1->addWidget(swtShowAll);
+    swtShowAll->SetOnColor(QPalette::Window,colorDarkGreen);
+    swtShowAll->SetOffColor(QPalette::Window,colorDarkRed);
+    //-------------------------------------------------------------
+    QHBoxLayout *lt2 = new QHBoxLayout();
+    lt2->setMargin(0);
+    ui->wtShowMarket->setLayout(lt2);
+    swtShowMarkets = new StyledSwitcher(tr("Show market "),tr(" Hide market"),true,10,this);
+    lt2->addWidget(swtShowMarkets);
+    swtShowMarkets->SetOnColor(QPalette::Window,colorDarkGreen);
+    swtShowMarkets->SetOffColor(QPalette::Window,colorDarkRed);
+    //-------------------------------------------------------------
+
     LoadSettings();
     slotSetActiveLang (m_Language);
     slotSetActiveStyle(m_sStyleName);
@@ -29,28 +50,13 @@ MainWindow::MainWindow(QWidget *parent)
     connect(&m_TickerLstModel,SIGNAL(dataChanged(const QModelIndex &,const QModelIndex &)), this,SLOT(slotTickerDataStorageUpdate(const QModelIndex &,const QModelIndex &)));
     connect(&m_TickerLstModel,SIGNAL(dataRemoved(const Ticker &)), this,SLOT(slotTickerDataStorageRemove(const Ticker &)));
 
-    //-------------------------------------------------------------
-//    QHBoxLayout *lt = new QHBoxLayout();
-//    lt->setMargin(0);
-//    ui->wtSwitch1->setLayout(lt);
-//    sSwitcherMarkets = new StyledSwitcher(tr("Show all"),tr("Active"),true,10);
-//    QColor colorDarkGreen(0, 100, 52,200);
-//    //QColor colorDarkGreen(0, 59, 56, 28);
-//    sSwitcherMarkets->SetOnColor(QPalette::Window,colorDarkGreen);
-//    //QColor colorDarkRed(132, 0, 0);
-//    //QColor colorDarkRed(0, 100, 52);
-//    //QColor colorDarkRed(0, 100, 26);
-//    //QColor colorDarkRed(0, 100, 100,48);
-//    QColor colorDarkRed(31, 53, 200,40);
-//    sSwitcherMarkets->SetOffColor(QPalette::Window,colorDarkRed);
-//    lt->addWidget(sSwitcherMarkets);
-//    lt->addStretch();
-    //-------------------------------------------------------------
-
-    connect(ui->checkBox,SIGNAL(stateChanged(int)),this,SLOT(slotDocbarShowAllChanged(int)));
 
 
+    connect(swtShowAll,SIGNAL(stateChanged(int)),this,SLOT(slotDocbarShowAllChanged(int)));
+    connect(swtShowMarkets,SIGNAL(stateChanged(int)),this,SLOT(slotDocbarShowMarketChanged(int)));
 
+
+    ///
     startTimer(100); // timer to process GUID events
 }
 //--------------------------------------------------------------------------------------------------------------------------------

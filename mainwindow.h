@@ -58,7 +58,8 @@ private:
     QTranslator m_translator;
 
     // for docked bar
-    StyledSwitcher * sSwitcherMarkets;
+    StyledSwitcher * swtShowAll;
+    StyledSwitcher * swtShowMarkets;
 
     // thread manipulation
     BlockFreeQueue<dataFinLoadTask> queueFinQuotesLoad;
