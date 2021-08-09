@@ -311,11 +311,12 @@ void MainWindow::InitAction()
     QAction * pacNewDoc =new QAction("newdoc");
     pacNewDoc->setText(tr("&New"));
     pacNewDoc->setShortcut(QKeySequence(tr("CTRL+N")));
-    pacNewDoc->setToolTip(tr("New board"));
-    pacNewDoc->setStatusTip(tr("New board"));
-    pacNewDoc->setWhatsThis(tr("New board"));
+    pacNewDoc->setToolTip(tr("New graph"));
+    pacNewDoc->setStatusTip(tr("New graph"));
+    pacNewDoc->setWhatsThis(tr("New graph"));
     pacNewDoc->setIcon(QPixmap(":/store/images/sc_newdoc"));
-    connect(pacNewDoc,SIGNAL(triggered()),SLOT(slotNewDoc()));
+    connect(pacNewDoc,SIGNAL(triggered()),SLOT(slotGraphViewWindow()));
+
     //------------------------------------------------
     QAction * pacOpen =new QAction("Open");
     pacOpen->setText(tr("&Open"));
@@ -449,7 +450,7 @@ void MainWindow::InitAction()
         ui->widgetTickerButtonBar->hide();
 
     //------------------------------------------------
-    connect(ui->lstView,SIGNAL(clicked(const QModelIndex&)),this,SLOT(slotSetSelectedTicker(const  QModelIndex&)));
+    connect(ui->lstView,SIGNAL(doubleClicked(const QModelIndex&)),this,SLOT(slotSetSelectedTicker(const  QModelIndex&)));
 }
 
 //--------------------------------------------------------------------------------------------------------------------------------
@@ -547,35 +548,35 @@ void MainWindow::BulbululatorAddActive      (int TickerID)
 ///
 void MainWindow::slotNewDoc()
 {
-    QWidget *pdoc=new QWidget;
-    pdoc->setAttribute(Qt::WA_DeleteOnClose);
-    pdoc->setWindowTitle(tr("Unnamed document"));
-    pdoc->setWindowIcon(QPixmap(":/store/images/sc_newdoc"));
+//    QWidget *pdoc=new QWidget;
+//    pdoc->setAttribute(Qt::WA_DeleteOnClose);
+//    pdoc->setWindowTitle(tr("Unnamed document"));
+//    pdoc->setWindowIcon(QPixmap(":/store/images/sc_newdoc"));
 
 
-    QGridLayout *lt=new QGridLayout();
-    QLabel *lbl=new QLabel(tr("Document"));
-    QPushButton * btn1=new QPushButton(tr("Push it"));
-    QPushButton * btn2=new QPushButton(tr("Doun't"));
-    QComboBox * cbx=new QComboBox();
+//    QGridLayout *lt=new QGridLayout();
+//    QLabel *lbl=new QLabel(tr("Document"));
+//    QPushButton * btn1=new QPushButton(tr("Push it"));
+//    QPushButton * btn2=new QPushButton(tr("Doun't"));
+//    QComboBox * cbx=new QComboBox();
 
-    connect(btn1,SIGNAL(clicked()),this,SLOT(slotSendTestText()));
+//    connect(btn1,SIGNAL(clicked()),this,SLOT(slotSendTestText()));
 
-    cbx->addItem(tr("First elem"));
-    cbx->addItem(tr("Second elem"));
-    lt->addWidget(lbl);
-    lt->addWidget(btn1);
-    lt->addWidget(btn2);
-    lt->addWidget(cbx);
-    pdoc->setLayout(lt);
+//    cbx->addItem(tr("First elem"));
+//    cbx->addItem(tr("Second elem"));
+//    lt->addWidget(lbl);
+//    lt->addWidget(btn1);
+//    lt->addWidget(btn2);
+//    lt->addWidget(cbx);
+//    pdoc->setLayout(lt);
 
 
-    QListView *lw8=new QListView();
-    lw8->setModel(&m_MarketLstModel);
-    lt->addWidget(lw8);
+//    QListView *lw8=new QListView();
+//    lw8->setModel(&m_MarketLstModel);
+//    lt->addWidget(lw8);
 
-    ui->mdiArea->addSubWindow(pdoc);
-    pdoc->show();
+//    ui->mdiArea->addSubWindow(pdoc);
+//    pdoc->show();
 }
 
 //--------------------------------------------------------------------------------------------------------------------------------
@@ -773,6 +774,18 @@ void MainWindow::slotSetActiveLang      (QString sL)
     }
 }
 //--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotGraphViewWindow()
+{
+    auto qml(ui->lstView->selectionModel());
+    auto lst (qml->selectedIndexes());
+    //if(lst.count() > 0 && lst[0].isValid()){
+
+    for (auto item:lst){
+        const Ticker &t = proxyTickerModel.getTicker(item);
+        slotSetSelectedTicker(t.TickerID());
+    }
+}
+//--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::slotConfigWndow()
 {
     ConfigWindow *pdoc=new ConfigWindow(&m_MarketLstModel,iDefaultTickerMarket,
@@ -961,10 +974,30 @@ void MainWindow::slotSetSelectedTicker(const  QModelIndex& indx)
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::slotSetSelectedTicker(const  int iTickerID)
 {
-    {
-        ThreadFreeCout pcout;
-        pcout <<"selected TickerID: "<< iTickerID<<"\n";
+    GraphViewForm * wnd;
+    bool bFound{false};
+    QList<QMdiSubWindow*> lst = ui->mdiArea->subWindowList();
+    for(int i = 0; i < lst.size(); ++i){
+        if(lst.at(i)->widget()->objectName() == "GraphViewForm")
+        {
+            wnd = qobject_cast<GraphViewForm *>(lst[i]->widget());
+            if(wnd && wnd->TickerID() == iTickerID){
+                bFound = true;
+                break;
+            }
+        }
     }
+    if (!bFound){
+        GraphViewForm *pdoc=new GraphViewForm(iTickerID,vTickersLst);
+        pdoc->setAttribute(Qt::WA_DeleteOnClose);
+        pdoc->setWindowIcon(QPixmap(":/store/images/sc_newdoc"));
 
+        ui->mdiArea->addSubWindow(pdoc);
+
+        pdoc->show();
+    }
+    else{
+        wnd->setFocus();
+    }
 }
 //--------------------------------------------------------------------------------------------------------------------------------

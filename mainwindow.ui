@@ -89,7 +89,11 @@
       <number>2</number>
      </property>
      <item>
-      <widget class="QListView" name="lstView"/>
+      <widget class="QListView" name="lstView">
+       <property name="selectionMode">
+        <enum>QAbstractItemView::ExtendedSelection</enum>
+       </property>
+      </widget>
      </item>
      <item>
       <widget class="QWidget" name="widgetTickerButtonBar" native="true">

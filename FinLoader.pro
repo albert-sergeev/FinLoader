@@ -24,6 +24,7 @@ SOURCES += \
     datafinloadtask.cpp \
     datafinquotesparse.cpp \
     graph.cpp \
+    graphviewform.cpp \
     importfinqotesform.cpp \
     main.cpp \
     mainwindow.cpp \
@@ -45,6 +46,7 @@ HEADERS += \
     datafinloadtask.h \
     datafinquotesparse.h \
     graph.h \
+    graphviewform.h \
     importfinqotesform.h \
     mainwindow.h \
     marketslistmodel.h \
@@ -58,6 +60,7 @@ HEADERS += \
 
 FORMS += \
     configwindow.ui \
+    graphviewform.ui \
     importfinqotesform.ui \
     mainwindow.ui
 

@@ -35,6 +35,7 @@
 #include "blockfreequeue.h"
 #include "bulbululator.h"
 #include "styledswitcher.h"
+#include "graphviewform.h"
 
 
 
@@ -152,6 +153,7 @@ public slots: // for import FinQuotes winow
 protected slots: // for main window
     void slotNotImpl    ();
     void slotNewDoc     ();
+    void slotGraphViewWindow();
     void slotNewLogWnd  ();
     void slotWindows    ();
     void slotStyles     ();
