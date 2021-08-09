@@ -11,7 +11,7 @@ MainWindow::MainWindow(QWidget *parent)
     , vMarketsLst{}
     , m_MarketLstModel{vMarketsLst,this}
     , vTickersLst{}
-    , m_TickerLstModel{vTickersLst,this}
+    , m_TickerLstModel{vTickersLst,vMarketsLst,this}
     , thrdPoolLoadFinQuotes{(int)std::thread::hardware_concurrency()/2}
     , ui(new Ui::MainWindow)
 {
@@ -38,6 +38,15 @@ MainWindow::MainWindow(QWidget *parent)
     swtShowMarkets->SetOnColor(QPalette::Window,colorDarkGreen);
     swtShowMarkets->SetOffColor(QPalette::Window,colorDarkRed);
     //-------------------------------------------------------------
+    QHBoxLayout *lt3 = new QHBoxLayout();
+    lt3->setMargin(0);
+    ui->wtShowByName->setLayout(lt3);
+    swtShowByName = new StyledSwitcher(tr("Show by name "),tr(" Show by ticker"),true,10,this);
+    lt3->addWidget(swtShowByName);
+    swtShowByName->SetOnColor(QPalette::Window,colorDarkGreen);
+    swtShowByName->SetOffColor(QPalette::Window,colorDarkRed);
+    //-------------------------------------------------------------
+
 
     LoadSettings();
     slotSetActiveLang (m_Language);
@@ -47,11 +56,14 @@ MainWindow::MainWindow(QWidget *parent)
 
     LoadDataStorage();
 
+    InitDockBar();
+
     connect(&m_TickerLstModel,SIGNAL(dataChanged(const QModelIndex &,const QModelIndex &)), this,SLOT(slotTickerDataStorageUpdate(const QModelIndex &,const QModelIndex &)));
     connect(&m_TickerLstModel,SIGNAL(dataRemoved(const Ticker &)), this,SLOT(slotTickerDataStorageRemove(const Ticker &)));
 
 
 
+    connect(swtShowByName,SIGNAL(stateChanged(int)),this,SLOT(slotDocbarShowNyNameChanged(int)));
     connect(swtShowAll,SIGNAL(stateChanged(int)),this,SLOT(slotDocbarShowAllChanged(int)));
     connect(swtShowMarkets,SIGNAL(stateChanged(int)),this,SLOT(slotDocbarShowMarketChanged(int)));
 
@@ -143,9 +155,18 @@ void MainWindow::LoadSettings()
         m_Language   = m_settings.value("Language","English").toString();
 
         m_settings.beginGroup("Mainwindow");
-            int nWidth   = m_settings.value("Width", width()).toInt();
-            int nHeight  = m_settings.value("Height",height()).toInt();
+            restoreGeometry(m_settings.value("geometry").toByteArray());
+            restoreState(m_settings.value("windowState").toByteArray());
             m_sStyleName = m_settings.value("StyleName",style()->objectName()).toString();
+
+            bToolBarOnLoadIsHidden      = m_settings.value("ToolBarIsHidden",false).toBool();
+            bTickerBarOnLoadIsHidden    = m_settings.value("TickersBarIsHidden",false).toBool();
+            bStatusBarOnLoadIsHidden    = m_settings.value("StatusBarIsHidden",false).toBool();
+
+            swtShowByName->setChecked(m_settings.value("docShowByName",false).toBool());
+            swtShowAll->setChecked(m_settings.value("docShowAll",true).toBool());
+            swtShowMarkets->setChecked(m_settings.value("docShowMarkets",false).toBool());
+
         m_settings.endGroup();
 
         m_settings.beginGroup("Configwindow");
@@ -162,9 +183,6 @@ void MainWindow::LoadSettings()
         m_settings.endGroup();
 
     m_settings.endGroup();
-    //
-    resize(nWidth,nHeight);
-
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::SaveSettings()
@@ -175,9 +193,16 @@ void MainWindow::SaveSettings()
         m_settings.setValue("Language",m_Language);
 
         m_settings.beginGroup("Mainwindow");
-            m_settings.setValue("Width", this->width());
-            m_settings.setValue("Height",this->height());
+            m_settings.setValue("geometry",this->saveGeometry());
+            m_settings.setValue("windowState",this->saveState());
+            m_settings.setValue("ToolBarIsHidden",tbrToolBar->isHidden());
+            m_settings.setValue("TickersBarIsHidden",ui->dkActiveTickers->isHidden());
+            m_settings.setValue("StatusBarIsHidden",ui->statusbar->isHidden());
+
             m_settings.setValue("StyleName",m_sStyleName);
+            m_settings.setValue("docShowByName",swtShowByName->isChecked());
+            m_settings.setValue("docShowAll",swtShowAll->isChecked());
+            m_settings.setValue("docShowMarkets",swtShowMarkets->isChecked());
         m_settings.endGroup();
 
         m_settings.beginGroup("Configwindow");
@@ -320,6 +345,24 @@ void MainWindow::InitAction()
     pacConfig->setIcon(QPixmap(":/store/images/sc_config"));
     connect(pacConfig,SIGNAL(triggered()),SLOT(slotConfigWndow()));
     //------------------------------------------------
+    pacTickersBar =new QAction(tr("Tickers bar"));
+    pacTickersBar->setText(tr("Tickers bar"));
+    pacTickersBar->setCheckable(true);
+    pacTickersBar->setChecked(!bTickerBarOnLoadIsHidden);
+    connect(pacTickersBar,SIGNAL(triggered()),SLOT(slotTickersBarStateChanged()));
+    //------------------------------------------------
+    pacStatusBar =new QAction(tr("Status bar"));
+    pacStatusBar->setText(tr("Status bar"));
+    pacStatusBar->setCheckable(true);
+    pacStatusBar->setChecked(!bStatusBarOnLoadIsHidden);
+    connect(pacStatusBar,SIGNAL(triggered()),SLOT(slotStatusBarStateChanged()));
+    //------------------------------------------------
+    pacToolBar =new QAction(tr("Toolbar"));
+    pacToolBar->setText(tr("Toolbar"));
+    pacToolBar->setCheckable(true);
+    pacToolBar->setChecked(!bToolBarOnLoadIsHidden);
+    connect(pacToolBar,SIGNAL(triggered()),SLOT(slotToolBarStateChanged()));
+    //------------------------------------------------
     //
     QMenu * pmnuFile = new QMenu(tr("&File","menu"));
     pmnuFile->addAction(pacNewDoc);
@@ -343,6 +386,11 @@ void MainWindow::InitAction()
     menuBar()->addMenu(pmnuTools);
     //
     QMenu * pmnuSettings = new QMenu(tr("&Settings"));
+
+    pmnuSettings->addAction(pacToolBar);
+    pmnuSettings->addAction(pacTickersBar);
+    pmnuSettings->addAction(pacStatusBar);
+    pmnuSettings->addSeparator();
     pmnuSettings->addAction(pacConfig);
     pmnuSettings->addSeparator();
 
@@ -368,17 +416,21 @@ void MainWindow::InitAction()
     connect(m_psigmapperLang,SIGNAL(mapped(QString)),this,SLOT(slotSetActiveLang(QString)));
     //------------------------------------------------
     //------------------------------------------------
-    QToolBar * tbr =new QToolBar("Top tool");
-    tbr->addAction(pacNewDoc);
-    tbr->addAction(pacOpen);
-    tbr->addAction(pacSave);
-    tbr->addAction(pacConfig);
-    tbr->addAction(pacLogWnd);
+    tbrToolBar =new QToolBar("Toolbar");
+    tbrToolBar->setObjectName("Toolbar");
+    tbrToolBar->addAction(pacNewDoc);
+    tbrToolBar->addAction(pacOpen);
+    tbrToolBar->addAction(pacSave);
+    tbrToolBar->addAction(pacConfig);
+    tbrToolBar->addAction(pacLogWnd);
 
-    this->addToolBar(tbr);
-
+    this->addToolBar(tbrToolBar);
+    if (bToolBarOnLoadIsHidden){
+        tbrToolBar->hide();
+    }
     //------------------------------------------------
-
+    if (bStatusBarOnLoadIsHidden)
+        ui->statusbar->hide();
 
 }
 
@@ -763,15 +815,84 @@ void MainWindow::slotStopFinQuotesLoadings()
     thrdPoolLoadFinQuotes.Interrupt();
 }
 //--------------------------------------------------------------------------------------------------------------------------------
-void MainWindow::slotDocbarShowAllChanged   (int /*i*/)
+void MainWindow::slotDocbarShowAllChanged   (int /*iChange*/)
 {
-    //sSwitcherMarkets->setChecked(i);
+    if (swtShowAll)
+        proxyTickerModel.setFilterByActive(!swtShowAll->isChecked());
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::slotDocbarShowMarketChanged   (int)
 {
+    if (!swtShowMarkets || !swtShowByName){
+        return;
+    }
+
+    if (!swtShowMarkets->isChecked()){
+        if (swtShowByName->isChecked())
+            ui->lstView->setModelColumn(0);
+        else
+            ui->lstView->setModelColumn(2);
+    }
+    else{
+        if (swtShowByName->isChecked())
+            ui->lstView->setModelColumn(3);
+        else
+            ui->lstView->setModelColumn(4);
+    }
+    proxyTickerModel.invalidate();
 
 }
 //--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotDocbarShowNyNameChanged(int i)
+{
+    slotDocbarShowMarketChanged(i);
+}
 //--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::InitDockBar()
+{
+    if (swtShowAll){
+        proxyTickerModel.setFilterByActive(!swtShowAll->isChecked());
+    }
+
+    proxyTickerModel.setSourceModel(&m_TickerLstModel);
+    proxyTickerModel.sort(2);
+    ui->lstView->setModel(&proxyTickerModel);
+
+    slotDocbarShowMarketChanged(0);
+
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotToolBarStateChanged()
+{
+    if(pacToolBar && pacToolBar->isChecked())
+        tbrToolBar->show();
+    else
+        tbrToolBar->hide();
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotStatusBarStateChanged()
+{
+    if(pacStatusBar && pacStatusBar->isChecked()){
+        ui->statusbar->show();
+    }
+    else{
+        ui->statusbar->hide();
+    }
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotTickersBarStateChanged()
+{
+    if(pacTickersBar && pacTickersBar->isChecked()){
+        ui->dkActiveTickers->show();
+    }
+    else{
+        ui->dkActiveTickers->hide();
+    }
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+
+void MainWindow::ListBewShowActivity(int TickerID){
+    //qActivityQueue.push(std::make_pair(TickerID,std::chrono::steady_clock::now()));
+    //std::chrono::time_point dtStop(std::chrono::steady_clock::now());
+}
 

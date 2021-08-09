@@ -1,4 +1,5 @@
 #include "tickerslistmodel.h"
+#include "storage.h"
 #include<iostream>
 
 //TickerListModel::TickerListModel()
@@ -48,8 +49,31 @@ QVariant TickersListModel::data(const QModelIndex &index, int nRole) const
         else if(index.column()  ==  2){
             return QVariant::fromValue(QString::fromStdString(vTickersLst->at(index.row()).TickerSign()));
         }
+        else if(index.column()  ==  3){
+            const Ticker & t ( vTickersLst->at(index.row()));
+
+            QString qstrN = QString::fromStdString(trim(t.TickerName()));
+            qstrN = qstrN.leftJustified(20, ' ', true);
+
+            return QVariant::fromValue(qstrN+"\t"+getMarketNameByID(t.MarketID())+"}");
+        }
+        else if(index.column()  ==  4){
+            const Ticker & t ( vTickersLst->at(index.row()));
+            return QVariant::fromValue(QString::fromStdString(t.TickerSign())+"\t{"
+                                       +getMarketNameByID(t.MarketID())+"}");
+        }
     }
     return  QVariant();
+}
+////--------------------------------------------------------------------------------------------------------
+QString TickersListModel::getMarketNameByID(const int ID) const
+{
+    for (const Market &m: *vMarketsLst){
+        if (m.MarketID() == ID){
+            return QString::fromStdString( m.MarketSign());
+        }
+    }
+    return "";
 }
 ////--------------------------------------------------------------------------------------------------------
 const Ticker & TickersListModel::getTicker(const QModelIndex &index)

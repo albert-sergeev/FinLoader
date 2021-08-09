@@ -18,10 +18,12 @@
 #include <QFile>
 #include <QTextEdit>
 
+#include <queue>
+#include <utility>
+
 #include "configwindow.h"
 #include "importfinqotesform.h"
 #include "workerloader.h"
-
 #include "bar.h"
 #include "marketslistmodel.h"
 #include "tickerslistmodel.h"
@@ -46,6 +48,14 @@ class MainWindow : public QMainWindow
 
 private:
     // for main window
+    QAction * pacTickersBar;
+    QAction * pacStatusBar;
+    QAction * pacToolBar;
+    QToolBar * tbrToolBar;
+    bool bToolBarOnLoadIsHidden;
+    bool bTickerBarOnLoadIsHidden;
+    bool bStatusBarOnLoadIsHidden;
+    //------------------------------------------------
     QMenu * m_mnuWindows;
     QMenu * m_mnuStyles;
     QMenu * m_mnuLangs;
@@ -56,10 +66,6 @@ private:
     QString m_sStyleName;
     QString m_Language;
     QTranslator m_translator;
-
-    // for docked bar
-    StyledSwitcher * swtShowAll;
-    StyledSwitcher * swtShowMarkets;
 
     // thread manipulation
     BlockFreeQueue<dataFinLoadTask> queueFinQuotesLoad;
@@ -84,8 +90,15 @@ private:
     QString qsDefaultOpenDir;
     char cImportDelimiter;
 
+    // for docked bar
+    StyledSwitcher * swtShowByName;
+    StyledSwitcher * swtShowAll;
+    StyledSwitcher * swtShowMarkets;
+    TickerProxyListModel proxyTickerModel;
+
 
     std::vector<Bulbululator *> vBulbululators;
+    std::queue<std::pair<int,std::time_t>> qActivityQueue;
 
     ///////////////////////////////////
     ThreadPool thrdPoolLoadFinQuotes;
@@ -104,6 +117,7 @@ protected:
     void LoadSettings();
     void LoadDataStorage();
     void SaveDataStorage();
+    void InitDockBar();
 
     bool event(QEvent *event) override;
     void timerEvent(QTimerEvent * event) override;
@@ -142,8 +156,15 @@ protected slots: // for main window
     void BulbululatorRemoveActive   (int TickerID);
     void BulbululatorShowActivity   (int TickerID);
 
+    void slotDocbarShowNyNameChanged(int);
     void slotDocbarShowAllChanged   (int);
-    void slotDocbarShowMarketChanged   (int);
+    void slotDocbarShowMarketChanged(int);
+
+    void slotToolBarStateChanged();
+    void slotStatusBarStateChanged();
+    void slotTickersBarStateChanged();
+
+    void ListBewShowActivity(int TickerID);
 
 
 private:

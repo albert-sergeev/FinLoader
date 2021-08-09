@@ -1,6 +1,7 @@
 #ifndef TICKERLISTMODEL_H
 #define TICKERLISTMODEL_H
 
+#include<QString>
 #include <QAbstractTableModel>
 #include <QSortFilterProxyModel>
 #include "ticker.h"
@@ -11,11 +12,16 @@ class TickersListModel : public QAbstractTableModel
 
 public:
 
-    explicit TickersListModel(std::vector<Ticker> &v, QObject *parent = nullptr):QAbstractTableModel{parent},vTickersLst{&v}{};
+    explicit TickersListModel(std::vector<Ticker> &v,std::vector<Market> &m, QObject *parent = nullptr):
+        QAbstractTableModel{parent},vTickersLst{&v},vMarketsLst{&m}{};
 
 private:
 
     std::vector<Ticker> * vTickersLst; //init in const by ref
+    std::vector<Market> * vMarketsLst; //init in const by ref
+
+private:
+    QString getMarketNameByID(const int i) const ;
 
 public:
 
@@ -52,9 +58,10 @@ class TickerProxyListModel: public QSortFilterProxyModel
 
 private:
     int iDefaultMarket;
+    bool bFilterByActive;
 
 public:
-    TickerProxyListModel (QObject *parent = nullptr): QSortFilterProxyModel(parent),iDefaultMarket(-1){};
+    TickerProxyListModel (QObject *parent = nullptr): QSortFilterProxyModel(parent),iDefaultMarket(-1),bFilterByActive{false}{};
 
     bool lessThan(const QModelIndex & L, const QModelIndex & R)  const override {
 
@@ -100,7 +107,14 @@ public:
     {
         QModelIndex indx= sourceModel()->index(source_row, 0, source_parent);
         if(indx.isValid()){
-            return ((TickersListModel*)this->sourceModel())->getTicker(indx).MarketID() == iDefaultMarket;
+            const Ticker & t  (((TickersListModel*)this->sourceModel())->getTicker(indx));
+            if (iDefaultMarket >=0 && t.MarketID() != iDefaultMarket){
+                return false;
+            }
+            if (bFilterByActive && !t.AutoLoad()){
+                return false;
+            }
+            return true;
         }
         return QSortFilterProxyModel::filterAcceptsRow(source_row, source_parent);
     }
@@ -108,6 +122,13 @@ public:
     void setDefaultMarket(int iMarket){
         if (iMarket != iDefaultMarket){
             iDefaultMarket = iMarket;
+            this->invalidate();
+        }
+    }
+
+    void setFilterByActive(bool bFilter){
+        if (bFilter != bFilterByActive){
+            bFilterByActive = bFilter;
             this->invalidate();
         }
     }
