@@ -58,10 +58,12 @@ private:
     QAction * pacTickersBar;
     QAction * pacStatusBar;
     QAction * pacToolBar;
+    QAction * pacTickersBarButtonsHide;
     QToolBar * tbrToolBar;
     bool bToolBarOnLoadIsHidden;
     bool bTickerBarOnLoadIsHidden;
     bool bStatusBarOnLoadIsHidden;
+    bool bTickerBarButtonsHidden;
     //------------------------------------------------
     std::queue<std::pair<int,std::chrono::time_point<std::chrono::steady_clock>>> qActivityQueue;
     std::map<int,std::pair<bool,std::chrono::time_point<std::chrono::steady_clock>>> mBlinkedState;
@@ -173,6 +175,7 @@ protected slots: // for main window
     void slotToolBarStateChanged();
     void slotStatusBarStateChanged();
     void slotTickersBarStateChanged();
+    void slotTickersBarButtonsStateChanged();
 
     void ListViewShowActivity(int TickerID);
     void ListViewActivityTermination();

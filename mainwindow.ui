@@ -83,7 +83,7 @@
       <number>0</number>
      </property>
      <property name="rightMargin">
-      <number>0</number>
+      <number>2</number>
      </property>
      <property name="bottomMargin">
       <number>2</number>
@@ -92,7 +92,7 @@
       <widget class="QListView" name="lstView"/>
      </item>
      <item>
-      <widget class="QWidget" name="widget" native="true">
+      <widget class="QWidget" name="widgetTickerButtonBar" native="true">
        <layout class="QVBoxLayout" name="verticalLayout">
         <property name="spacing">
          <number>1</number>

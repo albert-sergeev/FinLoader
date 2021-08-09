@@ -167,6 +167,7 @@ void MainWindow::LoadSettings()
             bToolBarOnLoadIsHidden      = m_settings.value("ToolBarIsHidden",false).toBool();
             bTickerBarOnLoadIsHidden    = m_settings.value("TickersBarIsHidden",false).toBool();
             bStatusBarOnLoadIsHidden    = m_settings.value("StatusBarIsHidden",false).toBool();
+            bTickerBarButtonsHidden     = m_settings.value("TickerBarButtonsIsHidden",false).toBool();
 
             swtShowByName->setChecked(m_settings.value("docShowByName",false).toBool());
             swtShowAll->setChecked(m_settings.value("docShowAll",true).toBool());
@@ -203,6 +204,7 @@ void MainWindow::SaveSettings()
             m_settings.setValue("ToolBarIsHidden",tbrToolBar->isHidden());
             m_settings.setValue("TickersBarIsHidden",ui->dkActiveTickers->isHidden());
             m_settings.setValue("StatusBarIsHidden",ui->statusbar->isHidden());
+            m_settings.setValue("TickerBarButtonsIsHidden",ui->widgetTickerButtonBar->isHidden());
 
             m_settings.setValue("StyleName",m_sStyleName);
             m_settings.setValue("docShowByName",swtShowByName->isChecked());
@@ -356,6 +358,12 @@ void MainWindow::InitAction()
     pacTickersBar->setChecked(!bTickerBarOnLoadIsHidden);
     connect(pacTickersBar,SIGNAL(triggered()),SLOT(slotTickersBarStateChanged()));
     //------------------------------------------------
+    pacTickersBarButtonsHide =new QAction(tr("Show tickers bar panel"));
+    pacTickersBarButtonsHide->setText(tr("Show tickers bar panel"));
+    pacTickersBarButtonsHide->setCheckable(true);
+    pacTickersBarButtonsHide->setChecked(!bTickerBarButtonsHidden);
+    connect(pacTickersBarButtonsHide,SIGNAL(triggered()),SLOT(slotTickersBarButtonsStateChanged()));
+    //------------------------------------------------
     pacStatusBar =new QAction(tr("Status bar"));
     pacStatusBar->setText(tr("Status bar"));
     pacStatusBar->setCheckable(true);
@@ -395,6 +403,7 @@ void MainWindow::InitAction()
     pmnuSettings->addAction(pacToolBar);
     pmnuSettings->addAction(pacTickersBar);
     pmnuSettings->addAction(pacStatusBar);
+    pmnuSettings->addAction(pacTickersBarButtonsHide);
     pmnuSettings->addSeparator();
     pmnuSettings->addAction(pacConfig);
     pmnuSettings->addSeparator();
@@ -436,6 +445,8 @@ void MainWindow::InitAction()
     //------------------------------------------------
     if (bStatusBarOnLoadIsHidden)
         ui->statusbar->hide();
+    if (bTickerBarButtonsHidden)
+        ui->widgetTickerButtonBar->hide();
 
 }
 
@@ -894,6 +905,16 @@ void MainWindow::slotTickersBarStateChanged()
     }
     else{
         ui->dkActiveTickers->hide();
+    }
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotTickersBarButtonsStateChanged()
+{
+    if(pacTickersBarButtonsHide && pacTickersBarButtonsHide->isChecked()){
+        ui->widgetTickerButtonBar->show();
+    }
+    else{
+        ui->widgetTickerButtonBar->hide();
     }
 }
 //--------------------------------------------------------------------------------------------------------------------------------
