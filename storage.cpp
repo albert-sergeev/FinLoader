@@ -8,6 +8,8 @@
 #include<ostream>
 #include<chrono>
 
+#include "threadpool.h"
+
 //using namespace std::filesystem;
 
 ////////////////////////////////////////////////////////////////////
@@ -863,7 +865,7 @@ bool Storage::slotParseLine(dataFinQuotesParse & parseDt, std::istringstream & i
 
 //--------------------------------------------------------------------------------------------------------
 
-bool Storage::WriteMemblockToStore(int iTickerID, std::time_t tMonth, char* cBuff,size_t length, std::stringstream & ssOut)
+bool Storage::WriteMemblockToStore(WriteMutexDefender &defLk,int iTickerID, std::time_t tMonth, char* cBuff,size_t length, std::stringstream & ssOut)
 {
     std::shared_lock lk(mutexQuotesStoreInit);
     //
@@ -898,7 +900,8 @@ bool Storage::WriteMemblockToStore(int iTickerID, std::time_t tMonth, char* cBuf
     }
 
     std::shared_lock entryLk(mpStoreMutexes.at(k));
-    std::unique_lock entryWriteLk (mpWriteMutexes.at(k));
+    //std::unique_lock entryWriteLk (mpWriteMutexes.at(k));
+    defLk.Lock(mpWriteMutexes.at(k));
     ////////////////////////////////////////////
     //int iStage = GetStageEntryForTicker(iTickerID, tMonth, ssOut);
     int iStage = mpStoreStages.at(k);
@@ -943,13 +946,16 @@ bool Storage::ReadFromStore(int iTickerID, std::time_t tMonth, std::vector<Bar> 
 
     //ssOut <<"loading: " <<strB<<"\n";
     ////////////////////////////////////////////////
-    std::shared_lock lk(mutexQuotesStoreInit);
+
     tMonth = dateCastToMonth(tMonth);
     std::pair<int,std::time_t> k{iTickerID,tMonth};
+
+    std::shared_lock lk(mutexQuotesStoreInit);
 
     auto It (mpStoreMutexes.find(k));
     if(It != mpStoreMutexes.end()){
         std::shared_lock entryLk(mpStoreMutexes.at(k));
+        std::shared_lock entryWriteLk (mpWriteMutexes.at(k));
 
         int iStage = mpStoreStages.at(k);
         if (iStage <1 || iStage >6){
@@ -1056,6 +1062,11 @@ bool Storage::ReadFromStore(int iTickerID, std::time_t tMonth, std::vector<Bar> 
                         }
                         mvHolder[b.Period()].push_back(b);
                     }
+                }
+                /////////////////////////////////////////////////////////////
+                if(this_thread_flagInterrup.isSet()){
+                    ssOut<<"loading process interrupted\n";
+                    return false;
                 }
             }
             /////////////////////////////////////////////////////////////

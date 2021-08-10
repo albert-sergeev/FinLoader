@@ -272,6 +272,8 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
                 std::string sBuff;
                 std::istringstream iss;
 
+                Storage::WriteMutexDefender def;
+
 
                 bWasSuccessfull = true;
 
@@ -304,7 +306,7 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
                     if (tMonth !=  tCurrentMonth){
                         if (iOutBuffPointer >0){
                             // do write
-                            if(!stStore.WriteMemblockToStore(data.TickerID, tCurrentMonth, cOutBuff,iOutBuffPointer, ssErr)){
+                            if(!stStore.WriteMemblockToStore(def,data.TickerID, tCurrentMonth, cOutBuff,iOutBuffPointer, ssErr)){
                                 dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportEnd,data.GetParentWnd());
                                 dt.SetSuccessfull(false);
                                 ssErr<<"\n\rError writing file.\n";
@@ -325,7 +327,7 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
 //                            iSecChangedPointer = iOutBuffPointer;
 //                            // TODO: lock database file to correct continue
 //                        }
-                        if(!stStore.WriteMemblockToStore(data.TickerID, tMonth, cOutBuff,iOutBuffPointer/*iSecChangedPointer*/, ssErr)){
+                        if(!stStore.WriteMemblockToStore(def,data.TickerID, tMonth, cOutBuff,iOutBuffPointer/*iSecChangedPointer*/, ssErr)){
                             dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportEnd,data.GetParentWnd());
                             dt.SetSuccessfull(false);
                             ssErr<<"\n\rError writing file.\n";
@@ -392,7 +394,7 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
                 if (bWasSuccessfull && iOutBuffPointer>0){
                     ////////////////////////
                     /// write tail
-                    if(!stStore.WriteMemblockToStore(data.TickerID, tMonth, cOutBuff,iOutBuffPointer, ssErr)){
+                    if(!stStore.WriteMemblockToStore(def,data.TickerID, tMonth, cOutBuff,iOutBuffPointer, ssErr)){
                         dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportEnd,data.GetParentWnd());
                         dt.SetSuccessfull(false);
                         ssErr<<"\n\rError writing file.\n";
