@@ -22,6 +22,14 @@ private:
                        BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
                        Storage &stStore,dataFinLoadTask & data);
 
+    static void workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & queueTasks,
+                                    BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
+                                    Storage & stStore,
+                                    dataFinLoadTask & data);
+
+
+    static int createCleanUpHeader(std::time_t tMonth, char* cBuff,std::time_t tBegin, std::time_t tEnd);
+
     static void workerEtalon(BlockFreeQueue<dataFinLoadTask> & queueFinQuotesLoad,
                        BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers);
 

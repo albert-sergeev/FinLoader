@@ -7,7 +7,7 @@ class dataBuckgroundThreadAnswer
 {
 
 public:
-    enum eAnswerType:int {nop,famLoadBegin,famLoadEnd,famLoadCurrent,LoadActivity,TextInfoMessage};
+    enum eAnswerType:int {nop,famImportBegin,famImportEnd,famImportCurrent,LoadActivity,TextInfoMessage,storagLoadGraphBegin,storagLoadGraphEnd, logText};
 
     //-------------------------------------------------------------------------------
     inline eAnswerType  AnswerType() const          {return iAnswerType;};

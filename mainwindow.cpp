@@ -114,14 +114,14 @@ void MainWindow::timerEvent(QTimerEvent * event)
         }
         ////////////////
         switch(data.AnswerType()){
-        case dataBuckgroundThreadAnswer::eAnswerType::famLoadCurrent:
+        case dataBuckgroundThreadAnswer::eAnswerType::famImportCurrent:
             if(wnd) wnd->SetProgressBarValue(data.Percent());
             break;
-        case dataBuckgroundThreadAnswer::eAnswerType::famLoadBegin:
+        case dataBuckgroundThreadAnswer::eAnswerType::famImportBegin:
             if(wnd) wnd->slotLoadingHasBegun();
             BulbululatorAddActive(data.TickerID());
             break;
-        case dataBuckgroundThreadAnswer::eAnswerType::famLoadEnd:
+        case dataBuckgroundThreadAnswer::eAnswerType::famImportEnd:
             if(wnd) wnd->slotLoadingHasFinished(data.Successfull(),QString::fromStdString(data.GetErrString()));
             BulbululatorRemoveActive(data.TickerID());
             break;
@@ -131,6 +131,28 @@ void MainWindow::timerEvent(QTimerEvent * event)
         case dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage:
             if(wnd) wnd->slotTextInfo(QString::fromStdString(data.GetTextInfo()));
             break;
+
+        case dataBuckgroundThreadAnswer::eAnswerType::storagLoadGraphBegin:
+            {
+                std::stringstream ss;
+                ss << "Load from storage begins [" << data.TickerID()<<"]";
+                SendToLog(QString::fromStdString(ss.str()));
+            }
+            break;
+        case dataBuckgroundThreadAnswer::eAnswerType::storagLoadGraphEnd:
+            {
+                std::stringstream ss;
+                ss << "Load from storage ends [" << data.TickerID()<<"] success: ["<<data.Successfull()<<"]";
+                if(!data.Successfull()){
+                    ss <<data.GetErrString();
+                }
+                SendToLog(QString::fromStdString(ss.str()));
+            }
+            break;
+        case dataBuckgroundThreadAnswer::eAnswerType::logText:
+            SendToLog(QString::fromStdString(trim(data.GetTextInfo())));
+            break;
+            //,,
         default:
             break;
         }
@@ -949,7 +971,6 @@ void MainWindow::ListViewShowActivity(int TickerID){
     }
 }
 //--------------------------------------------------------------------------------------------------------------------------------
-
 void MainWindow::ListViewActivityTermination()
 {
     if (!qActivityQueue.empty()){
@@ -963,7 +984,6 @@ void MainWindow::ListViewActivityTermination()
             qActivityQueue.pop();
         }
     }
-
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::slotSetSelectedTicker(const  QModelIndex& indx)
@@ -994,6 +1014,9 @@ void MainWindow::slotSetSelectedTicker(const  int iTickerID)
 
         ui->mdiArea->addSubWindow(pdoc);
 
+        connect(pdoc,SIGNAL(NeedLoadGraph(const  int,const std::time_t,const std::time_t)),
+                  this,SLOT(slotLoadGraph(const  int,const std::time_t,const std::time_t)));
+
         pdoc->show();
     }
     else{
@@ -1001,3 +1024,20 @@ void MainWindow::slotSetSelectedTicker(const  int iTickerID)
     }
 }
 //--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotLoadGraph(const  int iTickerID, const std::time_t tBegin, const std::time_t tEnd)
+{
+    dataFinLoadTask dataTask;
+    dataTask.taskType       = dataFinLoadTask::TaskType::finQuotesLoadFromStorage;
+    dataTask.TickerID       = iTickerID;
+    dataTask.dtBegin        = tBegin;
+    dataTask.dtEnd          = tEnd;
+    //dtTask.SetStore(&stStore);
+
+
+    queueFinQuotesLoad.Push(dataFinLoadTask(dataTask));
+
+    thrdPoolLoadFinQuotes.AddTask([&](){
+        workerLoader::workerDataBaseWork(queueFinQuotesLoad,queueTrdAnswers,stStore);
+        });
+}
+

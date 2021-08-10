@@ -365,7 +365,7 @@ void ImportFinQuotesForm::slotPreparseImportFile()
                 {
                     std::time_t tS (bb.Period());
                     std::tm* tmSt=localtime(&tS);
-                    const QDate dtS(tmSt->tm_year,tmSt->tm_mon,tmSt->tm_mday);
+                    const QDate dtS(tmSt->tm_year+1900,tmSt->tm_mon+1,tmSt->tm_mday);
                     const QTime tmS(tmSt->tm_hour,tmSt->tm_min,tmSt->tm_sec);
                     QDateTime dt (dtS,tmS);
                     qdtMin = dt;
@@ -413,7 +413,7 @@ void ImportFinQuotesForm::slotPreparseImportFile()
                 {
                     std::time_t tS (bb.Period());
                     std::tm* tmSt=localtime(&tS);
-                    const QDate dtS(tmSt->tm_year,tmSt->tm_mon,tmSt->tm_mday);
+                    const QDate dtS(tmSt->tm_year+1900,tmSt->tm_mon+1,tmSt->tm_mday);
                     const QTime tmS(tmSt->tm_hour,tmSt->tm_min,tmSt->tm_sec);
                     QDateTime dt (dtS,tmS);
                     qdtMax = dt;

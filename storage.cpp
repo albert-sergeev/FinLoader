@@ -351,6 +351,33 @@ std::time_t Storage::dateCastToMonth(std::time_t t)
     return std::mktime(&tmNew);
 }
 //--------------------------------------------------------------------------------------------------------
+////
+/// \brief Work only with dateCastToMonth() type date. It cuts everything else.
+/// \param t
+/// \return
+///
+std::time_t Storage::dateAddMonth(std::time_t t)
+{
+
+    std::tm* tmT = std::localtime(&t);
+    std::tm tmNew;
+
+    tmNew.tm_year   = tmT->tm_year;
+    tmNew.tm_mon    = tmT->tm_mon;
+    tmNew.tm_mday   = 1;
+    tmNew.tm_hour   = 0;
+    tmNew.tm_min    = 0;
+    tmNew.tm_sec    = 0;
+    tmNew.tm_isdst   = tmT->tm_isdst;
+
+    tmNew.tm_mon++;
+    if (tmNew.tm_mon > 11){
+        tmNew.tm_mon = 0;
+        tmNew.tm_year++;
+    }
+    return std::mktime(&tmNew);
+}
+//--------------------------------------------------------------------------------------------------------
 bool Storage::InitializeTicker(int iTickerID,std::stringstream & ssOut, bool bCheckOnly)
 {
     std::shared_lock lk(mutexQuotesStoreInit);
@@ -764,8 +791,8 @@ bool Storage::slotParseLine(dataFinQuotesParse & parseDt, std::istringstream & i
                     copy(parseDt.t_sWordBuff.begin()    ,parseDt.t_sWordBuff.begin() + 4,parseDt.t_sYear.begin());
                     copy(parseDt.t_sWordBuff.begin() + 4,parseDt.t_sWordBuff.begin() + 6,parseDt.t_sMonth.begin());
                     copy(parseDt.t_sWordBuff.begin() + 6,parseDt.t_sWordBuff.begin() + 8,parseDt.t_sDay.begin());
-                    parseDt.t_tp.tm_year = std::stoi(parseDt.t_sYear);
-                    parseDt.t_tp.tm_mon = std::stoi(parseDt.t_sMonth);
+                    parseDt.t_tp.tm_year = std::stoi(parseDt.t_sYear) - 1900;
+                    parseDt.t_tp.tm_mon = std::stoi(parseDt.t_sMonth) - 1;
                     parseDt.t_tp.tm_mday = std::stoi(parseDt.t_sDay);
                 }
                 else{
@@ -841,6 +868,17 @@ bool Storage::WriteMemblockToStore(int iTickerID, std::time_t tMonth, char* cBuf
     std::shared_lock lk(mutexQuotesStoreInit);
     //
     tMonth = dateCastToMonth(tMonth);
+
+//    char buffer[100];
+//    std::tm * ptm = std::localtime(&tMonth);
+//    std::strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", ptm);
+//    std::string strB(buffer);
+//    {
+//        ThreadFreeCout pcout;
+//        pcout <<"\n\r";
+//        pcout <<"writing: " <<strB<<"\n";
+//    }
+
     std::pair<int,std::time_t> k{iTickerID,tMonth};
     auto It (mpStoreMutexes.find(k));
     if(It == mpStoreMutexes.end()){
@@ -891,5 +929,168 @@ bool Storage::WriteMemblockToStore(int iTickerID, std::time_t tMonth, char* cBuf
     ////////////////////////////////////////////
     return true;
 
+}
+
+//--------------------------------------------------------------------------------------------------------
+bool Storage::ReadFromStore(int iTickerID, std::time_t tMonth, std::vector<Bar> & vBarList,
+                   std::time_t dtLoadBegin, std::time_t dtLoadEnd,
+                   std::stringstream & ssOut)
+{
+    char buffer[100];
+    std::tm * ptm = std::localtime(&tMonth);
+    std::strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", ptm);
+    std::string strM(buffer);
+
+    //ssOut <<"loading: " <<strB<<"\n";
+    ////////////////////////////////////////////////
+    std::shared_lock lk(mutexQuotesStoreInit);
+    tMonth = dateCastToMonth(tMonth);
+    std::pair<int,std::time_t> k{iTickerID,tMonth};
+
+    auto It (mpStoreMutexes.find(k));
+    if(It != mpStoreMutexes.end()){
+        std::shared_lock entryLk(mpStoreMutexes.at(k));
+
+        int iStage = mpStoreStages.at(k);
+        if (iStage <1 || iStage >6){
+            ssOut <<"\n\rCannot get state for data storage file for TickerID: "<<iTickerID;
+            return false;
+        }
+        ///
+        std::tm * tmT = std::localtime(&tMonth);
+
+
+        std::stringstream ss;
+        ss <<iTickerID<<"_";
+        ss <<std::setfill('0');
+        ss <<std::right<< std::setw(4)<<tmT->tm_year+1900;
+        ss <<std::right<< std::setw(2)<<(tmT->tm_mon+1);
+        ss <<"_"<<vStorageW[iStage-1];
+        std::string strNamePart(ss.str());
+
+        ss.str("");
+        ss.clear();
+        ss << pathStorageDir.c_str();
+        ss <<"/"<<iTickerID<<"/";
+        ss <<strNamePart;
+
+        std::string sFileName(ss.str());
+        ////
+
+        std::ifstream fileR (sFileName,std::ios_base::in | std::ios_base::binary);
+        if(fileR){
+
+            fileR.seekg(0,std::ios::end);
+            size_t filesize = fileR.tellg();
+            fileR.seekg(0, std::ios::beg);
+
+            Bar b(0,0,0,0,0,0);
+            BarMemcopier bM(b);
+            const int iBlockSize (  sizeof (Storage::data_type)
+                            + sizeof (b.Open())
+                            + sizeof (b.High())
+                            + sizeof (b.Low())
+                            + sizeof (b.Close())
+                            + sizeof (b.Volume())
+                            + sizeof (b.Period())
+                            );
+            char cBuffer[iBlockSize];
+            int iInBuffPointer{0};
+            int iState{0};
+
+            const size_t iRecordsMax {filesize/iBlockSize};
+
+
+
+            std::map<std::time_t,std::vector<Bar>> mvHolder;
+
+            ssOut<<"Storage contains "<<iRecordsMax<<" records.\n";
+
+
+            std::time_t tmStartDel;
+            std::time_t tmEndDel;
+            bool bWasRawDelete{false};
+
+
+            while(fileR.read(cBuffer,iBlockSize)){
+
+                iInBuffPointer = 0;
+
+                memcpy(&iState,     cBuffer + iInBuffPointer, sizeof (Storage::data_type));   iInBuffPointer += sizeof (Storage::data_type);
+                memcpy(&bM.Open(),  cBuffer + iInBuffPointer, sizeof (bM.Open()));            iInBuffPointer += sizeof (bM.Open());
+                memcpy(&bM.High(),  cBuffer + iInBuffPointer, sizeof (bM.High()));            iInBuffPointer += sizeof (bM.High());
+                memcpy(&bM.Low(),   cBuffer + iInBuffPointer, sizeof (bM.Low()));             iInBuffPointer += sizeof (bM.Low());
+                memcpy(&bM.Close(), cBuffer + iInBuffPointer, sizeof (bM.Close()));           iInBuffPointer += sizeof (bM.Close());
+                memcpy(&bM.Volume(),cBuffer + iInBuffPointer, sizeof (bM.Volume()));          iInBuffPointer += sizeof (bM.Volume());
+                memcpy(&bM.Period(),cBuffer + iInBuffPointer, sizeof (bM.Period()));          iInBuffPointer += sizeof (bM.Period());
+                ///////////////
+                if (iState == Storage::data_type::del_from){
+                    if (bWasRawDelete){
+                        ssOut<<"Broken delete sequence in storage file: "<<sFileName;
+                        return false;
+                    }
+                    tmStartDel = b.Period();
+                    bWasRawDelete = true;
+                }
+                else if (iState == Storage::data_type::del_to){
+                    tmEndDel = b.Period();
+
+                    for(auto & e:mvHolder){
+                        if (e.first >= tmStartDel && e.first <= tmEndDel)
+                            e.second.clear();
+                    }
+                    bWasRawDelete = false;
+                }
+                else{
+                    if (bWasRawDelete){
+                        ssOut<<"Broken delete sequence in storage file: "<<sFileName;
+                        return false;
+                    }
+                }
+                if (b.Period() >= dtLoadBegin && b.Period() <= dtLoadEnd){
+
+                    if (iState == Storage::data_type::usual || iState == Storage::data_type::new_sec){
+                        if (iState == Storage::data_type::new_sec){
+                            mvHolder[b.Period()].clear();
+
+                        }
+                        mvHolder[b.Period()].push_back(b);
+                    }
+                }
+            }
+            /////////////////////////////////////////////////////////////
+            /////////////////////////////////////////////////////////////
+            vBarList.reserve(filesize/iBlockSize);
+            for(auto e:mvHolder){
+                std::copy(e.second.begin(),e.second.end(),std::back_inserter(vBarList));
+            }
+            /////////////////////////////////////////////////////////////
+
+
+
+            ssOut<<"active records: <"<<vBarList.size()<<">\n";
+            vBarList.shrink_to_fit();
+            ssOut<<"active records: <"<<vBarList.size()<<">\n";
+
+
+
+            ssOut<<"Read from file: "<<strNamePart<<"\n";;
+            return true;
+        }
+        else{
+            if (fileR.rdstate() == std::ios_base::goodbit) { ssOut << "stream state is goodbit\n";}
+            if (fileR.rdstate() == std::ios_base::badbit) { ssOut << "stream state is badbit\n";}
+            if (fileR.rdstate() == std::ios_base::failbit) { ssOut << "stream state is failbit\n";}
+            if (fileR.rdstate() == std::ios_base::eofbit) { ssOut << "stream state is eofbit\n";}
+
+            ssOut<<"Broken storage file: "<<sFileName;
+            return false;
+        }
+    }
+    else{
+        //ssOut <<"no data files for: " <<strM<<"\n";;
+        return true;
+    }
+    return true;
 }
 //--------------------------------------------------------------------------------------------------------

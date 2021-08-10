@@ -7,6 +7,7 @@
 
 #include "ticker.h"
 #include "bar.h"
+#include "graph.h"
 #include "threadfreecout.h"
 #include "datafinquotesparse.h"
 
@@ -102,10 +103,16 @@ public:
     int CreateAndGetFileStageForTicker(int iTickerID, std::time_t tMonth, std::stringstream & ssOut);
     bool WriteBarToStore(int iTickerID, Bar &b, std::stringstream & ssOut);
     bool WriteMemblockToStore(int iTickerID, std::time_t tMonth, char* cBuff,size_t length, std::stringstream & ssOut);
+    //std::time_t dtDayWindowBegin, std::time_t dtDayWindowEnd,
+
+    bool ReadFromStore(int iTickerID, std::time_t tMonth, std::vector<Bar> & vBarList,
+                       std::time_t dtLoadBegin, std::time_t dtLoadEnd,
+                       std::stringstream & ssOut);
 
     static bool slotParseLine(dataFinQuotesParse & parseDt, std::istringstream & issLine, Bar &b);
 
     static std::time_t dateCastToMonth(std::time_t);
+    static std::time_t dateAddMonth(std::time_t);
 
 private:
     //--------------------------------------------------------------------------------------------------------

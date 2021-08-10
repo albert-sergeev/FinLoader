@@ -2,12 +2,12 @@
 #include "threadfreecout.h"
 #include "threadpool.h"
 
-
-
 #include<sstream>
 #include<fstream>
 #include<ostream>
 #include<chrono>
+
+#include "graph.h"
 
 using namespace std::chrono_literals;
 using seconds=std::chrono::duration<double>;
@@ -15,12 +15,12 @@ using milliseconds=std::chrono::duration<double,
     std::ratio_multiply<seconds::period,std::milli>
     >;
 
-
+//------------------------------------------------------------------------------------------------------------------------------------------
 workerLoader::workerLoader()
 {
 
 }
-
+//------------------------------------------------------------------------------------------------------------------------------------------
 void workerLoader::workerEtalon(BlockFreeQueue<dataFinLoadTask> & queueFilLoad,
                                BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers)
 {
@@ -34,7 +34,7 @@ void workerLoader::workerEtalon(BlockFreeQueue<dataFinLoadTask> & queueFilLoad,
 
         dataFinLoadTask data(*pdata.get());
 
-        queueTrdAnswers.Push({data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famLoadBegin,data.GetParentWnd()});
+        queueTrdAnswers.Push({data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportBegin,data.GetParentWnd()});
 
         ////////////////////////////////////////////////////////////
         dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage,data.GetParentWnd());
@@ -61,7 +61,7 @@ void workerLoader::workerEtalon(BlockFreeQueue<dataFinLoadTask> & queueFilLoad,
             if(this_thread_flagInterrup.isSet())
             {
                 //fout<<"exit on interrupt\n";
-                dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famLoadEnd,data.GetParentWnd());
+                dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportEnd,data.GetParentWnd());
                 dt.SetSuccessfull(false);
                 dt.SetErrString("loading process interrupted");
                 queueTrdAnswers.Push(dt);
@@ -71,7 +71,7 @@ void workerLoader::workerEtalon(BlockFreeQueue<dataFinLoadTask> & queueFilLoad,
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             //// work area
             if (i %10 == 0){
-                dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famLoadCurrent,data.GetParentWnd());
+                dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportCurrent,data.GetParentWnd());
                 dt.SetPercent(i/10);
                 queueTrdAnswers.Push(dt);
             }
@@ -82,7 +82,7 @@ void workerLoader::workerEtalon(BlockFreeQueue<dataFinLoadTask> & queueFilLoad,
 
         }
         if (!bWasBreaked){
-            dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famLoadEnd,data.GetParentWnd());
+            dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportEnd,data.GetParentWnd());
             dt.SetSuccessfull(true);
             queueTrdAnswers.Push(dt);
             pdata = queueFilLoad.Pop(bSuccess);
@@ -95,6 +95,7 @@ void workerLoader::workerEtalon(BlockFreeQueue<dataFinLoadTask> & queueFilLoad,
     //fout<<"workerLoaderFinam out\n";
 }
 
+//------------------------------------------------------------------------------------------------------------------------------------------
 /////////////////////////////////////////////////////////////////////////////////////////////////
 /// \brief Main thread - dispatcher for database work
 /// \param queueFilLoad
@@ -119,10 +120,7 @@ void workerLoader::workerDataBaseWork(BlockFreeQueue<dataFinLoadTask> & queueTas
             workerFinQuotesLoad(queueTasks,queueTrdAnswers,stStore,data);
             break;
         case dataFinLoadTask::TaskType::finQuotesLoadFromStorage:
-            {
-            ThreadFreeCout pcout;
-            pcout << "load from base task for TickerID: " << data.TickerID<<"\n";
-            }
+            workerLoadFromStorage(queueTasks,queueTrdAnswers,stStore,data);
             break;
         case dataFinLoadTask::TaskType::storageOptimisation:
             {
@@ -147,7 +145,7 @@ void workerLoader::workerDataBaseWork(BlockFreeQueue<dataFinLoadTask> & queueTas
     }
 }
 
-
+//------------------------------------------------------------------------------------------------------------------------------------------
 /////////////////////////////////////////////////////////////////////////////////////////////////
 /// \brief Thread task for upload fin quotes data from file
 /// \param queueFilLoad
@@ -162,7 +160,7 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
 {
 
     {
-        dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famLoadBegin,data.GetParentWnd());
+        dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportBegin,data.GetParentWnd());
         queueTrdAnswers.Push(dt);
     }
 
@@ -193,7 +191,7 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
     ////////////////////////////////////////////////////////////
     std::stringstream ssErr;
     if (!stStore.InitializeTicker(data.TickerID,ssErr)){
-        dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famLoadEnd,data.GetParentWnd());
+        dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportEnd,data.GetParentWnd());
         dt.SetSuccessfull(false);
         ssErr<<"\ncannot initialize stock quotes storage for ticker";
         dt.SetErrString(ssErr.str());
@@ -287,7 +285,7 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
                     iss.str(sBuff);
                     ////////////
                     if (!Storage::slotParseLine(parseDt, iss, bb)){
-                        dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famLoadEnd,data.GetParentWnd());
+                        dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportEnd,data.GetParentWnd());
                         dt.SetSuccessfull(false);
                         ssErr<<iss.str();
                         ssErr<<ossErr.str();
@@ -306,8 +304,8 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
                     if (tMonth !=  tCurrentMonth){
                         if (iOutBuffPointer >0){
                             // do write
-                            if(!stStore.WriteMemblockToStore(data.TickerID, tMonth, cOutBuff,iOutBuffPointer, ssErr)){
-                                dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famLoadEnd,data.GetParentWnd());
+                            if(!stStore.WriteMemblockToStore(data.TickerID, tCurrentMonth, cOutBuff,iOutBuffPointer, ssErr)){
+                                dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportEnd,data.GetParentWnd());
                                 dt.SetSuccessfull(false);
                                 ssErr<<"\n\rError writing file.\n";
                                 dt.SetErrString(ssErr.str());
@@ -317,7 +315,7 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
                             }
                         }
                         tCurrentMonth   = tMonth;
-                        iOutBuffPointer = 0;
+                        iOutBuffPointer = createCleanUpHeader(tCurrentMonth, cOutBuff,data.dtBegin, data.dtEnd);
                         //iSecChangedPointer = 0;
                     }
                     else if( iOutBuffPointer + iBlockSize*4 > iOutBuffMax){ // do write to iSecChangedPointer
@@ -328,7 +326,7 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
 //                            // TODO: lock database file to correct continue
 //                        }
                         if(!stStore.WriteMemblockToStore(data.TickerID, tMonth, cOutBuff,iOutBuffPointer/*iSecChangedPointer*/, ssErr)){
-                            dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famLoadEnd,data.GetParentWnd());
+                            dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportEnd,data.GetParentWnd());
                             dt.SetSuccessfull(false);
                             ssErr<<"\n\rError writing file.\n";
                             dt.SetErrString(ssErr.str());
@@ -366,7 +364,7 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
                     currsize = file.tellg();
                     iCurrProgress = int(100*(currsize/(double)filesize));
                     if(iProgressSent < iCurrProgress){
-                        dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famLoadCurrent,data.GetParentWnd());
+                        dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportCurrent,data.GetParentWnd());
                         dt.SetPercent(iCurrProgress);
                         queueTrdAnswers.Push(dt);
                     }
@@ -382,7 +380,7 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
                     ///
                     if(this_thread_flagInterrup.isSet()){
                         //fout<<"exit on interrupt\n";
-                        dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famLoadEnd,data.GetParentWnd());
+                        dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportEnd,data.GetParentWnd());
                         dt.SetSuccessfull(false);
                         dt.SetErrString("loading process interrupted");
                         queueTrdAnswers.Push(dt);
@@ -395,7 +393,7 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
                     ////////////////////////
                     /// write tail
                     if(!stStore.WriteMemblockToStore(data.TickerID, tMonth, cOutBuff,iOutBuffPointer, ssErr)){
-                        dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famLoadEnd,data.GetParentWnd());
+                        dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportEnd,data.GetParentWnd());
                         dt.SetSuccessfull(false);
                         ssErr<<"\n\rError writing file.\n";
                         dt.SetErrString(ssErr.str());
@@ -408,7 +406,7 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
         }
         /////
         if (!bFileOpened){
-            dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famLoadEnd,data.GetParentWnd());
+            dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportEnd,data.GetParentWnd());
             dt.SetSuccessfull(false);
             ssErr<<"\n\rcannot open file :"<<data.pathFileName<<"\n";
             dt.SetErrString(ssErr.str());
@@ -422,14 +420,13 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
             seconds tCount = dtStop - dtStart;
             {
                 std::stringstream ss;
-                //ss << "Load time: "<<tCount.count()<<" milliseconds\n";
-                ss << "Load time: "<<tCount.count()<<" seconds\n";
+                ss << "Import time: "<<tCount.count()<<" seconds\n";
                 dataBuckgroundThreadAnswer dt (data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage,data.GetParentWnd());
                 dt.SetTextInfo(ss.str());
                 queueTrdAnswers.Push(dt);
             }
 
-            dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famLoadEnd,data.GetParentWnd());
+            dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportEnd,data.GetParentWnd());
             dt.SetSuccessfull(true);
             queueTrdAnswers.Push(dt);
 
@@ -442,6 +439,147 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
     }
 
 }
+//------------------------------------------------------------------------------------------------------------------------------------------
+int workerLoader::createCleanUpHeader(std::time_t tMonth, char* cBuff,std::time_t tBegin, std::time_t tEnd)
+{
+    if (tBegin > tEnd) return 0;
+    if (tBegin < tMonth){
+        tBegin = tMonth;
+    }
+    if (tEnd >= Storage::dateAddMonth(tMonth)){
+        tEnd = Storage::dateAddMonth(tMonth)-1;
+    }
 
+
+    Bar bb(0,0,0,0,0,0);
+    BarMemcopier bM(bb);
+
+
+    int iBuffPointer{0};
+    Storage::data_type iState;
+    iState = Storage::data_type::del_from;
+
+    bb.setPeriod(tBegin);
+
+    memcpy(cBuff + iBuffPointer,&iState,   sizeof (Storage::data_type));      iBuffPointer += sizeof (Storage::data_type);
+    memcpy(cBuff + iBuffPointer,&bM.Open(),   sizeof (bM.Open()));            iBuffPointer += sizeof (bM.Open());
+    memcpy(cBuff + iBuffPointer,&bM.High(),   sizeof (bM.High()));            iBuffPointer += sizeof (bM.High());
+    memcpy(cBuff + iBuffPointer,&bM.Low(),    sizeof (bM.Low()));             iBuffPointer += sizeof (bM.Low());
+    memcpy(cBuff + iBuffPointer,&bM.Close(),  sizeof (bM.Close()));           iBuffPointer += sizeof (bM.Close());
+    memcpy(cBuff + iBuffPointer,&bM.Volume(), sizeof (bM.Volume()));          iBuffPointer += sizeof (bM.Volume());
+    memcpy(cBuff + iBuffPointer,&bM.Period(), sizeof (bM.Period()));          iBuffPointer += sizeof (bM.Period());
+
+    iState = Storage::data_type::del_to;
+    bb.setPeriod(tEnd);
+
+    memcpy(cBuff + iBuffPointer,&iState,   sizeof (Storage::data_type));      iBuffPointer += sizeof (Storage::data_type);
+    memcpy(cBuff + iBuffPointer,&bM.Open(),   sizeof (bM.Open()));            iBuffPointer += sizeof (bM.Open());
+    memcpy(cBuff + iBuffPointer,&bM.High(),   sizeof (bM.High()));            iBuffPointer += sizeof (bM.High());
+    memcpy(cBuff + iBuffPointer,&bM.Low(),    sizeof (bM.Low()));             iBuffPointer += sizeof (bM.Low());
+    memcpy(cBuff + iBuffPointer,&bM.Close(),  sizeof (bM.Close()));           iBuffPointer += sizeof (bM.Close());
+    memcpy(cBuff + iBuffPointer,&bM.Volume(), sizeof (bM.Volume()));          iBuffPointer += sizeof (bM.Volume());
+    memcpy(cBuff + iBuffPointer,&bM.Period(), sizeof (bM.Period()));          iBuffPointer += sizeof (bM.Period());
+
+
+
+    return iBuffPointer;
+}
+//------------------------------------------------------------------------------------------------------------------------------------------
+void workerLoader::workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & /*queueTasks*/,
+                                BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
+                                Storage & stStore,
+                                dataFinLoadTask & data)
+
+{
+//                {
+//                ThreadFreeCout pcout;
+//                pcout << "load from base task for TickerID: " << data.TickerID<<"\n";
+//                }
+    {
+        dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::storagLoadGraphBegin,data.GetParentWnd());
+        queueTrdAnswers.Push(dt);
+    }
+    //
+    std::chrono::time_point dtStart(std::chrono::steady_clock::now());
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    bool bSuccessfull{true};
+
+    std::stringstream ssErr;
+    if (!stStore.InitializeTicker(data.TickerID,ssErr)){
+        dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportEnd,data.GetParentWnd());
+        dt.SetSuccessfull(false);
+        ssErr<<"\ncannot initialize stock quotes storage for ticker";
+        dt.SetErrString(ssErr.str());
+        queueTrdAnswers.Push(dt);
+    }
+    else{
+
+        std::vector<std::time_t> vMonthToLoad;
+
+        std::time_t dtMonthBegin = Storage::dateCastToMonth(data.dtBegin);
+        std::time_t dtMonthEnd   = Storage::dateAddMonth(data.dtEnd);
+
+        while (dtMonthBegin < dtMonthEnd) {
+            vMonthToLoad.push_back(dtMonthBegin);
+            dtMonthBegin = Storage::dateAddMonth(dtMonthBegin);
+        }
+        //
+        Graph gr(Bar::eInterval::pTick);
+        std::stringstream ssOut;
+
+        std::vector<std::vector<Bar>> vvBars;
+
+        for (const std::time_t &t:vMonthToLoad){
+            ssOut.str("");
+            ssOut.clear();
+            //
+            vvBars.push_back({});
+            if (!stStore.ReadFromStore(data.TickerID, t, vvBars.back(), data.dtBegin,data.dtEnd,ssOut)){
+                bSuccessfull = false;
+                dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::storagLoadGraphEnd,data.GetParentWnd());
+                dt.SetSuccessfull(false);
+                ssOut<<"\n\rError reading file.\n";
+                dt.SetErrString(ssOut.str());
+                queueTrdAnswers.Push(dt);
+                break;
+            }
+            else{
+                if (ssOut.str().size()>0){
+                    dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::logText,data.GetParentWnd());
+                    dt.SetTextInfo(ssOut.str());
+                    queueTrdAnswers.Push(dt);
+                }
+            }
+            if(this_thread_flagInterrup.isSet()){
+                //fout<<"exit on interrupt\n";
+                dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::storagLoadGraphEnd,data.GetParentWnd());
+                dt.SetSuccessfull(false);
+                dt.SetErrString("loading process interrupted");
+                queueTrdAnswers.Push(dt);
+                bSuccessfull = false;
+                break;
+            }
+        }
+    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    if (bSuccessfull){
+        std::chrono::time_point dtStop(std::chrono::steady_clock::now());
+        //milliseconds tCount = dtStop - dtStart;
+        seconds tCount = dtStop - dtStart;
+        {
+            std::stringstream ss;
+            ss << "Import time: "<<tCount.count()<<" seconds\n";
+            dataBuckgroundThreadAnswer dt (data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::logText,data.GetParentWnd());
+            dt.SetTextInfo(ss.str());
+            queueTrdAnswers.Push(dt);
+        }
+        //
+        dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::storagLoadGraphEnd,data.GetParentWnd());
+        dt.SetSuccessfull(true);
+        queueTrdAnswers.Push(dt);
+    }
+
+}
+//------------------------------------------------------------------------------------------------------------------------------------------
 ////////////////////////////////////////////////////////////////////////
 //  9. добавить очередь задач на оптимизацию данных

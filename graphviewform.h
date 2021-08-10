@@ -23,6 +23,12 @@ public:
 
     inline int TickerID() const {return iTickerID;};
 
+signals:
+    void NeedLoadGraph(const  int iTickerID, const std::time_t tBegin, const std::time_t tEnd);
+
+protected slots:
+    void slotLoadGraphButton();
+
 private:
     Ui::GraphViewForm *ui;
 };

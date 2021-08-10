@@ -31,11 +31,21 @@ public:
 
 public:
     //--------------------------------------------------------------------------------------------------------
-    Graph();
+    Graph() = delete;
+    Graph(Graph&) = delete;
+    Graph& operator=(Graph&) = delete;
     //--------------------------------------------------------------------------------------------------------
-    void Add (Bar &b);
+    explicit Graph(Bar::eInterval Interval);
+    //--------------------------------------------------------------------------------------------------------
+    void Add (Bar &b, bool bReplaceIfExists = true);
+    void AddTick (Bar &b, bool bNewSec);
     void Add (std::list<Bar> &lst);
     //--------------------------------------------------------------------------------------------------------
+    static void RemoveFromVector(std::vector<Bar> & vDst, std::time_t tStart, std::time_t tStop);
+    static void InsertIntoVector(std::vector<Bar> & vDst, std::vector<Bar> & vSrc/*, std::time_t tStart*/);
+    //--------------------------------------------------------------------------------------------------------
+private:
+    static size_t GetMoreThenIndex(std::vector<Bar> & v, std::time_t tT);
 };
 
 #endif // GRAPH_H

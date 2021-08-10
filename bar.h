@@ -43,11 +43,11 @@ public:
 
 public:
     //--------------------------------------------------------------------------------------------------------
-    enum eInterval:int {pTick=0,p1=1,p5=5,p10=10,p15=15,p30=30,p60=60,p120=120,p180=180, pDay=1440, pWeek=10080, pMonth=302400};
+    enum eInterval:int {pTick=(0),p1=1,p5=5,p10=10,p15=15,p30=30,p60=60,p120=120,p180=180, pDay=1440, pWeek=10080, pMonth=302400};
     //--------------------------------------------------------------------------------------------------------
 
     //--------------------------------------------------------------------------------------------------------
-    Bar() = delete ;
+    Bar():iInterval{eInterval::pTick}{};
     //--------------------------------------------------------------------------------------------------------
     Bar (double Open, double High,double Low,double Close,unsigned long Value, std::time_t Period, int Interval = eInterval::pTick):
         dOpen{Open},dHigh{High},dLow{Low},dClose{Close},iVolume{Value},tmPeriod{Period}
@@ -58,7 +58,7 @@ public:
 
     };
     //--------------------------------------------------------------------------------------------------------
-    Bar (Bar &b):
+    Bar (const Bar &b):
         dOpen{b.dOpen},dHigh{b.dHigh},dLow{b.dLow},dClose{b.dClose},iVolume{b.iVolume}, tmPeriod{b.tmPeriod}, iInterval{b.iInterval}
     {
     };
@@ -70,7 +70,7 @@ public:
         dLow        =   b.dLow;
         dClose      =   b.dClose;
         iVolume     =   b.iVolume;
-        tmPeriod    = b.tmPeriod;
+        tmPeriod    =   b.tmPeriod;
 
         iInterval   =   b.iInterval;
         return  *this;
@@ -88,8 +88,8 @@ public:
         dHigh       =   b.dHigh;
         dLow        =   b.dLow;
         dClose      =   b.dClose;
-        iVolume      =   b.iVolume;
-        tmPeriod    = b.tmPeriod;
+        iVolume     =   b.iVolume;
+        tmPeriod    =   b.tmPeriod;
 
         //iInterval   =   b.iInterval;
 
@@ -101,7 +101,7 @@ public:
         return operator=(b);
     }
     //--------------------------------------------------------------------------------------------------------
-    bool operator== (const Bar &b) const
+    bool equal (const Bar &b) const
     {
         if(b.iInterval != iInterval){
             std::stringstream ss;
@@ -123,9 +123,9 @@ public:
             return  false;
     }
     //
-    bool operator== (Bar &&b) const
+    bool equal (Bar &&b) const
     {
-        return operator==(b);
+        return equal(b);
     }
     //--------------------------------------------------------------------------------------------------------
     // do compare only by time

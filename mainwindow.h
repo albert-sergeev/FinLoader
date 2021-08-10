@@ -149,6 +149,8 @@ public slots: // for import FinQuotes winow
     void slotParseImportFinQuotesFile(dataFinLoadTask &);
     void slotStopFinQuotesLoadings();
 
+    void slotLoadGraph(const  int iTickerID, const std::time_t tBegin, const std::time_t tEnd);
+
 
 protected slots: // for main window
     void slotNotImpl    ();
