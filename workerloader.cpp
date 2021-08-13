@@ -570,10 +570,18 @@ void workerLoader::workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & queue
             }
         }
         /////
+        {
+            // TODO: remove
+            //for tests
+            dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::testPvBars,data.GetParentWnd());
+            dt.pvBars = pvBars;
+            queueTrdAnswers.Push(dt);
+        }
         dataFinLoadTask optTask(data);// copying data range and tickerID
         optTask.taskType = dataFinLoadTask::TaskType::LoadIntoGraph;
         optTask.pvBars =pvBars;
         queueTasks.Push(optTask);
+
 
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -611,7 +619,7 @@ void workerLoader::workerLoadIntoGraph(BlockFreeQueue<dataFinLoadTask> & /*queue
     if (data.holder != std::shared_ptr<GraphHolder>{}){
 
         if(std::shared_ptr<std::vector<std::vector<Bar>>>{} != data.pvBars){
-            data.holder->AddBarsList(*data.pvBars.get(),data.dtBegin,data.dtEnd);
+            data.holder->AddBarsLists(*data.pvBars.get(),data.dtBegin,data.dtEnd);
 
             if (data.holder->CheckMap()){
                 dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::logText,data.GetParentWnd());
@@ -623,6 +631,7 @@ void workerLoader::workerLoadIntoGraph(BlockFreeQueue<dataFinLoadTask> & /*queue
                 dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::logCriticalError,data.GetParentWnd());
                 dt.SetErrString("map consistensy is broken");
                 queueTrdAnswers.Push(dt);
+                bSuccessfull = false;
             }
         }
         else{
@@ -654,6 +663,8 @@ void workerLoader::workerLoadIntoGraph(BlockFreeQueue<dataFinLoadTask> & /*queue
         }
         //
         dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::storagLoadToGraphEnd,data.GetParentWnd());
+        dt.SetBeginDate(data.dtBegin);
+        dt.SetEndDate(data.dtEnd);
         dt.SetSuccessfull(true);
         queueTrdAnswers.Push(dt);
     }

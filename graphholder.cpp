@@ -41,16 +41,19 @@ GraphHolder::GraphHolder(GraphHolder && o):
 }
 
 //------------------------------------------------------------------------------------------------------
-bool GraphHolder::AddBarsList(std::vector<std::vector<Bar>> &v, std::time_t dtStart,std::time_t dtEnd)
+bool GraphHolder::AddBarsLists(std::vector<std::vector<Bar>> &v, std::time_t dtStart,std::time_t dtEnd)
 {
     std::unique_lock lk(mutexHolder);
     //
-    return graphTick.AddBarsList(v,dtStart,dtEnd);
+    bool bRet = graphTick.AddBarsList(v,dtStart,dtEnd);
+    return bRet;
 
 }
 //------------------------------------------------------------------------------------------------------
 bool GraphHolder::CheckMap()
 {
+    std::shared_lock lk(mutexHolder);
+
     if (!graphTick.CheckMap())  return false;
     if (!graph1.CheckMap())     return false;
     if (!graph5.CheckMap())     return false;

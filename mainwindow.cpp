@@ -163,6 +163,21 @@ void MainWindow::timerEvent(QTimerEvent * event)
                 if(!data.Successfull()){
                     ss <<"\n"<<data.GetErrString();
                 }
+                else{
+                    char buffer[101];
+                    std::time_t tT = data.BeginDate();
+                    std::tm * ptmB = std::localtime(&tT);
+                    std::strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", ptmB);
+                    std::string strB(buffer);
+                    ss <<"Need to repaint ticker["<<data.TickerID()<<"]:\n";
+                    ss <<"from:\t"<<strB<<"\n";
+
+                    tT = data.EndDate();
+                    ptmB = std::localtime(&tT);
+                    std::strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", ptmB);
+                    std::string strE(buffer);
+                    ss <<"to:\t"<<strE<<"\n";
+                }
                 SendToLog(QString::fromStdString(ss.str()));
             }
             break;
@@ -181,7 +196,9 @@ void MainWindow::timerEvent(QTimerEvent * event)
                 }
             }
             break;
-            //,,
+        case dataBuckgroundThreadAnswer::testPvBars: // for tests
+            //slotTestPvBars(data.pvBars);
+            break;
         default:
             break;
         }
@@ -1074,3 +1091,58 @@ void MainWindow::slotLoadGraph(const  int iTickerID, const std::time_t tBegin, c
         });
 }
 
+//--------------------------------------------------------------------------------------------------------------------------------
+//void MainWindow::slotTestPvBars(std::shared_ptr<std::vector<std::vector<Bar>>> pvBars)
+//{
+//    bool bEqual{true};
+//    if(testPvBars.size()>0){
+//        size_t iCount{0};
+//        auto ItL (testPvBars.begin());
+//        auto ItTstL (pvBars->begin());
+//        while(bEqual && ItL != testPvBars.end() && ItTstL != pvBars->end()){
+//            auto It (ItL->begin());
+//            auto ItTst (ItTstL->begin());
+//            while(It != ItL->end() && ItTst != ItTstL->end()){
+//                if(It->Period() != ItTst->Period()){
+//                    ThreadFreeCout pcout;
+//                    pcout<<"testPvBars and pvBars not equal 1!!!\n";
+//                    bEqual = false;
+//                    break;
+//                }
+//                iCount++;
+//                It++;
+//                ItTst++;
+//            }
+//            if((It != ItL->end() || ItTst != ItTstL->end())){
+//                ThreadFreeCout pcout;
+//                pcout<<"testPvBars and pvBars not equal 2!!!\n";
+//                bEqual = false;
+//                break;
+//            }
+//            ItL++;
+//            ItTstL++;
+//        }
+//        if(ItL != testPvBars.end() || ItTstL != pvBars->end()){
+//            ThreadFreeCout pcout;
+//            pcout<<"testPvBars and pvBars not equal 3!!!\n";
+//            bEqual = false;
+//        }
+//        if(bEqual){
+//            ThreadFreeCout pcout;
+//            pcout<<"testPvBars and pvBars are Equal. Size: {"<<iCount<<"}\n";
+//        }
+//    }
+//    else{
+//        ThreadFreeCout pcout;
+//        pcout<<"testPvBars is empty\n";
+//        if (pvBars == nullptr){
+//            pcout<<"pvBars is empty too\n";
+//        }
+//        for (const auto &lst:*pvBars){
+//            testPvBars.push_back({});
+//            for(const auto & b:lst){
+//                testPvBars.back().push_back(b);
+//            }
+//        }
+//    }
+//}

@@ -19,7 +19,6 @@ private:
     const int iTickerID;
 
     std::shared_mutex mutexHolder;
-    //std::shared_lock lk(mutexHolder,std::try_to_lock);
 
     Graph graphTick;
     Graph graph1;
@@ -56,7 +55,7 @@ public:
     inline Bar & grMonth(size_t i)      {return graphMonth[i];};
     //------------------------------------------------------------
 
-    bool AddBarsList(std::vector<std::vector<Bar>> &v, std::time_t dtStart,std::time_t dtEnd);
+    bool AddBarsLists(std::vector<std::vector<Bar>> &v, std::time_t dtStart,std::time_t dtEnd);
     bool CheckMap();
 
 };

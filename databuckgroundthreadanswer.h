@@ -3,13 +3,18 @@
 
 #include<QWidget>
 
+#include<memory>
+
+#include "bar.h"
+
+
 class dataBuckgroundThreadAnswer
 {
 
 public:
     enum eAnswerType:int {nop,famImportBegin,famImportEnd,famImportCurrent,LoadActivity,TextInfoMessage
                           ,storagLoadFromStorageGraphBegin,storagLoadFromStorageGraphEnd, logText
-                          ,storagLoadToGraphBegin,storagLoadToGraphEnd, logCriticalError
+                          ,storagLoadToGraphBegin,storagLoadToGraphEnd, logCriticalError, testPvBars
                          };
 
     //-------------------------------------------------------------------------------
@@ -33,6 +38,15 @@ public:
     //
     inline void SetParentWnd(QWidget * const wt)    { parentWnd = wt;};
     inline  QWidget *  GetParentWnd() const         {return parentWnd;}
+
+    //
+    inline void SetBeginDate(const std::time_t  t)  {dtBegin = t;};
+    inline std::time_t  BeginDate()   const         {return dtBegin;};
+    //
+    inline void SetEndDate(const std::time_t  t)  {dtEnd = t;};
+    inline std::time_t  EndDate()   const         {return dtEnd;};
+    //
+
     //-------------------------------------------------------------------------------
     dataBuckgroundThreadAnswer(int TickerID = 0, eAnswerType iType = eAnswerType::nop, QWidget * parent = nullptr):iTickerID{TickerID},parentWnd{parent}{
         iAnswerType = iType;
@@ -50,6 +64,11 @@ public:
         iTickerID       = o.iTickerID;
 
         parentWnd       = o.parentWnd;
+
+        dtBegin         = o.dtBegin;
+        dtEnd           = o.dtEnd;
+
+        pvBars          = o.pvBars;
     };
 
 
@@ -60,9 +79,14 @@ private:
     std::string strErr;
     std::string strTextInfo;
 
+    std::time_t dtBegin;
+    std::time_t dtEnd;
+
     int iTickerID;
 
     QWidget * parentWnd;
+public:
+    std::shared_ptr<std::vector<std::vector<Bar>>> pvBars;
 };
 
 #endif // DATABUCKGROUNDTHREADANSWER_H

@@ -944,7 +944,7 @@ bool Storage::ReadFromStore(int iTickerID, std::time_t tMonth, std::vector<Bar> 
     std::strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", ptm);
     std::string strM(buffer);
 
-    //ssOut <<"loading: " <<strB<<"\n";
+    //ssOut <<"loading: " <<strM<<"\n";
     ////////////////////////////////////////////////
 
     tMonth = dateCastToMonth(tMonth);
@@ -956,6 +956,7 @@ bool Storage::ReadFromStore(int iTickerID, std::time_t tMonth, std::vector<Bar> 
     if(It != mpStoreMutexes.end()){
         std::shared_lock entryLk(mpStoreMutexes.at(k));
         std::shared_lock entryWriteLk (mpWriteMutexes.at(k));
+        //std::unique_lock entryWriteLk (mpWriteMutexes.at(k));
 
         int iStage = mpStoreStages.at(k);
         if (iStage <1 || iStage >6){

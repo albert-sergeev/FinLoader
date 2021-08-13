@@ -10,16 +10,17 @@
 
 
 //--------------------------------------------------------------------------------------------------------
-Graph::Graph(int TickerID, Bar::eInterval Interval):iInterval{Interval},iTickerID{TickerID}
+Graph::Graph(int TickerID, Bar::eInterval Interval):iInterval{Interval},iTickerID{TickerID}, iThreadCounter{0}
 {
 
 }
 //--------------------------------------------------------------------------------------------------------
 Graph::Graph(Graph&& o):
-    vContainer{std::move(o.vContainer)},
-    mDictionary{std::move(o.mDictionary)},
-    iInterval{o.iInterval},
-    iTickerID{o.iTickerID}
+     vContainer{std::move(o.vContainer)}
+    ,mDictionary{std::move(o.mDictionary)}
+    ,iInterval{o.iInterval}
+    ,iTickerID{o.iTickerID}
+    ,iThreadCounter{0}
 {
 
 }
@@ -154,6 +155,18 @@ size_t Graph::GetMoreThenIndex(std::vector<Bar> & v, std::time_t tT)
 
 bool Graph::AddBarsList(std::vector<std::vector<Bar>> &v, std::time_t dtStart,std::time_t dtEnd)
 {
+//    size_t tmpVSize= vContainer.size();
+//    size_t tmpMSize= mDictionary.size();
+//    std::vector<Bar> vTmp;
+//    copy(vContainer.begin(),vContainer.end(),std::back_inserter(vTmp));
+
+
+//    int iTrdIndex = iThreadCounter.load();
+//    while(!iThreadCounter.compare_exchange_weak(iTrdIndex,iTrdIndex+1)){;}
+//    { ThreadFreeCout pcout; pcout<<"inter thread: ["<<iTrdIndex<<"]\n";}
+
+
+    ///
     size_t iNewLength{0};
     bool bInRange{true};
     for(const auto & lst:v){
@@ -180,7 +193,11 @@ bool Graph::AddBarsList(std::vector<std::vector<Bar>> &v, std::time_t dtStart,st
             }
         }
     }
-    if(iNewLength <= 0) return true;
+    if(iNewLength <= 0) {
+//        { ThreadFreeCout pcout; pcout<<"empty\n";}
+        return true;
+    }
+   // { ThreadFreeCout pcout; pcout<<"iNewLength: "<<iNewLength<<"\n";}
     //////////////////////////////////////////////////////////////////
 
     if (bInRange){
@@ -189,7 +206,7 @@ bool Graph::AddBarsList(std::vector<std::vector<Bar>> &v, std::time_t dtStart,st
         // 2. try to look up in a dictionary because there may be multiple tickers in a second
         // 3. if not found, add a new entry to the map
         // 4. push back to vector
-
+//        { ThreadFreeCout pcout; pcout<<"addition to tail\n";}
 
         for(const auto & lst:v){
 //            for(const Bar &b:lst){
@@ -213,7 +230,8 @@ bool Graph::AddBarsList(std::vector<std::vector<Bar>> &v, std::time_t dtStart,st
         // 3. resize vector
         // 4. insert new data into the vector
 
-        //std::map<time_t,int> mDictionary;
+
+//        { ThreadFreeCout pcout; pcout<<"insertion\n";}
 
         // 1. look up range to delete in the vector
         size_t iStart = GetMoreThenIndex(vContainer, dtStart);
@@ -234,12 +252,14 @@ bool Graph::AddBarsList(std::vector<std::vector<Bar>> &v, std::time_t dtStart,st
         // 2.2 shift index in the remaining tail
         auto ItEndSrc = ItEnd;
         if (iNewLength > iEnd - iStart){
+//            { ThreadFreeCout pcout; pcout<<"shifting to bigger\n";}
             while(ItEndSrc != mDictionary.end()){
                 (*ItEndSrc).second += (iNewLength - (iEnd - iStart));
                 ItEndSrc++;
             }
         }
         else if(iNewLength < iEnd - iStart){
+//            { ThreadFreeCout pcout; pcout<<"shifting to smaller\n";}
             while(ItEndSrc != mDictionary.end()){
                 (*ItEndSrc).second -= ((iEnd - iStart)-iNewLength);
                 ItEndSrc++;
@@ -250,6 +270,7 @@ bool Graph::AddBarsList(std::vector<std::vector<Bar>> &v, std::time_t dtStart,st
         //
         // 3. resize vector
         if (iNewLength < iEnd - iStart){
+//            { ThreadFreeCout pcout; pcout<<"resize to smaller\n";}
 
             auto ItDst (std::next(vContainer.begin(),iStart + iNewLength));
             auto ItStart (std::next(vContainer.begin(),iEnd));
@@ -260,6 +281,8 @@ bool Graph::AddBarsList(std::vector<std::vector<Bar>> &v, std::time_t dtStart,st
             vContainer.resize(vContainer.size() + iNewLength - (iEnd - iStart));
         }
         else if (iNewLength > iEnd - iStart){
+//            { ThreadFreeCout pcout; pcout<<"resize to bigger\n";}
+
             size_t iDelta = iNewLength - (iEnd - iStart);
             size_t iOldSize = vContainer.size();
 
@@ -273,17 +296,18 @@ bool Graph::AddBarsList(std::vector<std::vector<Bar>> &v, std::time_t dtStart,st
         }
         // 4. insert new data into the vector
         auto ItStart (std::next(vContainer.begin(),iStart));
+//        { ThreadFreeCout pcout; pcout<<"iStart: "<<iStart<<"\n";}
         for(const auto & lst:v){
             //for(const Bar &b:lst){
             for(size_t i = 0; i < lst.size(); ++i){
                 if (mDictionary.find(lst[i].Period()) == mDictionary.end()){
                     mDictionary[lst[i].Period()] = std::distance(vContainer.begin(),ItStart)+i;
                 }
-//                (*ItStart) = (b);
+//                (*ItStart) = (vContainer[i]);
 //                ItStart++;
             }
             std::copy(lst.begin(),lst.end(),ItStart);
-            std::next(ItStart,lst.size());
+            ItStart = std::next(ItStart,lst.size());
         }
         //
         if (mDictionary.size() > vContainer.size()){
@@ -291,6 +315,30 @@ bool Graph::AddBarsList(std::vector<std::vector<Bar>> &v, std::time_t dtStart,st
         }
 
     }
+    //////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////
+//    if ( tmpVSize !=0 && tmpVSize != vContainer.size()){
+//        { ThreadFreeCout pcout; pcout<<"tmpVSize != vContainer.size()\n";}
+//    }
+//    if (tmpMSize !=0 && tmpMSize != mDictionary.size()){
+//        { ThreadFreeCout pcout; pcout<<"tmpMSize= mDictionary.size()\n";}
+//    }
+//    if (tmpVSize !=0){
+//        auto It (vContainer.begin());
+//        auto ItT (vTmp.begin());
+//        while (It != vContainer.end() && ItT != vTmp.end()){
+//            if(It->Period() != ItT->Period()){
+//                { ThreadFreeCout pcout; pcout<<"It->Period() != ItT->Period()\n";}
+//                break;
+//            }
+//            It++;ItT++;
+//        }
+//        if (It != vContainer.end() || ItT != vTmp.end()){
+//            { ThreadFreeCout pcout; pcout<<"vContainer != vTmp\n";}
+//        }
+//    }
+//    ///
+//    { ThreadFreeCout pcout; pcout<<"exit thread: ["<<iTrdIndex<<"]\n";}
     return true;;
 }
 //--------------------------------------------------------------------------------------------------------
@@ -298,20 +346,30 @@ bool Graph::CheckMap()
 {
     for (const auto &e:mDictionary){
         if(/*e.second <0 &&*/ e.second >=vContainer.size()){
+            ThreadFreeCout pcout;
+            pcout<<"map->index > vContainer.size\n";
             return false;
         }
         if (vContainer[e.second].Period() != e.first){
+            ThreadFreeCout pcout;
+            pcout<<"vContainer[map[index]].period != map->index\n";
             return false;
         }
         if (e.second >0 && vContainer[e.second].Period() == vContainer[e.second-1].Period()){
+            ThreadFreeCout pcout;
+            pcout<<"vContainer[map[index]].period == vContainer[map[index]-1].period\n";
             return false;
         }
     }
     for (size_t i = 0; i< vContainer.size(); ++i){
         if(mDictionary.find(vContainer[i].Period()) == mDictionary.end()){
+            ThreadFreeCout pcout;
+            pcout<<"map[vContainer[i].period] not found\n";
             return false;
         }
         if(vContainer[mDictionary[vContainer[i].Period()]].Period() != vContainer[i].Period() ){
+            ThreadFreeCout pcout;
+            pcout<<"vContainer[mDictionary[vContainer[i].Period()]].Period() != vContainer[i].Period()\n";
             return false;
         }
     }

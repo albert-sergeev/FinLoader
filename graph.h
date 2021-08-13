@@ -5,6 +5,7 @@
 #include<list>
 #include<map>
 #include<stdexcept>
+#include<atomic>
 
 
 #include "bar.h"
@@ -29,6 +30,8 @@ private:
 
     const Bar::eInterval iInterval;
     const int iTickerID;
+
+    std::atomic<int> iThreadCounter;
 
 public:
 

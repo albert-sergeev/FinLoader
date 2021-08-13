@@ -190,8 +190,12 @@ protected slots: // for main window
     void slotSetSelectedTicker(const  QModelIndex&);
     void slotSetSelectedTicker(const  int iTickerID);
 
+   // void slotTestPvBars(std::shared_ptr<std::vector<std::vector<Bar>>> pvBars);
+
 
 private:
+   // std::vector<std::vector<Bar>> testPvBars;
+
     Ui::MainWindow *ui;
 };
 #endif // MAINWINDOW_H
