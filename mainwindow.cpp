@@ -132,14 +132,14 @@ void MainWindow::timerEvent(QTimerEvent * event)
             if(wnd) wnd->slotTextInfo(QString::fromStdString(data.GetTextInfo()));
             break;
 
-        case dataBuckgroundThreadAnswer::eAnswerType::storagLoadGraphBegin:
+        case dataBuckgroundThreadAnswer::eAnswerType::storagLoadFromStorageGraphBegin:
             {
                 std::stringstream ss;
                 ss << "Load from storage begins [" << data.TickerID()<<"]";
                 SendToLog(QString::fromStdString(ss.str()));
             }
             break;
-        case dataBuckgroundThreadAnswer::eAnswerType::storagLoadGraphEnd:
+        case dataBuckgroundThreadAnswer::eAnswerType::storagLoadFromStorageGraphEnd:
             {
                 std::stringstream ss;
                 ss << "Load from storage ends [" << data.TickerID()<<"] success: ["<<data.Successfull()<<"]";
@@ -149,8 +149,37 @@ void MainWindow::timerEvent(QTimerEvent * event)
                 SendToLog(QString::fromStdString(ss.str()));
             }
             break;
+        case dataBuckgroundThreadAnswer::eAnswerType::storagLoadToGraphBegin:
+            {
+                std::stringstream ss;
+                ss << "Load to Graph begins [" << data.TickerID()<<"]";
+                SendToLog(QString::fromStdString(ss.str()));
+            }
+            break;
+        case dataBuckgroundThreadAnswer::eAnswerType::storagLoadToGraphEnd:
+            {
+                std::stringstream ss;
+                ss << "Load to Graph ends [" << data.TickerID()<<"]";
+                if(!data.Successfull()){
+                    ss <<"\n"<<data.GetErrString();
+                }
+                SendToLog(QString::fromStdString(ss.str()));
+            }
+            break;
         case dataBuckgroundThreadAnswer::eAnswerType::logText:
             SendToLog(QString::fromStdString(trim(data.GetTextInfo())));
+            break;
+        case dataBuckgroundThreadAnswer::eAnswerType::logCriticalError:
+            SendToLog(QString::fromStdString(trim(data.GetErrString())));
+            {
+                int n=QMessageBox::critical(0,tr("Critical error"),
+                                   QString::fromStdString(data.GetErrString()),
+                                   QMessageBox::Ok
+                                   );
+                if (n==QMessageBox::Ok){
+                    ;
+                }
+            }
             break;
             //,,
         default:
@@ -1026,12 +1055,16 @@ void MainWindow::slotSetSelectedTicker(const  int iTickerID)
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::slotLoadGraph(const  int iTickerID, const std::time_t tBegin, const std::time_t tEnd)
 {
+    if (Holders.find(iTickerID) == Holders.end()){
+        Holders[iTickerID] = std::make_shared<GraphHolder>(GraphHolder{iTickerID});
+    }
+
     dataFinLoadTask dataTask;
     dataTask.taskType       = dataFinLoadTask::TaskType::finQuotesLoadFromStorage;
     dataTask.TickerID       = iTickerID;
     dataTask.dtBegin        = tBegin;
     dataTask.dtEnd          = tEnd;
-    //dtTask.SetStore(&stStore);
+    dataTask.holder         = Holders[iTickerID];
 
 
     queueFinQuotesLoad.Push(dataFinLoadTask(dataTask));

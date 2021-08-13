@@ -7,6 +7,7 @@
 #include<QWidget>
 
 #include "storage.h"
+#include "graphholder.h"
 #include "blockfreequeue.h"
 
 
@@ -34,8 +35,10 @@ public:
 
     TaskType taskType;
 
+    std::shared_ptr<GraphHolder> holder;
+
     //--------------------------------------------------------------
-    dataFinLoadTask():stStore{nullptr},parentWnd{nullptr},parseData{nullptr,nullptr},taskType{TaskType::finQuotesImport}{;};
+    dataFinLoadTask():stStore{nullptr},parentWnd{nullptr},parseData{nullptr,nullptr},taskType{TaskType::finQuotesImport},holder{nullptr}{;};
     //--------------------------------------------------------------
     dataFinLoadTask(const dataFinLoadTask & o):parseData{nullptr,nullptr}{
 
@@ -54,6 +57,8 @@ public:
         pvBars          = o.pvBars;
 
         taskType        = o.taskType;
+
+        holder          = o.holder;
     };
     //--------------------------------------------------------------
     inline void SetStore(Storage * const stSt)      { stStore = stSt;};

@@ -20,6 +20,8 @@
 ///
 class Graph
 {
+    //friend class GraphHolder;
+
 private:
 
     std::vector<Bar> vContainer;
@@ -39,6 +41,7 @@ public:
     Graph& operator=(Graph&) = delete;
     //--------------------------------------------------------------------------------------------------------
     explicit Graph(int TickerID, Bar::eInterval Interval);
+    explicit Graph(Graph&&);
     //--------------------------------------------------------------------------------------------------------
     Bar & operator[](size_t i) {if (/*i<0 ||*/ i>= vContainer.size()) {throw std::out_of_range("");} return vContainer[i];}
     //--------------------------------------------------------------------------------------------------------

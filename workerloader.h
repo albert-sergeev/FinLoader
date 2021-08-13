@@ -27,6 +27,11 @@ private:
                                     Storage & stStore,
                                     dataFinLoadTask & data);
 
+    static void workerLoadIntoGraph(BlockFreeQueue<dataFinLoadTask> & queueTasks,
+                                    BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
+                                    Storage & stStore,
+                                    dataFinLoadTask & data);
+
 
     static int createCleanUpHeader(std::time_t tMonth, char* cBuff,std::time_t tBegin, std::time_t tEnd);
 

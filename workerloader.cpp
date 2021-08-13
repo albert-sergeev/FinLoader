@@ -20,6 +20,61 @@ workerLoader::workerLoader()
 {
 
 }
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Main thread - dispatcher for database work
+/// \param queueFilLoad
+/// \param queueTrdAnswers
+/// \param stStore
+void workerLoader::workerDataBaseWork(BlockFreeQueue<dataFinLoadTask> & queueTasks,
+                                      BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
+                                       Storage & stStore)
+{
+    bool bSuccess{false};
+    auto pdata = queueTasks.Pop(bSuccess);
+    while(bSuccess){
+
+        dataFinLoadTask data(*pdata.get());
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        /// one task start
+
+        switch (data.taskType) {
+        case dataFinLoadTask::TaskType::finQuotesImport:
+            workerFinQuotesLoad(queueTasks,queueTrdAnswers,stStore,data);
+            break;
+        case dataFinLoadTask::TaskType::finQuotesLoadFromStorage:
+            workerLoadFromStorage(queueTasks,queueTrdAnswers,stStore,data);
+            break;
+        case dataFinLoadTask::TaskType::LoadIntoGraph:
+            workerLoadIntoGraph(queueTasks,queueTrdAnswers,stStore,data);
+            break;
+        case dataFinLoadTask::TaskType::storageOptimisation:
+            {
+            ThreadFreeCout pcout;
+            pcout << "data optimisaion task for TickerID: " << data.TickerID<<"\n";
+            }
+            break;
+
+        default:
+            break;
+        }
+        /// one task end
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        if (!this_thread_flagInterrup.isSet()){
+            pdata = queueTasks.Pop(bSuccess);
+        }
+        else{
+            bSuccess = false; // to exit while
+        }
+        //----------------------------------
+    }
+}
+
 //------------------------------------------------------------------------------------------------------------------------------------------
 void workerLoader::workerEtalon(BlockFreeQueue<dataFinLoadTask> & queueFilLoad,
                                BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers)
@@ -95,55 +150,6 @@ void workerLoader::workerEtalon(BlockFreeQueue<dataFinLoadTask> & queueFilLoad,
     //fout<<"workerLoaderFinam out\n";
 }
 
-//------------------------------------------------------------------------------------------------------------------------------------------
-/////////////////////////////////////////////////////////////////////////////////////////////////
-/// \brief Main thread - dispatcher for database work
-/// \param queueFilLoad
-/// \param queueTrdAnswers
-/// \param stStore
-void workerLoader::workerDataBaseWork(BlockFreeQueue<dataFinLoadTask> & queueTasks,
-                                      BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
-                                       Storage & stStore)
-{
-    bool bSuccess{false};
-    auto pdata = queueTasks.Pop(bSuccess);
-    while(bSuccess){
-
-        dataFinLoadTask data(*pdata.get());
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        /// one task start
-
-        switch (data.taskType) {
-        case dataFinLoadTask::TaskType::finQuotesImport:
-            workerFinQuotesLoad(queueTasks,queueTrdAnswers,stStore,data);
-            break;
-        case dataFinLoadTask::TaskType::finQuotesLoadFromStorage:
-            workerLoadFromStorage(queueTasks,queueTrdAnswers,stStore,data);
-            break;
-        case dataFinLoadTask::TaskType::storageOptimisation:
-            {
-            ThreadFreeCout pcout;
-            pcout << "data optimisaion task for TickerID: " << data.TickerID<<"\n";
-            }
-            break;
-        default:
-            break;
-        }
-        /// one task end
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        if (!this_thread_flagInterrup.isSet()){
-            pdata = queueTasks.Pop(bSuccess);
-        }
-        else{
-            bSuccess = false; // to exit while
-        }
-        //----------------------------------
-    }
-}
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -498,7 +504,7 @@ void workerLoader::workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & queue
 //                pcout << "load from base task for TickerID: " << data.TickerID<<"\n";
 //                }
     {
-        dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::storagLoadGraphBegin,data.GetParentWnd());
+        dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::storagLoadFromStorageGraphBegin,data.GetParentWnd());
         queueTrdAnswers.Push(dt);
     }
     //
@@ -539,7 +545,7 @@ void workerLoader::workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & queue
             pvBars->push_back({});
             if (!stStore.ReadFromStore(data.TickerID, t, pvBars->back(), data.dtBegin,data.dtEnd,ssOut)){
                 bSuccessfull = false;
-                dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::storagLoadGraphEnd,data.GetParentWnd());
+                dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::storagLoadFromStorageGraphEnd,data.GetParentWnd());
                 dt.SetSuccessfull(false);
                 ssOut<<"\n\rError reading file.\n";
                 dt.SetErrString(ssOut.str());
@@ -555,7 +561,7 @@ void workerLoader::workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & queue
             }
             if(this_thread_flagInterrup.isSet()){
                 //fout<<"exit on interrupt\n";
-                dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::storagLoadGraphEnd,data.GetParentWnd());
+                dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::storagLoadFromStorageGraphEnd,data.GetParentWnd());
                 dt.SetSuccessfull(false);
                 dt.SetErrString("loading process interrupted");
                 queueTrdAnswers.Push(dt);
@@ -583,11 +589,74 @@ void workerLoader::workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & queue
             queueTrdAnswers.Push(dt);
         }
         //
-        dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::storagLoadGraphEnd,data.GetParentWnd());
+        dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::storagLoadFromStorageGraphEnd,data.GetParentWnd());
         dt.SetSuccessfull(true);
         queueTrdAnswers.Push(dt);
     }
 
+}
+//------------------------------------------------------------------------------------------------------------------------------------------
+void workerLoader::workerLoadIntoGraph(BlockFreeQueue<dataFinLoadTask> & /*queueTasks*/,
+                                BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
+                                Storage & /*stStore*/,
+                                dataFinLoadTask & data)
+{
+    {
+        dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::storagLoadToGraphBegin,data.GetParentWnd());
+        queueTrdAnswers.Push(dt);
+    }
+    std::chrono::time_point dtStart(std::chrono::steady_clock::now());
+    bool bSuccessfull{true};
+    //////////////////////////////////////////////////////////////////////////////////
+    if (data.holder != std::shared_ptr<GraphHolder>{}){
+
+        if(std::shared_ptr<std::vector<std::vector<Bar>>>{} != data.pvBars){
+            data.holder->AddBarsList(*data.pvBars.get(),data.dtBegin,data.dtEnd);
+
+            if (data.holder->CheckMap()){
+                dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::logText,data.GetParentWnd());
+                dt.SetTextInfo("map consistensy is good");
+                queueTrdAnswers.Push(dt);
+
+            }
+            else{
+                dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::logCriticalError,data.GetParentWnd());
+                dt.SetErrString("map consistensy is broken");
+                queueTrdAnswers.Push(dt);
+            }
+        }
+        else{
+            dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::storagLoadToGraphEnd,data.GetParentWnd());
+            dt.SetErrString("Empty incoming vVector<...>");
+            dt.SetSuccessfull(false);
+            queueTrdAnswers.Push(dt);
+            bSuccessfull = false;
+        }
+    }
+    else{
+        dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::storagLoadToGraphEnd,data.GetParentWnd());
+        dt.SetErrString("Empty graph holder ptr");
+        dt.SetSuccessfull(false);
+        queueTrdAnswers.Push(dt);
+        bSuccessfull = false;
+    }
+    //////////////////////////////////////////////////////////////////////////////////
+    if (bSuccessfull){
+        std::chrono::time_point dtStop(std::chrono::steady_clock::now());
+        //milliseconds tCount = dtStop - dtStart;
+        seconds tCount = dtStop - dtStart;
+        {
+            std::stringstream ss;
+            ss << "Graph filling time: "<<tCount.count()<<" seconds\n";
+            dataBuckgroundThreadAnswer dt (data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::logText,data.GetParentWnd());
+            dt.SetTextInfo(ss.str());
+            queueTrdAnswers.Push(dt);
+        }
+        //
+        dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::storagLoadToGraphEnd,data.GetParentWnd());
+        dt.SetSuccessfull(true);
+        queueTrdAnswers.Push(dt);
+    }
 }
 //------------------------------------------------------------------------------------------------------------------------------------------
 ////////////////////////////////////////////////////////////////////////

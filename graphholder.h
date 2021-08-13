@@ -35,8 +35,13 @@ private:
     Graph graphMonth;
 
 public:
-    explicit GraphHolder(int iTickerID);
 
+    explicit GraphHolder(const int iTickerID = 0);
+    GraphHolder(GraphHolder &&);
+
+
+
+    //------------------------------------------------------------
     inline Bar & grTick(size_t i)       {return graphTick[i];};
     inline Bar & gr1(size_t i)          {return graph1[i];};
     inline Bar & gr5(size_t i)          {return graph5[i];};
@@ -49,8 +54,10 @@ public:
     inline Bar & grDay(size_t i)        {return graphDay[i];};
     inline Bar & grWeek(size_t i)       {return graphWeek[i];};
     inline Bar & grMonth(size_t i)      {return graphMonth[i];};
+    //------------------------------------------------------------
 
     bool AddBarsList(std::vector<std::vector<Bar>> &v, std::time_t dtStart,std::time_t dtEnd);
+    bool CheckMap();
 
 };
 

@@ -7,7 +7,10 @@ class dataBuckgroundThreadAnswer
 {
 
 public:
-    enum eAnswerType:int {nop,famImportBegin,famImportEnd,famImportCurrent,LoadActivity,TextInfoMessage,storagLoadGraphBegin,storagLoadGraphEnd, logText};
+    enum eAnswerType:int {nop,famImportBegin,famImportEnd,famImportCurrent,LoadActivity,TextInfoMessage
+                          ,storagLoadFromStorageGraphBegin,storagLoadFromStorageGraphEnd, logText
+                          ,storagLoadToGraphBegin,storagLoadToGraphEnd, logCriticalError
+                         };
 
     //-------------------------------------------------------------------------------
     inline eAnswerType  AnswerType() const          {return iAnswerType;};

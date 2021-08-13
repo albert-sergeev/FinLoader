@@ -1,5 +1,7 @@
 #include "graphholder.h"
 
+
+
 //------------------------------------------------------------------------------------------------------
 GraphHolder::GraphHolder(int TickerID)://Bar::eInterval Interval
     iTickerID{TickerID}
@@ -19,6 +21,24 @@ GraphHolder::GraphHolder(int TickerID)://Bar::eInterval Interval
 {
 
 }
+//------------------------------------------------------------------------------------------------------
+GraphHolder::GraphHolder(GraphHolder && o):
+    iTickerID{o.iTickerID}
+    ,graphTick{std::move(o.graphTick)}
+    ,graph1{std::move(o.graph1)}
+    ,graph5{std::move(o.graph1)}
+    ,graph10{std::move(o.graph1)}
+    ,graph15{std::move(o.graph1)}
+    ,graph30{std::move(o.graph1)}
+    ,graph60{std::move(o.graph1)}
+    ,graph120{std::move(o.graph1)}
+    ,graph180{std::move(o.graph1)}
+    ,graphDay{std::move(o.graph1)}
+    ,graphWeek{std::move(o.graph1)}
+    ,graphMonth{std::move(o.graph1)}
+{
+
+}
 
 //------------------------------------------------------------------------------------------------------
 bool GraphHolder::AddBarsList(std::vector<std::vector<Bar>> &v, std::time_t dtStart,std::time_t dtEnd)
@@ -27,5 +47,23 @@ bool GraphHolder::AddBarsList(std::vector<std::vector<Bar>> &v, std::time_t dtSt
     //
     return graphTick.AddBarsList(v,dtStart,dtEnd);
 
+}
+//------------------------------------------------------------------------------------------------------
+bool GraphHolder::CheckMap()
+{
+    if (!graphTick.CheckMap())  return false;
+    if (!graph1.CheckMap())     return false;
+    if (!graph5.CheckMap())     return false;
+    if (!graph10.CheckMap())    return false;
+    if (!graph15.CheckMap())    return false;
+    if (!graph30.CheckMap())    return false;
+    if (!graph60.CheckMap())    return false;
+    if (!graph120.CheckMap())   return false;
+    if (!graph180.CheckMap())   return false;
+    if (!graphDay.CheckMap())   return false;
+    if (!graphWeek.CheckMap())  return false;
+    if (!graphMonth.CheckMap()) return false;
+
+    return true;
 }
 //------------------------------------------------------------------------------------------------------

@@ -14,6 +14,15 @@ Graph::Graph(int TickerID, Bar::eInterval Interval):iInterval{Interval},iTickerI
 {
 
 }
+//--------------------------------------------------------------------------------------------------------
+Graph::Graph(Graph&& o):
+    vContainer{std::move(o.vContainer)},
+    mDictionary{std::move(o.mDictionary)},
+    iInterval{o.iInterval},
+    iTickerID{o.iTickerID}
+{
+
+}
 
 //--------------------------------------------------------------------------------------------------------
 //void Graph::Add (Bar &b, bool bReplaceIfExists)
@@ -298,6 +307,15 @@ bool Graph::CheckMap()
             return false;
         }
     }
+    for (size_t i = 0; i< vContainer.size(); ++i){
+        if(mDictionary.find(vContainer[i].Period()) == mDictionary.end()){
+            return false;
+        }
+        if(vContainer[mDictionary[vContainer[i].Period()]].Period() != vContainer[i].Period() ){
+            return false;
+        }
+    }
+
     return true;
 }
 //--------------------------------------------------------------------------------------------------------

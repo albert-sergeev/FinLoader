@@ -36,6 +36,7 @@
 #include "bulbululator.h"
 #include "styledswitcher.h"
 #include "graphviewform.h"
+#include "graphholder.h"
 
 
 
@@ -66,6 +67,8 @@ private:
     bool bStatusBarOnLoadIsHidden;
     bool bTickerBarButtonsHidden;
     //------------------------------------------------
+    std::map<int,std::shared_ptr<GraphHolder>> Holders;
+    //std::map<int,GraphHolder> Holders;
     std::queue<std::pair<int,std::chrono::time_point<std::chrono::steady_clock>>> qActivityQueue;
     std::map<int,std::pair<bool,std::chrono::time_point<std::chrono::steady_clock>>> mBlinkedState;
     //------------------------------------------------
