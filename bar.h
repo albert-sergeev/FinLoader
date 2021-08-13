@@ -29,7 +29,7 @@ public:
     inline double High()                    const   {return dHigh;};
     inline double Low()                     const   {return dLow;};
     inline double Close()                   const   {return dClose;};
-    inline unsigned long Volume()                     const   {return iVolume;};
+    inline unsigned long Volume()           const   {return iVolume;};
     inline int Interval()                   const   {return iInterval;};
     inline std::time_t Period()             const   {return tmPeriod;};
 
@@ -80,7 +80,7 @@ public:
     {
         if(b.iInterval != iInterval){
             std::stringstream ss;
-            ss<<"Invalid interval value [Bar& Bar::operator=(Bar &)] {" << iInterval << "!=" << b.iInterval << "}";
+            ss<<"Bar::operator=() Invalid interval value [Bar& Bar::operator=(Bar &)] {" << iInterval << "!=" << b.iInterval << "}";
             throw std::invalid_argument(ss.str());
         }
 
@@ -101,11 +101,20 @@ public:
         return operator=(b);
     }
     //--------------------------------------------------------------------------------------------------------
+//    bool operator==(const Bar &b) const
+//    {
+//        return equal(b);
+//    }
+//    bool operator==(const Bar &&b) const
+//    {
+//        return equal(b);
+//    }
+    //--------------------------------------------------------------------------------------------------------
     bool equal (const Bar &b) const
     {
         if(b.iInterval != iInterval){
             std::stringstream ss;
-            ss<<"Invalid interval value [Bar& Bar::operator==(Bar &)] {" << iInterval << "!=" << b.iInterval << "}";
+            ss<<"Bar::equal() Invalid interval value [Bar& Bar::operator==(Bar &)] {" << iInterval << "!=" << b.iInterval << "}";
             throw std::invalid_argument(ss.str());
         }
 
@@ -133,7 +142,7 @@ public:
     {
         if(b.iInterval != iInterval){
             std::stringstream ss;
-            ss<<"Invalid interval value [Bar& Bar::operator<(Bar &)] {" << iInterval << "!=" << b.iInterval << "}";
+            ss<<"Bar::operator<() Invalid interval value [Bar& Bar::operator<(Bar &)] {" << iInterval << "!=" << b.iInterval << "}";
             throw std::invalid_argument(ss.str());
         }
 
@@ -144,7 +153,7 @@ public:
     {
         if(b.iInterval > iInterval){// must be less or equal
             std::stringstream ss;
-            ss<<"Invalid interval value [Bar& Bar::Append(Bar &)] {" << iInterval << "!=" << b.iInterval << "}";
+            ss<<"Bar::Append() Invalid interval value [Bar& Bar::Append(Bar &)] {" << iInterval << "!=" << b.iInterval << "}";
             throw std::invalid_argument(ss.str());
         }
         //dOpen       =   b.dOpen;                      //  first event is in left element

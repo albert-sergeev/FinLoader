@@ -4,6 +4,8 @@
 #include<vector>
 #include<list>
 #include<map>
+#include<stdexcept>
+
 
 #include "bar.h"
 
@@ -21,9 +23,10 @@ class Graph
 private:
 
     std::vector<Bar> vContainer;
-    std::map<time_t,int> mDictionary;
+    std::map<time_t,size_t> mDictionary;
 
-    Bar::eInterval iInterval;
+    const Bar::eInterval iInterval;
+    const int iTickerID;
 
 public:
 
@@ -35,14 +38,22 @@ public:
     Graph(Graph&) = delete;
     Graph& operator=(Graph&) = delete;
     //--------------------------------------------------------------------------------------------------------
-    explicit Graph(Bar::eInterval Interval);
+    explicit Graph(int TickerID, Bar::eInterval Interval);
     //--------------------------------------------------------------------------------------------------------
-    void Add (Bar &b, bool bReplaceIfExists = true);
-    void AddTick (Bar &b, bool bNewSec);
-    void Add (std::list<Bar> &lst);
+    Bar & operator[](size_t i) {if (/*i<0 ||*/ i>= vContainer.size()) {throw std::out_of_range("");} return vContainer[i];}
     //--------------------------------------------------------------------------------------------------------
-    static void RemoveFromVector(std::vector<Bar> & vDst, std::time_t tStart, std::time_t tStop);
-    static void InsertIntoVector(std::vector<Bar> & vDst, std::vector<Bar> & vSrc/*, std::time_t tStart*/);
+//    void Add (Bar &b, bool bReplaceIfExists = true);
+//    void AddTick (Bar &b, bool bNewSec);
+//    void Add (std::list<Bar> &lst);
+    bool AddBarsList(std::vector<std::vector<Bar>> &v, std::time_t dtStart,std::time_t dtEnd);
+
+    bool CheckMap();
+
+    std::string ToString();
+    std::string ToStringPeriods();
+    //--------------------------------------------------------------------------------------------------------
+    //static void RemoveFromVector(std::vector<Bar> & vDst, std::time_t tStart, std::time_t tStop);
+    //static void InsertIntoVector(std::vector<Bar> & vDst, std::vector<Bar> & vSrc/*, std::time_t tStart*/);
     //--------------------------------------------------------------------------------------------------------
 private:
     static size_t GetMoreThenIndex(std::vector<Bar> & v, std::time_t tT);

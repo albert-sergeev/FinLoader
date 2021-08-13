@@ -487,7 +487,7 @@ int workerLoader::createCleanUpHeader(std::time_t tMonth, char* cBuff,std::time_
     return iBuffPointer;
 }
 //------------------------------------------------------------------------------------------------------------------------------------------
-void workerLoader::workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & /*queueTasks*/,
+void workerLoader::workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & queueTasks,
                                 BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
                                 Storage & stStore,
                                 dataFinLoadTask & data)
@@ -526,17 +526,18 @@ void workerLoader::workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & /*que
             dtMonthBegin = Storage::dateAddMonth(dtMonthBegin);
         }
         //
-        Graph gr(Bar::eInterval::pTick);
+
         std::stringstream ssOut;
 
-        std::vector<std::vector<Bar>> vvBars;
+
+        std::shared_ptr<std::vector<std::vector<Bar>>> pvBars{std::make_shared<std::vector<std::vector<Bar>>>()};
 
         for (const std::time_t &t:vMonthToLoad){
             ssOut.str("");
             ssOut.clear();
             //
-            vvBars.push_back({});
-            if (!stStore.ReadFromStore(data.TickerID, t, vvBars.back(), data.dtBegin,data.dtEnd,ssOut)){
+            pvBars->push_back({});
+            if (!stStore.ReadFromStore(data.TickerID, t, pvBars->back(), data.dtBegin,data.dtEnd,ssOut)){
                 bSuccessfull = false;
                 dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::storagLoadGraphEnd,data.GetParentWnd());
                 dt.SetSuccessfull(false);
@@ -562,6 +563,12 @@ void workerLoader::workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & /*que
                 break;
             }
         }
+        /////
+        dataFinLoadTask optTask(data);// copying data range and tickerID
+        optTask.taskType = dataFinLoadTask::TaskType::LoadIntoGraph;
+        optTask.pvBars =pvBars;
+        queueTasks.Push(optTask);
+
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     if (bSuccessfull){

@@ -29,6 +29,7 @@ public:
     std::time_t     dtEnd;
     std::filesystem::path pathFileName;
 
+    std::shared_ptr<std::vector<std::vector<Bar>>> pvBars;
     dataFinQuotesParse parseData;
 
     TaskType taskType;
@@ -50,6 +51,7 @@ public:
         pathFileName    = o.pathFileName;
 
         parseData       = o.parseData;
+        pvBars          = o.pvBars;
 
         taskType        = o.taskType;
     };
