@@ -40,7 +40,7 @@ GraphHolder::GraphHolder(GraphHolder && o):
 }
 
 //------------------------------------------------------------------------------------------------------
-bool GraphHolder::AddBarsLists(std::vector<std::vector<Bar>> &v, std::time_t dtStart,std::time_t dtEnd)
+bool GraphHolder::AddBarsLists(std::vector<std::vector<BarTick>> &v, std::time_t dtStart,std::time_t dtEnd)
 {
     std::unique_lock lk(mutexHolder);
     //

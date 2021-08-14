@@ -7,6 +7,7 @@
 
 #include "ticker.h"
 #include "bar.h"
+#include "bartick.h"
 #include "graph.h"
 #include "threadfreecout.h"
 #include "datafinquotesparse.h"
@@ -131,7 +132,7 @@ public:
     bool WriteMemblockToStore(WriteMutexDefender &defLk,int iTickerID, std::time_t tMonth, char* cBuff,size_t length, std::stringstream & ssOut);
     //std::time_t dtDayWindowBegin, std::time_t dtDayWindowEnd,
 
-    bool ReadFromStore(int iTickerID, std::time_t tMonth, std::vector<Bar> & vBarList,
+    bool ReadFromStore(int iTickerID, std::time_t tMonth, std::vector<BarTick> & vBarList,
                        std::time_t dtLoadBegin, std::time_t dtLoadEnd,
                        std::stringstream & ssOut);
 

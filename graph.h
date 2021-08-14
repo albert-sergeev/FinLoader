@@ -50,7 +50,7 @@ public:
        ,iInterval{o.iInterval}
        ,iTickerID{o.iTickerID}{;}
     //--------------------------------------------------------------------------------------------------------
-    Bar & operator[](size_t i) {if (/*i<0 ||*/ i>= vContainer.size()) {throw std::out_of_range("");} return vContainer[i];}
+    T & operator[](size_t i) {if (/*i<0 ||*/ i>= vContainer.size()) {throw std::out_of_range("");} return vContainer[i];}
     //--------------------------------------------------------------------------------------------------------
 //    void Add (Bar &b, bool bReplaceIfExists = true);
 //    void AddTick (Bar &b, bool bNewSec);

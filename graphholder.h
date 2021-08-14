@@ -10,6 +10,7 @@
 
 
 #include "bar.h"
+#include "bartick.h"
 #include "graph.h"
 #include "ticker.h"
 
@@ -20,7 +21,7 @@ private:
 
     std::shared_mutex mutexHolder;
 
-    Graph<Bar> graphTick;
+    Graph<BarTick> graphTick;
     Graph<Bar> graph1;
     Graph<Bar> graph5;
     Graph<Bar> graph10;
@@ -41,7 +42,7 @@ public:
 
 
     //------------------------------------------------------------
-    inline Bar & grTick(size_t i)       {return graphTick[i];};
+    inline BarTick & grTick(size_t i)   {return graphTick[i];};
     inline Bar & gr1(size_t i)          {return graph1[i];};
     inline Bar & gr5(size_t i)          {return graph5[i];};
     inline Bar & gr10(size_t i)         {return graph10[i];};
@@ -55,7 +56,7 @@ public:
     inline Bar & grMonth(size_t i)      {return graphMonth[i];};
     //------------------------------------------------------------
 
-    bool AddBarsLists(std::vector<std::vector<Bar>> &v, std::time_t dtStart,std::time_t dtEnd);
+    bool AddBarsLists(std::vector<std::vector<BarTick>> &v, std::time_t dtStart,std::time_t dtEnd);
     bool CheckMap();
 
 };

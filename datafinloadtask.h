@@ -30,7 +30,7 @@ public:
     std::time_t     dtEnd;
     std::filesystem::path pathFileName;
 
-    std::shared_ptr<std::vector<std::vector<Bar>>> pvBars;
+    std::shared_ptr<std::vector<std::vector<BarTick>>> pvBars;
     dataFinQuotesParse parseData;
 
     TaskType taskType;

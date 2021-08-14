@@ -935,7 +935,7 @@ bool Storage::WriteMemblockToStore(WriteMutexDefender &defLk,int iTickerID, std:
 }
 
 //--------------------------------------------------------------------------------------------------------
-bool Storage::ReadFromStore(int iTickerID, std::time_t tMonth, std::vector<Bar> & vBarList,
+bool Storage::ReadFromStore(int iTickerID, std::time_t tMonth, std::vector<BarTick> & vBarList,
                    std::time_t dtLoadBegin, std::time_t dtLoadEnd,
                    std::stringstream & ssOut)
 {
@@ -991,12 +991,9 @@ bool Storage::ReadFromStore(int iTickerID, std::time_t tMonth, std::vector<Bar> 
             size_t filesize = fileR.tellg();
             fileR.seekg(0, std::ios::beg);
 
-            Bar b(0,0,0,0,0,0);
-            BarMemcopier bM(b);
+            BarTick b(0,0,0);
+            BarTickMemcopier bM(b);
             const int iBlockSize (  sizeof (Storage::data_type)
-                            + sizeof (b.Open())
-                            + sizeof (b.High())
-                            + sizeof (b.Low())
                             + sizeof (b.Close())
                             + sizeof (b.Volume())
                             + sizeof (b.Period())
@@ -1009,7 +1006,7 @@ bool Storage::ReadFromStore(int iTickerID, std::time_t tMonth, std::vector<Bar> 
 
 
 
-            std::map<std::time_t,std::vector<Bar>> mvHolder;
+            std::map<std::time_t,std::vector<BarTick>> mvHolder;
 
             ssOut<<"Storage contains "<<iRecordsMax<<" records.\n";
 
@@ -1024,9 +1021,6 @@ bool Storage::ReadFromStore(int iTickerID, std::time_t tMonth, std::vector<Bar> 
                 iInBuffPointer = 0;
 
                 memcpy(&iState,     cBuffer + iInBuffPointer, sizeof (Storage::data_type));   iInBuffPointer += sizeof (Storage::data_type);
-                memcpy(&bM.Open(),  cBuffer + iInBuffPointer, sizeof (bM.Open()));            iInBuffPointer += sizeof (bM.Open());
-                memcpy(&bM.High(),  cBuffer + iInBuffPointer, sizeof (bM.High()));            iInBuffPointer += sizeof (bM.High());
-                memcpy(&bM.Low(),   cBuffer + iInBuffPointer, sizeof (bM.Low()));             iInBuffPointer += sizeof (bM.Low());
                 memcpy(&bM.Close(), cBuffer + iInBuffPointer, sizeof (bM.Close()));           iInBuffPointer += sizeof (bM.Close());
                 memcpy(&bM.Volume(),cBuffer + iInBuffPointer, sizeof (bM.Volume()));          iInBuffPointer += sizeof (bM.Volume());
                 memcpy(&bM.Period(),cBuffer + iInBuffPointer, sizeof (bM.Period()));          iInBuffPointer += sizeof (bM.Period());

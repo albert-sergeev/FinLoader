@@ -227,9 +227,6 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
         int iOutBuffPointer {0};
         //int iSecChangedPointer {0};
         int iBlockSize (  sizeof (Storage::data_type)
-                        + sizeof (bb.Open())
-                        + sizeof (bb.High())
-                        + sizeof (bb.Low())
                         + sizeof (bb.Close())
                         + sizeof (bb.Volume())
                         + sizeof (bb.Period())
@@ -359,9 +356,6 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
                     }
 
                     memcpy(cOutBuff + iOutBuffPointer,&iState,   sizeof (Storage::data_type));      iOutBuffPointer += sizeof (Storage::data_type);
-                    memcpy(cOutBuff + iOutBuffPointer,&bM.Open(),   sizeof (bM.Open()));            iOutBuffPointer += sizeof (bM.Open());
-                    memcpy(cOutBuff + iOutBuffPointer,&bM.High(),   sizeof (bM.High()));            iOutBuffPointer += sizeof (bM.High());
-                    memcpy(cOutBuff + iOutBuffPointer,&bM.Low(),    sizeof (bM.Low()));             iOutBuffPointer += sizeof (bM.Low());
                     memcpy(cOutBuff + iOutBuffPointer,&bM.Close(),  sizeof (bM.Close()));           iOutBuffPointer += sizeof (bM.Close());
                     memcpy(cOutBuff + iOutBuffPointer,&bM.Volume(), sizeof (bM.Volume()));          iOutBuffPointer += sizeof (bM.Volume());
                     memcpy(cOutBuff + iOutBuffPointer,&bM.Period(), sizeof (bM.Period()));          iOutBuffPointer += sizeof (bM.Period());
@@ -470,9 +464,9 @@ int workerLoader::createCleanUpHeader(std::time_t tMonth, char* cBuff,std::time_
     bb.setPeriod(tBegin);
 
     memcpy(cBuff + iBuffPointer,&iState,   sizeof (Storage::data_type));      iBuffPointer += sizeof (Storage::data_type);
-    memcpy(cBuff + iBuffPointer,&bM.Open(),   sizeof (bM.Open()));            iBuffPointer += sizeof (bM.Open());
-    memcpy(cBuff + iBuffPointer,&bM.High(),   sizeof (bM.High()));            iBuffPointer += sizeof (bM.High());
-    memcpy(cBuff + iBuffPointer,&bM.Low(),    sizeof (bM.Low()));             iBuffPointer += sizeof (bM.Low());
+//    memcpy(cBuff + iBuffPointer,&bM.Open(),   sizeof (bM.Open()));            iBuffPointer += sizeof (bM.Open());
+//    memcpy(cBuff + iBuffPointer,&bM.High(),   sizeof (bM.High()));            iBuffPointer += sizeof (bM.High());
+//    memcpy(cBuff + iBuffPointer,&bM.Low(),    sizeof (bM.Low()));             iBuffPointer += sizeof (bM.Low());
     memcpy(cBuff + iBuffPointer,&bM.Close(),  sizeof (bM.Close()));           iBuffPointer += sizeof (bM.Close());
     memcpy(cBuff + iBuffPointer,&bM.Volume(), sizeof (bM.Volume()));          iBuffPointer += sizeof (bM.Volume());
     memcpy(cBuff + iBuffPointer,&bM.Period(), sizeof (bM.Period()));          iBuffPointer += sizeof (bM.Period());
@@ -481,9 +475,9 @@ int workerLoader::createCleanUpHeader(std::time_t tMonth, char* cBuff,std::time_
     bb.setPeriod(tEnd);
 
     memcpy(cBuff + iBuffPointer,&iState,   sizeof (Storage::data_type));      iBuffPointer += sizeof (Storage::data_type);
-    memcpy(cBuff + iBuffPointer,&bM.Open(),   sizeof (bM.Open()));            iBuffPointer += sizeof (bM.Open());
-    memcpy(cBuff + iBuffPointer,&bM.High(),   sizeof (bM.High()));            iBuffPointer += sizeof (bM.High());
-    memcpy(cBuff + iBuffPointer,&bM.Low(),    sizeof (bM.Low()));             iBuffPointer += sizeof (bM.Low());
+//    memcpy(cBuff + iBuffPointer,&bM.Open(),   sizeof (bM.Open()));            iBuffPointer += sizeof (bM.Open());
+//    memcpy(cBuff + iBuffPointer,&bM.High(),   sizeof (bM.High()));            iBuffPointer += sizeof (bM.High());
+//    memcpy(cBuff + iBuffPointer,&bM.Low(),    sizeof (bM.Low()));             iBuffPointer += sizeof (bM.Low());
     memcpy(cBuff + iBuffPointer,&bM.Close(),  sizeof (bM.Close()));           iBuffPointer += sizeof (bM.Close());
     memcpy(cBuff + iBuffPointer,&bM.Volume(), sizeof (bM.Volume()));          iBuffPointer += sizeof (bM.Volume());
     memcpy(cBuff + iBuffPointer,&bM.Period(), sizeof (bM.Period()));          iBuffPointer += sizeof (bM.Period());
@@ -536,7 +530,7 @@ void workerLoader::workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & queue
         std::stringstream ssOut;
 
 
-        std::shared_ptr<std::vector<std::vector<Bar>>> pvBars{std::make_shared<std::vector<std::vector<Bar>>>()};
+        std::shared_ptr<std::vector<std::vector<BarTick>>> pvBars{std::make_shared<std::vector<std::vector<BarTick>>>()};
 
         for (const std::time_t &t:vMonthToLoad){
             ssOut.str("");
@@ -618,7 +612,7 @@ void workerLoader::workerLoadIntoGraph(BlockFreeQueue<dataFinLoadTask> & /*queue
     //////////////////////////////////////////////////////////////////////////////////
     if (data.holder != std::shared_ptr<GraphHolder>{}){
 
-        if(std::shared_ptr<std::vector<std::vector<Bar>>>{} != data.pvBars){
+        if(std::shared_ptr<std::vector<std::vector<BarTick>>>{} != data.pvBars){
             data.holder->AddBarsLists(*data.pvBars.get(),data.dtBegin,data.dtEnd);
 
             if (data.holder->CheckMap()){

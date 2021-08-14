@@ -6,6 +6,7 @@
 #include<memory>
 
 #include "bar.h"
+#include "bartick.h"
 
 
 class dataBuckgroundThreadAnswer
@@ -86,7 +87,7 @@ private:
 
     QWidget * parentWnd;
 public:
-    std::shared_ptr<std::vector<std::vector<Bar>>> pvBars;
+    std::shared_ptr<std::vector<std::vector<BarTick>>> pvBars;
 };
 
 #endif // DATABUCKGROUNDTHREADANSWER_H
