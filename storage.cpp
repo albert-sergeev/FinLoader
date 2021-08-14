@@ -1037,8 +1037,8 @@ bool Storage::ReadFromStore(int iTickerID, std::time_t tMonth, std::vector<BarTi
             ssOut<<"Storage contains "<<iRecordsMax<<" records.\n";
 
 
-            std::time_t tmStartDel;
-            std::time_t tmEndDel;
+            std::time_t tmStartDel{0};
+            std::time_t tmEndDel{0};
             bool bWasRawDelete{false};
 
 

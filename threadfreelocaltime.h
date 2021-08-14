@@ -5,7 +5,7 @@
 #include<chrono>
 #include<shared_mutex>
 
-inline thread_local std::tm tm{};
+inline thread_local std::tm tmTmp{};
 inline std::shared_mutex  mutexLocalTime;
 
 ////////////
@@ -17,8 +17,8 @@ template <typename T>
 inline static std::tm *  threadfree_localtime(const T* t)
 {
     std::unique_lock lk(mutexLocalTime);
-    tm = *std::localtime(t);
-    return &tm;
+    tmTmp = *std::localtime(t);
+    return &tmTmp;
 }
 
 

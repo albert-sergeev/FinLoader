@@ -86,6 +86,64 @@ void GraphViewForm::slotInvalidateGraph(std::time_t dtBegin, std::time_t dtEnd)
         pcout<< "invalidate from: "<<strb<<"\n";
         pcout<< "invalidate to: "<<stre<<"\n";
 
+        Bar::eInterval it{Bar::eInterval::pTick};
+
+        pcout<< " elements total: "<<holder->getViewGraphSize(it)<<"\n";
+
+        std::time_t dtMaxBegin  = holder->getViewGraphDateMin(it);
+        std::time_t dtMaxEnd    = holder->getViewGraphDateMax(it);
+
+        std::tm * ptbM = threadfree_localtime(&dtMaxBegin);
+        std::strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", ptbM);
+        std::string strbM(buffer);
+
+        std::tm * pteM = threadfree_localtime(&dtMaxEnd);
+        std::strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", pteM);
+        std::string streM(buffer);
+
+        pcout<< "has data from: "<<strbM<<"\n";
+        pcout<< "has data to: "<<streM<<"\n";
+
+
+
+    }
+    {
+        //std::unique_lock lk(holder->mutexHolder);;
+
+        ThreadFreeCout pcout;
+        bool bSuccess;
+        auto It =  holder->beginIteratorByDate<BarTick>(Bar::eInterval::pTick, dtBegin, bSuccess);
+        auto ItEnd = holder->end<BarTick>();
+        if (bSuccess)
+        {
+
+            bool bPlainIncremented{true};
+            int iCount{0};
+            std::time_t tTmp{0};
+            while(It != ItEnd){
+                if ((*It).Period() < tTmp
+                        || (*It).Period() > dtEnd
+                        || (*It).Period() < dtBegin
+                        ){
+                    bPlainIncremented   = false;
+                }
+                else{
+                    tTmp  = (*It).Period();
+                }
+//                pcout<< "close: "<<(*It).Close()<<"\n";
+//                if(iCount>300) break;
+                iCount++;
+                ++It;
+            }
+
+            pcout<< "total iterator: "<<iCount<<"\n";
+            pcout<< "bPlainIncremented: "<<bPlainIncremented<<"\n";
+            pcout<< "owns_lock: "<<It.owns_lock()<<"\n";
+        }
+        else{
+            pcout<< "cannot lock mutex.\n";
+        }
+
     }
 
 }

@@ -17,6 +17,17 @@ GraphHolder::GraphHolder(int TickerID)://Bar::eInterval Interval
     ,graphDay{TickerID, Bar::eInterval::pDay}
     ,graphWeek{TickerID, Bar::eInterval::pWeek}
     ,graphMonth{TickerID, Bar::eInterval::pMonth}
+    ,mpGraphs{ {Bar::eInterval::p1,graph1}
+              ,{Bar::eInterval::p5,graph5}
+              ,{Bar::eInterval::p10,graph10}
+              ,{Bar::eInterval::p15,graph15}
+              ,{Bar::eInterval::p30,graph30}
+              ,{Bar::eInterval::p60,graph60}
+              ,{Bar::eInterval::p120,graph120}
+              ,{Bar::eInterval::p180,graph180}
+              ,{Bar::eInterval::pDay,graphDay}
+              ,{Bar::eInterval::pWeek,graphWeek}
+              ,{Bar::eInterval::pMonth,graphMonth}}
 {
 
 }
@@ -35,6 +46,17 @@ GraphHolder::GraphHolder(GraphHolder && o):
     ,graphDay{std::move(o.graph1)}
     ,graphWeek{std::move(o.graph1)}
     ,graphMonth{std::move(o.graph1)}
+    ,mpGraphs{{Bar::eInterval::p1,graph1}
+             ,{Bar::eInterval::p5,graph5}
+             ,{Bar::eInterval::p10,graph10}
+             ,{Bar::eInterval::p15,graph15}
+             ,{Bar::eInterval::p30,graph30}
+             ,{Bar::eInterval::p60,graph60}
+             ,{Bar::eInterval::p120,graph120}
+             ,{Bar::eInterval::p180,graph180}
+             ,{Bar::eInterval::pDay,graphDay}
+             ,{Bar::eInterval::pWeek,graphWeek}
+             ,{Bar::eInterval::pMonth,graphMonth}}
 {
 
 }
@@ -69,3 +91,54 @@ bool GraphHolder::CheckMap()
     return true;
 }
 //------------------------------------------------------------------------------------------------------
+size_t GraphHolder::getViewGraphSize(Bar::eInterval it) const
+{
+    if (it == Bar::eInterval::pTick)
+        return graphTick.size();
+    else
+        return mpGraphs.at(it).size();
+}
+//------------------------------------------------------------------------------------------------------
+std::time_t GraphHolder::getViewGraphDateMin(Bar::eInterval it)
+{
+    if (it == Bar::eInterval::pTick)
+        return graphTick.GetDateMin();
+    else
+        return mpGraphs.at(it).GetDateMin();
+}
+//------------------------------------------------------------------------------------------------------
+std::time_t GraphHolder::getViewGraphDateMax(Bar::eInterval it)
+{
+    if (it == Bar::eInterval::pTick)
+        return graphTick.GetDateMax();
+    else
+        return mpGraphs.at(it).GetDateMax();
+}
+//------------------------------------------------------------------------------------------------------
+size_t GraphHolder::getViewGraphIndex(const std::time_t t, const Bar::eInterval it) const
+{
+    if (it == Bar::eInterval::pTick)
+        return graphTick.getIndex(t);
+    else
+        return mpGraphs.at(it).getIndex(t);
+}
+//------------------------------------------------------------------------------------------------------
+//BarTick & GraphHolder::getByIndex(const Bar::eInterval it,const size_t indx)
+//{
+//    switch (it) {
+//    case Bar::eInterval::pTick:
+//        return graphTick[indx];
+//    case Bar::eInterval::p1:
+//        return graph1[indx];
+//    default:
+//        throw std::invalid_argument("Invalid viewInterval in FraphHolder");
+//        break;
+//    }
+//}
+//------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------
+

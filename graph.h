@@ -51,25 +51,25 @@ public:
        ,iInterval{o.iInterval}
        ,iTickerID{o.iTickerID}{;}
     //--------------------------------------------------------------------------------------------------------
-    T & operator[](size_t i) {if (/*i<0 ||*/ i>= vContainer.size()) {throw std::out_of_range("");} return vContainer[i];}
+    const T & operator[](const size_t i) const {if (/*i<0 ||*/ i>= vContainer.size()) {throw std::out_of_range("");} return vContainer[i];}
     //--------------------------------------------------------------------------------------------------------
 //    void Add (Bar &b, bool bReplaceIfExists = true);
 //    void AddTick (Bar &b, bool bNewSec);
 //    void Add (std::list<Bar> &lst);
     bool AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,std::time_t dtEnd);
 
-    bool CheckMap();
+    inline std::time_t GetDateMin() const  {return  vContainer.size()>0? vContainer.front().Period():0;};
+    inline std::time_t GetDateMax() const  {return  vContainer.size()>0? vContainer.back().Period():0;};
 
+    size_t getIndex(const std::time_t t) const;
+    //--------------------------------------------------------------------------------------------------------
+    bool CheckMap();
     std::string ToString();
     std::string ToStringPeriods();
     //
 private:
     static size_t GetMoreThenIndex(std::vector<T> & v, std::time_t tT);
 };
-
-
-
-
 
 //------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------
@@ -336,6 +336,18 @@ std::string Graph<T>::ToStringPeriods()
 }
 
 //------------------------------------------------------------------------------------------------------------
+template<typename T>
+size_t Graph<T>::getIndex(const std::time_t t) const
+{
+    std::time_t tT = Bar::DateAccommodate(t,this->iInterval);
+    auto It (mDictionary.lower_bound(tT));
+    if (It != mDictionary.end()){
+        return It->second;
+    }
+    else{
+        return vContainer.size();
+    }
+}
 //------------------------------------------------------------------------------------------------------------
 
 #endif // GRAPH_H

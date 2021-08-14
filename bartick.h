@@ -9,14 +9,10 @@
 
 class BarTickMemcopier;
 
-//class BarTick
-//{
-//public:
-//    BarTick();
-//};
 
 class BarTick
 {
+protected:
     double dClose;
     unsigned long iVolume;
     std::time_t tmPeriod;
@@ -26,10 +22,18 @@ class BarTick
 
 public:
 
+    virtual double Open()                   const   {return dClose;};
+    virtual double High()                   const   {return dClose;};
+    virtual double Low()                    const   {return dClose;};
+
     inline double Close()                   const   {return dClose;};
     inline unsigned long Volume()           const   {return iVolume;};
     inline int Interval()                   const   {return iInterval;};
     inline std::time_t Period()             const   {return tmPeriod;};
+
+    virtual void setOpen     (const double d)                  {dClose   = d;};
+    virtual void setHigh     (const double d)                  {dClose   = d;};
+    virtual void setLow      (const double d)                  {dClose    = d;};
 
     inline void setClose    (const double d)                   {dClose  = d;};
     inline void setVolume   (const unsigned long v)            {iVolume = v;};
@@ -57,6 +61,8 @@ public:
         dClose{b.dClose},iVolume{b.iVolume}, tmPeriod{b.tmPeriod}, iInterval{b.iInterval}
     {
     };
+    //--------------------------------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------------------------------------
     //--------------------------------------------------------------------------------------------------------
     BarTick & reinit (const BarTick &b)
     {
@@ -155,10 +161,8 @@ public:
         return Append(b);
     }
     //--------------------------------------------------------------------------------------------------------
-private:
-    //--------------------------------------------------------------------------------------------------------
     // align dates to discret marks
-    time_t DateAccommodate(time_t t, int iInterval)
+    static time_t DateAccommodate(time_t t, int iInterval)
     {
         time_t tRet = t;
 

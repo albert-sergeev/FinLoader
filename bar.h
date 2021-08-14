@@ -4,6 +4,9 @@
 #include <stdexcept>
 #include <sstream>
 #include <chrono>
+
+#include "bartick.h"
+
 #include "threadfreelocaltime.h"
 
 
@@ -12,69 +15,64 @@ class BarMemcopier;
 ////
 /// \brief Main class for store trade operations data for decent time period
 ///
-class Bar
+class Bar:public BarTick
 {
+protected:
+
     double dOpen;
     double dHigh;
     double dLow;
-    double dClose;
-    unsigned long iVolume;
-    std::time_t tmPeriod;
-
-    int iInterval;
 
     friend class BarMemcopier;
 
 public:
 
-    inline double Open()                    const   {return dOpen;};
-    inline double High()                    const   {return dHigh;};
-    inline double Low()                     const   {return dLow;};
-    inline double Close()                   const   {return dClose;};
-    inline unsigned long Volume()           const   {return iVolume;};
-    inline int Interval()                   const   {return iInterval;};
-    inline std::time_t Period()             const   {return tmPeriod;};
+    virtual double Open()                    const   {return dOpen;};
+    virtual double High()                    const   {return dHigh;};
+    virtual double Low()                     const   {return dLow;};
 
-    inline void setOpen     (const double d)                   {dOpen   = d;};
-    inline void setHigh     (const double d)                   {dHigh   = d;};
-    inline void setLow      (const double d)                   {dLow    = d;};
-    inline void setClose    (const double d)                   {dClose  = d;};
-    inline void setVolume   (const unsigned long v)            {iVolume = v;};
-    inline void initInterval(const int iv)                     {iInterval    = iv;};
-    inline void setPeriod   (const std::time_t tm)             {tmPeriod = DateAccommodate(tm,this->iInterval);};
+    using BarTick::Close;
+
+    using BarTick::Volume;
+    using BarTick::Interval;
+    using BarTick::Period;
+
+    virtual void setOpen     (const double d)                   {dOpen   = d;};
+    virtual void setHigh     (const double d)                   {dHigh   = d;};
+    virtual void setLow      (const double d)                   {dLow    = d;};
+
+    using BarTick::setClose;
+    using BarTick::setVolume;
+    using BarTick::initInterval;
+    using BarTick::setPeriod;
 
 public:
     //--------------------------------------------------------------------------------------------------------
-    enum eInterval:int {pTick=(0),p1=1,p5=5,p10=10,p15=15,p30=30,p60=60,p120=120,p180=180, pDay=1440, pWeek=10080, pMonth=302400};
+    //enum eInterval:int {pTick=(0),p1=1,p5=5,p10=10,p15=15,p30=30,p60=60,p120=120,p180=180, pDay=1440, pWeek=10080, pMonth=302400};
+    using BarTick::eInterval;
     //--------------------------------------------------------------------------------------------------------
 
     //--------------------------------------------------------------------------------------------------------
-    Bar():iInterval{eInterval::pTick}{};
+    Bar():BarTick{}{};
     //--------------------------------------------------------------------------------------------------------
     Bar (double Open, double High,double Low,double Close,unsigned long Value, std::time_t Period, int Interval = eInterval::pTick):
-        dOpen{Open},dHigh{High},dLow{Low},dClose{Close},iVolume{Value},tmPeriod{Period}
-        ,iInterval{Interval}
-    {
-        // accomodate time to discret intervals (to up)
-        tmPeriod = DateAccommodate(tmPeriod,this->iInterval);
+        BarTick {Close,Value,Period,Interval},
+        dOpen{Open},dHigh{High},dLow{Low}
 
-    };
+    {};
     //--------------------------------------------------------------------------------------------------------
-    Bar (const Bar &b):
-        dOpen{b.dOpen},dHigh{b.dHigh},dLow{b.dLow},dClose{b.dClose},iVolume{b.iVolume}, tmPeriod{b.tmPeriod}, iInterval{b.iInterval}
+    Bar (const Bar &b):BarTick {b},
+        dOpen{b.dOpen},dHigh{b.dHigh},dLow{b.dLow}
     {
     };
     //--------------------------------------------------------------------------------------------------------
     Bar & reinit (const Bar &b)
     {
+        BarTick::reinit(b);
         dOpen       =   b.dOpen;
         dHigh       =   b.dHigh;
         dLow        =   b.dLow;
-        dClose      =   b.dClose;
-        iVolume     =   b.iVolume;
-        tmPeriod    =   b.tmPeriod;
 
-        iInterval   =   b.iInterval;
         return  *this;
     }
     //--------------------------------------------------------------------------------------------------------
@@ -173,51 +171,14 @@ public:
         return Append(b);
     }
     //--------------------------------------------------------------------------------------------------------
-private:
-    //--------------------------------------------------------------------------------------------------------
     // align dates to discret marks
-    time_t DateAccommodate(time_t t, int iInterval)
-    {
-        time_t tRet = t;
-
-        //1. ticks dont align - they use seconds
-        //2. interdays align by math: append addition to remainder of divide by interval
-        //3. days and more by manipulate days and substract hours and mins
-
-
-        if(iInterval != eInterval::pTick){
-            if(iInterval < pDay){
-                int iSec = t % (iInterval*60);
-                if(iSec>0){
-                    tRet = t  + ((iInterval*60) - iSec);
-                }
-            }
-            else{
-                std::tm tp =  *threadfree_localtime(&t);
-
-                if(iInterval == eInterval::pWeek){//weeks align to mondeys
-                    t= t -  ((tp.tm_wday)*86400);
-                    tp  =  *threadfree_localtime(&t);
-                }
-                else if(iInterval == eInterval::pMonth){// month to first day
-                    tp.tm_mday = 1;
-                }
-
-                tp.tm_hour = 0;
-                tp.tm_min = 0;
-                tp.tm_sec = 0;
-                tp.tm_isdst = 0;
-
-                tRet = std::mktime(&tp);
-            }
-        }
-
-        return tRet;
-    }
-    //--------------------------------------------------------------------------------------------------------
-
+    using  BarTick::DateAccommodate;
 };
 
+//--------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------
 class BarMemcopier{
 
     Bar &bb;
