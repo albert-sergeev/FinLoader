@@ -176,31 +176,9 @@ void MainWindow::timerEvent(QTimerEvent * event)
                 ss << "Load to Graph ends [" << data.TickerID()<<"]";
                 if(!data.Successfull()){
                     ss <<"\n"<<data.GetErrString();
-//                    {
-//                        ThreadFreeCout pcout;
-//                        pcout<<ss.str()<<"\n";
-//                    }
                 }
                 else{
-
-//                    {
-//                        ThreadFreeCout pcout;
-//                        pcout<<ss.str()<<"\n";
-//                    }
-
-                    char buffer[101];
-                    std::time_t tT = data.BeginDate();
-                    std::tm * ptmB = threadfree_localtime(&tT);
-                    std::strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", ptmB);
-                    std::string strB(buffer);
-                    ss <<"Need to repaint ticker["<<data.TickerID()<<"]:\n";
-                    ss <<"from:\t"<<strB<<"\n";
-
-                    tT = data.EndDate();
-                    ptmB = threadfree_localtime(&tT);
-                    std::strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", ptmB);
-                    std::string strE(buffer);
-                    ss <<"to:\t"<<strE<<"\n";
+                    slotSendSignalToInvalidateGraph(data.TickerID(), data.BeginDate(), data.EndDate());
                 }
                 SendToLog(QString::fromStdString(ss.str()));
             }
@@ -237,6 +215,18 @@ void MainWindow::timerEvent(QTimerEvent * event)
     ListViewActivityTermination();
     //
     QWidget::timerEvent(event);
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotSendSignalToInvalidateGraph(int TickerID, std::time_t dtDegin, std::time_t dtEnd)
+{
+    GraphViewForm * wnd{nullptr};
+    QList<QMdiSubWindow*> lst = ui->mdiArea->subWindowList();
+    for(int i = 0; i < lst.size(); ++i){
+        wnd = qobject_cast<GraphViewForm *>(lst[i]->widget());
+        if(wnd && wnd->TickerID() == TickerID){
+            wnd->slotInvalidateGraph(dtDegin,dtEnd);
+        }
+    }
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 ///
@@ -1082,7 +1072,11 @@ void MainWindow::slotSetSelectedTicker(const  int iTickerID)
         }
     }
     if (!bFound){
-        GraphViewForm *pdoc=new GraphViewForm(iTickerID,vTickersLst);
+        if (Holders.find(iTickerID) == Holders.end()){
+            Holders[iTickerID] = std::make_shared<GraphHolder>(GraphHolder{iTickerID});
+        }
+
+        GraphViewForm *pdoc=new GraphViewForm(iTickerID,vTickersLst,Holders[iTickerID]);
         pdoc->setAttribute(Qt::WA_DeleteOnClose);
         pdoc->setWindowIcon(QPixmap(":/store/images/sc_newdoc"));
 
@@ -1179,10 +1173,9 @@ void MainWindow::slotLoadGraph(const  int iTickerID, const std::time_t tBegin, c
 void MainWindow::InitHolders()
 {
     std::time_t tNow =std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-    std::time_t tBegin = Storage::dateAddMonth(tNow,-12);
+    std::time_t tBegin = Storage::dateAddMonth(tNow,-6);
     //
     for(const Ticker &t:vTickersLst){
-        //if (t.TickerID() != 9) continue;
         if (t.AutoLoad()){
             if (Holders.find(t.TickerID()) == Holders.end()){
                 Holders[t.TickerID()] = std::make_shared<GraphHolder>(GraphHolder{t.TickerID()});

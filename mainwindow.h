@@ -190,6 +190,8 @@ protected slots: // for main window
     void slotSetSelectedTicker(const  QModelIndex&);
     void slotSetSelectedTicker(const  int iTickerID);
 
+    void slotSendSignalToInvalidateGraph(int TickerID, std::time_t dtDegin, std::time_t dtEnd);
+
    // void slotTestPvBars(std::shared_ptr<std::vector<std::vector<Bar>>> pvBars);
 
 

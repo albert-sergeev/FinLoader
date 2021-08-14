@@ -4,8 +4,11 @@
 
 #include<sstream>
 
+#include "threadfreelocaltime.h"
+#include "threadfreecout.h"
+
 //---------------------------------------------------------------------------------------------------------------
-GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, QWidget *parent) :
+GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::shared_ptr<GraphHolder> hldr, QWidget *parent) :
     QWidget(parent),
     iTickerID{TickerID},
     tTicker{0,"","",1},
@@ -14,6 +17,8 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, QWidget
 {
     ui->setupUi(this);
     ///----------------------------
+    holder = hldr;
+    //
     auto It (std::find_if(vTickersLst.begin(),vTickersLst.end(),[&](const Ticker &t){
                 return t.TickerID() == iTickerID;
                 }));
@@ -63,6 +68,27 @@ void GraphViewForm::slotLoadGraphButton()
     emit NeedLoadGraph(iTickerID, tBegin, tEnd);
 }
 //---------------------------------------------------------------------------------------------------------------
+void GraphViewForm::slotInvalidateGraph(std::time_t dtBegin, std::time_t dtEnd)
+{
+    {
+        ThreadFreeCout pcout;
+
+        char buffer[100];
+        std::tm * ptb = threadfree_localtime(&dtBegin);
+        std::strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", ptb);
+        std::string strb(buffer);
+
+        std::tm * pte = threadfree_localtime(&dtEnd);
+        std::strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", pte);
+        std::string stre(buffer);
+
+        pcout<< "GraphViewForm:\n";
+        pcout<< "invalidate from: "<<strb<<"\n";
+        pcout<< "invalidate to: "<<stre<<"\n";
+
+    }
+
+}
 //---------------------------------------------------------------------------------------------------------------
 //---------------------------------------------------------------------------------------------------------------
 //---------------------------------------------------------------------------------------------------------------
