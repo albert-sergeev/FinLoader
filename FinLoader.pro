@@ -34,6 +34,7 @@ SOURCES += \
     storage.cpp \
     styledswitcher.cpp \
     threadfreecout.cpp \
+    threadfreelocaltime.cpp \
     threadpool.cpp \
     ticker.cpp \
     tickerslistmodel.cpp \
@@ -57,6 +58,7 @@ HEADERS += \
     storage.h \
     styledswitcher.h \
     threadfreecout.h \
+    threadfreelocaltime.h \
     threadpool.h \
     ticker.h \
     tickerslistmodel.h \

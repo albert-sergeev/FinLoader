@@ -9,6 +9,7 @@
 #include<chrono>
 
 #include "threadpool.h"
+#include "threadfreelocaltime.h"
 
 //using namespace std::filesystem;
 
@@ -339,7 +340,7 @@ void Storage::ParsTickerConfigV_1(std::vector<Ticker> & vTickersLst, std::ifstre
 
 std::time_t Storage::dateCastToMonth(std::time_t t)
 {
-    std::tm* tmT = std::localtime(&t);
+    std::tm* tmT = threadfree_localtime(&t);
     std::tm tmNew;
 
     tmNew.tm_year   = tmT->tm_year;
@@ -361,7 +362,7 @@ std::time_t Storage::dateCastToMonth(std::time_t t)
 std::time_t Storage::dateAddMonth(std::time_t t)
 {
 
-    std::tm* tmT = std::localtime(&t);
+    std::tm* tmT = threadfree_localtime(&t);
     std::tm tmNew;
 
     tmNew.tm_year   = tmT->tm_year;
@@ -377,6 +378,32 @@ std::time_t Storage::dateAddMonth(std::time_t t)
         tmNew.tm_mon = 0;
         tmNew.tm_year++;
     }
+    return std::mktime(&tmNew);
+}
+//--------------------------------------------------------------------------------------------------------
+std::time_t Storage::dateAddMonth(std::time_t t, int iMonth)
+{
+    std::tm* tmT = threadfree_localtime(&t);
+    std::tm tmNew;
+
+    tmNew.tm_year   = tmT->tm_year;
+    tmNew.tm_mon    = tmT->tm_mon;
+    tmNew.tm_mday   = 1;
+    tmNew.tm_hour   = 0;
+    tmNew.tm_min    = 0;
+    tmNew.tm_sec    = 0;
+    tmNew.tm_isdst   = tmT->tm_isdst;
+    ////////////////////////////////////
+    tmNew.tm_mon   += iMonth;
+    while(tmNew.tm_mon >11){
+        tmNew.tm_year++;
+        tmNew.tm_mon -= 12;
+    }
+    while(tmNew.tm_mon <0){
+        tmNew.tm_year--;
+        tmNew.tm_mon += 12;
+    }
+    ////////////////////////////////////
     return std::mktime(&tmNew);
 }
 //--------------------------------------------------------------------------------------------------------
@@ -578,7 +605,7 @@ int  Storage::CreateStageEntryForTicker(int iTickerID, std::time_t tMonth,std::s
         return GetStageEntryForTicker(iTickerID, tMonth, ssOut);
     }
     //////////////
-    std::tm * tmT = std::localtime(&tMonth);
+    std::tm * tmT = threadfree_localtime(&tMonth);
 
     std::stringstream ss;
     ss <<pathStorageDir.c_str();
@@ -620,7 +647,7 @@ int  Storage::CreateStageEntryForTicker(int iTickerID, std::time_t tMonth,std::s
 int  Storage::GetStageEntryForTicker(int iTickerID, std::time_t tMonth,std::stringstream& ssOut) // private
 {
     //
-    std::tm * tmT = std::localtime(&tMonth);
+    std::tm * tmT = threadfree_localtime(&tMonth);
     std::pair<int,std::time_t> k{iTickerID,tMonth};
 
     std::stringstream ss;
@@ -689,7 +716,7 @@ bool Storage::WriteBarToStore(int iTickerID, Bar &b, std::stringstream & ssOut)
         ssOut <<"Cannot get state for data storage file for:"<<iTickerID;
         return false;
     }
-    std::tm * tmT = std::localtime(&tMonth);
+    std::tm * tmT = threadfree_localtime(&tMonth);
 
     std::stringstream ss;
     ss <<pathStorageDir.c_str();
@@ -872,7 +899,7 @@ bool Storage::WriteMemblockToStore(WriteMutexDefender &defLk,int iTickerID, std:
     tMonth = dateCastToMonth(tMonth);
 
 //    char buffer[100];
-//    std::tm * ptm = std::localtime(&tMonth);
+//    std::tm * ptm = threadfree_localtime(&tMonth);
 //    std::strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", ptm);
 //    std::string strB(buffer);
 //    {
@@ -909,7 +936,7 @@ bool Storage::WriteMemblockToStore(WriteMutexDefender &defLk,int iTickerID, std:
         ssOut <<"\n\rCannot get state for data storage file for TickerID: "<<iTickerID;
         return false;
     }
-    std::tm * tmT = std::localtime(&tMonth);
+    std::tm * tmT = threadfree_localtime(&tMonth);
 
     std::stringstream ss;
     ss <<pathStorageDir.c_str();
@@ -940,11 +967,11 @@ bool Storage::ReadFromStore(int iTickerID, std::time_t tMonth, std::vector<BarTi
                    std::stringstream & ssOut)
 {
     char buffer[100];
-    std::tm * ptm = std::localtime(&tMonth);
+    std::tm * ptm = threadfree_localtime(&tMonth);
     std::strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", ptm);
     std::string strM(buffer);
 
-    //ssOut <<"loading: " <<strM<<"\n";
+
     ////////////////////////////////////////////////
 
     tMonth = dateCastToMonth(tMonth);
@@ -964,8 +991,7 @@ bool Storage::ReadFromStore(int iTickerID, std::time_t tMonth, std::vector<BarTi
             return false;
         }
         ///
-        std::tm * tmT = std::localtime(&tMonth);
-
+        std::tm * tmT = threadfree_localtime(&tMonth);
 
         std::stringstream ss;
         ss <<iTickerID<<"_";
@@ -1080,7 +1106,7 @@ bool Storage::ReadFromStore(int iTickerID, std::time_t tMonth, std::vector<BarTi
 
 
 
-            ssOut<<"Read from file: "<<strNamePart<<"\n";;
+            ssOut<<"Read from file: "<<strNamePart<<"\n";
             return true;
         }
         else{

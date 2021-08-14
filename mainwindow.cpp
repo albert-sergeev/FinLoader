@@ -73,6 +73,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     ///
     startTimer(100); // timer to process GUID events
+
+    InitHolders();
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 MainWindow::~MainWindow()
@@ -144,9 +146,21 @@ void MainWindow::timerEvent(QTimerEvent * event)
                 std::stringstream ss;
                 ss << "Load from storage ends [" << data.TickerID()<<"] success: ["<<data.Successfull()<<"]";
                 if(!data.Successfull()){
+                    ss <<"TickerID["<< data.TickerID()<<"]\n";
                     ss <<data.GetErrString();
+                    int n=QMessageBox::critical(0,tr("Critical error"),
+                                       QString::fromStdString(data.GetErrString()),
+                                       QMessageBox::Ok
+                                       );
+                    if (n==QMessageBox::Ok){
+                        ;
+                    }
                 }
                 SendToLog(QString::fromStdString(ss.str()));
+//                {
+//                    ThreadFreeCout pcout;
+//                    pcout<<ss.str();
+//                }
             }
             break;
         case dataBuckgroundThreadAnswer::eAnswerType::storagLoadToGraphBegin:
@@ -162,18 +176,28 @@ void MainWindow::timerEvent(QTimerEvent * event)
                 ss << "Load to Graph ends [" << data.TickerID()<<"]";
                 if(!data.Successfull()){
                     ss <<"\n"<<data.GetErrString();
+//                    {
+//                        ThreadFreeCout pcout;
+//                        pcout<<ss.str()<<"\n";
+//                    }
                 }
                 else{
+
+//                    {
+//                        ThreadFreeCout pcout;
+//                        pcout<<ss.str()<<"\n";
+//                    }
+
                     char buffer[101];
                     std::time_t tT = data.BeginDate();
-                    std::tm * ptmB = std::localtime(&tT);
+                    std::tm * ptmB = threadfree_localtime(&tT);
                     std::strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", ptmB);
                     std::string strB(buffer);
                     ss <<"Need to repaint ticker["<<data.TickerID()<<"]:\n";
                     ss <<"from:\t"<<strB<<"\n";
 
                     tT = data.EndDate();
-                    ptmB = std::localtime(&tT);
+                    ptmB = threadfree_localtime(&tT);
                     std::strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", ptmB);
                     std::string strE(buffer);
                     ss <<"to:\t"<<strE<<"\n";
@@ -183,6 +207,10 @@ void MainWindow::timerEvent(QTimerEvent * event)
             break;
         case dataBuckgroundThreadAnswer::eAnswerType::logText:
             SendToLog(QString::fromStdString(trim(data.GetTextInfo())));
+//        {
+//            ThreadFreeCout pcout;
+//            pcout<<trim(data.GetTextInfo());
+//        }
             break;
         case dataBuckgroundThreadAnswer::eAnswerType::logCriticalError:
             SendToLog(QString::fromStdString(trim(data.GetErrString())));
@@ -1089,6 +1117,7 @@ void MainWindow::slotLoadGraph(const  int iTickerID, const std::time_t tBegin, c
     thrdPoolLoadFinQuotes.AddTask([&](){
         workerLoader::workerDataBaseWork(queueFinQuotesLoad,queueTrdAnswers,stStore);
         });
+
 }
 
 //--------------------------------------------------------------------------------------------------------------------------------
@@ -1146,3 +1175,34 @@ void MainWindow::slotLoadGraph(const  int iTickerID, const std::time_t tBegin, c
 //        }
 //    }
 //}
+
+void MainWindow::InitHolders()
+{
+    std::time_t tNow =std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    std::time_t tBegin = Storage::dateAddMonth(tNow,-12);
+    //
+    for(const Ticker &t:vTickersLst){
+        //if (t.TickerID() != 9) continue;
+        if (t.AutoLoad()){
+            if (Holders.find(t.TickerID()) == Holders.end()){
+                Holders[t.TickerID()] = std::make_shared<GraphHolder>(GraphHolder{t.TickerID()});
+            }
+            //
+            dataFinLoadTask dataTask;
+            dataTask.taskType       = dataFinLoadTask::TaskType::finQuotesLoadFromStorage;
+            dataTask.TickerID       = t.TickerID();
+            dataTask.dtBegin        = tBegin;
+            dataTask.dtEnd          = tNow;
+            dataTask.holder         = Holders[t.TickerID()];
+
+
+            queueFinQuotesLoad.Push(dataFinLoadTask(dataTask));
+
+            thrdPoolLoadFinQuotes.AddTask([&](){
+                workerLoader::workerDataBaseWork(queueFinQuotesLoad,queueTrdAnswers,stStore);
+                });
+        }
+    }
+
+
+}

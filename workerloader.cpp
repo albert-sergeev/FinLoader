@@ -8,6 +8,8 @@
 #include<chrono>
 
 #include "graph.h"
+#include "threadfreelocaltime.h"
+
 
 using namespace std::chrono_literals;
 using seconds=std::chrono::duration<double>;
@@ -95,11 +97,11 @@ void workerLoader::workerEtalon(BlockFreeQueue<dataFinLoadTask> & queueFilLoad,
         dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage,data.GetParentWnd());
         std::stringstream ss;
         char buffer[100];
-        std::tm * ptmB = std::localtime(&data.dtBegin);
+        std::tm * ptmB = threadfree_localtime(&data.dtBegin);
         std::strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", ptmB);
         std::string strB(buffer);
 
-        std::tm * ptmE = std::localtime(&data.dtEnd);
+        std::tm * ptmE = threadfree_localtime(&data.dtEnd);
         std::strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", ptmE);
         std::string strE(buffer);
 
@@ -179,11 +181,11 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
     dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage,data.GetParentWnd());
     std::stringstream ss;
     char buffer[100];
-    std::tm * ptmB = std::localtime(&data.dtBegin);
+    std::tm * ptmB = threadfree_localtime(&data.dtBegin);
     std::strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", ptmB);
     std::string strB(buffer);
 
-    std::tm * ptmE = std::localtime(&data.dtEnd);
+    std::tm * ptmE = threadfree_localtime(&data.dtEnd);
     std::strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", ptmE);
     std::string strE(buffer);
     ss << "Loading <"<<data.sSign<<">\n";
@@ -526,9 +528,7 @@ void workerLoader::workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & queue
             dtMonthBegin = Storage::dateAddMonth(dtMonthBegin);
         }
         //
-
         std::stringstream ssOut;
-
 
         std::shared_ptr<std::vector<std::vector<BarTick>>> pvBars{std::make_shared<std::vector<std::vector<BarTick>>>()};
 
@@ -613,17 +613,25 @@ void workerLoader::workerLoadIntoGraph(BlockFreeQueue<dataFinLoadTask> & /*queue
     if (data.holder != std::shared_ptr<GraphHolder>{}){
 
         if(std::shared_ptr<std::vector<std::vector<BarTick>>>{} != data.pvBars){
-            data.holder->AddBarsLists(*data.pvBars.get(),data.dtBegin,data.dtEnd);
 
-            if (data.holder->CheckMap()){
-                dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::logText,data.GetParentWnd());
-                dt.SetTextInfo("map consistensy is good");
-                queueTrdAnswers.Push(dt);
-
+            if(data.holder->AddBarsLists(*data.pvBars.get(),data.dtBegin,data.dtEnd)){
+                if (data.holder->CheckMap()){
+                    dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::logText,data.GetParentWnd());
+                    dt.SetTextInfo("map consistensy is good");
+                    queueTrdAnswers.Push(dt);
+                }
+                else{
+                    dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::logCriticalError,data.GetParentWnd());
+                    dt.SetErrString("map consistensy is broken");
+                    queueTrdAnswers.Push(dt);
+                    bSuccessfull = false;
+                }
             }
-            else{
-                dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::logCriticalError,data.GetParentWnd());
-                dt.SetErrString("map consistensy is broken");
+            if(this_thread_flagInterrup.isSet()){
+                //fout<<"exit on interrupt\n";
+                dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::storagLoadToGraphEnd,data.GetParentWnd());
+                dt.SetSuccessfull(false);
+                dt.SetErrString("loading process interrupted");
                 queueTrdAnswers.Push(dt);
                 bSuccessfull = false;
             }

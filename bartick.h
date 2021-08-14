@@ -4,6 +4,8 @@
 #include <stdexcept>
 #include <sstream>
 #include <chrono>
+#include "threadfreelocaltime.h"
+
 
 class BarTickMemcopier;
 
@@ -173,11 +175,11 @@ private:
                 }
             }
             else{
-                std::tm tp =  *std::localtime(&t);
+                std::tm tp =  *threadfree_localtime(&t);
 
                 if(iInterval == eInterval::pWeek){//weeks align to mondeys
                     t= t -  ((tp.tm_wday)*86400);
-                    tp  =  *std::localtime(&t);
+                    tp  =  *threadfree_localtime(&t);
                 }
                 else if(iInterval == eInterval::pMonth){// month to first day
                     tp.tm_mday = 1;

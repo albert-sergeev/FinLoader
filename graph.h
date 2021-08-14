@@ -10,6 +10,7 @@
 
 #include "threadfreecout.h"
 #include "bar.h"
+#include "threadpool.h"
 
 /////////////////////////////////////////////
 /// \brief Class for store trade graphics
@@ -131,6 +132,7 @@ bool Graph<T>::AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,s
                 }
             }
             std::copy(lst.begin(),lst.end(),std::back_inserter(vContainer));
+            if(this_thread_flagInterrup.isSet()){return false;}
         }
     }
     else{
@@ -141,10 +143,13 @@ bool Graph<T>::AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,s
         // 4. insert new data into the vector
 
 
+        if(this_thread_flagInterrup.isSet()){return false;}
         // 1. look up range to delete in the vector
         size_t iStart = GetMoreThenIndex(vContainer, dtStart);
         size_t iEnd = GetMoreThenIndex(vContainer, dtEnd + 1); //
 
+
+        if(this_thread_flagInterrup.isSet()){return false;}
         // 2. clear range to delete from map;
         auto It (mDictionary.begin());
         auto ItEnd (mDictionary.end());
@@ -174,6 +179,7 @@ bool Graph<T>::AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,s
         // 2.3 erase olds
         mDictionary.erase(It,ItEnd);
         //
+        if(this_thread_flagInterrup.isSet()){return false;}
         // 3. resize vector
         if (iNewLength < iEnd - iStart){
 
@@ -198,6 +204,7 @@ bool Graph<T>::AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,s
 
             std::copy(ItStart,ItStop,ItDst);
         }
+        if(this_thread_flagInterrup.isSet()){return false;}
         // 4. insert new data into the vector
         auto ItStart (std::next(vContainer.begin(),iStart));
         for(const auto & lst:v){
@@ -222,6 +229,8 @@ bool Graph<T>::AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,s
     return true;;
 }
 
+
+
 //------------------------------------------------------------------------------------------------------------
 template<typename T>
 bool Graph<T>::CheckMap()
@@ -242,6 +251,7 @@ bool Graph<T>::CheckMap()
             pcout<<"vContainer[map[index]].period == vContainer[map[index]-1].period\n";
             return false;
         }
+        if(this_thread_flagInterrup.isSet()){return true;}
     }
     for (size_t i = 0; i< vContainer.size(); ++i){
         if(mDictionary.find(vContainer[i].Period()) == mDictionary.end()){
@@ -254,6 +264,7 @@ bool Graph<T>::CheckMap()
             pcout<<"vContainer[mDictionary[vContainer[i].Period()]].Period() != vContainer[i].Period()\n";
             return false;
         }
+        if(this_thread_flagInterrup.isSet()){return true;}
     }
 
     return true;

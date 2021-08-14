@@ -64,7 +64,7 @@ class Storage
     const std::vector<bool> vStorage3;
     const std::vector<bool> vStorage4;
 
-
+    std::atomic<int> aIntCount{0};
 
 public:
     //-----------------------------------------------------------
@@ -140,6 +140,7 @@ public:
 
     static std::time_t dateCastToMonth(std::time_t);
     static std::time_t dateAddMonth(std::time_t);
+    static std::time_t dateAddMonth(std::time_t, int iMonth);
 
 private:
     //--------------------------------------------------------------------------------------------------------

@@ -68,7 +68,6 @@ private:
     bool bTickerBarButtonsHidden;
     //------------------------------------------------
     std::map<int,std::shared_ptr<GraphHolder>> Holders;
-    //std::map<int,GraphHolder> Holders;
     std::queue<std::pair<int,std::chrono::time_point<std::chrono::steady_clock>>> qActivityQueue;
     std::map<int,std::pair<bool,std::chrono::time_point<std::chrono::steady_clock>>> mBlinkedState;
     //------------------------------------------------
@@ -134,6 +133,7 @@ protected:
     void LoadDataStorage();
     void SaveDataStorage();
     void InitDockBar();
+    void InitHolders();
 
     bool event(QEvent *event) override;
     void timerEvent(QTimerEvent * event) override;
