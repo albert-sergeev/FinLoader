@@ -17,6 +17,7 @@ CONFIG += c++1z
 
 SOURCES += \
     bar.cpp \
+    bartick.cpp \
     blockfreequeue.cpp \
     bulbululator.cpp \
     configwindow.cpp \
@@ -40,6 +41,7 @@ SOURCES += \
 
 HEADERS += \
     bar.h \
+    bartick.h \
     blockfreequeue.h \
     bulbululator.h \
     configwindow.h \

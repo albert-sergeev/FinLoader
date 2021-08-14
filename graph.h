@@ -258,7 +258,7 @@ bool Graph<T>::CheckMap()
 
     return true;
 }
-
+//------------------------------------------------------------------------------------------------------------
 template<typename T>
 size_t Graph<T>::GetMoreThenIndex(std::vector<T> & v, std::time_t tT)
 {
