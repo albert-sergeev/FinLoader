@@ -17,7 +17,6 @@ GraphHolder::GraphHolder(int TickerID)://Bar::eInterval Interval
     ,graphDay{TickerID, Bar::eInterval::pDay}
     ,graphWeek{TickerID, Bar::eInterval::pWeek}
     ,graphMonth{TickerID, Bar::eInterval::pMonth}
-
 {
 
 }

@@ -20,18 +20,18 @@ private:
 
     std::shared_mutex mutexHolder;
 
-    Graph graphTick;
-    Graph graph1;
-    Graph graph5;
-    Graph graph10;
-    Graph graph15;
-    Graph graph30;
-    Graph graph60;
-    Graph graph120;
-    Graph graph180;
-    Graph graphDay;
-    Graph graphWeek;
-    Graph graphMonth;
+    Graph<Bar> graphTick;
+    Graph<Bar> graph1;
+    Graph<Bar> graph5;
+    Graph<Bar> graph10;
+    Graph<Bar> graph15;
+    Graph<Bar> graph30;
+    Graph<Bar> graph60;
+    Graph<Bar> graph120;
+    Graph<Bar> graph180;
+    Graph<Bar> graphDay;
+    Graph<Bar> graphWeek;
+    Graph<Bar> graphMonth;
 
 public:
 
