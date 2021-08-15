@@ -1085,6 +1085,8 @@ void MainWindow::slotSetSelectedTicker(const  int iTickerID)
         connect(pdoc,SIGNAL(NeedLoadGraph(const  int,const std::time_t,const std::time_t)),
                   this,SLOT(slotLoadGraph(const  int,const std::time_t,const std::time_t)));
 
+        connect(pdoc,SIGNAL(SendToLog(QString)),this,SIGNAL(SendToLog(QString)));
+
         pdoc->show();
     }
     else{

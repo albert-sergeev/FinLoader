@@ -14,7 +14,6 @@
 #include "graph.h"
 #include "ticker.h"
 
-
 class GraphHolder
 {
 private:
@@ -35,6 +34,7 @@ private:
     Graph<Bar> graphDay;
     Graph<Bar> graphWeek;
     Graph<Bar> graphMonth;
+
 
     std::map<Bar::eInterval,Graph<Bar>&> mpGraphs;
 
@@ -137,7 +137,20 @@ public:
                 iCurrentIndex++;
             return It;
         }
-
+        //-------------------------------------
+        int operator-(Iterator o) const{
+            //it.iCurrentIndex;
+            if (bEndIterator && o.bEndIterator){return 0;}
+            else if (o.bEndIterator){
+                return iCurrentIndex -  holder->getViewGraphSize  (selectedViewInterval) ;
+            }
+            else if (bEndIterator){
+                return holder->getViewGraphSize  (selectedViewInterval)  - o.iCurrentIndex;
+            }
+            else{
+                return iCurrentIndex - o.iCurrentIndex;
+            }
+        }
         //-------------------------------------
         T & operator*()  {
             return (holder->getByIndex<T>(selectedViewInterval,iCurrentIndex));
@@ -173,8 +186,14 @@ public:
     inline const Bar & grMonth(size_t i)      {return graphMonth[i];};
     //------------------------------------------------------------
     size_t getViewGraphSize(const Bar::eInterval i) const;
+    size_t getViewGraphIndex(const std::time_t t, const Bar::eInterval i) const;
+
     std::time_t getViewGraphDateMin(Bar::eInterval it);
     std::time_t getViewGraphDateMax(Bar::eInterval it);
+
+// TODO: switch to grMonth.getMinMax();
+    std::pair<double,double>  getMinMax() const {return graphTick.getMinMax();};
+    std::pair<double,double>  getMinMax(std::time_t dtStart,std::time_t dtEnd) const {return graphTick.getMinMax(dtStart,dtEnd);};
     //------------------------------------------------------------
 
 
@@ -202,9 +221,9 @@ public:
     //------------------------------------------------------------
     bool AddBarsLists(std::vector<std::vector<BarTick>> &v, std::time_t dtStart,std::time_t dtEnd);
     bool CheckMap();
+
 private:
 
-    size_t getViewGraphIndex(const std::time_t t, const Bar::eInterval i) const;
     template<typename T>
     T & getByIndex(const Bar::eInterval it,const size_t indx);
 

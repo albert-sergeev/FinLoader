@@ -16,6 +16,8 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
     ui(new Ui::GraphViewForm)
 {
     ui->setupUi(this);
+
+   // ui->grViewQuotes->setHorizontalScrollBar(ui->scrlBarHorizontal);
     ///----------------------------
     holder = hldr;
     //
@@ -31,8 +33,97 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
     this->setWindowTitle(QString::fromStdString(tTicker.TickerSign()));
     //------------------------------
 
+    iSelectedInterval   = Bar::eInterval::pTick;
+    iMaxGraphViewSize   = 0;
+    tStartViewPosition  = 0;
+    dHScale             = 20.0;
+    dVScale             = 1;
+    dTailFreeZone       = 0.1;
+    bOHLC               = true;
+    //------------------------------
     connect(ui->btnTestLoad,SIGNAL(clicked()),this,SLOT(slotLoadGraphButton()));
-    connect(ui->btnTest2,SIGNAL(clicked()),this,SLOT(slotLoadGraphButton2()));
+
+    //QGraphicsScene scene(QRectF(-100,-100,600,600));
+
+    grScene = new QGraphicsScene(/*QRectF(-100,-100,600,600)*/);
+    ui->grViewQuotes->setScene(grScene);
+
+
+    if (iSelectedInterval  == Bar::eInterval::pTick)
+    {
+
+        // lock holder
+        bool bSuccess{false};
+        auto ItDefender(holder->beginIteratorByDate<BarTick>(iSelectedInterval,0,bSuccess));
+        if (bSuccess){ // if locked
+
+            size_t iSize =  holder->getViewGraphSize(iSelectedInterval);
+            std::time_t tMin =  holder->getViewGraphDateMin(Bar::eInterval::pTick);
+            std::time_t tMax =  holder->getViewGraphDateMax(Bar::eInterval::pTick);
+
+            auto p = holder->getMinMax(tMin,tMax);
+            double dLowMin  = p.first;
+            double dHighMax = p.second;
+
+
+             //-dHScale * It->Close()
+//            QRectF newRec(0, -dHScale * dLowMin  ,iSize * BarGraphicsItem::BarWidth  , dHScale * (dHighMax - dLowMin));
+//            ui->grViewQuotes->setSceneRect(newRec);
+
+//            x	-4
+//            y	-5821.8
+//            width	707
+//            height	168.6
+
+             QRectF newRec(0, -dHScale * dLowMin ,iSize * BarGraphicsItem::BarWidth  ,- dHScale * (dHighMax - dLowMin));
+             ui->grViewQuotes->setSceneRect(newRec);
+
+
+
+//            {
+//                QRectF currRectF = ui->grViewQuotes->sceneRect();
+//                ThreadFreeCout pcout;
+//                pcout <<"constructor:\n";
+//                pcout <<"x\t"<<currRectF.x()<<"\n";
+//                pcout <<"y\t"<<currRectF.y()<<"\n";
+//                pcout <<"width\t"<<currRectF.width()<<"\n";
+//                pcout <<"height\t"<<currRectF.height()<<"\n";
+//            }
+
+            auto It(holder->beginIteratorByDate<BarTick>(iSelectedInterval,tMin,bSuccess));
+            if (bSuccess){
+                auto ItEnd(holder->beginIteratorByDate<BarTick>(iSelectedInterval,tMax+1,bSuccess));
+                if (bSuccess){
+                    slotAddBarTicksToView(It,ItEnd);
+                }
+            }
+            {
+                QRectF currRectF = ui->grViewQuotes->sceneRect();
+                ThreadFreeCout pcout;
+                pcout <<"constructor:\n";
+                pcout <<"x\t"<<currRectF.x()<<"\n";
+                pcout <<"y\t"<<currRectF.y()<<"\n";
+                pcout <<"width\t"<<currRectF.width()<<"\n";
+                pcout <<"height\t"<<currRectF.height()<<"\n";
+            }
+
+
+
+
+//            auto strMin = threadfree_localtime_to_str(&tMin);
+//            auto strMax = threadfree_localtime_to_str(&tMax);
+//            ThreadFreeCout pcout;
+//            std::stringstream ss;
+//            ss << "date from: "<< strMin<<"\n";
+//            ss << "date to: "<< strMax<<"\n";
+//            ss << "{Min:Max}: <"<<dLowMin<<":"<<dHighMax<<">\n";
+//            pcout <<ss.str();
+        }
+    }
+    else{
+        ThreadFreeCout pcout;
+        pcout <<"GraphViewForm::GraphViewForm: No handler for other intervals!!!!!!!!:\n";
+    }
 
 
 }
@@ -44,25 +135,6 @@ GraphViewForm::~GraphViewForm()
 //---------------------------------------------------------------------------------------------------------------
 void GraphViewForm::slotLoadGraphButton()
 {
-//    std::tm tmSt;
-//    tmSt.tm_year    = 2021       - 1900;
-//    tmSt.tm_mon     = 1      - 1;
-//    tmSt.tm_mday    = 15;
-//    tmSt.tm_hour    = 10;
-//    tmSt.tm_min     = 45;
-//    tmSt.tm_sec     = 12;
-//    tmSt.tm_isdst   = 0;
-
-//    std::time_t tBegin  = std::mktime(&tmSt);
-
-//    tmSt.tm_mon     = 8      - 1;
-//    tmSt.tm_mday    = 5;
-//    tmSt.tm_hour    = 18;
-//    tmSt.tm_min     = 31;
-//    tmSt.tm_sec     = 45;
-
-//    std::time_t tEnd    = std::mktime(&tmSt);
-
     std::time_t tNow =std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     std::time_t tBegin = Storage::dateAddMonth(tNow,-12);
     std::time_t tEnd = tNow;
@@ -72,118 +144,126 @@ void GraphViewForm::slotLoadGraphButton()
 //---------------------------------------------------------------------------------------------------------------
 void GraphViewForm::slotInvalidateGraph(std::time_t dtBegin, std::time_t dtEnd)
 {
+    bool bSuccess{false};
+    queueRepaint.Push({dtBegin,dtEnd});
+    auto pData (queueRepaint.Pop(bSuccess));
+    while(bSuccess)
     {
-        ThreadFreeCout pcout;
+        auto data(*pData.get());
+        ///
+        if (iSelectedInterval == Bar::eInterval::pTick) {
+            auto It (holder->beginIteratorByDate<BarTick>(iSelectedInterval,data.dtStart,bSuccess));
+            if (bSuccess){
+                auto ItEnd (holder->beginIteratorByDate<BarTick>(iSelectedInterval,data.dtEnd,bSuccess));
+                if (bSuccess){
 
-        char buffer[100];
-        std::tm * ptb = threadfree_localtime(&dtBegin);
-        std::strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", ptb);
-        std::string strb(buffer);
+//                    std::time_t tMin =  holder->getViewGraphDateMin(Bar::eInterval::pTick);
+//                    std::time_t tMax =  holder->getViewGraphDateMax(Bar::eInterval::pTick);
 
-        std::tm * pte = threadfree_localtime(&dtEnd);
-        std::strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", pte);
-        std::string stre(buffer);
-
-        pcout<< "GraphViewForm:\n";
-        pcout<< "invalidate from: "<<strb<<"\n";
-        pcout<< "invalidate to: "<<stre<<"\n";
-
-        Bar::eInterval it{Bar::eInterval::pTick};
-
-        pcout<< " elements total: "<<holder->getViewGraphSize(it)<<"\n";
-
-        std::time_t dtMaxBegin  = holder->getViewGraphDateMin(it);
-        std::time_t dtMaxEnd    = holder->getViewGraphDateMax(it);
-
-        std::tm * ptbM = threadfree_localtime(&dtMaxBegin);
-        std::strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", ptbM);
-        std::string strbM(buffer);
-
-        std::tm * pteM = threadfree_localtime(&dtMaxEnd);
-        std::strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", pteM);
-        std::string streM(buffer);
-
-        pcout<< "has data from: "<<strbM<<"\n";
-        pcout<< "has data to: "<<streM<<"\n";
+                    auto p = holder->getMinMax(data.dtStart,data.dtEnd);
+//                    qreal dLowMin  = -p.first;
+//                    qreal dHighMax = -p.second;
 
 
+//                    QRectF currRectF = ui->grViewQuotes->sceneRect();
+//                    if (currRectF.y() !=0 && dLowMin < currRectF.y()) {
+//                        dLowMin = currRectF.y();
+//                    }
+//                    if (dHighMax > currRectF.y() - currRectF.height()) {
+//                        dHighMax = currRectF.y() - currRectF.height();
+//                    }
 
-    }
-    {
-        //std::unique_lock lk(holder->mutexHolder);;
 
-        ThreadFreeCout pcout;
-        bool bSuccess;
-        It =  holder->beginIteratorByDate<BarTick>(Bar::eInterval::pTick, dtBegin, bSuccess);
-        auto ItEndT = holder->end<BarTick>();
-        auto ItEnd(ItEndT);
-        if (bSuccess)
-        {
+//                    QRectF newRec(tMin,
+//                                  dLowMin,
+//                                  tMax  - tMin,
+//                                  -(dHighMax - dLowMin));
 
-            bool bPlainIncremented{true};
-            int iCount{0};
-            std::time_t tTmp{0};
+//                    ui->grViewQuotes->setSceneRect(newRec);
 
-            auto ItNew (std::next(It,537410));
-            //auto ItNew (std::next(It,637410));
-            while(ItNew != ItEnd){
-                if ((*It).Period() < tTmp
-                        || (*It).Period() > dtEnd
-                        || (*It).Period() < dtBegin
-                        ){
-                    bPlainIncremented   = false;
+//                    std::string strStart    = threadfree_localtime_to_str(&data.dtStart);
+//                    std::string strEnd      = threadfree_localtime_to_str(&data.dtEnd);
+
+//                    emit SendToLog("invalidate from: " + QString::fromStdString(strStart));
+//                    emit SendToLog("invalidate to: " + QString::fromStdString(strEnd));
+
+//                    currRectF = ui->grViewQuotes->sceneRect();
+                    {
+                    ThreadFreeCout pcout;
+                    pcout <<"invalidate:\n";
+                    pcout << "{Min:Max}: <"<<p.first<<":"<<p.second<<">\n";
+//                    pcout <<"x\t"<<currRectF.x()<<"\n";
+//                    pcout <<"y\t"<<currRectF.y()<<"\n";
+//                    pcout <<"width\t"<<currRectF.width()<<"\n";
+//                    pcout <<"height\t"<<currRectF.height()<<"\n";
+                    }
                 }
-                else{
-                    tTmp  = (*It).Period();
-                }
-                pcout<< "close: "<<(*It).Close()<<"\n";
-
-                iCount++;
-
-                ++ItNew;
             }
-
-            pcout<< "total iterator: "<<iCount<<"\n";
-            pcout<< "bPlainIncremented: "<<bPlainIncremented<<"\n";
-            pcout<< "It owns_lock: "<<It.owns_lock()<<"\n";
-            pcout<< "ItNew owns_lock: "<<ItNew.owns_lock()<<"\n";
-//            It.ulock();
-//            ItNew.ulock();
-//            pcout<< "do unlock\n";
-//            pcout<< "It owns_lock: "<<It.owns_lock()<<"\n";
-//            pcout<< "ItNew owns_lock: "<<ItNew.owns_lock()<<"\n";
         }
         else{
-            pcout<< "cannot lock mutex.\n";
+            auto It (holder->beginIteratorByDate<Bar>(iSelectedInterval,data.dtStart,bSuccess));
+            if (bSuccess){
+                auto ItEnd (holder->beginIteratorByDate<Bar>(iSelectedInterval,data.dtEnd,bSuccess));
+                if (bSuccess){
+                    std::string strStart    = threadfree_localtime_to_str(&data.dtStart);
+                    std::string strEnd      = threadfree_localtime_to_str(&data.dtEnd);
+
+                    emit SendToLog("invalidate from: " + QString::fromStdString(strStart));
+                    emit SendToLog("invalidate to: " + QString::fromStdString(strEnd));
+                }
+            }
         }
-
+        ///////
+        if(!bSuccess){ // if not, postpone for the future
+            queueRepaint.Push({dtBegin,dtEnd});
+        }
+        else{   // if success, do next
+            pData = queueRepaint.Pop(bSuccess);
+        }
     }
-
 }
 //---------------------------------------------------------------------------------------------------------------
 void GraphViewForm::slotLoadGraphButton2()
 {
-    {
-        ThreadFreeCout pcout;
-        pcout<< "\n\rIt owns_lock: "<<It.owns_lock()<<"\n";
-    }
-
-    It = holder->end<BarTick>();
-    It.ulock();
-
-    {
-        ThreadFreeCout pcout;
-        pcout <<"trying unlock\n";
-        pcout<< "It owns_lock: "<<It.owns_lock()<<"\n";
-
-//        std::unique_lock lk(holder->mutexHolder, std::defer_lock);
-//        bool locked = !lk.try_lock();
-//        pcout<< "realy locked: "<<locked<<"\n";
-//        holder->mutexHolder.unlock();
-    }
 
 }
 //---------------------------------------------------------------------------------------------------------------
+void GraphViewForm::slotAddBarTicksToView(GraphHolder::Iterator<BarTick> It, GraphHolder::Iterator<BarTick> ItEnd)
+{
+    int iCount{0};
+//TODO: std::distance
+    //auto iDist = std::distance(ItEnd,It);
+    auto iDist = holder->getViewGraphSize(Bar::eInterval::pTick);
+    auto parts(iDist/1000);
+    while(It != ItEnd){
+        BarGraphicsItem *item = new BarGraphicsItem(*It,3);
+        ui->grViewQuotes->scene()->addItem(item);
+        item->setPos(iCount * BarGraphicsItem::BarWidth , -dHScale * It->Close());
+
+        It = std::next(It,parts);
+
+        iCount++;
+//        if (iCount>100) break;
+    }
+    ThreadFreeCout pcout;
+    pcout<<"added {"<<iCount<< "} Ticks to BarGraphicsItem\n";
+    pcout<<"iDist {"<<iDist<< "} Ticks to BarGraphicsItem\n";
+
+}
+//---------------------------------------------------------------------------------------------------------------
+void GraphViewForm::slotAddBarsToView(GraphHolder::Iterator<Bar> /*It*/, GraphHolder::Iterator<Bar> /*ItEnd*/)
+{
+    int iCount{0};
+//    while(It != ItEnd){
+//        BarGraphicsItem *item = new BarGraphicsItem(*It,3);
+//        ui->grViewQuotes->scene()->addItem(item);
+//        item->setPos(iCount * BarGraphicsItem::BarWidth , -dHScale * It->Close());
+//        It++;iCount++;
+//    }
+    ThreadFreeCout pcout;
+    pcout<<"added {"<<iCount<< "} Bars to BarGraphicsItem\n";
+
+}
 //---------------------------------------------------------------------------------------------------------------
 //---------------------------------------------------------------------------------------------------------------
 //---------------------------------------------------------------------------------------------------------------

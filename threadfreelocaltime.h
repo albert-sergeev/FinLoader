@@ -4,6 +4,7 @@
 
 #include<chrono>
 #include<shared_mutex>
+#include<string>
 
 inline thread_local std::tm tmTmp{};
 inline std::shared_mutex  mutexLocalTime;
@@ -21,5 +22,16 @@ inline static std::tm *  threadfree_localtime(const T* t)
     return &tmTmp;
 }
 
+template <typename T>
+inline static std::string  threadfree_localtime_to_str(const T* t)
+{
+    std::unique_lock lk(mutexLocalTime);
+    tmTmp = *std::localtime(t);
+    char buffer[100];
+    std::strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", &tmTmp);
+    std::string strRet(buffer);
+
+    return strRet;
+}
 
 #endif // TREADSAFELOCALTIME_H
