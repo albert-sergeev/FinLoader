@@ -14,8 +14,6 @@
 #include "graph.h"
 #include "ticker.h"
 
-template<typename T>
-class GraphHolderIterator;
 
 class GraphHolder
 {
@@ -23,7 +21,7 @@ private:
 
     const int iTickerID;
 
-    //mutable std::shared_mutex mutexHolder;
+    mutable std::shared_mutex mutexHolder;
 
     Graph<BarTick> graphTick;
     Graph<Bar> graph1;
@@ -41,15 +39,124 @@ private:
     std::map<Bar::eInterval,Graph<Bar>&> mpGraphs;
 
 
+public:
+    //-----------------------------------------------------------------------------------------------------------------------------------
     template<typename T>
-    friend class GraphHolderIterator;
+    class Iterator
+    {
+        //GraphHolder * const holder;
+        GraphHolder * holder;
+        Bar::eInterval selectedViewInterval{Bar::eInterval::pTick};
+        size_t iCurrentIndex{0};
+
+        //const bool bEndIterator;
+        bool bEndIterator;
+
+        std::shared_lock<std::shared_mutex> lk;
+
+    public:
+        //-------------------------------------
+        Iterator():holder{},bEndIterator{true}{;}
+        //
+        Iterator(GraphHolder &hl,const  Bar::eInterval it,const  std::time_t tBeg):
+           holder{&hl}
+          ,selectedViewInterval{it}
+          ,bEndIterator{false}
+          ,lk {hl.mutexHolder,std::defer_lock}
+        {
+            lk.try_lock();
+            iCurrentIndex = holder->getViewGraphIndex(tBeg,selectedViewInterval);
+        };
+        //
+        Iterator(const Iterator &o):
+            holder{o.holder}
+           ,selectedViewInterval{o.selectedViewInterval}
+           ,iCurrentIndex{o.iCurrentIndex}
+           ,bEndIterator{o.bEndIterator}
+        {
+            if (!o.bEndIterator && o.owns_lock()){
+                lk = {holder->mutexHolder,std::defer_lock};
+                lk.try_lock();
+            }
+        };
+        //
+        Iterator& operator=(const Iterator &o)
+        {
+            holder                   = o.holder;
+            selectedViewInterval     = o.selectedViewInterval;
+            iCurrentIndex            = o.iCurrentIndex;
+
+            if (!o.bEndIterator){
+                lk = {holder->mutexHolder,std::defer_lock};
+                if ( o.owns_lock()) {
+                    lk.try_lock();
+                }
+            }
+            else{
+                lk = std::shared_lock<std::shared_mutex>{};
+            }
+
+            bEndIterator             = o.bEndIterator;
+            return *this;
+        };
+        //-------------------------------------
+        bool operator==(const Iterator &o) const{
+            //
+            if (bEndIterator && o.bEndIterator){
+                return true;
+            }
+            else if (o.bEndIterator){
+                if (holder->getViewGraphSize  (selectedViewInterval)   <= iCurrentIndex) return true;
+                else return false;
+            }
+            else if (bEndIterator){
+                if (o.holder->getViewGraphSize(o.selectedViewInterval) <= o.iCurrentIndex) return true;
+                else return false;
+            }
+            else if(selectedViewInterval == o.selectedViewInterval && iCurrentIndex == o.iCurrentIndex){
+                return true;
+            }
+            else{
+                return false;
+            }
+        }
+        //-------------------------------------
+        bool operator!=(const Iterator &o) const{
+            return !operator==(o);
+        }
+        //-------------------------------------
+        Iterator & operator++() {
+            if(holder->getViewGraphSize(selectedViewInterval) > iCurrentIndex)
+                iCurrentIndex++;
+            return *this;
+        }
+        //
+        Iterator operator++(int) {
+            Iterator It(*this);
+            if(holder->getViewGraphSize(selectedViewInterval) > iCurrentIndex )
+                iCurrentIndex++;
+            return It;
+        }
+
+        //-------------------------------------
+        T & operator*()  {
+            return (holder->getByIndex<T>(selectedViewInterval,iCurrentIndex));
+        }
+        //
+        T * operator->() const {
+            return &(holder->getByIndex<T>(selectedViewInterval,iCurrentIndex));
+        }
+        //-------------------------------------
+        inline Bar::eInterval Interval() const {return selectedViewInterval;}
+        inline bool owns_lock()          const {return !bEndIterator? lk.owns_lock():false;}
+        inline void ulock()              { if(!bEndIterator) lk.unlock();}
+    };
 
 public:
 
     explicit GraphHolder(const int iTickerID = 0);
     GraphHolder(GraphHolder &&);
 
-    mutable std::shared_mutex mutexHolder;
 
     //------------------------------------------------------------
     inline const BarTick & grTick(size_t i)   {return graphTick[i];};
@@ -72,23 +179,23 @@ public:
 
 
     template<typename T>
-    GraphHolderIterator<T> beginIteratorByDate(Bar::eInterval it, std::time_t tBeg,bool & bSuccess){
-        std::shared_lock lkT(mutexHolder,std::defer_lock);
+    Iterator<T> beginIteratorByDate(Bar::eInterval Interval, std::time_t tBeg,bool & bSuccess){
+        Iterator<T> It (*this, Interval, tBeg);
         bSuccess = false;
-        if (!lkT.try_lock())
-            return GraphHolderIterator<T>{};
+        if (!It.owns_lock())
+            return Iterator<T>{};
         bSuccess = true;
-        return GraphHolderIterator<T>(lkT,*this, it, tBeg);
+        return It;
     }
 
     template<typename T>
-    GraphHolderIterator<T> endIteratorByDate(Bar::eInterval it, std::time_t tBeg){
-        return GraphHolderIterator<T>(std::shared_lock{mutexHolder,std::defer_lock},*this, it, tBeg);
+    Iterator<T> endIteratorByDate(Bar::eInterval it, std::time_t tBeg){
+        return Iterator<T>(*this, it, tBeg);
     }
 
     template<typename T>
-    GraphHolderIterator<T> end(){
-        return GraphHolderIterator<T>{};
+    Iterator<T> end(){
+        return Iterator<T>{};
     }
 
 
@@ -99,110 +206,25 @@ private:
 
     size_t getViewGraphIndex(const std::time_t t, const Bar::eInterval i) const;
     template<typename T>
-    const T & getByIndex(const Bar::eInterval it,const size_t indx) const;
+    T & getByIndex(const Bar::eInterval it,const size_t indx);
 
 };
 
-//-----------------------------------------------------------------------------------------------------------------------------------
-template<typename T>
-class GraphHolderIterator
-{
-    const GraphHolder * holder{nullptr};
-    Bar::eInterval selectedViewInterval{Bar::eInterval::pTick};
-    size_t iCurrentIndex{0};
 
-    const bool bEndIterator;
 
-    std::shared_lock<std::shared_mutex> lk;
+namespace std {
+template <typename T>
+struct iterator_traits<GraphHolder::Iterator<T>> {
+    using iterator_category = std::forward_iterator_tag;
+    using value_type = T;
+    using difference_type = int;
 
-public:
-    //-------------------------------------
-    explicit GraphHolderIterator():bEndIterator{true} {};
-    //
-    explicit GraphHolderIterator(std::shared_lock<std::shared_mutex>& lkT,const GraphHolder &hl,const  Bar::eInterval it,const  std::time_t tBeg):
-       holder{&hl}
-      ,selectedViewInterval{it}
-      ,bEndIterator{false}
-      ,lk {std::move(lkT)}
-    {
-        iCurrentIndex = holder->getViewGraphIndex(tBeg,selectedViewInterval);
-    };
-    //
-    explicit GraphHolderIterator(const GraphHolderIterator &o) = delete;
-    //
-    explicit GraphHolderIterator(const GraphHolderIterator &&o):
-       holder{o.holder}
-      ,selectedViewInterval{o.selectedViewInterval}
-      ,iCurrentIndex{o.iCurrentIndex}
-      ,bEndIterator{o.bEndIterator}
-      ,lk{std::move(o.lk)}
-    {};
-    //
-    GraphHolderIterator & operator=(const GraphHolderIterator &o) = delete;
-    //
-    GraphHolderIterator & operator=(const GraphHolderIterator &&o) {
-
-        holder                  = o.holder;
-        selectedViewInterval    = o.selectedViewInterval;
-        iCurrentIndex           = o.iCurrentIndex;
-        bEndIterator            = o.bEndIterator;
-        lk                      = std::move(o.lk);
-
-        return *this;
-    }
-    //-------------------------------------
-    bool operator==(const GraphHolderIterator &o) const{
-        //
-        if (bEndIterator && o.bEndIterator){
-            return true;
-        }
-        else if (o.bEndIterator){
-            if (holder->getViewGraphSize  (selectedViewInterval)   <= iCurrentIndex) return true;
-            else return false;
-        }
-        else if (bEndIterator){
-            if (o.holder->getViewGraphSize(o.selectedViewInterval) <= o.iCurrentIndex) return true;
-            else return false;
-        }
-        else if(selectedViewInterval == o.selectedViewInterval && iCurrentIndex == o.iCurrentIndex){
-            return true;
-        }
-        else{
-            return false;
-        }
-    }
-    //-------------------------------------
-    bool operator!=(const GraphHolderIterator &o) const{
-        return !operator==(o);
-    }
-    //-------------------------------------
-    GraphHolderIterator & operator++() {
-        if(holder->getViewGraphSize(selectedViewInterval) > iCurrentIndex)
-            iCurrentIndex++;
-        return *this;
-    }
-    //-------------------------------------
-    const T & operator*() {
-        return (holder->getByIndex<T>(selectedViewInterval,iCurrentIndex));
-    }
-    //-------------------------------------
-    GraphHolderIterator&  operator+(size_t t){
-        if (iCurrentIndex + t > holder->getViewGraphSize(selectedViewInterval)){
-            iCurrentIndex = holder->getViewGraphSize(selectedViewInterval);
-        }
-        else{
-            iCurrentIndex +=t;
-        }
-        return *this;
-    }
-    //-------------------------------------
-    inline Bar::eInterval Interval() const {return selectedViewInterval;}
-    inline bool owns_lock()            const {return lk.owns_lock();}
 };
+}
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 template<typename T>
-const T & GraphHolder::getByIndex(const Bar::eInterval it,const size_t indx) const
+T & GraphHolder::getByIndex(const Bar::eInterval it,const size_t indx)
 {
     if constexpr (std::is_same_v<T, Bar>){
         return mpGraphs.at(it)[indx];

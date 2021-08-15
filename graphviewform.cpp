@@ -32,6 +32,8 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
     //------------------------------
 
     connect(ui->btnTestLoad,SIGNAL(clicked()),this,SLOT(slotLoadGraphButton()));
+    connect(ui->btnTest2,SIGNAL(clicked()),this,SLOT(slotLoadGraphButton2()));
+
 
 }
 //---------------------------------------------------------------------------------------------------------------
@@ -112,15 +114,19 @@ void GraphViewForm::slotInvalidateGraph(std::time_t dtBegin, std::time_t dtEnd)
 
         ThreadFreeCout pcout;
         bool bSuccess;
-        auto It =  holder->beginIteratorByDate<BarTick>(Bar::eInterval::pTick, dtBegin, bSuccess);
-        auto ItEnd = holder->end<BarTick>();
+        It =  holder->beginIteratorByDate<BarTick>(Bar::eInterval::pTick, dtBegin, bSuccess);
+        auto ItEndT = holder->end<BarTick>();
+        auto ItEnd(ItEndT);
         if (bSuccess)
         {
 
             bool bPlainIncremented{true};
             int iCount{0};
             std::time_t tTmp{0};
-            while(It != ItEnd){
+
+            auto ItNew (std::next(It,537410));
+            //auto ItNew (std::next(It,637410));
+            while(ItNew != ItEnd){
                 if ((*It).Period() < tTmp
                         || (*It).Period() > dtEnd
                         || (*It).Period() < dtBegin
@@ -130,15 +136,22 @@ void GraphViewForm::slotInvalidateGraph(std::time_t dtBegin, std::time_t dtEnd)
                 else{
                     tTmp  = (*It).Period();
                 }
-//                pcout<< "close: "<<(*It).Close()<<"\n";
-//                if(iCount>300) break;
+                pcout<< "close: "<<(*It).Close()<<"\n";
+
                 iCount++;
-                ++It;
+
+                ++ItNew;
             }
 
             pcout<< "total iterator: "<<iCount<<"\n";
             pcout<< "bPlainIncremented: "<<bPlainIncremented<<"\n";
-            pcout<< "owns_lock: "<<It.owns_lock()<<"\n";
+            pcout<< "It owns_lock: "<<It.owns_lock()<<"\n";
+            pcout<< "ItNew owns_lock: "<<ItNew.owns_lock()<<"\n";
+//            It.ulock();
+//            ItNew.ulock();
+//            pcout<< "do unlock\n";
+//            pcout<< "It owns_lock: "<<It.owns_lock()<<"\n";
+//            pcout<< "ItNew owns_lock: "<<ItNew.owns_lock()<<"\n";
         }
         else{
             pcout<< "cannot lock mutex.\n";
@@ -148,6 +161,28 @@ void GraphViewForm::slotInvalidateGraph(std::time_t dtBegin, std::time_t dtEnd)
 
 }
 //---------------------------------------------------------------------------------------------------------------
+void GraphViewForm::slotLoadGraphButton2()
+{
+    {
+        ThreadFreeCout pcout;
+        pcout<< "\n\rIt owns_lock: "<<It.owns_lock()<<"\n";
+    }
+
+    It = holder->end<BarTick>();
+    It.ulock();
+
+    {
+        ThreadFreeCout pcout;
+        pcout <<"trying unlock\n";
+        pcout<< "It owns_lock: "<<It.owns_lock()<<"\n";
+
+//        std::unique_lock lk(holder->mutexHolder, std::defer_lock);
+//        bool locked = !lk.try_lock();
+//        pcout<< "realy locked: "<<locked<<"\n";
+//        holder->mutexHolder.unlock();
+    }
+
+}
 //---------------------------------------------------------------------------------------------------------------
 //---------------------------------------------------------------------------------------------------------------
 //---------------------------------------------------------------------------------------------------------------

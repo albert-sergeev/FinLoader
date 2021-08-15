@@ -19,6 +19,9 @@ private:
     std::vector<Ticker> & vTickersLst;
     std::shared_ptr<GraphHolder> holder;
 
+
+    GraphHolder::Iterator<BarTick> It{};
+
 public:
     explicit GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::shared_ptr<GraphHolder> hldr, QWidget *parent = nullptr);
     ~GraphViewForm();
@@ -34,6 +37,7 @@ public slots:
 
 protected slots:
     void slotLoadGraphButton();
+    void slotLoadGraphButton2();
 
 private:
     Ui::GraphViewForm *ui;
