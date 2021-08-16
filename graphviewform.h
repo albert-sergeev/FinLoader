@@ -29,16 +29,27 @@ private:
     std::shared_ptr<GraphHolder> holder;
 
     QGraphicsScene *grScene;
+    std::vector<BarGraphicsItem *> vShowedGraphicsBars;
+    std::time_t tMiddleDate{0};
 
 private:
 
+    std::time_t tStoredMiddlePointPosition;
+    std::time_t tStoredMinDate;
+    std::time_t tStoredMaxDate;
+    size_t  iStoredMaxSize;
+    double dStoredLowMin;
+    double dStoredHighMax;
+
     Bar::eInterval iSelectedInterval;
     size_t iMaxGraphViewSize;
-    std::time_t tStartViewPosition;
-    double dHScale;
     double dVScale;
+    double dHScale;
     double dTailFreeZone;
     bool bOHLC;
+
+    static const int iLeftShift{20};
+    static const int iRightShift{100};
 
 public:
 signals:
@@ -62,11 +73,25 @@ protected slots:
     void slotLoadGraphButton();
     void slotLoadGraphButton2();
 
-    void slotAddBarTicksToView(GraphHolder::Iterator<BarTick> ItBeg, GraphHolder::Iterator<BarTick> ItEnd);
-    void slotAddBarsToView(GraphHolder::Iterator<Bar> ItBeg, GraphHolder::Iterator<Bar> ItEnd);
+    //void slotAddBarTicksToView(GraphHolder::Iterator<BarTick> ItBeg, GraphHolder::Iterator<BarTick> ItEnd);
+    //void slotAddBarsToView(GraphHolder::Iterator<Bar> ItBeg, GraphHolder::Iterator<Bar> ItEnd);
+
+    void slotSliderValueChanged(int i);
 
 private:
     Ui::GraphViewForm *ui;
+
+protected:
+    template<typename T>
+    void SliderValueChanged(int i);
+
+    template<typename T>
+    bool RepainInvalidRange(RepainTask &);
+
+    // QWidget interface
+protected:
+    void resizeEvent(QResizeEvent *event);
+    void showEvent(QShowEvent *event);
 };
 
 #endif // GRAPHVIEWFORM_H

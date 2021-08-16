@@ -9,15 +9,20 @@
 
 //---------------------------------------------------------------------------------------------------------------
 GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::shared_ptr<GraphHolder> hldr, QWidget *parent) :
-    QWidget(parent),
+    QWidget(parent),    
     iTickerID{TickerID},
     tTicker{0,"","",1},
     vTickersLst{v},
+    tStoredMiddlePointPosition{0},
+    tStoredMinDate{0},
+    tStoredMaxDate{0},
+    iStoredMaxSize{0},
+    dStoredLowMin{0},
+    dStoredHighMax{0},
     ui(new Ui::GraphViewForm)
 {
     ui->setupUi(this);
 
-   // ui->grViewQuotes->setHorizontalScrollBar(ui->scrlBarHorizontal);
     ///----------------------------
     holder = hldr;
     //
@@ -35,97 +40,38 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
 
     iSelectedInterval   = Bar::eInterval::pTick;
     iMaxGraphViewSize   = 0;
-    tStartViewPosition  = 0;
-    dHScale             = 20.0;
-    dVScale             = 1;
+    tStoredMiddlePointPosition  = 0;
+    dVScale             = 20.0;
+    dHScale             = 1;
     dTailFreeZone       = 0.1;
     bOHLC               = true;
-    //------------------------------
+
     connect(ui->btnTestLoad,SIGNAL(clicked()),this,SLOT(slotLoadGraphButton()));
+    //------------------------------
 
-    //QGraphicsScene scene(QRectF(-100,-100,600,600));
-
-    grScene = new QGraphicsScene(/*QRectF(-100,-100,600,600)*/);
+    grScene = new QGraphicsScene();
     ui->grViewQuotes->setScene(grScene);
 
+    ui->scrlBarHorizontal->setMinimum(0);
+    ui->scrlBarHorizontal->setMaximum(0);
+    connect(ui->scrlBarHorizontal,SIGNAL(valueChanged(int)),this,SLOT(slotSliderValueChanged(int)));
 
-    if (iSelectedInterval  == Bar::eInterval::pTick)
-    {
+    //------------------------------
+    std::time_t dtBegin{0};
+    std::time_t dtEnd{0};
+    bool bSuccess{false};
 
-        // lock holder
-        bool bSuccess{false};
+    {   // lock holder
         auto ItDefender(holder->beginIteratorByDate<BarTick>(iSelectedInterval,0,bSuccess));
-        if (bSuccess){ // if locked
-
-            size_t iSize =  holder->getViewGraphSize(iSelectedInterval);
-            std::time_t tMin =  holder->getViewGraphDateMin(Bar::eInterval::pTick);
-            std::time_t tMax =  holder->getViewGraphDateMax(Bar::eInterval::pTick);
-
-            auto p = holder->getMinMax(tMin,tMax);
-            double dLowMin  = p.first;
-            double dHighMax = p.second;
-
-
-             //-dHScale * It->Close()
-//            QRectF newRec(0, -dHScale * dLowMin  ,iSize * BarGraphicsItem::BarWidth  , dHScale * (dHighMax - dLowMin));
-//            ui->grViewQuotes->setSceneRect(newRec);
-
-//            x	-4
-//            y	-5821.8
-//            width	707
-//            height	168.6
-
-             QRectF newRec(0, -dHScale * dLowMin ,iSize * BarGraphicsItem::BarWidth  ,- dHScale * (dHighMax - dLowMin));
-             ui->grViewQuotes->setSceneRect(newRec);
-
-
-
-//            {
-//                QRectF currRectF = ui->grViewQuotes->sceneRect();
-//                ThreadFreeCout pcout;
-//                pcout <<"constructor:\n";
-//                pcout <<"x\t"<<currRectF.x()<<"\n";
-//                pcout <<"y\t"<<currRectF.y()<<"\n";
-//                pcout <<"width\t"<<currRectF.width()<<"\n";
-//                pcout <<"height\t"<<currRectF.height()<<"\n";
-//            }
-
-            auto It(holder->beginIteratorByDate<BarTick>(iSelectedInterval,tMin,bSuccess));
-            if (bSuccess){
-                auto ItEnd(holder->beginIteratorByDate<BarTick>(iSelectedInterval,tMax+1,bSuccess));
-                if (bSuccess){
-                    slotAddBarTicksToView(It,ItEnd);
-                }
+        if (bSuccess){
+            dtBegin = holder->getViewGraphDateMin(Bar::eInterval::pTick);
+            dtEnd   = holder->getViewGraphDateMax(Bar::eInterval::pTick);
+            ItDefender.ulock();
+            if (dtBegin < dtEnd){
+                slotInvalidateGraph(dtBegin, dtEnd);
             }
-            {
-                QRectF currRectF = ui->grViewQuotes->sceneRect();
-                ThreadFreeCout pcout;
-                pcout <<"constructor:\n";
-                pcout <<"x\t"<<currRectF.x()<<"\n";
-                pcout <<"y\t"<<currRectF.y()<<"\n";
-                pcout <<"width\t"<<currRectF.width()<<"\n";
-                pcout <<"height\t"<<currRectF.height()<<"\n";
-            }
-
-
-
-
-//            auto strMin = threadfree_localtime_to_str(&tMin);
-//            auto strMax = threadfree_localtime_to_str(&tMax);
-//            ThreadFreeCout pcout;
-//            std::stringstream ss;
-//            ss << "date from: "<< strMin<<"\n";
-//            ss << "date to: "<< strMax<<"\n";
-//            ss << "{Min:Max}: <"<<dLowMin<<":"<<dHighMax<<">\n";
-//            pcout <<ss.str();
         }
     }
-    else{
-        ThreadFreeCout pcout;
-        pcout <<"GraphViewForm::GraphViewForm: No handler for other intervals!!!!!!!!:\n";
-    }
-
-
 }
 //---------------------------------------------------------------------------------------------------------------
 GraphViewForm::~GraphViewForm()
@@ -150,68 +96,12 @@ void GraphViewForm::slotInvalidateGraph(std::time_t dtBegin, std::time_t dtEnd)
     while(bSuccess)
     {
         auto data(*pData.get());
-        ///
+        //////
         if (iSelectedInterval == Bar::eInterval::pTick) {
-            auto It (holder->beginIteratorByDate<BarTick>(iSelectedInterval,data.dtStart,bSuccess));
-            if (bSuccess){
-                auto ItEnd (holder->beginIteratorByDate<BarTick>(iSelectedInterval,data.dtEnd,bSuccess));
-                if (bSuccess){
-
-//                    std::time_t tMin =  holder->getViewGraphDateMin(Bar::eInterval::pTick);
-//                    std::time_t tMax =  holder->getViewGraphDateMax(Bar::eInterval::pTick);
-
-                    auto p = holder->getMinMax(data.dtStart,data.dtEnd);
-//                    qreal dLowMin  = -p.first;
-//                    qreal dHighMax = -p.second;
-
-
-//                    QRectF currRectF = ui->grViewQuotes->sceneRect();
-//                    if (currRectF.y() !=0 && dLowMin < currRectF.y()) {
-//                        dLowMin = currRectF.y();
-//                    }
-//                    if (dHighMax > currRectF.y() - currRectF.height()) {
-//                        dHighMax = currRectF.y() - currRectF.height();
-//                    }
-
-
-//                    QRectF newRec(tMin,
-//                                  dLowMin,
-//                                  tMax  - tMin,
-//                                  -(dHighMax - dLowMin));
-
-//                    ui->grViewQuotes->setSceneRect(newRec);
-
-//                    std::string strStart    = threadfree_localtime_to_str(&data.dtStart);
-//                    std::string strEnd      = threadfree_localtime_to_str(&data.dtEnd);
-
-//                    emit SendToLog("invalidate from: " + QString::fromStdString(strStart));
-//                    emit SendToLog("invalidate to: " + QString::fromStdString(strEnd));
-
-//                    currRectF = ui->grViewQuotes->sceneRect();
-                    {
-                    ThreadFreeCout pcout;
-                    pcout <<"invalidate:\n";
-                    pcout << "{Min:Max}: <"<<p.first<<":"<<p.second<<">\n";
-//                    pcout <<"x\t"<<currRectF.x()<<"\n";
-//                    pcout <<"y\t"<<currRectF.y()<<"\n";
-//                    pcout <<"width\t"<<currRectF.width()<<"\n";
-//                    pcout <<"height\t"<<currRectF.height()<<"\n";
-                    }
-                }
-            }
+            bSuccess = RepainInvalidRange<BarTick>(data);
         }
         else{
-            auto It (holder->beginIteratorByDate<Bar>(iSelectedInterval,data.dtStart,bSuccess));
-            if (bSuccess){
-                auto ItEnd (holder->beginIteratorByDate<Bar>(iSelectedInterval,data.dtEnd,bSuccess));
-                if (bSuccess){
-                    std::string strStart    = threadfree_localtime_to_str(&data.dtStart);
-                    std::string strEnd      = threadfree_localtime_to_str(&data.dtEnd);
-
-                    emit SendToLog("invalidate from: " + QString::fromStdString(strStart));
-                    emit SendToLog("invalidate to: " + QString::fromStdString(strEnd));
-                }
-            }
+            bSuccess = RepainInvalidRange<Bar>(data);
         }
         ///////
         if(!bSuccess){ // if not, postpone for the future
@@ -223,49 +113,261 @@ void GraphViewForm::slotInvalidateGraph(std::time_t dtBegin, std::time_t dtEnd)
     }
 }
 //---------------------------------------------------------------------------------------------------------------
+template<typename T>
+bool GraphViewForm::RepainInvalidRange(RepainTask & data)
+{
+    bool bSuccess;
+    auto It (holder->beginIteratorByDate<T>(iSelectedInterval,data.dtStart,bSuccess));
+    if (bSuccess){
+        auto ItEnd (holder->beginIteratorByDate<T>(iSelectedInterval,data.dtEnd,bSuccess));
+        if (bSuccess){
+            {   ThreadFreeCout pcout; pcout <<"do invalidate\n";}
+            auto ItTotalEnd (holder->end<T>());
+            size_t iSize =  holder->getViewGraphSize(iSelectedInterval);
+            std::time_t tMinDate = holder->getViewGraphDateMin(Bar::eInterval::pTick);
+            std::time_t tMaxDate =  holder->getViewGraphDateMax(Bar::eInterval::pTick);
+
+            auto p = holder->getMinMax(tStoredMinDate,tStoredMaxDate);
+            double dLowMin  = p.first;
+            double dHighMax = p.second;
+
+            // if neсessary clean all
+            if (    tStoredMinDate == 0
+                || tMinDate != tStoredMinDate
+                || (iStoredMaxSize !=iSize && tMinDate >= tStoredMinDate && tMaxDate <= tStoredMaxDate)
+                    ){
+
+                size_t j=0;
+                while (j < vShowedGraphicsBars.size()){
+                       ui->grViewQuotes->scene()->removeItem(vShowedGraphicsBars[j]);
+                       delete (vShowedGraphicsBars[j]);
+                       vShowedGraphicsBars.erase(std::next(vShowedGraphicsBars.begin(),j));
+                }
+            }
+            // clean invalid range
+            size_t j=0;
+            std::time_t tBeg = (It != ItTotalEnd) ? It->Period() : 0;
+            //
+            while (j < vShowedGraphicsBars.size()){
+                if (vShowedGraphicsBars[j]->Period() >= tBeg &&
+                    (ItEnd != ItTotalEnd && vShowedGraphicsBars[j]->Period() <= ItEnd->Period())
+                        ){
+                   ui->grViewQuotes->scene()->removeItem(vShowedGraphicsBars[j]);
+                   delete (vShowedGraphicsBars[j]);
+                   vShowedGraphicsBars.erase(std::next(vShowedGraphicsBars.begin(),j));
+                }
+                else{
+                    ++j;
+                }
+            }
+            // resize
+            if (iStoredMaxSize !=iSize){
+
+                QRectF newRec(0, -dVScale * dLowMin ,(iSize + iLeftShift + iRightShift) * BarGraphicsItem::BarWidth  ,- dVScale * (dHighMax - dLowMin));
+                ui->grViewQuotes->setSceneRect(newRec);
+
+                //ui->scrlBarHorizontal->setMinimum(0);
+
+                int iNewSize = iSize + iLeftShift + iRightShift - ui->grViewQuotes->width()/BarGraphicsItem::BarWidth;
+                iNewSize = iNewSize < 0? 0 : iNewSize;
+                ui->scrlBarHorizontal->setMaximum(iNewSize);
+//                {
+//                    ThreadFreeCout pcout;
+//                    pcout <<"init scrollsize to:"<< iNewSize<<"\n";
+//                }
+            }
+
+            iStoredMaxSize  = iSize;
+            tStoredMinDate  = tMinDate;
+            tStoredMaxDate  = tMaxDate;
+            dStoredLowMin   = dLowMin;
+            dStoredHighMax  = dHighMax;
+
+            //---------------------------
+            bool bS{false};
+            auto ItMiddle (holder->beginIteratorByDate<T>(iSelectedInterval,tStoredMiddlePointPosition,bS));
+            if (tStoredMiddlePointPosition != 0 && bS){
+                ui->scrlBarHorizontal->setValue(ItMiddle.realPosition() + iLeftShift);
+                //slotSliderValueChanged(ItMiddle.realPosition() + iLeftShift);
+            }
+            else{
+                ui->scrlBarHorizontal->setValue(iSize + iLeftShift + iRightShift - ui->grViewQuotes->width()/BarGraphicsItem::BarWidth);
+                //slotSliderValueChanged(iSize + iLeftShift);
+            }
+        }
+    }
+    return bSuccess;
+}
+//---------------------------------------------------------------------------------------------------------------
 void GraphViewForm::slotLoadGraphButton2()
 {
 
 }
 //---------------------------------------------------------------------------------------------------------------
-void GraphViewForm::slotAddBarTicksToView(GraphHolder::Iterator<BarTick> It, GraphHolder::Iterator<BarTick> ItEnd)
+void GraphViewForm::slotSliderValueChanged(int iBeg)
 {
-    int iCount{0};
-//TODO: std::distance
-    //auto iDist = std::distance(ItEnd,It);
-    auto iDist = holder->getViewGraphSize(Bar::eInterval::pTick);
-    auto parts(iDist/1000);
-    while(It != ItEnd){
-        BarGraphicsItem *item = new BarGraphicsItem(*It,3);
-        ui->grViewQuotes->scene()->addItem(item);
-        item->setPos(iCount * BarGraphicsItem::BarWidth , -dHScale * It->Close());
 
-        It = std::next(It,parts);
-
-        iCount++;
-//        if (iCount>100) break;
-    }
-    ThreadFreeCout pcout;
-    pcout<<"added {"<<iCount<< "} Ticks to BarGraphicsItem\n";
-    pcout<<"iDist {"<<iDist<< "} Ticks to BarGraphicsItem\n";
-
-}
-//---------------------------------------------------------------------------------------------------------------
-void GraphViewForm::slotAddBarsToView(GraphHolder::Iterator<Bar> /*It*/, GraphHolder::Iterator<Bar> /*ItEnd*/)
-{
-    int iCount{0};
-//    while(It != ItEnd){
-//        BarGraphicsItem *item = new BarGraphicsItem(*It,3);
-//        ui->grViewQuotes->scene()->addItem(item);
-//        item->setPos(iCount * BarGraphicsItem::BarWidth , -dHScale * It->Close());
-//        It++;iCount++;
+//    {
+//        ThreadFreeCout pcout;
+//        pcout <<"new scroll walue: "<< iBeg - iLeftShift<<"\n";
 //    }
-    ThreadFreeCout pcout;
-    pcout<<"added {"<<iCount<< "} Bars to BarGraphicsItem\n";
 
+    ////////////////////
+   // int iEnd = iBeg + ui->grViewQuotes->width()/BarGraphicsItem::BarWidth;
+    int iMiddle = iBeg + (ui->grViewQuotes->width()/(2*BarGraphicsItem::BarWidth));
+//    {
+//        ThreadFreeCout pcout;
+//        pcout << "iBeg: "<<iBeg<<"\n";
+//        pcout << "iEnd: "<<iEnd<<"\n";
+//        pcout << "iMiddle: "<<iMiddle<<"\n";
+//    }
+    if (iSelectedInterval == Bar::eInterval::pTick){
+        SliderValueChanged<BarTick>(iBeg);
+    }
+    else{
+        SliderValueChanged<Bar>(iBeg);
+    }
+//- iLeftShift
+    ui->grViewQuotes->centerOn((iMiddle /*- iLeftShift*/)*BarGraphicsItem::BarWidth,0);
+    //ui->grViewQuotes->horizontalScrollBar()->setValue(i*BarGraphicsItem::BarWidth);
 }
 //---------------------------------------------------------------------------------------------------------------
-//---------------------------------------------------------------------------------------------------------------
-//---------------------------------------------------------------------------------------------------------------
-//---------------------------------------------------------------------------------------------------------------
+template<typename T>
+void GraphViewForm::SliderValueChanged(int iPos)
+{
 
+
+    //
+    size_t iBeg      = iPos > iLeftShift ? iPos - iLeftShift : 0 ;
+    size_t iEnd      = iBeg + ui->grViewQuotes->width()/BarGraphicsItem::BarWidth;
+    size_t iMiddle   = iBeg + (iEnd - iBeg)/2;
+    /////////////////////////////////////////////////////////////////
+    bool bSuccess;
+    auto ItDefender = holder->beginIteratorByDate<T>(iSelectedInterval,0,bSuccess);
+    if (!bSuccess) return;
+    /////////////////////////////////////////////////////////////////
+    size_t iMaxSize = holder->getViewGraphSize(iSelectedInterval);
+    if (iMaxSize ==0 ) return;
+    /////////////////////////////////////////////////////////////////
+//    {
+//        ThreadFreeCout pcout;
+//        pcout << "t iMaxSize: "<<iMaxSize<<"\n";
+//        pcout << "t iBeg: "<<iBeg<<"\n";
+//        pcout << "t iEnd: "<<iEnd<<"\n";
+//    }
+
+    iBeg    = iBeg >= 0 ? iBeg : 0;
+    iEnd    = iEnd >= 0 ? iEnd : 0;
+    iMiddle = iMiddle >= 0 ? iMiddle : 0;
+
+    iBeg = iBeg < iMaxSize ? iBeg : iMaxSize - 1;
+    iEnd = iEnd < iMaxSize ? iEnd : iMaxSize - 1;
+    iMiddle = iMiddle < iMaxSize ? iMiddle:iMaxSize - 1;
+
+//    {
+//        ThreadFreeCout pcout;
+//        pcout << "real iBeg: "<<iBeg<<"\n";
+//        pcout << "real iEnd: "<<iEnd<<"\n";
+//    }
+
+    if (bSuccess && iMaxSize > 0){
+        //TODO:: change tails addition depend on scale
+        T tM = holder->getByIndex<T>(iSelectedInterval,iMiddle);
+        T tB = holder->getByIndex<T>(iSelectedInterval,iBeg - 100/dHScale > 0        ? iBeg - 100/dHScale : 0);
+        T tE = holder->getByIndex<T>(iSelectedInterval,iEnd + 100/dHScale < iMaxSize ? iEnd + 100/dHScale :iMaxSize-1);
+//        {
+//            ThreadFreeCout pcout;
+//            pcout << "here 1\n";
+//            pcout << "here 1\n";
+//            pcout << "tB: "<<tB.Period()<<"\n";
+//            pcout << "tE: "<<tB.Period()<<"\n";
+
+//        }
+
+        tStoredMiddlePointPosition = tM.Period();
+        ////////////
+
+        size_t j=0;
+        while (j < vShowedGraphicsBars.size()){
+            if (vShowedGraphicsBars[j]->Period() < tB.Period() ||
+                vShowedGraphicsBars[j]->Period() > tE.Period() ){
+               ui->grViewQuotes->scene()->removeItem(vShowedGraphicsBars[j]);
+               delete (vShowedGraphicsBars[j]);
+               vShowedGraphicsBars.erase(std::next(vShowedGraphicsBars.begin(),j));
+            }
+            else{
+                ++j;
+            }
+        }
+
+//        {
+//            ThreadFreeCout pcout;
+//            pcout << "here 2\n";
+//        }
+
+        ///////////
+        auto It = holder->beginIteratorByDate<T>(iSelectedInterval,tB.Period(),bSuccess);
+        auto ItEnd = holder->beginIteratorByDate<T>(iSelectedInterval,tE.Period()+1,bSuccess);
+        auto ItTotalEnd = holder->end<T>();
+
+//        {/// test case
+//        if (It != ItEnd){
+//            ThreadFreeCout pcout;
+//            std::time_t tB{It->Period()};
+//            std::string sB (threadfree_localtime_to_str(&tB));
+//            pcout <<"adding bars from: "<<sB<<" {"<<It.realPosition()<<"}\n";
+//            auto ItTheEnd = holder->end<T>();
+//            if (ItEnd != ItTheEnd){
+//                std::time_t tE{ItEnd->Period()};
+//                std::string sE (threadfree_localtime_to_str(&tE));
+//                pcout <<"adding bars to: "<<sE<<" {"<<ItEnd.realPosition()<<"}\n";
+//            }
+//            else{
+//                pcout <<"adding bars to the end\n";
+//            }
+//        }
+//        }/// test case end
+
+//        {
+//            ThreadFreeCout pcout;
+//            pcout << "here 3\n";
+//        }
+
+        while(It != ItTotalEnd && It != ItEnd){
+            auto ItFound = std::find_if(vShowedGraphicsBars.begin(),vShowedGraphicsBars.end(),[&](const BarGraphicsItem *p){
+                if(p->Period() == It->Period() &&
+                   p->realPosition() == It.realPosition()
+                        ) {
+                    return true;
+                }
+                else return false;});
+            if (ItFound == vShowedGraphicsBars.end())
+            {
+                BarGraphicsItem *item = new BarGraphicsItem(*It,It.realPosition(),3);
+                vShowedGraphicsBars.push_back(item);
+                ui->grViewQuotes->scene()->addItem(item);
+                item->setPos((It.realPosition() + iLeftShift) * BarGraphicsItem::BarWidth , -dVScale * It->Close());
+            }//- iLeftShift
+            ++It;
+        }
+    }
+}
+//---------------------------------------------------------------------------------------------------------------
+void GraphViewForm::resizeEvent(QResizeEvent *event)
+{
+    int iNewSize = iStoredMaxSize + iLeftShift + iRightShift - ui->grViewQuotes->width()/BarGraphicsItem::BarWidth;
+    iNewSize = iNewSize < 0? 0 : iNewSize;
+    ui->scrlBarHorizontal->setMaximum(iNewSize);
+
+    QWidget::resizeEvent(event);
+}
+//---------------------------------------------------------------------------------------------------------------
+void GraphViewForm::showEvent(QShowEvent *event)
+{
+    int iNewSize = iStoredMaxSize + iLeftShift + iRightShift - ui->grViewQuotes->width()/BarGraphicsItem::BarWidth;
+    iNewSize = iNewSize < 0? 0 : iNewSize;
+    ui->scrlBarHorizontal->setMaximum(iNewSize);
+
+    QWidget::showEvent(event);
+}
+//---------------------------------------------------------------------------------------------------------------

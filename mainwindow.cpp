@@ -133,7 +133,6 @@ void MainWindow::timerEvent(QTimerEvent * event)
         case dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage:
             if(wnd) wnd->slotTextInfo(QString::fromStdString(data.GetTextInfo()));
             break;
-
         case dataBuckgroundThreadAnswer::eAnswerType::storagLoadFromStorageGraphBegin:
             {
                 std::stringstream ss;
@@ -923,12 +922,19 @@ void MainWindow::slotImportFinQuotesWndow ()
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::slotParseImportFinQuotesFile(dataFinLoadTask & dtTask)
 {
+    if (Holders.find(dtTask.TickerID) == Holders.end()){
+        Holders[dtTask.TickerID] = std::make_shared<GraphHolder>(GraphHolder{dtTask.TickerID});
+    }
+
     dtTask.SetStore(&stStore);
+    dtTask.holder = Holders[dtTask.TickerID];
+
     queueFinQuotesLoad.Push(dataFinLoadTask(dtTask));
 
     thrdPoolLoadFinQuotes.AddTask([&](){
         workerLoader::workerDataBaseWork(queueFinQuotesLoad,queueTrdAnswers,stStore);
         });
+    ///
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::slotStopFinQuotesLoadings()

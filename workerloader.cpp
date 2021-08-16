@@ -434,6 +434,12 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
             dt.SetSuccessfull(true);
             queueTrdAnswers.Push(dt);
 
+
+            ///////
+            //  adding load data task for viewers:
+            dataFinLoadTask loadTask(data);// copying data range and tickerID
+            loadTask.taskType = dataFinLoadTask::TaskType::finQuotesLoadFromStorage;
+            queueTasks.Push(loadTask);
             ///////
             //  adding task for data optimisation:
             dataFinLoadTask optTask(data);// copying data range and tickerID

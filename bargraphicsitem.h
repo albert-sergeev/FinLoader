@@ -3,10 +3,12 @@
 
 #include <QGraphicsItem>
 #include "bar.h"
+#include "threadfreelocaltime.h"
 
 class BarGraphicsItem : public QGraphicsItem
 {
     Bar b;
+    size_t iRealIndex;
     bool bOHLC;
     int iState;
     double dHScale;
@@ -18,11 +20,28 @@ public:
     static const int BarWidth{nPenWidth*7};
 
 public:
-    BarGraphicsItem(Bar bb, int State):b{bb},bOHLC{true},iState{State},IsTick{false}{
+    BarGraphicsItem(Bar bb,size_t idx, int State):b{bb},iRealIndex{idx},bOHLC{true},iState{State},IsTick{false}{
         dHScale = 2.1;
+
+        std::time_t t = b.Period();
+        std::stringstream ss;
+        ss <<threadfree_localtime_to_str(&t)<<"\r\n";
+        ss << "open: "  << b.Open()<<"\r\n";
+        ss << "high: "  << b.High()<<"\r\n";
+        ss << "low: "   << b.Low()<<"\r\n";
+        ss << "close: " << b.Close()<<"\r\n";
+        ss << "value: " << b.Volume()<<"\r\n";
+        this->setToolTip(QString::fromStdString(ss.str()));
     };
-    BarGraphicsItem(BarTick bb, int State):b{bb},bOHLC{true},iState{State},IsTick{true}{
+    BarGraphicsItem(BarTick bb,size_t idx, int State):b{bb},iRealIndex{idx},bOHLC{true},iState{State},IsTick{true}{
         dHScale = 2.1;
+
+        std::time_t t = b.Period();
+        std::stringstream ss;
+        ss <<threadfree_localtime_to_str(&t)<<"\r\n";
+        ss << "close: " << b.Close()<<"\r\n";
+        ss << "value: " << b.Volume()<<"\r\n";
+        this->setToolTip(QString::fromStdString(ss.str()));
     };
 
     virtual QRectF boundingRect() const;
@@ -30,6 +49,8 @@ public:
     virtual void paint(QPainter* ppainter, const QStyleOptionGraphicsItem*, QWidget*);
 
 
+    inline std::time_t Period() const {return b.Period();}
+    inline size_t  realPosition() const {return iRealIndex;}
 
     //virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent *) ;
 

@@ -161,6 +161,7 @@ public:
         }
         //-------------------------------------
         inline Bar::eInterval Interval() const {return selectedViewInterval;}
+        inline size_t realPosition()     const {return iCurrentIndex;}
         inline bool owns_lock()          const {return !bEndIterator? lk.owns_lock():false;}
         inline void ulock()              { if(!bEndIterator) lk.unlock();}
     };
@@ -194,6 +195,9 @@ public:
 // TODO: switch to grMonth.getMinMax();
     std::pair<double,double>  getMinMax() const {return graphTick.getMinMax();};
     std::pair<double,double>  getMinMax(std::time_t dtStart,std::time_t dtEnd) const {return graphTick.getMinMax(dtStart,dtEnd);};
+
+    template<typename T>
+    T & getByIndex(const Bar::eInterval it,const size_t indx);
     //------------------------------------------------------------
 
 
@@ -224,8 +228,7 @@ public:
 
 private:
 
-    template<typename T>
-    T & getByIndex(const Bar::eInterval it,const size_t indx);
+
 
 };
 
