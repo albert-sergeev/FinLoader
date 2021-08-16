@@ -23,6 +23,19 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
 {
     ui->setupUi(this);
 
+    QColor colorDarkGreen(0, 100, 52,50);
+    QColor colorDarkRed(31, 53, 200,40);
+    //-------------------------------------------------------------
+    // for ticker
+    //-------------------------------------------------------------
+    QHBoxLayout *lt1 = new QHBoxLayout();
+    lt1->setMargin(0);
+    ui->wtCandle->setLayout(lt1);
+    swtCandle = new StyledSwitcher(tr("OHLC "),tr(" Candle"),true,10,this);
+    lt1->addWidget(swtCandle);
+    swtCandle->SetOnColor(QPalette::Window,colorDarkGreen);
+    swtCandle->SetOffColor(QPalette::Window,colorDarkRed);
+
     ///----------------------------
     holder = hldr;
     //

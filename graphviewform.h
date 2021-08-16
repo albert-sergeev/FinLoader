@@ -6,6 +6,7 @@
 #include "graphholder.h"
 #include "blockfreequeue.h"
 #include "bargraphicsitem.h"
+#include "styledswitcher.h"
 
 namespace Ui {
 class GraphViewForm;
@@ -21,6 +22,9 @@ class GraphViewForm : public QWidget
     Q_OBJECT
 
 private:
+
+    StyledSwitcher *swtCandle;
+
     const int iTickerID;
     Ticker tTicker;
     std::vector<Ticker> & vTickersLst;
