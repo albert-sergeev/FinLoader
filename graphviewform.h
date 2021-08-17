@@ -47,13 +47,17 @@ private:
 
     Bar::eInterval iSelectedInterval;
     size_t iMaxGraphViewSize;
-    double dVScale;
     double dHScale;
-    double dTailFreeZone;
+    std::map<int,double> mVScale;
     bool bOHLC;
 
     static const int iLeftShift{20};
-    static const int iRightShift{100};
+    static const int iRightShift{50};
+
+    static const int iViewPortHeight{1000};
+    static const int iViewPortHighStrip{100};
+    static const int iViewPortLowStrip{100};
+
 
 public:
 signals:
@@ -82,6 +86,16 @@ protected slots:
 
     void slotSliderValueChanged(int i);
 
+    void slotSceneRectChanged( const QRectF &);
+    void slotVerticalScrollBarValueChanged(int);
+    //void slotHorisontalScrollBarValueChanged(int);
+
+
+    void slotHScaleValueChanged(double);
+    void slotVScaleValueChanged(double);
+    void slotVVolumeScaleValueChanged(double);
+
+
 private:
     Ui::GraphViewForm *ui;
 
@@ -91,6 +105,12 @@ protected:
 
     template<typename T>
     bool RepainInvalidRange(RepainTask &);
+
+    template<typename T>
+    bool RollSliderToMidTime(std::time_t tMidPos);
+
+
+    inline double realYtoViewPortY(double y) {return  ((y - dStoredLowMin) * (mVScale.at(iSelectedInterval))) + iViewPortLowStrip;};
 
     // QWidget interface
 protected:

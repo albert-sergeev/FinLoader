@@ -18,6 +18,7 @@ public:
 
     static const int nPenWidth{1};
     static const int BarWidth{nPenWidth*7};
+    static const int nTickHalfHeight{3};
 
 public:
     BarGraphicsItem(Bar bb,size_t idx, int State):b{bb},iRealIndex{idx},bOHLC{true},iState{State},IsTick{false}{

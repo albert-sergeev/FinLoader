@@ -12,12 +12,14 @@
 //----------------------------------------------------------------------------------------------------
 QRectF BarGraphicsItem::boundingRect() const
 {
-    QPointF ptPosition(-(BarWidth/2+1),-(HScale() * (b.Low()-b.Close())));
+    QPointF ptPosition;
     QSizeF size;
     if (IsTick){
-        size = QSizeF(BarWidth, 20+2);
+        ptPosition = QPointF(-((BarWidth+1)/2),-(HScale() * nTickHalfHeight)-nPenWidth);
+        size = QSizeF(BarWidth , (HScale()*nTickHalfHeight*2)+2*nPenWidth);
     }
     else{
+        ptPosition = QPointF(-(BarWidth/2+1),-(HScale() * (b.Low()-b.Close())));
         size = QSizeF(BarWidth, (HScale() * (b.High()-b.Low())));
     }
 
@@ -41,9 +43,9 @@ void BarGraphicsItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, 
 
     if (IsOHLC()){
         if (IsTick){
-            painter->drawLine(0                ,-(HScale() * 10),0                  ,+(HScale() * 10)); // HLine
-            //painter->drawLine(-nPenWidth * 2   ,0               ,0                  ,0               ); // OpenLine
-            painter->drawLine(0                ,0               ,0 + nPenWidth * 2  ,0               ); // CloseLine
+            painter->drawLine(0                ,-(HScale() * nTickHalfHeight),0                  ,+(HScale() * nTickHalfHeight) ); // HLine
+          //painter->drawLine(-nPenWidth * 2   ,0                            ,0                  ,0                             ); // OpenLine
+            painter->drawLine(0                ,0                            ,0 + nPenWidth * 2  ,0                             ); // CloseLine
         }
         else{
             painter->drawLine(0                ,-(HScale() * (b.High()-b.Close()))  ,0                  ,-(HScale() * (b.Low()-b.Close()))  ); // HLine
