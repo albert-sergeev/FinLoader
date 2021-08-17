@@ -133,10 +133,10 @@ void GraphViewForm::slotLoadGraphButton()
     emit NeedLoadGraph(iTickerID, tBegin, tEnd);
 }
 //---------------------------------------------------------------------------------------------------------------
-void GraphViewForm::slotInvalidateGraph(std::time_t dtBegin, std::time_t dtEnd)
+void GraphViewForm::slotInvalidateGraph(std::time_t dtBegin, std::time_t dtEnd, bool bNeedToRescale)
 {
     bool bSuccess{false};
-    queueRepaint.Push({dtBegin,dtEnd});
+    queueRepaint.Push({dtBegin,dtEnd,bNeedToRescale});
     auto pData (queueRepaint.Pop(bSuccess));
     while(bSuccess)
     {
@@ -150,7 +150,7 @@ void GraphViewForm::slotInvalidateGraph(std::time_t dtBegin, std::time_t dtEnd)
         }
         ///////
         if(!bSuccess){ // if not, postpone for the future
-            queueRepaint.Push({dtBegin,dtEnd});
+            queueRepaint.Push({data.dtStart,data.dtEnd,data.bNeedToRescale});
         }
         else{   // if success, do next
             pData = queueRepaint.Pop(bSuccess);
@@ -241,18 +241,19 @@ bool GraphViewForm::RepainInvalidRange(RepainTask & data)
                 }
             }
             // resize Scene rect
-            if (iStoredMaxSize !=iSize || bNeedRescale){
+            if (iStoredMaxSize !=iSize || bNeedRescale || data.bNeedToRescale){
 
                 int iNewViewPortH = (mVScale.at(iSelectedInterval) * (dStoredHighMax - dStoredLowMin)  + iViewPortLowStrip + iViewPortHighStrip );
                 if ( iViewPortHeight > iNewViewPortH){
                     iNewViewPortH = iViewPortHeight;
                 }
-                QRectF newRec(0,-iViewPortHeight,
+                QRectF newRec(0,-iNewViewPortH,
                               (iSize + iLeftShift + iRightShift) * BarGraphicsItem::BarWidth * dHScale  ,
                               iNewViewPortH
                               );
 
-                ui->grViewQuotes->setSceneRect(newRec);
+                grScene->setSceneRect(newRec);
+                //ui->grViewQuotes->setSceneRect(newRec);
 //                if (iStoredMaxSize)
 //                    ui->grViewQuotes->setSceneRect(newRec);
 //                else
@@ -491,7 +492,7 @@ void GraphViewForm::slotVScaleValueChanged(double dScale)
     //
     std::time_t tMinDate = holder->getViewGraphDateMin(Bar::eInterval::pTick);
     std::time_t tMaxDate =  holder->getViewGraphDateMax(Bar::eInterval::pTick);
-    slotInvalidateGraph(tMinDate,tMaxDate);
+    slotInvalidateGraph(tMinDate,tMaxDate,true);
 }
 //---------------------------------------------------------------------------------------------------------------
 void GraphViewForm::slotVVolumeScaleValueChanged(double)
@@ -506,7 +507,7 @@ void GraphViewForm::slotHScaleValueChanged(double dScale)
     dHScale = dScale;
     std::time_t tMinDate = holder->getViewGraphDateMin(Bar::eInterval::pTick);
     std::time_t tMaxDate =  holder->getViewGraphDateMax(Bar::eInterval::pTick);
-    slotInvalidateGraph(tMinDate,tMaxDate);
+    slotInvalidateGraph(tMinDate,tMaxDate,true);
 
     //mVScale
     //spbVScale

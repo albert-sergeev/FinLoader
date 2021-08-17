@@ -57,18 +57,18 @@ public:
 
 public:
 
-    std::string t_sWordBuff;
-    std::string t_sSign;
-    int         t_iInterval;
-    double      t_dTmp;
-    std::string t_sYear{"1990"};
-    std::string t_sMonth{"01"};
-    std::string t_sDay{"01"};
-    std::string t_sHour{"00"};
-    std::string t_sMin{"00"};
-    std::string t_sSec{"00"};
-    std::tm     t_tp;
-    int         t_iCurrN{0};
+    std::string     t_sWordBuff;
+    std::string     t_sSign;
+    int             t_iInterval;
+    double          t_dTmp;
+    std::string     t_sYear{"1990"};
+    std::string     t_sMonth{"01"};
+    std::string     t_sDay{"01"};
+    std::string     t_sHour{"00"};
+    std::string     t_sMin{"00"};
+    std::string     t_sSec{"00"};
+    std::tm         t_tp;
+    int             t_iCurrN{0};
 
 
 public:

@@ -13,8 +13,9 @@ class GraphViewForm;
 }
 
 struct RepainTask{
-    std::time_t dtStart;
-    std::time_t dtEnd;
+    std::time_t dtStart {0};
+    std::time_t dtEnd   {0};
+    bool bNeedToRescale {false};
 };
 
 class GraphViewForm : public QWidget
@@ -75,7 +76,7 @@ signals:
 
 public slots:
 
-    void slotInvalidateGraph(std::time_t dtDegin, std::time_t dtEnd);
+    void slotInvalidateGraph(std::time_t dtDegin, std::time_t dtEnd, bool bNeedToRescale = false);
 
 protected slots:
     void slotLoadGraphButton();

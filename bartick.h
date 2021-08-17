@@ -16,49 +16,49 @@ protected:
     double dClose;
     unsigned long iVolume;
     std::time_t tmPeriod;
-    int iInterval;
 
     friend class BarTickMemcopier;
-
-public:
-
-    virtual double Open()                   const   {return dClose;};
-    virtual double High()                   const   {return dClose;};
-    virtual double Low()                    const   {return dClose;};
-
-    inline double Close()                   const   {return dClose;};
-    inline unsigned long Volume()           const   {return iVolume;};
-    inline int Interval()                   const   {return iInterval;};
-    inline std::time_t Period()             const   {return tmPeriod;};
-
-    virtual void setOpen     (const double d)                  {dClose   = d;};
-    virtual void setHigh     (const double d)                  {dClose   = d;};
-    virtual void setLow      (const double d)                  {dClose    = d;};
-
-    inline void setClose    (const double d)                   {dClose  = d;};
-    inline void setVolume   (const unsigned long v)            {iVolume = v;};
-    inline void initInterval(const int iv)                     {iInterval    = iv;};
-    inline void setPeriod   (const std::time_t tm)             {tmPeriod = DateAccommodate(tm,this->iInterval);};
 
 public:
     //--------------------------------------------------------------------------------------------------------
     enum eInterval:int {pTick=(0),p1=1,p5=5,p10=10,p15=15,p30=30,p60=60,p120=120,p180=180, pDay=1440, pWeek=10080, pMonth=302400};
     //--------------------------------------------------------------------------------------------------------
 
+    virtual double Open()                   const   {return dClose;};
+    virtual double High()                   const   {return dClose;};
+    virtual double Low()                    const   {return dClose;};
+    virtual int Interval()                  const   {return eInterval::pTick;};
+
+    inline double Close()                   const   {return dClose;};
+    inline unsigned long Volume()           const   {return iVolume;};
+    inline std::time_t Period()             const   {return tmPeriod;};
+
+    virtual void setOpen     (const double d)                  {dClose   = d;};
+    virtual void setHigh     (const double d)                  {dClose   = d;};
+    virtual void setLow      (const double d)                  {dClose    = d;};
+    virtual void initInterval(const int /*iv*/)                {;};
+    virtual void setPeriod   (const std::time_t tm)            {tmPeriod = DateAccommodate(tm,eInterval::pTick);};
+
+    inline void setClose    (const double d)                   {dClose  = d;};
+    inline void setVolume   (const unsigned long v)            {iVolume = v;};
+
+
+public:
+
+
     //--------------------------------------------------------------------------------------------------------
-    BarTick():iInterval{eInterval::pTick}{};
+    BarTick(){};
     //--------------------------------------------------------------------------------------------------------
-    BarTick (double Close,unsigned long Value, std::time_t Period, int Interval = eInterval::pTick):
+    BarTick (double Close,unsigned long Value, std::time_t Period, int /*Interval*/ = eInterval::pTick):
         dClose{Close},iVolume{Value},tmPeriod{Period}
-        ,iInterval{Interval}
     {
         // accomodate time to discret intervals (to up)
-        tmPeriod = DateAccommodate(tmPeriod,this->iInterval);
+        tmPeriod = DateAccommodate(tmPeriod,eInterval::pTick);
 
     };
     //--------------------------------------------------------------------------------------------------------
     BarTick (const BarTick &b):
-        dClose{b.dClose},iVolume{b.iVolume}, tmPeriod{b.tmPeriod}, iInterval{b.iInterval}
+        dClose{b.dClose},iVolume{b.iVolume}, tmPeriod{b.tmPeriod}
     {
     };
     //--------------------------------------------------------------------------------------------------------
@@ -69,24 +69,14 @@ public:
         dClose      =   b.dClose;
         iVolume     =   b.iVolume;
         tmPeriod    =   b.tmPeriod;
-
-        iInterval   =   b.iInterval;
         return  *this;
     }
     //--------------------------------------------------------------------------------------------------------
     BarTick & operator= (const BarTick &b)
     {
-        if(b.iInterval != iInterval){
-            std::stringstream ss;
-            ss<<"BarTick::operator=() Invalid interval value [BarTick& BarTick::operator=(BarTick &)] {" << iInterval << "!=" << b.iInterval << "}";
-            throw std::invalid_argument(ss.str());
-        }
-
         dClose      =   b.dClose;
         iVolume     =   b.iVolume;
         tmPeriod    =   b.tmPeriod;
-
-        //iInterval   =   b.iInterval;
 
         return  *this;
     }
@@ -107,16 +97,9 @@ public:
     //--------------------------------------------------------------------------------------------------------
     bool equal (const BarTick &b) const
     {
-        if(b.iInterval != iInterval){
-            std::stringstream ss;
-            ss<<"BarTick::equal() Invalid interval value [BarTick& BarTick::operator==(BarTick &)] {" << iInterval << "!=" << b.iInterval << "}";
-            throw std::invalid_argument(ss.str());
-        }
-
         if(
             dClose      ==   b.dClose   &&
             iVolume     ==   b.iVolume   &&
-            iInterval   ==   b.iInterval &&
             tmPeriod    ==   b.tmPeriod
                 )
             return  true;
@@ -132,22 +115,11 @@ public:
     // do compare only by time
     bool operator< (const BarTick &b) const
     {
-        if(b.iInterval != iInterval){
-            std::stringstream ss;
-            ss<<"BarTick::operator<() Invalid interval value [BarTick& BarTick::operator<(BarTick &)] {" << iInterval << "!=" << b.iInterval << "}";
-            throw std::invalid_argument(ss.str());
-        }
-
         return tmPeriod < b.tmPeriod;
     }
     //--------------------------------------------------------------------------------------------------------
     BarTick & Append (const BarTick &b)
     {
-        if(b.iInterval > iInterval){// must be less or equal
-            std::stringstream ss;
-            ss<<"BarTick::Append() Invalid interval value [BarTick& BarTick::Append(BarTick &)] {" << iInterval << "!=" << b.iInterval << "}";
-            throw std::invalid_argument(ss.str());
-        }
         //dOpen       =   b.dOpen;                      //  first event is in left element
         dClose      =   b.dClose;                       //  last  event is in right element
         iVolume      +=   b.iVolume;                      //  accumulate

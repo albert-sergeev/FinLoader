@@ -22,6 +22,7 @@ protected:
     double dOpen;
     double dHigh;
     double dLow;
+    int iInterval;
 
     friend class BarMemcopier;
 
@@ -30,11 +31,11 @@ public:
     virtual double Open()                    const   {return dOpen;};
     virtual double High()                    const   {return dHigh;};
     virtual double Low()                     const   {return dLow;};
+    virtual int Interval()                   const   {return iInterval;};
 
     using BarTick::Close;
 
     using BarTick::Volume;
-    using BarTick::Interval;
     using BarTick::Period;
 
     virtual void setOpen     (const double d)                   {dOpen   = d;};
@@ -43,8 +44,8 @@ public:
 
     using BarTick::setClose;
     using BarTick::setVolume;
-    using BarTick::initInterval;
-    using BarTick::setPeriod;
+    virtual void initInterval(const int iv)                     {iInterval = iv;};
+    virtual void setPeriod   (const std::time_t tm)             {tmPeriod = DateAccommodate(tm,iInterval);};
 
 public:
     //--------------------------------------------------------------------------------------------------------
@@ -53,21 +54,21 @@ public:
     //--------------------------------------------------------------------------------------------------------
 
     //--------------------------------------------------------------------------------------------------------
-    Bar():BarTick{}{};
+    Bar():BarTick{},iInterval{eInterval::p1}{};
     //--------------------------------------------------------------------------------------------------------
-    Bar (double Open, double High,double Low,double Close,unsigned long Value, std::time_t Period, int Interval = eInterval::pTick):
+    Bar (double Open, double High,double Low,double Close,unsigned long Value, std::time_t Period, int Interval = eInterval::p1):
         BarTick {Close,Value,Period,Interval},
-        dOpen{Open},dHigh{High},dLow{Low}
+        dOpen{Open},dHigh{High},dLow{Low},iInterval{Interval}
 
     {};
     //--------------------------------------------------------------------------------------------------------
     Bar (const Bar &b):BarTick {b},
-        dOpen{b.dOpen},dHigh{b.dHigh},dLow{b.dLow}
+        dOpen{b.dOpen},dHigh{b.dHigh},dLow{b.dLow},iInterval{b.iInterval}
     {
     };
     //--------------------------------------------------------------------------------------------------------
     Bar (const BarTick &b):BarTick {b},
-        dOpen{b.Close()},dHigh{b.Close()},dLow{b.Close()}
+        dOpen{b.Close()},dHigh{b.Close()},dLow{b.Close()},iInterval{eInterval::pTick}
     {
     };
     //--------------------------------------------------------------------------------------------------------
@@ -77,6 +78,7 @@ public:
         dOpen       =   b.dOpen;
         dHigh       =   b.dHigh;
         dLow        =   b.dLow;
+        iInterval   =   b.iInterval;
 
         return  *this;
     }
@@ -117,19 +119,19 @@ public:
     //--------------------------------------------------------------------------------------------------------
     bool equal (const Bar &b) const
     {
-        if(b.iInterval != iInterval){
+        if(b.Interval() != Interval()){
             std::stringstream ss;
             ss<<"Bar::equal() Invalid interval value [Bar& Bar::operator==(Bar &)] {" << iInterval << "!=" << b.iInterval << "}";
             throw std::invalid_argument(ss.str());
         }
 
         if(
-            dOpen       ==   b.dOpen    &&
-            dHigh       ==   b.dHigh    &&
-            dLow        ==   b.dLow     &&
-            dClose      ==   b.dClose   &&
-            iVolume     ==   b.iVolume   &&
-            iInterval   ==   b.iInterval &&
+            dOpen       ==   b.dOpen        &&
+            dHigh       ==   b.dHigh        &&
+            dLow        ==   b.dLow         &&
+            dClose      ==   b.dClose       &&
+            iVolume     ==   b.iVolume      &&
+            Interval()  ==   b.Interval()   &&
             tmPeriod    ==   b.tmPeriod
                 )
             return  true;
@@ -145,7 +147,7 @@ public:
     // do compare only by time
     bool operator< (const Bar &b) const
     {
-        if(b.iInterval != iInterval){
+        if(b.Interval() != Interval()){
             std::stringstream ss;
             ss<<"Bar::operator<() Invalid interval value [Bar& Bar::operator<(Bar &)] {" << iInterval << "!=" << b.iInterval << "}";
             throw std::invalid_argument(ss.str());
@@ -156,7 +158,7 @@ public:
     //--------------------------------------------------------------------------------------------------------
     Bar & Append (const Bar &b)
     {
-        if(b.iInterval > iInterval){// must be less or equal
+        if(b.Interval() > Interval()){// must be less or equal
             std::stringstream ss;
             ss<<"Bar::Append() Invalid interval value [Bar& Bar::Append(Bar &)] {" << iInterval << "!=" << b.iInterval << "}";
             throw std::invalid_argument(ss.str());
