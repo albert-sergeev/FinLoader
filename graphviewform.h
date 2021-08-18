@@ -7,6 +7,7 @@
 #include "blockfreequeue.h"
 #include "bargraphicsitem.h"
 #include "styledswitcher.h"
+#include "plusbutton.h"
 
 namespace Ui {
 class GraphViewForm;
@@ -26,8 +27,15 @@ private:
 
     StyledSwitcher *swtCandle;
 
-    QLabel * btnScaleHViewPlus;
-    QLabel * btnScaleHViewMinus;
+    PlusButton *  btnScaleHViewPlus;
+    PlusButton *  btnScaleHViewMinus;
+
+    PlusButton *  btnScaleVViewPlus;
+    PlusButton *  btnScaleVViewMinus;
+
+    PlusButton *  btnScaleVVolumePlus;
+    PlusButton *  btnScaleVVolumeMinus;
+
 
 
     const int iTickerID;
@@ -118,6 +126,10 @@ protected slots:
     void slotHScaleValueChanged(double);
     void slotVScaleValueChanged(double);
     void slotVVolumeScaleValueChanged(double);
+
+    void slotHScaleQuotesClicked(bool);
+    void slotVScaleQuotesClicked(bool);
+    void slotHScaleVolumeClicked(bool);
 
 
 private:

@@ -32,6 +32,7 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     marketslistmodel.cpp \
+    plusbutton.cpp \
     storage.cpp \
     styledswitcher.cpp \
     threadfreecout.cpp \
@@ -57,6 +58,7 @@ HEADERS += \
     importfinqotesform.h \
     mainwindow.h \
     marketslistmodel.h \
+    plusbutton.h \
     storage.h \
     styledswitcher.h \
     threadfreecout.h \

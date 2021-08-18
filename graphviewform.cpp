@@ -10,6 +10,7 @@
 
 #include "threadfreelocaltime.h"
 #include "threadfreecout.h"
+#include "plusbutton.h"
 
 //---------------------------------------------------------------------------------------------------------------
 GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::shared_ptr<GraphHolder> hldr, QWidget *parent) :
@@ -41,11 +42,24 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
     swtCandle->SetOffColor(QPalette::Window,colorDarkRed);
     //-------------------------------------------------------------
 
-//    btnScaleHViewPlus = new QPushButton("+",this);
-//    btnScaleHViewPlus->setAttribute(Qt::WA_TranslucentBackground);
+    btnScaleHViewPlus       = new PlusButton(true,this);
+    btnScaleHViewMinus      = new PlusButton(false,this);
 
-    btnScaleHViewPlus = new QLabel("+ -",this);
-    btnScaleHViewPlus->setAttribute(Qt::WA_TranslucentBackground);
+    btnScaleVViewPlus       = new PlusButton(true,this);
+    btnScaleVViewMinus      = new PlusButton(false,this);
+
+    btnScaleVVolumePlus     = new PlusButton(true,this);
+    btnScaleVVolumeMinus    = new PlusButton(false,this);
+
+
+    connect(btnScaleHViewPlus,SIGNAL(clicked(bool)),this,SLOT(slotHScaleQuotesClicked(bool)));
+    connect(btnScaleHViewMinus,SIGNAL(clicked(bool)),this,SLOT(slotHScaleQuotesClicked(bool)));
+
+    connect(btnScaleVViewPlus,SIGNAL(clicked(bool)),this,SLOT(slotVScaleQuotesClicked(bool)));
+    connect(btnScaleVViewMinus,SIGNAL(clicked(bool)),this,SLOT(slotVScaleQuotesClicked(bool)));
+
+    connect(btnScaleVVolumePlus,SIGNAL(clicked(bool)),this,SLOT(slotHScaleVolumeClicked(bool)));
+    connect(btnScaleVVolumeMinus,SIGNAL(clicked(bool)),this,SLOT(slotHScaleVolumeClicked(bool)));
 
 
     //-------------------------------------------------------------
@@ -458,7 +472,18 @@ void GraphViewForm::resizeEvent(QResizeEvent *event)
     ui->horizontalScrollBar->setMaximum(iNewSize);
     ///////////
     QPoint pR1= ui->grViewR1->pos();
-    btnScaleHViewPlus->move(pR1.x()-30, pR1.y()+1 );
+    QPoint pR2= ui->grViewR2->pos();
+    QPoint pR4= ui->grViewR2->pos();
+
+    btnScaleVViewPlus->move     (pR1.x() - 15, pR1.y() + 10 );
+    btnScaleVViewMinus->move    (pR1.x() - 15, pR1.y() + 30 );
+
+    btnScaleHViewPlus->move     (pR1.x() - 30, pR2.y() - 20 );
+    btnScaleHViewMinus->move    (pR1.x() - 15, pR2.y() - 20 );
+
+    btnScaleVVolumePlus->move   (pR1.x() - 15, pR4.y() + 30 );
+    btnScaleVVolumeMinus->move  (pR1.x() - 15, pR4.y() + 50 );
+
 
     QWidget::resizeEvent(event);
 }
@@ -470,7 +495,17 @@ void GraphViewForm::showEvent(QShowEvent *event)
     ui->horizontalScrollBar->setMaximum(iNewSize);
     ///////////
     QPoint pR1= ui->grViewR1->pos();
-    btnScaleHViewPlus->move(pR1.x()-30, pR1.y()+1 );
+    QPoint pR2= ui->grViewR2->pos();
+    QPoint pR4= ui->grViewR2->pos();
+
+    btnScaleVViewPlus->move     (pR1.x() - 15, pR1.y() + 10 );
+    btnScaleVViewMinus->move    (pR1.x() - 15, pR1.y() + 30 );
+
+    btnScaleHViewPlus->move     (pR1.x() - 30, pR2.y() - 20 );
+    btnScaleHViewMinus->move    (pR1.x() - 15, pR2.y() - 20 );
+
+    btnScaleVVolumePlus->move   (pR1.x() - 15, pR4.y() + 30 );
+    btnScaleVVolumeMinus->move  (pR1.x() - 15, pR4.y() + 50 );
 
     QWidget::showEvent(event);
 }
@@ -927,6 +962,27 @@ void GraphViewForm::EraseLinesUpper(std::map<int,std::vector<QGraphicsItem *>>& 
     mM.erase(mM.begin(),ItEnd);
 }
 //---------------------------------------------------------------------------------------------------------------
+void GraphViewForm::slotHScaleQuotesClicked(bool b)
+{
+    {
+        ThreadFreeCout pcout;
+        pcout <<( (b)? "HScale plus":"HScale minus")<<"\n";
+    }
+}
+void GraphViewForm::slotVScaleQuotesClicked(bool b)
+{
+    {
+        ThreadFreeCout pcout;
+        pcout <<( (b)? "VScale plus":"VScale minus")<<"\n";
+    }
+}
+void GraphViewForm::slotHScaleVolumeClicked(bool b)
+{
+    {
+        ThreadFreeCout pcout;
+        pcout <<( (b)? "Volume plus":"Volume minus")<<"\n";
+    }
+}
 //---------------------------------------------------------------------------------------------------------------
 //---------------------------------------------------------------------------------------------------------------
 //---------------------------------------------------------------------------------------------------------------
