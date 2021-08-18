@@ -31,7 +31,7 @@ public:
         ss << "high: "  << b.High()<<"\r\n";
         ss << "low: "   << b.Low()<<"\r\n";
         ss << "close: " << b.Close()<<"\r\n";
-        ss << "value: " << b.Volume()<<"\r\n";
+        ss << "value: " << b.Volume()<<"";
         this->setToolTip(QString::fromStdString(ss.str()));
     };
     BarGraphicsItem(BarTick bb,size_t idx, int State):b{bb},iRealIndex{idx},bOHLC{true},iState{State},IsTick{true}{
@@ -41,7 +41,7 @@ public:
         std::stringstream ss;
         ss <<threadfree_localtime_to_str(&t)<<"\r\n";
         ss << "close: " << b.Close()<<"\r\n";
-        ss << "value: " << b.Volume()<<"\r\n";
+        ss << "value: " << b.Volume()<<"";
         this->setToolTip(QString::fromStdString(ss.str()));
     };
 

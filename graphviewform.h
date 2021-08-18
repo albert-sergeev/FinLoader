@@ -26,6 +26,10 @@ private:
 
     StyledSwitcher *swtCandle;
 
+    QLabel * btnScaleHViewPlus;
+    QLabel * btnScaleHViewMinus;
+
+
     const int iTickerID;
     Ticker tTicker;
     std::vector<Ticker> & vTickersLst;
@@ -34,8 +38,23 @@ private:
     std::shared_ptr<GraphHolder> holder;
 
     QGraphicsScene *grScene;
+    QGraphicsScene *grSceneScaleUpper;
+    QGraphicsScene *grSceneVolume;
+    //QGraphicsScene *grSceneScaleLower;
+    QGraphicsScene *grSceneViewR1;
+    QGraphicsScene *grSceneViewL1;
+    QGraphicsScene *grSceneVertScroll;
+
+
     std::vector<BarGraphicsItem *> vShowedGraphicsBars;
     std::time_t tMiddleDate{0};
+
+    std::map<int,std::vector<QGraphicsItem *>> mVLinesViewQuotes;
+    std::map<int,std::vector<QGraphicsItem *>> mVLinesScaleUpper;
+    std::map<int,std::vector<QGraphicsItem *>> mVLinesVolume;
+    //std::map<int,std::vector<QGraphicsItem *>> mVLinesScaleLower;
+
+
 
 private:
 
@@ -109,6 +128,25 @@ protected:
 
     template<typename T>
     bool RollSliderToMidTime(std::time_t tMidPos);
+    void SetSliderToPos(int iMiddlePos);
+
+    void DrawLineToScene(const int idx,const  qreal x1,const  qreal y1,const qreal x2,const  qreal y2,
+                         std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QPen & pen,
+                         const  std::time_t t = 0, bool bHasTooltip = false);
+
+    void DrawTimeToScene(const int idx,const  qreal x,const  qreal y,const  std::tm &,
+                                        std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QFont & font);
+    void DrawIntToScene(const int idx,const  qreal x,const  qreal y,const  int n,
+                                        std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QFont & font);
+
+
+    void DrawVertLines(int iBeg, int iEnd);
+
+    template<typename T>
+    void DrawVertLinesT(int iBeg, int iEnd);
+
+    void EraseLinesUpper(std::map<int,std::vector<QGraphicsItem *>>& mM, int iStart, QGraphicsScene *);
+    void EraseLinesLower(std::map<int,std::vector<QGraphicsItem *>>& mM, int iStart, QGraphicsScene *);
 
 
     inline double realYtoViewPortY(double y) {return  ((y - dStoredLowMin) * (mVScale.at(iSelectedInterval))) + iViewPortLowStrip;};
