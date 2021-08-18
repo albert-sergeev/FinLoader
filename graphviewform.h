@@ -54,6 +54,9 @@ private:
     std::map<int,std::vector<QGraphicsItem *>> mVLinesVolume;
     //std::map<int,std::vector<QGraphicsItem *>> mVLinesScaleLower;
 
+    std::vector<std::pair<QGraphicsItem *,double>>  vHLinesViewQuotes;
+
+
 
 
 private:
@@ -69,6 +72,7 @@ private:
     size_t iMaxGraphViewSize;
     double dHScale;
     std::map<int,double> mVScale;
+    std::vector<std::pair<double,bool>> vHLines;
     bool bOHLC;
 
     static const int iLeftShift{20};
@@ -138,9 +142,10 @@ protected:
                                         std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QFont & font);
     void DrawIntToScene(const int idx,const  qreal x,const  qreal y,const  int n,
                                         std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QFont & font);
-
-
     void DrawVertLines(int iBeg, int iEnd);
+    void DrawHorizontalLines(int iBeg, int iEnd);
+
+    std::pair<int,int> getHPartStep(double realH, double viewportH);
 
     template<typename T>
     void DrawVertLinesT(int iBeg, int iEnd);

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>807</width>
-    <height>654</height>
+    <width>1033</width>
+    <height>663</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -710,6 +710,12 @@
            <enum>QFrame::Raised</enum>
           </property>
          </widget>
+        </item>
+        <item>
+         <widget class="QDateTimeEdit" name="dateTimeEdit"/>
+        </item>
+        <item>
+         <widget class="QDateTimeEdit" name="dateTimeEdit_2"/>
         </item>
         <item>
          <widget class="QDoubleSpinBox" name="spbHScale"/>

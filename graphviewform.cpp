@@ -6,6 +6,7 @@
 
 #include<sstream>
 #include<iomanip>
+#include<cmath>
 
 #include "threadfreelocaltime.h"
 #include "threadfreecout.h"
@@ -84,7 +85,7 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
 
 
 
-    connect(ui->btnTestLoad,SIGNAL(clicked()),this,SLOT(slotLoadGraphButton()));
+    //connect(ui->btnTestLoad,SIGNAL(clicked()),this,SLOT(slotLoadGraphButton()));
     //------------------------------
 
     grScene = new QGraphicsScene();
@@ -382,7 +383,8 @@ void GraphViewForm::SliderValueChanged(int iMidPos)
     size_t iBeg      = iMid > iViewWidth  + iLeftShift ? iMid - iViewWidth  - iLeftShift : 0 ;
     size_t iEnd      = iMid + iViewWidth;
 
-    DrawVertLines(iBeg - iLeftShift,iEnd);
+    DrawHorizontalLines (iBeg - iLeftShift,iEnd);
+    DrawVertLines       (iBeg - iLeftShift,iEnd);
 
     iEnd = iEnd < iMaxSize ? iEnd : iMaxSize - 1;
 
@@ -475,11 +477,6 @@ void GraphViewForm::showEvent(QShowEvent *event)
 //---------------------------------------------------------------------------------------------------------------
 void GraphViewForm::slotSceneRectChanged( const QRectF & rect)
 {
-//    {
-//        ThreadFreeCout pcout;
-//        pcout <<"rect changed to X:"<<rect.x()<<"\n";
-//        pcout <<"rect changed to Y:"<<rect.y()<<"\n";
-//    }
 
     QRectF newRecVR1 = QRectF(0,rect.y(),   ui->grViewR1->maximumWidth(),rect.height());
     QRectF newRecVL1 = QRectF(0,rect.y(),   ui->grViewL1->maximumWidth(),rect.height());
@@ -488,17 +485,13 @@ void GraphViewForm::slotSceneRectChanged( const QRectF & rect)
     ui->grViewL1->scene()->setSceneRect(newRecVL1);
     ui->grVertScroll->scene()->setSceneRect(newRecVScrl);
 
-
-
     QRectF newRecScUp = QRectF(rect.x(),0,rect.width(), ui->grViewScaleUpper->maximumHeight());
     QRectF newRecVolume = QRectF(rect.x(),- ui->grViewVolume->maximumHeight(),rect.width(), ui->grViewVolume->maximumHeight());
     QRectF newRecScLow = QRectF(rect.x(),0,rect.width(), ui->grViewScaleLower->maximumHeight());
 
-
     ui->grViewScaleUpper->scene()->setSceneRect(newRecScUp);
     ui->grViewVolume->scene()->setSceneRect(newRecVolume);
     ui->grViewScaleLower->scene()->setSceneRect(newRecScLow);
-
 }
 //---------------------------------------------------------------------------------------------------------------
 void GraphViewForm::slotVerticalScrollBarValueChanged(int iV)
@@ -728,6 +721,132 @@ void GraphViewForm::DrawVertLinesT(int iBeg, int iEnd){
             tmPre = tmCur;
         }
     }
+
+    //-----------------------------------------
+
+
+}
+//---------------------------------------------------------------------------------------------------------------
+void GraphViewForm::DrawHorizontalLines(int /*iBeg*/, int /*iEnd*/)
+{
+//    qreal x1 = (iBeg + iLeftShift)     * BarGraphicsItem::BarWidth * dHScale;
+//    qreal x2 = (iEnd + iLeftShift)     * BarGraphicsItem::BarWidth * dHScale;
+//    qreal y;
+
+
+    double realH = dStoredHighMax - dStoredLowMin;
+    double viewPortH = realYtoViewPortY(dStoredHighMax) - realYtoViewPortY(dStoredLowMin);
+
+    std::pair<int,int> pPart =  getHPartStep( realH,viewPortH);
+    double dFirst = (int(dStoredLowMin / std::pow(10,pPart.second)) - int(dStoredLowMin / std::pow(10,pPart.second)) % pPart.first)*std::pow(10,pPart.second);
+    double dStep = pPart.first * std::pow(10,pPart.second);
+
+    double dCurrent = dFirst + dStep;
+
+    vHLines.clear();
+    while(dCurrent < dStoredHighMax){
+        vHLines.push_back({dCurrent,false});
+        dCurrent +=  dStep;
+    }
+    ////
+    int iMoveCount{0};
+    bool bWas{false};
+    size_t i = 0;
+    while ( i < vHLinesViewQuotes.size()){
+        bWas = false;
+        for (auto &d: vHLines){
+            if (vHLinesViewQuotes[i].second == d.first){
+                d.second = true;
+                //y = d.first;
+                bWas = true;
+                break;
+            }
+        }
+        if (!bWas){
+            ui->grViewQuotes->scene()->removeItem(vHLinesViewQuotes[i].first);
+            delete vHLinesViewQuotes[i].first;
+            vHLinesViewQuotes.erase(std::next(vHLinesViewQuotes.begin(),i));
+        }
+        else{
+            //vHLinesViewQuotes[i].first->moveBy(x2,-realYtoViewPortY(y));
+            //vHLinesViewQuotes[i].first->setPos(x1,-realYtoViewPortY(y));
+            iMoveCount++;
+             ++i;
+        }
+    }
+    ///////////
+
+    //QPen Pen(Qt::black,1,Qt::DashLine);
+    //QColor color(31, 53, 200,40);
+    //QColor color(255, 159, 0,255);// orange
+
+    //QColor color(255, 153, 0,55);// orange
+    QColor color(204, 122, 0,155);// orange
+
+    //QPen Pen(Qt::black,0.5,Qt::DashLine);
+    QPen Pen(color,1,Qt::DashLine);
+
+
+    int iCount{0};
+    for(const auto &d:vHLines){
+        if (!d.second){
+            //QGraphicsLineItem *item = new QGraphicsLineItem(0,0,x2-x1,0);
+            QGraphicsLineItem *item = new QGraphicsLineItem(0,0,ui->grViewQuotes->scene()->sceneRect().width(),0);
+            item->setPen(Pen);
+            vHLinesViewQuotes.push_back({item,d.first});
+            ui->grViewQuotes->scene()->addItem(item);
+            item->setPos(0,-realYtoViewPortY(d.first));
+
+            std::stringstream ss;
+            ss <<d.first;
+            item->setToolTip(QString::fromStdString(ss.str()));
+
+            iCount++;
+        }
+    }
+    ///
+//    ThreadFreeCout pcout;
+//    pcout <<"hor lines: "<<vHLinesViewQuotes.size()<<"\n";
+//    pcout <<"drown: "<<iCount<<"\n";
+//    pcout <<"moved: "<<iMoveCount<<"\n";
+
+}
+//---------------------------------------------------------------------------------------------------------------
+std::pair<int,int> GraphViewForm::getHPartStep(double realH, double viewportH)
+{
+    int iUpCount{0};
+    double dParts = (viewportH / 600.0) * 4.0;
+    double realPartH = realH/dParts;
+
+
+    realPartH = realPartH > 0 ? realPartH : -realPartH;
+    double dOldPart = realPartH;
+
+    int iBaseH{0};
+
+
+    if (realPartH >= 1){
+        while(realPartH /10 >= 1) {
+            realPartH /=10;
+            dOldPart = realPartH;
+            iUpCount++;
+        }
+        if (dOldPart >=7.5) {iBaseH = 1; iUpCount++;}
+        else if (dOldPart >=2.5) iBaseH = 5 ;
+        else iBaseH = 1 ;
+    }
+    else{
+        while(realPartH * 10 < 1) {
+            realPartH *=10;
+            dOldPart = realPartH;
+            iUpCount--;
+        }
+        if (dOldPart >=0.75) iBaseH = 1 ;
+        else if (dOldPart >=0.25) {iBaseH = 5; iUpCount--;}
+        else {iBaseH = 1; iUpCount--;}
+    }
+
+    return  {iBaseH,iUpCount};
 }
 //---------------------------------------------------------------------------------------------------------------
 void GraphViewForm::DrawIntToScene(const int idx,const  qreal x,const  qreal y,const  int n,
