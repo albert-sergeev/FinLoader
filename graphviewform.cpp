@@ -788,10 +788,10 @@ void GraphViewForm::DrawVertLinesT(int iBeg, int iEnd){
                 //  draw year line
                 if(!bFifstLine
                         && tmPre.tm_year != tmCur.tm_year){
-                    DrawLineToScene(i, xCur, 0,xCur,iLineH, mVLinesScaleUpper, ui->grViewScaleUpper->scene(),blackSolidPen,tTmp,true); // down line
+                    DrawLineToScene             (i, xCur, 0,xCur,iLineH, mVLinesScaleUpper, ui->grViewScaleUpper->scene(),blackSolidPen,tTmp,true); // down line
 
-                    DrawLineToScene(i, xCur, -iShiftH ,xCur, - rectVolume.height() + iShiftH * 2, mVLinesVolume, ui->grViewVolume ->scene(),blackDashPen,tTmp,true); // volume line
-                    DrawLineToScene(i, xCur, -iShiftH ,xCur, - rectQuotes.height() + iShiftH * 2, mVLinesViewQuotes, ui->grViewQuotes->scene(),blackDashPen,tTmp,true); // middle line
+                    DrawLineToScene             (i, xCur, -iShiftH ,xCur, - rectVolume.height() + iShiftH * 2, mVLinesVolume, ui->grViewVolume ->scene(),blackDashPen,tTmp,true); // volume line
+                    DrawIntermittentLineToScene (i, xCur, -iShiftH ,xCur, - rectQuotes.height() + iShiftH * 2, mVLinesViewQuotes, ui->grViewQuotes->scene(),blackDashPen,tTmp,true); // middle line
                     //TODO: print the year
                     iDayCounter = 0;
                     DrawIntToScene(i, xCur, iLineH ,tmCur.tm_year + 1900,mVLinesScaleUpper, ui->grViewScaleUpper->scene(), fontNumb);
@@ -802,10 +802,10 @@ void GraphViewForm::DrawVertLinesT(int iBeg, int iEnd){
                         && iSelectedInterval != Bar::eInterval::pMonth // for months don't draw
                         && (iSelectedInterval != Bar::eInterval::pWeek || tmCur.tm_mon % 3 ==0) // for weeks  - only draw only for every third
                         ){
-                    DrawLineToScene(i, xCur, 0,xCur,iLineH, mVLinesScaleUpper, ui->grViewScaleUpper->scene(),blackSolidPen,tTmp,true); // down line
+                    DrawLineToScene             (i, xCur, 0,xCur,iLineH, mVLinesScaleUpper, ui->grViewScaleUpper->scene(),blackSolidPen,tTmp,true); // down line
                     //
-                    DrawLineToScene(i, xCur, -iShiftH ,xCur, - rectVolume.height() + iShiftH * 2, mVLinesVolume, ui->grViewVolume ->scene(),blackDashPen,tTmp,true); // volume line
-                    DrawLineToScene(i, xCur, -iShiftH ,xCur, - rectQuotes.height() + iShiftH * 2, mVLinesViewQuotes, ui->grViewQuotes->scene(),blackDashPen,tTmp,true); // middle line
+                    DrawLineToScene             (i, xCur, -iShiftH ,xCur, - rectVolume.height() + iShiftH * 2, mVLinesVolume, ui->grViewVolume ->scene(),blackDashPen,tTmp,true); // volume line
+                    DrawIntermittentLineToScene (i, xCur, -iShiftH ,xCur, - rectQuotes.height() + iShiftH * 2, mVLinesViewQuotes, ui->grViewQuotes->scene(),blackDashPen,tTmp,true); // middle line
                     //TODO: print the month
                     iDayCounter = 0;
                     DrawIntToScene(i, xCur, iLineH ,tmCur.tm_mon + 1 ,mVLinesScaleUpper, ui->grViewScaleUpper->scene(), fontNumb);
@@ -818,8 +818,8 @@ void GraphViewForm::DrawVertLinesT(int iBeg, int iEnd){
                             (iSelectedInterval == Bar::eInterval::p120 && iDayCounter % 4 == 0 )
                             )
                         ){
-                    DrawLineToScene(i, xCur, -iShiftH ,xCur, - rectVolume.height() + iShiftH * 2, mVLinesVolume, ui->grViewVolume ->scene(),blackDashPen,tTmp,true); // volume line
-                    DrawLineToScene(i, xCur, -iShiftH ,xCur, - rectQuotes.height() + iShiftH * 2, mVLinesViewQuotes, ui->grViewQuotes->scene(),blackDashPen,tTmp,true); // middle line
+                    DrawLineToScene             (i, xCur, -iShiftH ,xCur, - rectVolume.height() + iShiftH * 2, mVLinesVolume, ui->grViewVolume ->scene(),blackDashPen,tTmp,true); // volume line
+                    DrawIntermittentLineToScene (i, xCur, -iShiftH ,xCur, - rectQuotes.height() + iShiftH * 2, mVLinesViewQuotes, ui->grViewQuotes->scene(),blackDashPen,tTmp,true); // middle line
                     //TODO: print the day
                     if (iFCount > 3){
                         DrawIntToScene(i, xCur, -1 ,tmCur.tm_mday,mVLinesScaleUpper, ui->grViewScaleUpper->scene(), fontNumb);
@@ -836,8 +836,8 @@ void GraphViewForm::DrawVertLinesT(int iBeg, int iEnd){
                             (iSelectedInterval == Bar::eInterval::p15 && tmCur.tm_min == 0 && tmCur.tm_hour % 2 == 0 )
                             )
                         ){
-                    DrawLineToScene(i, xCur, -iShiftH ,xCur, - rectVolume.height() + iShiftH * 2, mVLinesVolume, ui->grViewVolume ->scene(),blackDashPen,tTmp,true); // volume line
-                    DrawLineToScene(i, xCur, -iShiftH ,xCur, - rectQuotes.height() + iShiftH * 2, mVLinesViewQuotes, ui->grViewQuotes->scene(),blackDashPen,tTmp,true); // middle line
+                    DrawLineToScene             (i, xCur, -iShiftH ,xCur, - rectVolume.height() + iShiftH * 2, mVLinesVolume, ui->grViewVolume ->scene(),blackDashPen,tTmp,true); // volume line
+                    DrawIntermittentLineToScene (i, xCur, -iShiftH ,xCur, - rectQuotes.height() + iShiftH * 2, mVLinesViewQuotes, ui->grViewQuotes->scene(),blackDashPen,tTmp,true); // middle line
                     //TODO: print the interday time
                     if (iFCount > 4){
                         DrawTimeToScene(i, xCur, -1 ,tmCur,mVLinesScaleUpper, ui->grViewScaleUpper->scene(), fontTime);
@@ -850,8 +850,8 @@ void GraphViewForm::DrawVertLinesT(int iBeg, int iEnd){
                         ){
 
                     //
-                    DrawLineToScene(i, xCur, -iShiftH ,xCur, - rectVolume.height() + iShiftH * 2, mVLinesVolume, ui->grViewVolume ->scene(),blackDashPen,tTmp,true); // volume line
-                    DrawLineToScene(i, xCur, -iShiftH ,xCur, - rectQuotes.height() + iShiftH * 2, mVLinesViewQuotes, ui->grViewQuotes->scene(),blackDashPen,tTmp,true); // middle line
+                    DrawLineToScene             (i, xCur, -iShiftH ,xCur, - rectVolume.height() + iShiftH * 2, mVLinesVolume, ui->grViewVolume ->scene(),blackDashPen,tTmp,true); // volume line
+                    DrawIntermittentLineToScene (i, xCur, -iShiftH ,xCur, - rectQuotes.height() + iShiftH * 2, mVLinesViewQuotes, ui->grViewQuotes->scene(),blackDashPen,tTmp,true); // middle line
                     //TODO: print the interday time
 
                     if (iFCount > 4){
@@ -866,7 +866,7 @@ void GraphViewForm::DrawVertLinesT(int iBeg, int iEnd){
                         && (tmPre.tm_sec != tmCur.tm_sec /*&& iSecCounter >=8 */)
                         ){
                     //
-                    DrawLineToScene(i, xCur, -iShiftH ,xCur, - rectQuotes.height() + iShiftH * 2, mVLinesViewQuotes, ui->grViewQuotes->scene(),blackDotPen,tTmp,true); // middle line
+                    DrawIntermittentLineToScene(i, xCur, -iShiftH ,xCur, - rectQuotes.height() + iShiftH * 2, mVLinesViewQuotes, ui->grViewQuotes->scene(),blackDotPen,tTmp,true); // middle line
                     iSecCounter = 0;
                 }
                 ///
@@ -1115,6 +1115,60 @@ void GraphViewForm::DrawTimeToScene(const int idx,const  qreal x,const  qreal y,
     mM[idx].push_back(item);
     scene->addItem(item);
     item->setPos(x,y);
+
+}
+//---------------------------------------------------------------------------------------------------------------
+void GraphViewForm::DrawIntermittentLineToScene(const int idx,const  qreal x1,const  qreal y1,const qreal x2,const  qreal y2,
+                     std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QPen & pen,
+                     const  std::time_t t, bool bHasTooltip)
+{
+    std::stringstream ss;
+    if (bHasTooltip && t != 0){
+        ss <<threadfree_localtime_to_str(&t);
+    }
+
+    DrawIntermittentLineToScene(idx,x1,y1,x2,y2,mM,scene, pen,ss.str(),  bHasTooltip);
+}
+//---------------------------------------------------------------------------------------------------------------
+void GraphViewForm::DrawIntermittentLineToScene(const int idx,const  qreal x1,const  qreal y1,const qreal x2,const  qreal y2,
+                     std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QPen & pen,
+                     const  std::string sToolTip, bool bHasTooltip)
+{
+
+    static int iCount{0};
+    iCount++;
+
+    // break into segments
+    auto It = vHLines.begin();
+    auto ItEnd = vHLines.end();
+
+    std::vector<std::pair<double,double>> vD;
+
+    double Y1 {y1};
+    double Y2 {y2};
+    if (Y1 < Y2) std::swap(Y1,Y2);
+
+    double y {Y1};
+    double yTmp{0};
+
+    while(It != ItEnd){
+        yTmp = -realYtoSceneY(It->first);
+        if (yTmp < y){
+            vD.push_back({y, yTmp});
+            y = yTmp;
+        }
+        ++It;
+    }
+    vD.push_back({y, Y2});
+    ////////////////////////////////
+    // draw segmentes
+    for (const auto & s:vD){
+        if (-(s.second - s.first) > 12){
+            DrawLineToScene(idx,x1,s.first - 6 , x2, s.second + 6, mM, scene,pen,sToolTip, bHasTooltip);
+        }
+    }
+
+
 
 }
 
