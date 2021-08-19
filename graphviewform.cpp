@@ -630,19 +630,7 @@ void GraphViewForm::resizeEvent(QResizeEvent *event)
     iNewSize = iNewSize < 0? 0 : iNewSize;
     ui->horizontalScrollBar->setMaximum(iNewSize);
     ///////////
-    QPoint pR1= ui->grViewR1->pos();
-    QPoint pR2= ui->grViewR2->pos();
-    QPoint pR4= ui->grViewR2->pos();
-
-    btnScaleVViewPlus->move     (pR1.x() - 15, pR1.y() + 10 );
-    btnScaleVViewMinus->move    (pR1.x() - 15, pR1.y() + 30 );
-
-    btnScaleHViewPlus->move     (pR1.x() - 30, pR2.y() - 20 );
-    btnScaleHViewMinus->move    (pR1.x() - 15, pR2.y() - 20 );
-
-    btnScaleVVolumePlus->move   (pR1.x() - 15, pR4.y() + 30 );
-    btnScaleVVolumeMinus->move  (pR1.x() - 15, pR4.y() + 50 );
-
+    RepositionPlusMinusButtons();
 
     QWidget::resizeEvent(event);
 }
@@ -653,18 +641,7 @@ void GraphViewForm::showEvent(QShowEvent *event)
     iNewSize = iNewSize < 0? 0 : iNewSize;
     ui->horizontalScrollBar->setMaximum(iNewSize);
     ///////////
-    QPoint pR1= ui->grViewR1->pos();
-    QPoint pR2= ui->grViewR2->pos();
-    QPoint pR4= ui->grViewR2->pos();
-
-    btnScaleVViewPlus->move     (pR1.x() - 15, pR1.y() + 10 );
-    btnScaleVViewMinus->move    (pR1.x() - 15, pR1.y() + 30 );
-
-    btnScaleHViewPlus->move     (pR1.x() - 30, pR2.y() - 20 );
-    btnScaleHViewMinus->move    (pR1.x() - 15, pR2.y() - 20 );
-
-    btnScaleVVolumePlus->move   (pR1.x() - 15, pR4.y() + 30 );
-    btnScaleVVolumeMinus->move  (pR1.x() - 15, pR4.y() + 50 );
+    RepositionPlusMinusButtons();
 
     QWidget::showEvent(event);
 }
@@ -1360,4 +1337,68 @@ void GraphViewForm::dateTimeEndChanged(const QDateTime&)
     SetMinMaxDateToControls(); // keep old value
 }
 //---------------------------------------------------------------------------------------------------------------
+void GraphViewForm::setFramesVisibility(std::tuple<bool,bool,bool,bool,bool> tp)
+{
+
+    auto [bLeft, bRight, bUpper, bLower, bVolume] {tp};
+
+
+    ui->grViewL1->setVisible(bLeft);
+    ui->grViewL2->setVisible(bLeft && bUpper);
+    ui->grViewL3->setVisible(bLeft && bVolume);
+    ui->grViewL4->setVisible(bLeft && bLower);
+
+    ui->grViewR1->setVisible(bRight);
+    ui->grViewR2->setVisible(bRight && bUpper);
+    ui->grViewR3->setVisible(bRight && bVolume);
+    ui->grViewR4->setVisible(bRight && bLower);
+
+    ui->grViewScaleUpper->setVisible(bUpper);
+    ui->grViewVolume->setVisible(bVolume);
+//    if (bVolume && !ui->grViewVolume->isVisible()) ui->grViewVolume->show();
+//    if (!bVolume && ui->grViewVolume->isVisible()) ui->grViewVolume->hide();
+
+    ui->grViewScaleLower->setVisible(bLower);
+
+    btnScaleVVolumePlus->setVisible(bVolume);
+    btnScaleVVolumeMinus->setVisible(bVolume);
+
+    RepositionPlusMinusButtons();
+
+}
+//---------------------------------------------------------------------------------------------------------------
+void GraphViewForm::RepositionPlusMinusButtons()
+{
+    QRect rectQ = ui->grViewQuotes->rect();
+    QPoint pQ   = ui->grViewQuotes->pos();
+    QPoint pV   = ui->grViewVolume->pos();
+    QPoint pU   = ui->grViewScaleUpper->pos();
+    QPoint pL   = ui->grViewScaleLower->pos();
+    QPoint pSl   = ui->horizontalScrollBar->pos();
+
+    QPoint pT = pU;
+    if (!ui->grViewScaleUpper->isVisible()){
+            pT = pV;
+            if (!ui->grViewVolume->isVisible()){
+                pT = pL;
+                if (!ui->grViewScaleLower->isVisible()){
+                    pT = pSl;
+                }
+            }
+    }
+
+    btnScaleVViewPlus->move     (pQ.x() + rectQ.width() - 15, pQ.y() + 10 );
+    btnScaleVViewMinus->move    (pQ.x() + rectQ.width() - 15, pQ.y() + 30 );
+
+    btnScaleHViewPlus->move     (pQ.x() + rectQ.width() - 30, pT.y() - 20 );
+    btnScaleHViewMinus->move    (pQ.x() + rectQ.width() - 15, pT.y() - 20 );
+
+    btnScaleVVolumePlus->move   (pQ.x() + rectQ.width() - 15, pV.y() + 10 );
+    btnScaleVVolumeMinus->move  (pQ.x() + rectQ.width() - 15, pV.y() + 30 );
+}
+//---------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------
+
 

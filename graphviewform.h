@@ -115,6 +115,7 @@ signals:
 public slots:
 
     void slotInvalidateGraph(std::time_t dtDegin, std::time_t dtEnd, bool bNeedToRescale = false);
+    void setFramesVisibility(std::tuple<bool,bool,bool,bool,bool>);
 
 protected slots:
     void slotLoadGraphButton();
@@ -184,6 +185,7 @@ protected:
     void DrawVertLinesT(int iBeg, int iEnd);
 
     void SetMinMaxDateToControls();
+    void RepositionPlusMinusButtons();
 
     template<typename T>
     void EraseLinesUpper(T& mM, int iStart, QGraphicsScene *);

@@ -61,11 +61,24 @@ private:
     QAction * pacStatusBar;
     QAction * pacToolBar;
     QAction * pacTickersBarButtonsHide;
+
+    QAction * pacGVLeftSc;
+    QAction * pacGVRightSc;
+    QAction * pacGVUpperSc;
+    QAction * pacGVLowerSc;
+    QAction * pacGVVolumeSc;
+
     QToolBar * tbrToolBar;
     bool bToolBarOnLoadIsHidden;
     bool bTickerBarOnLoadIsHidden;
     bool bStatusBarOnLoadIsHidden;
     bool bTickerBarButtonsHidden;
+
+    bool bGVLeftScOnLoadIsHidden;
+    bool bGVRightScOnLoadIsHidden;
+    bool bGVUpperScOnLoadIsHidden;
+    bool bGVLowerScOnLoadIsHidden;
+    bool bGVVolumeScOnLoadIsHidden;
     //------------------------------------------------
     std::map<int,std::shared_ptr<GraphHolder>> Holders;
     std::queue<std::pair<int,std::chrono::time_point<std::chrono::steady_clock>>> qActivityQueue;
@@ -74,6 +87,7 @@ private:
     QMenu * m_mnuWindows;
     QMenu * m_mnuStyles;
     QMenu * m_mnuLangs;
+    QMenu * m_mnuGraphViewConfig;
     QSignalMapper * m_psigmapper;
     QSignalMapper * m_psigmapperStyle;
     QSignalMapper * m_psigmapperLang;
@@ -193,6 +207,8 @@ protected slots: // for main window
     void slotSendSignalToInvalidateGraph(int TickerID, std::time_t dtDegin, std::time_t dtEnd);
 
    // void slotTestPvBars(std::shared_ptr<std::vector<std::vector<Bar>>> pvBars);
+
+    void slotGVFramesVisibilityStateChanged();
 
 
 private:

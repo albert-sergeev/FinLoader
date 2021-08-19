@@ -273,6 +273,14 @@ void MainWindow::LoadSettings()
             cImportDelimiter    = s.size()>0 ? s[0]: ',';
         m_settings.endGroup();
 
+        m_settings.beginGroup("GraphViewForm");
+            bGVLeftScOnLoadIsHidden   = !(m_settings.value("GVLeftSc"  ,true).toBool());
+            bGVRightScOnLoadIsHidden  = !(m_settings.value("GVRightSc" ,true).toBool());
+            bGVUpperScOnLoadIsHidden  = !(m_settings.value("GVUpperSc" ,true).toBool());
+            bGVLowerScOnLoadIsHidden  = !(m_settings.value("GVLowerSc" ,true).toBool());
+            bGVVolumeScOnLoadIsHidden = !(m_settings.value("GVVolumeSc",true).toBool());
+        m_settings.endGroup();
+
     m_settings.endGroup();
 }
 //--------------------------------------------------------------------------------------------------------------------------------
@@ -308,6 +316,14 @@ void MainWindow::SaveSettings()
             std::string s {" "}; s[0] = cImportDelimiter;
             QString qs = QString::fromStdString(s);
             m_settings.setValue("ImportDelimiter",qs);
+        m_settings.endGroup();
+
+        m_settings.beginGroup("GraphViewForm");
+            m_settings.setValue("GVLeftSc"  ,pacGVLeftSc->isChecked());
+            m_settings.setValue("GVRightSc" ,pacGVRightSc->isChecked());
+            m_settings.setValue("GVUpperSc" ,pacGVUpperSc->isChecked());
+            m_settings.setValue("GVLowerSc" ,pacGVLowerSc->isChecked());
+            m_settings.setValue("GVVolumeSc",pacGVVolumeSc->isChecked());
         m_settings.endGroup();
 
     m_settings.endGroup();
@@ -462,6 +478,36 @@ void MainWindow::InitAction()
     pacToolBar->setChecked(!bToolBarOnLoadIsHidden);
     connect(pacToolBar,SIGNAL(triggered()),SLOT(slotToolBarStateChanged()));
     //------------------------------------------------
+    pacGVLeftSc =new QAction(tr("Left scale"));
+    pacGVLeftSc->setText(tr("Left scale"));
+    pacGVLeftSc->setCheckable(true);
+    pacGVLeftSc->setChecked(!bGVLeftScOnLoadIsHidden);
+    connect(pacGVLeftSc,SIGNAL(triggered()),SLOT(slotGVFramesVisibilityStateChanged()));
+    //------------------------------------------------
+    pacGVRightSc =new QAction(tr("Right scale"));
+    pacGVRightSc->setText(tr("Right scale"));
+    pacGVRightSc->setCheckable(true);
+    pacGVRightSc->setChecked(!bGVRightScOnLoadIsHidden);
+    connect(pacGVRightSc,SIGNAL(triggered()),SLOT(slotGVFramesVisibilityStateChanged()));
+    //------------------------------------------------
+    pacGVUpperSc =new QAction(tr("Upper horizontal scale"));
+    pacGVUpperSc->setText(tr("Upper horizontal scale"));
+    pacGVUpperSc->setCheckable(true);
+    pacGVUpperSc->setChecked(!bGVUpperScOnLoadIsHidden);
+    connect(pacGVUpperSc,SIGNAL(triggered()),SLOT(slotGVFramesVisibilityStateChanged()));
+    //------------------------------------------------
+    pacGVLowerSc =new QAction(tr("Lower horizontal scale"));
+    pacGVLowerSc->setText(tr("Lower horizontal scale"));
+    pacGVLowerSc->setCheckable(true);
+    pacGVLowerSc->setChecked(!bGVLowerScOnLoadIsHidden);
+    connect(pacGVLowerSc,SIGNAL(triggered()),SLOT(slotGVFramesVisibilityStateChanged()));
+    //------------------------------------------------
+    pacGVVolumeSc =new QAction(tr("Volume scale"));
+    pacGVVolumeSc->setText(tr("Volume scale"));
+    pacGVVolumeSc->setCheckable(true);
+    pacGVVolumeSc->setChecked(!bGVVolumeScOnLoadIsHidden);
+    connect(pacGVVolumeSc,SIGNAL(triggered()),SLOT(slotGVFramesVisibilityStateChanged()));
+    //------------------------------------------------
     //
     QMenu * pmnuFile = new QMenu(tr("&File","menu"));
     pmnuFile->addAction(pacNewDoc);
@@ -491,8 +537,17 @@ void MainWindow::InitAction()
     pmnuSettings->addAction(pacStatusBar);
     pmnuSettings->addAction(pacTickersBarButtonsHide);
     pmnuSettings->addSeparator();
+    m_mnuGraphViewConfig = new QMenu(tr("&Graphics view settings"));
+    pmnuSettings->addMenu(m_mnuGraphViewConfig);
+    pmnuSettings->addSeparator();
     pmnuSettings->addAction(pacConfig);
     pmnuSettings->addSeparator();
+
+    m_mnuGraphViewConfig->addAction(pacGVLeftSc);
+    m_mnuGraphViewConfig->addAction(pacGVRightSc);
+    m_mnuGraphViewConfig->addAction(pacGVUpperSc);
+    m_mnuGraphViewConfig->addAction(pacGVLowerSc);
+    m_mnuGraphViewConfig->addAction(pacGVVolumeSc);
 
     m_mnuStyles = new QMenu(tr("St&yles"));
     pmnuSettings->addMenu(m_mnuStyles);
@@ -860,7 +915,7 @@ void MainWindow::slotSetActiveLang      (QString sL)
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::slotGraphViewWindow()
-{
+{   
     auto qml(ui->lstView->selectionModel());
     auto lst (qml->selectedIndexes());
     //if(lst.count() > 0 && lst[0].isValid()){
@@ -1087,6 +1142,13 @@ void MainWindow::slotSetSelectedTicker(const  int iTickerID)
         }
     }
     if (!bFound){
+        std::tuple<bool,bool,bool,bool,bool> tp{
+                    pacGVLeftSc->isChecked(),
+                    pacGVRightSc->isChecked(),
+                    pacGVUpperSc->isChecked(),
+                    pacGVLowerSc->isChecked(),
+                    pacGVVolumeSc->isChecked()};
+
         if (Holders.find(iTickerID) == Holders.end()){
             Holders[iTickerID] = std::make_shared<GraphHolder>(GraphHolder{iTickerID});
         }
@@ -1102,6 +1164,7 @@ void MainWindow::slotSetSelectedTicker(const  int iTickerID)
 
         connect(pdoc,SIGNAL(SendToLog(QString)),this,SIGNAL(SendToLog(QString)));
 
+        pdoc->setFramesVisibility(tp);
         pdoc->show();
     }
     else{
@@ -1186,7 +1249,7 @@ void MainWindow::slotLoadGraph(const  int iTickerID, const std::time_t tBegin, c
 //        }
 //    }
 //}
-
+//--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::InitHolders()
 {
     std::time_t tNow =std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
@@ -1216,3 +1279,29 @@ void MainWindow::InitHolders()
 
 
 }
+//--------------------------------------------------------------------------------------------------------------------------------
+
+void MainWindow::slotGVFramesVisibilityStateChanged()
+{
+    std::tuple<bool,bool,bool,bool,bool> tp{
+                pacGVLeftSc->isChecked(),
+                pacGVRightSc->isChecked(),
+                pacGVUpperSc->isChecked(),
+                pacGVLowerSc->isChecked(),
+                pacGVVolumeSc->isChecked()};
+
+    GraphViewForm * wnd{nullptr};
+    QList<QMdiSubWindow*> lst = ui->mdiArea->subWindowList();
+    for(int i = 0; i < lst.size(); ++i){
+        wnd = qobject_cast<GraphViewForm *>(lst[i]->widget());
+        if(wnd ){
+            wnd->setFramesVisibility(tp);
+        }
+    }
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------------------
