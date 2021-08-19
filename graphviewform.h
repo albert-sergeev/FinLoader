@@ -132,6 +132,8 @@ protected slots:
     void dateTimeBeginChanged(const QDateTime&);
     void dateTimeEndChanged(const QDateTime&);
 
+    void slotPeriodButtonChanged();
+
 
 private:
     Ui::GraphViewForm *ui;
@@ -186,6 +188,7 @@ protected:
 
     void SetMinMaxDateToControls();
     void RepositionPlusMinusButtons();
+    void SetSelectedIntervalToControls();
 
     template<typename T>
     void EraseLinesUpper(T& mM, int iStart, QGraphicsScene *);

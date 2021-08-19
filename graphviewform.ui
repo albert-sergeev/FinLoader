@@ -466,7 +466,7 @@
               <number>0</number>
              </property>
              <item row="0" column="3">
-              <widget class="QPushButton" name="pushButton_4">
+              <widget class="QPushButton" name="btn10">
                <property name="maximumSize">
                 <size>
                  <width>30</width>
@@ -485,7 +485,7 @@
               </widget>
              </item>
              <item row="0" column="7">
-              <widget class="QPushButton" name="pushButton_8">
+              <widget class="QPushButton" name="btn120">
                <property name="maximumSize">
                 <size>
                  <width>35</width>
@@ -504,7 +504,7 @@
               </widget>
              </item>
              <item row="0" column="4">
-              <widget class="QPushButton" name="pushButton_5">
+              <widget class="QPushButton" name="btn15">
                <property name="maximumSize">
                 <size>
                  <width>30</width>
@@ -523,7 +523,7 @@
               </widget>
              </item>
              <item row="0" column="9">
-              <widget class="QPushButton" name="pushButton_10">
+              <widget class="QPushButton" name="btnDay">
                <property name="minimumSize">
                 <size>
                  <width>40</width>
@@ -542,7 +542,7 @@
               </widget>
              </item>
              <item row="0" column="0">
-              <widget class="QPushButton" name="pushButton">
+              <widget class="QPushButton" name="btnTick">
                <property name="minimumSize">
                 <size>
                  <width>30</width>
@@ -567,7 +567,7 @@
               </widget>
              </item>
              <item row="0" column="10">
-              <widget class="QPushButton" name="pushButton_11">
+              <widget class="QPushButton" name="btnWeek">
                <property name="minimumSize">
                 <size>
                  <width>40</width>
@@ -586,7 +586,7 @@
               </widget>
              </item>
              <item row="0" column="6">
-              <widget class="QPushButton" name="pushButton_7">
+              <widget class="QPushButton" name="btn60">
                <property name="maximumSize">
                 <size>
                  <width>30</width>
@@ -605,7 +605,7 @@
               </widget>
              </item>
              <item row="0" column="1">
-              <widget class="QPushButton" name="pushButton_2">
+              <widget class="QPushButton" name="btn1">
                <property name="maximumSize">
                 <size>
                  <width>30</width>
@@ -627,7 +627,7 @@
               </widget>
              </item>
              <item row="0" column="8">
-              <widget class="QPushButton" name="pushButton_9">
+              <widget class="QPushButton" name="btn180">
                <property name="maximumSize">
                 <size>
                  <width>35</width>
@@ -646,7 +646,7 @@
               </widget>
              </item>
              <item row="0" column="2">
-              <widget class="QPushButton" name="pushButton_3">
+              <widget class="QPushButton" name="btn5">
                <property name="maximumSize">
                 <size>
                  <width>30</width>
@@ -665,7 +665,7 @@
               </widget>
              </item>
              <item row="0" column="5">
-              <widget class="QPushButton" name="pushButton_6">
+              <widget class="QPushButton" name="btn30">
                <property name="maximumSize">
                 <size>
                  <width>30</width>
@@ -684,7 +684,7 @@
               </widget>
              </item>
              <item row="0" column="11">
-              <widget class="QPushButton" name="pushButton_12">
+              <widget class="QPushButton" name="btnMonth">
                <property name="minimumSize">
                 <size>
                  <width>40</width>

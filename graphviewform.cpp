@@ -87,6 +87,7 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
     tTicker = (*It);
     this->setWindowTitle(QString::fromStdString(tTicker.TickerSign()));
     //------------------------------
+    // TODO: save default selected interval other settings
 
     iSelectedInterval   = Bar::eInterval::pTick;
     iMaxGraphViewSize   = 0;
@@ -178,6 +179,22 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
             }
         }
     }
+
+    SetSelectedIntervalToControls();
+    connect(ui->btnTick, SIGNAL(clicked()),this,SLOT(slotPeriodButtonChanged()));
+    connect(ui->btn1,    SIGNAL(clicked()),this,SLOT(slotPeriodButtonChanged()));
+    connect(ui->btn5,    SIGNAL(clicked()),this,SLOT(slotPeriodButtonChanged()));
+    connect(ui->btn10,   SIGNAL(clicked()),this,SLOT(slotPeriodButtonChanged()));
+    connect(ui->btn15,   SIGNAL(clicked()),this,SLOT(slotPeriodButtonChanged()));
+    connect(ui->btn30,   SIGNAL(clicked()),this,SLOT(slotPeriodButtonChanged()));
+    connect(ui->btn60,   SIGNAL(clicked()),this,SLOT(slotPeriodButtonChanged()));
+    connect(ui->btn120,  SIGNAL(clicked()),this,SLOT(slotPeriodButtonChanged()));
+    connect(ui->btn180,  SIGNAL(clicked()),this,SLOT(slotPeriodButtonChanged()));
+    connect(ui->btnWeek, SIGNAL(clicked()),this,SLOT(slotPeriodButtonChanged()));
+    connect(ui->btnDay,  SIGNAL(clicked()),this,SLOT(slotPeriodButtonChanged()));
+
+
+
 }
 //---------------------------------------------------------------------------------------------------------------
 GraphViewForm::~GraphViewForm()
@@ -1397,7 +1414,50 @@ void GraphViewForm::RepositionPlusMinusButtons()
     btnScaleVVolumeMinus->move  (pQ.x() + rectQ.width() - 15, pV.y() + 30 );
 }
 //---------------------------------------------------------------------------------------------------------------
+void GraphViewForm::slotPeriodButtonChanged()
+{
+    if (ui->btnTick->isChecked())       {iSelectedInterval = Bar::eInterval::pTick;     }
+    else if (ui->btn1->isChecked())     {iSelectedInterval = Bar::eInterval::p1;        }
+    else if (ui->btn5->isChecked())     {iSelectedInterval = Bar::eInterval::p5;        }
+    else if (ui->btn10->isChecked())    {iSelectedInterval = Bar::eInterval::p10;       }
+    else if (ui->btn15->isChecked())    {iSelectedInterval = Bar::eInterval::p15;       }
+    else if (ui->btn30->isChecked())    {iSelectedInterval = Bar::eInterval::p30;       }
+    else if (ui->btn60->isChecked())    {iSelectedInterval = Bar::eInterval::p60;       }
+    else if (ui->btn120->isChecked())   {iSelectedInterval = Bar::eInterval::p120;      }
+    else if (ui->btn180->isChecked())   {iSelectedInterval = Bar::eInterval::p180;      }
+    else if (ui->btnDay->isChecked())   {iSelectedInterval = Bar::eInterval::pDay;      }
+    else if (ui->btnWeek->isChecked())  {iSelectedInterval = Bar::eInterval::pWeek;     }
+    else if (ui->btnMonth->isChecked()) {iSelectedInterval = Bar::eInterval::pMonth;    }
+    else{
+        throw std::runtime_error("No period button selected!");
+    }
+    /////
+    EraseLinesLower(mShowedGraphicsBars,  0, ui->grViewQuotes->scene());
+    EraseLinesLower(mVLinesVolume,        0, ui->grViewVolume->scene());
+    EraseLinesFrames();
+
+    slotInvalidateGraph(tStoredMinDate, tStoredMaxDate);
+
+}
 //---------------------------------------------------------------------------------------------------------------
+ void GraphViewForm::SetSelectedIntervalToControls()
+ {
+     switch (iSelectedInterval) {
+     case Bar::eInterval::pTick:    ui->btnTick->setChecked(true); break;
+     case Bar::eInterval::p1:       ui->btn1->setChecked(true); break;
+     case Bar::eInterval::p5:       ui->btn5->setChecked(true); break;
+     case Bar::eInterval::p10:      ui->btn10->setChecked(true); break;
+     case Bar::eInterval::p15:      ui->btn15->setChecked(true); break;
+     case Bar::eInterval::p30:      ui->btn30->setChecked(true); break;
+     case Bar::eInterval::p60:      ui->btn60->setChecked(true); break;
+     case Bar::eInterval::p120:     ui->btn120->setChecked(true); break;
+     case Bar::eInterval::p180:     ui->btn180->setChecked(true); break;
+     case Bar::eInterval::pDay:     ui->btnDay->setChecked(true); break;
+     case Bar::eInterval::pWeek:    ui->btnWeek->setChecked(true); break;
+     case Bar::eInterval::pMonth:   ui->btnMonth->setChecked(true); break;
+     default: break;
+     }
+ }
 //---------------------------------------------------------------------------------------------------------------
 //---------------------------------------------------------------------------------------------------------------
 
