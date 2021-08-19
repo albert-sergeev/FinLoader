@@ -54,8 +54,10 @@ private:
     QGraphicsScene *grSceneVertScroll;
 
 
-    std::vector<BarGraphicsItem *> vShowedGraphicsBars;
-    std::time_t tMiddleDate{0};
+    //std::vector<BarGraphicsItem *> vShowedGraphicsBars;
+    //std::time_t tMiddleDate{0};
+
+    std::map<int,std::vector<BarGraphicsItem *>> mShowedGraphicsBars;
 
     std::map<int,std::vector<QGraphicsItem *>> mVLinesViewQuotes;
     std::map<int,std::vector<QGraphicsItem *>> mVLinesScaleUpper;
@@ -64,8 +66,8 @@ private:
 
     std::vector<std::pair<QGraphicsItem *,double>>  vHLinesViewQuotes;
 
-
-
+    std::map<int,std::vector<QGraphicsItem *>> mLeftFrames;
+    std::map<int,std::vector<QGraphicsItem *>> mRightFrames;
 
 private:
 
@@ -76,10 +78,15 @@ private:
     double dStoredLowMin;
     double dStoredHighMax;
 
+    double dStoredVolumeLowMin;
+    double dStoredVolumeHighMax;
+
     Bar::eInterval iSelectedInterval;
     size_t iMaxGraphViewSize;
     double dHScale;
     std::map<int,double> mVScale;
+    std::map<int,double> mVVolumeScale;
+
     std::vector<std::pair<double,bool>> vHLines;
     bool bOHLC;
 
@@ -111,25 +118,18 @@ public slots:
 
 protected slots:
     void slotLoadGraphButton();
-    void slotLoadGraphButton2();
-
-    //void slotAddBarTicksToView(GraphHolder::Iterator<BarTick> ItBeg, GraphHolder::Iterator<BarTick> ItEnd);
-    //void slotAddBarsToView(GraphHolder::Iterator<Bar> ItBeg, GraphHolder::Iterator<Bar> ItEnd);
 
     void slotSliderValueChanged(int i);
 
     void slotSceneRectChanged( const QRectF &);
     void slotVerticalScrollBarValueChanged(int);
-    //void slotHorisontalScrollBarValueChanged(int);
-
-
-    void slotHScaleValueChanged(double);
-    void slotVScaleValueChanged(double);
-    void slotVVolumeScaleValueChanged(double);
 
     void slotHScaleQuotesClicked(bool);
     void slotVScaleQuotesClicked(bool);
     void slotHScaleVolumeClicked(bool);
+
+    void dateTimeBeginChanged(const QDateTime&);
+    void dateTimeEndChanged(const QDateTime&);
 
 
 private:
@@ -138,6 +138,10 @@ private:
 protected:
     template<typename T>
     void SliderValueChanged(int i);
+//    //------
+//    template<typename T>
+//    void SliderValueChangedBackup(int iMidPos);
+//    //------
 
     template<typename T>
     bool RepainInvalidRange(RepainTask &);
@@ -149,24 +153,46 @@ protected:
     void DrawLineToScene(const int idx,const  qreal x1,const  qreal y1,const qreal x2,const  qreal y2,
                          std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QPen & pen,
                          const  std::time_t t = 0, bool bHasTooltip = false);
+    void DrawLineToScene(const int idx,const  qreal x1,const  qreal y1,const qreal x2,const  qreal y2,
+                         std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QPen & pen,
+                         const  std::string sToolTip, bool bHasTooltip = false);
 
     void DrawTimeToScene(const int idx,const  qreal x,const  qreal y,const  std::tm &,
                                         std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QFont & font);
     void DrawIntToScene(const int idx,const  qreal x,const  qreal y,const  int n,
                                         std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QFont & font);
+    void DrawDoubleToScene(const int idx,const  qreal x ,const  qreal y,const double n, Qt::AlignmentFlag alignH, Qt::AlignmentFlag alignV,
+                           std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QFont & font);
+
     void DrawVertLines(int iBeg, int iEnd);
     void DrawHorizontalLines(int iBeg, int iEnd);
+    void DrawVertSideFrames();
 
-    std::pair<int,int> getHPartStep(double realH, double viewportH);
+    void InvalidateScenes();
+
+    std::tuple<int,int,int,int> getHPartStep(double realH, double viewportH);
 
     template<typename T>
     void DrawVertLinesT(int iBeg, int iEnd);
 
-    void EraseLinesUpper(std::map<int,std::vector<QGraphicsItem *>>& mM, int iStart, QGraphicsScene *);
-    void EraseLinesLower(std::map<int,std::vector<QGraphicsItem *>>& mM, int iStart, QGraphicsScene *);
+    void SetMinMaxDateToControls();
+
+    template<typename T>
+    void EraseLinesUpper(T& mM, int iStart, QGraphicsScene *);
+    template<typename T>
+    void EraseLinesLower(T& mM, int iEnd, QGraphicsScene *);
+    template<typename T>
+    void EraseLinesMid(T& mM, int iStart,int iEnd, QGraphicsScene *);
+
+//    void EraseLinesUpper(std::map<int,std::vector<QGraphicsItem *>>& mM, int iStart, QGraphicsScene *);
+//    void EraseLinesLower(std::map<int,std::vector<QGraphicsItem *>>& mM, int iEnd, QGraphicsScene *);
+//    void EraseLinesMid(std::map<int,std::vector<QGraphicsItem *>>& mM, int iStart,int iEnd, QGraphicsScene *);
+
+    void EraseLinesFrames();
 
 
-    inline double realYtoViewPortY(double y) {return  ((y - dStoredLowMin) * (mVScale.at(iSelectedInterval))) + iViewPortLowStrip;};
+    inline double realYtoSceneY      (double y) {return  ((y - dStoredLowMin)       * (mVScale.at      (iSelectedInterval))) + iViewPortLowStrip;};
+    inline double realYtoSceneYVolume(double y) {return  ((y - dStoredVolumeLowMin) * (mVVolumeScale.at(iSelectedInterval)))                    ;};
 
     // QWidget interface
 protected:

@@ -489,10 +489,10 @@ void ConfigWindow::slotSetSelectedMarket(const  QModelIndex& indx)
 
 
         std::time_t tS (m.StartTime());
-        std::tm* tmSt=localtime(&tS);
+        std::tm* tmSt=threadfree_localtime(&tS);
         const QTime tmS(tmSt->tm_hour,tmSt->tm_min,0);
         std::time_t tE (m.EndTime());
-        std::tm* tmEn=localtime(&tE);
+        std::tm* tmEn=threadfree_localtime(&tE);
         const QTime tmE(tmEn->tm_hour,tmEn->tm_min,0);
 
 

@@ -100,6 +100,12 @@
             <height>16777215</height>
            </size>
           </property>
+          <property name="frameShape">
+           <enum>QFrame::NoFrame</enum>
+          </property>
+          <property name="verticalScrollBarPolicy">
+           <enum>Qt::ScrollBarAlwaysOff</enum>
+          </property>
           <property name="horizontalScrollBarPolicy">
            <enum>Qt::ScrollBarAlwaysOff</enum>
           </property>
@@ -250,9 +256,15 @@
          <widget class="QGraphicsView" name="grViewR1">
           <property name="maximumSize">
            <size>
-            <width>40</width>
+            <width>60</width>
             <height>16777215</height>
            </size>
+          </property>
+          <property name="frameShape">
+           <enum>QFrame::NoFrame</enum>
+          </property>
+          <property name="verticalScrollBarPolicy">
+           <enum>Qt::ScrollBarAlwaysOff</enum>
           </property>
           <property name="horizontalScrollBarPolicy">
            <enum>Qt::ScrollBarAlwaysOff</enum>
@@ -712,16 +724,21 @@
          </widget>
         </item>
         <item>
-         <widget class="QDateTimeEdit" name="dateTimeEdit"/>
+         <widget class="QDateTimeEdit" name="dtBeginDate">
+          <property name="calendarPopup">
+           <bool>true</bool>
+          </property>
+         </widget>
         </item>
         <item>
-         <widget class="QDateTimeEdit" name="dateTimeEdit_2"/>
-        </item>
-        <item>
-         <widget class="QDoubleSpinBox" name="spbHScale"/>
-        </item>
-        <item>
-         <widget class="QDoubleSpinBox" name="spbVScale"/>
+         <widget class="QDateTimeEdit" name="dtEndDate">
+          <property name="displayFormat">
+           <string>dd.MM.yyyy HH:mm</string>
+          </property>
+          <property name="calendarPopup">
+           <bool>true</bool>
+          </property>
+         </widget>
         </item>
         <item>
          <widget class="QPushButton" name="btnTestLoad">

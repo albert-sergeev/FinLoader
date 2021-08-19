@@ -63,8 +63,10 @@ public:
     inline std::time_t GetDateMin() const  {return  vContainer.size()>0? vContainer.front().Period():0;};
     inline std::time_t GetDateMax() const  {return  vContainer.size()>0? vContainer.back().Period():0;};
 
-    std::pair<double,double>  getMinMax() const;
-    std::pair<double,double>  getMinMax(std::time_t dtStart,std::time_t dtEnd) const;
+//    std::pair<double,double>  getMinMax() const;
+//    std::pair<double,double>  getMinMax(std::time_t dtStart,std::time_t dtEnd) const;
+    std::tuple<double,double,unsigned long,unsigned long>  getMinMax() const;
+    std::tuple<double,double,unsigned long,unsigned long>  getMinMax(std::time_t dtStart,std::time_t dtEnd) const;
 
     size_t getIndex(const std::time_t t) const;
     //--------------------------------------------------------------------------------------------------------
@@ -355,25 +357,29 @@ size_t Graph<T>::getIndex(const std::time_t t) const
 }
 //------------------------------------------------------------------------------------------------------------
 template<typename T>
-std::pair<double,double>  Graph<T>::getMinMax() const
+std::tuple<double,double,unsigned long,unsigned long>  Graph<T>::getMinMax() const
 {
-    if (vContainer.size()==0) return {0,0};
+    if (vContainer.size()==0) return {0,0,0,0};
     return std::accumulate(vContainer.begin(),
                            vContainer.end(),
-                           std::make_pair(vContainer.front().Low(),vContainer.front().High()),
+                           std::tuple<double,double,unsigned long,unsigned long>{vContainer.front().Low(),vContainer.front().High(),vContainer.front().Volume(),vContainer.front().Volume()},
                            [](const auto &p,const auto &t){
-                                return std::make_pair(p.first < t.Low()  ? p.first  : t.Low(),
-                                                      p.second > t.High()? p.second : t.High());
+                                return std::tuple<double,double,unsigned long,unsigned long>{
+                                                      std::get<0>(p) < t.Low()  ? std::get<0>(p) : t.Low(),
+                                                      std::get<1>(p) > t.High() ? std::get<1>(p) : t.High(),
+                                                      std::get<2>(p) < t.Volume() ? std::get<2>(p) : t.Volume(),
+                                                      std::get<3>(p) > t.Volume() ? std::get<3>(p) : t.Volume()
+                                            };
                            });
 }
 //------------------------------------------------------------------------------------------------------------
 template<typename T>
-std::pair<double,double>  Graph<T>::getMinMax(std::time_t dtStart,std::time_t dtEnd) const
+std::tuple<double,double,unsigned long,unsigned long>  Graph<T>::getMinMax(std::time_t dtStart,std::time_t dtEnd) const
 {
 
     auto ItM (mDictionary.lower_bound(Bar::DateAccommodate(dtStart,this->iInterval)));
     if (ItM == mDictionary.end()){
-        return  {0,0};
+        return  {0,0,0,0};
     }
     auto It (std::next(vContainer.begin(), ItM->second));
 
@@ -383,13 +389,17 @@ std::pair<double,double>  Graph<T>::getMinMax(std::time_t dtStart,std::time_t dt
         ItEnd = std::next(vContainer.begin(), ItEndM->second);
     }
 
-    if (vContainer.size()==0) return {0,0};
+    if (vContainer.size()==0) return {0,0,0,0};
     return std::accumulate(It,
                            ItEnd,
-                           std::make_pair(vContainer.front().Low(),vContainer.front().High()),
+                           std::tuple<double,double,unsigned long,unsigned long>{vContainer.front().Low(),vContainer.front().High(),vContainer.front().Volume(),vContainer.front().Volume()},
                            [](const auto &p,const auto &t){
-                                return std::make_pair(p.first < t.Low()  ? p.first  : t.Low(),
-                                                      p.second > t.High()? p.second : t.High());
+                                return std::tuple<double,double,unsigned long,unsigned long>{
+                                                      std::get<0>(p) < t.Low()  ? std::get<0>(p) : t.Low(),
+                                                      std::get<1>(p) > t.High() ? std::get<1>(p) : t.High(),
+                                                      std::get<2>(p) < t.Volume() ? std::get<2>(p) : t.Volume(),
+                                                      std::get<3>(p) > t.Volume() ? std::get<3>(p) : t.Volume()
+                                            };
                            });
 }
 //------------------------------------------------------------------------------------------------------------

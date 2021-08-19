@@ -24,6 +24,8 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
     iStoredMaxSize{0},
     dStoredLowMin{0},
     dStoredHighMax{0},
+    dStoredVolumeLowMin{0},
+    dStoredVolumeHighMax{0},
     ui(new Ui::GraphViewForm)
 {
     ui->setupUi(this);
@@ -62,6 +64,15 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
     connect(btnScaleVVolumeMinus,SIGNAL(clicked(bool)),this,SLOT(slotHScaleVolumeClicked(bool)));
 
 
+    btnScaleHViewPlus->setToolTip(tr("increase the horizontal scale of the graph"));
+    btnScaleHViewMinus->setToolTip(tr("reduce the horizontal scale of the graph"));
+
+    btnScaleVViewPlus->setToolTip(tr("increase the vertical scale of the graph"));
+    btnScaleVViewMinus->setToolTip(tr("reduce the vertical scale of the graph"));
+
+    btnScaleVVolumePlus->setToolTip(tr("increase the vertical scale of the volume graph"));
+    btnScaleVVolumeMinus->setToolTip(tr("reduce the vertical scale of the volume graph"));
+
     //-------------------------------------------------------------
     holder = hldr;
     //
@@ -96,10 +107,19 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
     mVScale[Bar::eInterval::pWeek]      = 0;
     mVScale[Bar::eInterval::pMonth]     = 0;
 
+    mVVolumeScale[Bar::eInterval::pTick]      = 0;
+    mVVolumeScale[Bar::eInterval::p1]         = 0;
+    mVVolumeScale[Bar::eInterval::p5]         = 0;
+    mVVolumeScale[Bar::eInterval::p10]        = 0;
+    mVVolumeScale[Bar::eInterval::p15]        = 0;
+    mVVolumeScale[Bar::eInterval::p30]        = 0;
+    mVVolumeScale[Bar::eInterval::p60]        = 0;
+    mVVolumeScale[Bar::eInterval::p120]       = 0;
+    mVVolumeScale[Bar::eInterval::p180]       = 0;
+    mVVolumeScale[Bar::eInterval::pDay]       = 0;
+    mVVolumeScale[Bar::eInterval::pWeek]      = 0;
+    mVVolumeScale[Bar::eInterval::pMonth]     = 0;
 
-
-
-    //connect(ui->btnTestLoad,SIGNAL(clicked()),this,SLOT(slotLoadGraphButton()));
     //------------------------------
 
     grScene = new QGraphicsScene();
@@ -132,13 +152,14 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
     //connect(ui->grHorizontalScroll->horizontalScrollBar(),SIGNAL(valueChanged(int)),this,SLOT(slotHorisontalScrollBarValueChanged(int)));
 
     //----------------------------------------------------------------------------
-    connect(ui->spbVScale,SIGNAL(valueChanged(double)),this,SLOT(slotVScaleValueChanged(double)));
-    ui->spbHScale->setValue(dHScale);
-    connect(ui->spbHScale,SIGNAL(valueChanged(double)),this,SLOT(slotHScaleValueChanged(double)));
+    connect(ui->dtBeginDate,SIGNAL(dateTimeChanged(const QDateTime&)),this,SLOT(dateTimeBeginChanged(const QDateTime&)));
+    connect(ui->dtEndDate,SIGNAL(dateTimeChanged(const QDateTime&)),this,SLOT(dateTimeEndChanged(const QDateTime&)));
+
+
     //----------------------------------------------------------------------------
 
-    ui->horizontalScrollBar->setMinimum( BarGraphicsItem::BarWidth / dHScale);
-    ui->horizontalScrollBar->setMaximum( BarGraphicsItem::BarWidth / dHScale);
+    ui->horizontalScrollBar->setMinimum( 0);
+    ui->horizontalScrollBar->setMaximum( 0);
     connect(ui->horizontalScrollBar,SIGNAL(valueChanged(int)),this,SLOT(slotSliderValueChanged(int)));
 
     //------------------------------
@@ -218,12 +239,20 @@ bool GraphViewForm::RepainInvalidRange(RepainTask & data)
             if (tStoredMinDate == 0 || tStoredMinDate > tMinDate)  tStoredMinDate = tMinDate;
             if (tStoredMaxDate == 0 || tStoredMaxDate < tMaxDate)  tStoredMaxDate = tMaxDate;
 
+            SetMinMaxDateToControls();
+
             auto p = holder->getMinMax(tStoredMinDate,tStoredMaxDate);
-            double dLowMin  = p.first;
-            double dHighMax = p.second;
+            double dLowMin  = std::get<0>(p);
+            double dHighMax = std::get<1>(p);
+            double dVolumeLowMin  = std::get<2>(p);
+            double dVolumeHighMax = std::get<3>(p);
             bool bNeedRescale {false};
+            bool bNeedRescaleVolume {false};
             if (dStoredLowMin == 0  || dStoredLowMin  > dLowMin)    { dStoredLowMin = dLowMin;      }
             if (dStoredHighMax == 0 || dStoredHighMax < dHighMax)   { dStoredHighMax = dHighMax;    }
+            if (dStoredVolumeLowMin == 0  || dStoredVolumeLowMin  > dVolumeLowMin)    { dStoredVolumeLowMin = dVolumeLowMin;      }
+            if (dStoredVolumeHighMax == 0 || dStoredVolumeHighMax < dVolumeHighMax)   { dStoredVolumeHighMax = dVolumeHighMax;    }
+
             if (mVScale.at(iSelectedInterval) == 0){
                 bNeedRescale = true;
                 if ((dStoredHighMax - dStoredLowMin) <= 0){
@@ -232,54 +261,58 @@ bool GraphViewForm::RepainInvalidRange(RepainTask & data)
                 else{
                     mVScale[iSelectedInterval] = (iViewPortHeight - iViewPortHighStrip - iViewPortLowStrip)/(dStoredHighMax - dStoredLowMin);
                 }
-
-                disconnect(ui->spbVScale,SIGNAL(valueChanged(double)),this,SLOT(slotVScaleValueChanged(double)));
-                ui->spbVScale->setValue(mVScale[iSelectedInterval]);
-                connect(ui->spbVScale,SIGNAL(valueChanged(double)),this,SLOT(slotVScaleValueChanged(double)));
             }
 
-//            {
-//                ThreadFreeCout pcout;
-//                pcout <<"dLowMin: "<< dLowMin<<"\n";
-//                pcout <<"dHighMax:"<< dHighMax<<"\n";
-//                pcout <<"dStoredLowMin: "<< dStoredLowMin<<"\n";
-//                pcout <<"dStoredHighMax: "<< dStoredHighMax<<"\n";
-//                pcout <<"tMinDate: "<< threadfree_localtime_to_str(&tMinDate)<<"\n";
-//                pcout <<"tMaxDate: "<< threadfree_localtime_to_str(&tMaxDate)<<"\n";
-
-//            }
-
+            if (mVVolumeScale.at(iSelectedInterval) == 0){
+                bNeedRescaleVolume = true;
+                if ((dStoredVolumeHighMax - dStoredVolumeLowMin) <= 0){
+                    mVVolumeScale[iSelectedInterval] = 1.0;
+                }
+                else{
+                    mVVolumeScale[iSelectedInterval] = (ui->grViewVolume->maximumHeight())/(dStoredVolumeHighMax - dStoredVolumeLowMin);
+                }
+            }
 
             // if neсessary clean all
+            bool bWasTotalErase{false};
             if (    tStoredMinDate == 0
                 || tMinDate != tStoredMinDate
                 || (iStoredMaxSize !=iSize && tMinDate >= tStoredMinDate && tMaxDate <= tStoredMaxDate)
                 || bNeedRescale
+                || bNeedRescaleVolume
                     ){
 
-                size_t j=0;
-                while (j < vShowedGraphicsBars.size()){
-                       ui->grViewQuotes->scene()->removeItem(vShowedGraphicsBars[j]);
-                       delete (vShowedGraphicsBars[j]);
-                       vShowedGraphicsBars.erase(std::next(vShowedGraphicsBars.begin(),j));
-                }
+                EraseLinesLower(mShowedGraphicsBars,  0, ui->grViewQuotes->scene());
+                EraseLinesLower(mVLinesVolume,        0, ui->grViewVolume->scene());
+
+                ui->grViewQuotes->scene()->invalidate(ui->grViewQuotes->scene()->sceneRect());
+                ui->grViewVolume->scene()->invalidate(ui->grViewVolume->scene()->sceneRect());
+
+                bWasTotalErase = true;
             }
             // clean invalid range
-            size_t j=0;
-            std::time_t tBeg = (It != ItTotalEnd) ? It->Period() : 0;
+            size_t iEnd = ItEnd.realPosition() + 1;
+            iEnd = iEnd > iSize ? iSize : iEnd;
             //
-            while (j < vShowedGraphicsBars.size()){
-                if (vShowedGraphicsBars[j]->Period() >= tBeg &&
-                    (ItEnd != ItTotalEnd && vShowedGraphicsBars[j]->Period() <= ItEnd->Period())
-                        ){
-                   ui->grViewQuotes->scene()->removeItem(vShowedGraphicsBars[j]);
-                   delete (vShowedGraphicsBars[j]);
-                   vShowedGraphicsBars.erase(std::next(vShowedGraphicsBars.begin(),j));
-                }
-                else{
-                    ++j;
-                }
+            EraseLinesMid(mShowedGraphicsBars,  It.realPosition(),iEnd, ui->grViewQuotes->scene());
+            EraseLinesMid(mVLinesVolume,        It.realPosition(),iEnd, ui->grViewVolume->scene());
+
+            if (!bWasTotalErase && It.realPosition() < iEnd){
+
+                qreal x1 = (It.realPosition() + iLeftShift ) * BarGraphicsItem::BarWidth * dHScale;
+                qreal x2 = (iEnd + iLeftShift ) * BarGraphicsItem::BarWidth * dHScale;
+
+                QRectF recS = ui->grViewQuotes->scene()->sceneRect();
+                QRectF invS  = QRectF(x1,recS.y(),x2,recS.width());
+
+                QRectF recVS = ui->grViewVolume->scene()->sceneRect();
+                QRectF invVS  = QRectF(x1,recVS.y(),x2,recVS.width());
+
+                ui->grViewQuotes->scene()->invalidate(invS);
+                ui->grViewVolume->scene()->invalidate(invVS);
+
             }
+
             // resize Scene rect
             if (iStoredMaxSize !=iSize || bNeedRescale || data.bNeedToRescale){
 
@@ -293,20 +326,25 @@ bool GraphViewForm::RepainInvalidRange(RepainTask & data)
                               );
 
                 grScene->setSceneRect(newRec);
-                //ui->grViewQuotes->setSceneRect(newRec);
-//                if (iStoredMaxSize)
-//                    ui->grViewQuotes->setSceneRect(newRec);
-//                else
-//                    ui->grViewQuotes->scene()->addRect(newRec);
-
 
                 int iNewSize = iSize + iLeftShift + iRightShift - ui->grViewQuotes->width()/(dHScale * BarGraphicsItem::BarWidth);
                 iNewSize = iNewSize < 0? 0 : iNewSize;
                 ui->horizontalScrollBar->setMaximum(iNewSize);
-//                {
-//                    ThreadFreeCout pcout;
-//                    pcout <<"init scrollsize to:"<< iNewSize<<"\n";
-//                }
+
+                EraseLinesFrames();
+            }
+
+            // resize Scene rect for Volume
+            if (iStoredMaxSize !=iSize || bNeedRescale || data.bNeedToRescale){
+
+                int iNewVolumeSceneH = (mVVolumeScale.at(iSelectedInterval) * (dStoredVolumeHighMax - dStoredVolumeLowMin) );
+
+                QRectF newRec(0,-iNewVolumeSceneH,
+                              (iSize + iLeftShift + iRightShift) * BarGraphicsItem::BarWidth * dHScale  ,
+                              iNewVolumeSceneH
+                              );
+
+                ui->grViewVolume->scene()->setSceneRect(newRec);
             }
 
             iStoredMaxSize  = iSize;
@@ -328,11 +366,7 @@ bool GraphViewForm::RepainInvalidRange(RepainTask & data)
     }
     return bSuccess;
 }
-//---------------------------------------------------------------------------------------------------------------
-void GraphViewForm::slotLoadGraphButton2()
-{
 
-}
 //---------------------------------------------------------------------------------------------------------------
 void GraphViewForm::slotSliderValueChanged(int iBeg)
 {
@@ -349,6 +383,7 @@ void GraphViewForm::slotSliderValueChanged(int iBeg)
 //---------------------------------------------------------------------------------------------------------------
 void GraphViewForm::SetSliderToPos(int iMiddlePos)
 {
+    // TODO:: viewport going down when slide!!!!! Why?
     ui->grViewQuotes->centerOn((iMiddlePos /*- iLeftShift*/)*BarGraphicsItem::BarWidth * dHScale,
                              ui->grViewQuotes->mapToScene(0,ui->grViewQuotes->viewport()->rect().center().ry()).y());
     //
@@ -396,15 +431,25 @@ void GraphViewForm::SliderValueChanged(int iMidPos)
 
     size_t iBeg      = iMid > iViewWidth  + iLeftShift ? iMid - iViewWidth  - iLeftShift : 0 ;
     size_t iEnd      = iMid + iViewWidth;
-
+    //-------------------------------------------
     DrawHorizontalLines (iBeg - iLeftShift,iEnd);
     DrawVertLines       (iBeg - iLeftShift,iEnd);
+    DrawVertSideFrames();
+    //-------------------------------------------
 
     iEnd = iEnd < iMaxSize ? iEnd : iMaxSize - 1;
 
     /////////////////////////////////////////////////////////////////
 
     if (bSuccess && iMaxSize > 0){
+
+        EraseLinesUpper(mShowedGraphicsBars,  iBeg, ui->grViewQuotes->scene());
+        EraseLinesUpper(mVLinesVolume,        iBeg, ui->grViewVolume->scene());
+
+        EraseLinesLower(mShowedGraphicsBars,  iEnd, ui->grViewQuotes->scene());
+        EraseLinesLower(mVLinesVolume,        iEnd, ui->grViewVolume->scene());
+
+
         T tM = holder->getByIndex<T>(iSelectedInterval,iMid);
         T tB = holder->getByIndex<T>(iSelectedInterval,iBeg );
         T tE = holder->getByIndex<T>(iSelectedInterval,iEnd );
@@ -412,58 +457,172 @@ void GraphViewForm::SliderValueChanged(int iMidPos)
         tStoredMiddlePointPosition = tM.Period();
         ////////////
 
-        size_t j=0;
-        while (j < vShowedGraphicsBars.size()){
-            if (vShowedGraphicsBars[j]->Period() < tB.Period() ||   // out of view range
-                vShowedGraphicsBars[j]->Period() > tE.Period() ||   // out of view range
-                vShowedGraphicsBars[j]->realPosition() >= iMaxSize  // leftovers from old fillings
-                    ){
+//        size_t j=0;
+//        while (j < vShowedGraphicsBars.size()){
+//            if (vShowedGraphicsBars[j]->Period() < tB.Period() ||   // out of view range
+//                vShowedGraphicsBars[j]->Period() > tE.Period() ||   // out of view range
+//                vShowedGraphicsBars[j]->realPosition() >= iMaxSize  // leftovers from old fillings
+//                    ){
 
-               ui->grViewQuotes->scene()->removeItem(vShowedGraphicsBars[j]);
-               delete (vShowedGraphicsBars[j]);
-               vShowedGraphicsBars.erase(std::next(vShowedGraphicsBars.begin(),j));
+//               ui->grViewQuotes->scene()->removeItem(vShowedGraphicsBars[j]);
+//               delete (vShowedGraphicsBars[j]);
+//               vShowedGraphicsBars.erase(std::next(vShowedGraphicsBars.begin(),j));
 
-            }
-            else{
-                T t = holder->getByIndex<T>(iSelectedInterval, vShowedGraphicsBars[j]->realPosition());
-                if (t.Period() != vShowedGraphicsBars[j]->Period()){ // leftovers from old fillings
+//            }
+//            else{
+//                T t = holder->getByIndex<T>(iSelectedInterval, vShowedGraphicsBars[j]->realPosition());
+//                if (t.Period() != vShowedGraphicsBars[j]->Period()){ // leftovers from old fillings
 
-                    ui->grViewQuotes->scene()->removeItem(vShowedGraphicsBars[j]);
-                    delete (vShowedGraphicsBars[j]);
-                    vShowedGraphicsBars.erase(std::next(vShowedGraphicsBars.begin(),j));
+//                    ui->grViewQuotes->scene()->removeItem(vShowedGraphicsBars[j]);
+//                    delete (vShowedGraphicsBars[j]);
+//                    vShowedGraphicsBars.erase(std::next(vShowedGraphicsBars.begin(),j));
 
-                }
-                else{
-                    ++j;
-                }
-            }
-        }
+//                }
+//                else{
+//                    ++j;
+//                }
+//            }
+//        }
         //
-        ui->grViewQuotes->scene()->sceneRect(); //invalidate scene
+        //TODO: what invalidate?
+        //ui->grViewQuotes->scene()->sceneRect(); //invalidate scene
+        //InvalidateScenes();//invalidate scene
         //
         auto It = holder->beginIteratorByDate<T>(iSelectedInterval,tB.Period(),bSuccess);
         auto ItEnd = holder->beginIteratorByDate<T>(iSelectedInterval,tE.Period()+1,bSuccess);
         auto ItTotalEnd = holder->end<T>();
 
+        QPen bluePen(Qt::blue,1,Qt::SolidLine);
+
+        std::stringstream ss;
+        std::time_t tTmp;
+
         while(It != ItTotalEnd && It != ItEnd){
-            auto ItFound = std::find_if(vShowedGraphicsBars.begin(),vShowedGraphicsBars.end(),[&](const BarGraphicsItem *p){
-                if(p->Period() == It->Period() &&
-                   p->realPosition() == It.realPosition()
-                        ) {
-                    return true;
-                }
-                else return false;});
-            if (ItFound == vShowedGraphicsBars.end())
+            auto ItFound = std::find_if(mShowedGraphicsBars[It.realPosition()].begin(),
+                                        mShowedGraphicsBars[It.realPosition()].end(),
+                                        [&](const auto &p){
+                                            if(p->Period() == It->Period() &&
+                                               p->realPosition() == It.realPosition()) {
+                                                return true;
+                                             }
+                                             else return false;}
+                                        );
+
+            if (ItFound == mShowedGraphicsBars[It.realPosition()].end())
             {
                 BarGraphicsItem *item = new BarGraphicsItem(*It,It.realPosition(),3);
-                vShowedGraphicsBars.push_back(item);
+                mShowedGraphicsBars[It.realPosition()].push_back(item);
                 ui->grViewQuotes->scene()->addItem(item);
-                item->setPos((It.realPosition() + iLeftShift) * BarGraphicsItem::BarWidth * dHScale , -realYtoViewPortY(It->Close()));
+                qreal xCur = (It.realPosition() + iLeftShift)     * BarGraphicsItem::BarWidth * dHScale;
+                item->setPos(xCur , -realYtoSceneY(It->Close()));
+
+                ss.str("");
+                ss.clear();
+                tTmp = It->Period();
+                ss << threadfree_localtime_to_str(&tTmp)<<"\r\n";
+                ss << It->Volume();
+
+                DrawLineToScene(It.realPosition(), xCur,-3,xCur,-realYtoSceneYVolume(It->Volume())-3,
+                                mVLinesVolume, ui->grViewVolume->scene(),bluePen,ss.str(),true);
             }
             ++It;
         }
     }
 }
+//---------------------------------------------------------------------------------------------------------------
+//template<typename T>
+//void GraphViewForm::SliderValueChangedBackup(int iMidPos)
+//{
+
+//    /////////////////////////////////////////////////////////////////////////////////////////
+//    bool bSuccess;
+//    auto ItDefender = holder->beginIteratorByDate<T>(iSelectedInterval,0,bSuccess);
+//    if (!bSuccess) return;
+//    //
+//    size_t iMaxSize = holder->getViewGraphSize(iSelectedInterval);
+//    if (iMaxSize ==0 ) return;
+//    /////////////////////////////////////////////////////////////////////////////////////////
+
+//    size_t iViewWidth = ui->grViewQuotes->width()/(dHScale *BarGraphicsItem::BarWidth);
+
+//    size_t iMid = iMidPos > 0 ? (size_t) iMidPos : 0;
+//    iMid = iMid < iMaxSize ? iMid : iMaxSize - 1;
+
+//    size_t iBeg      = iMid > iViewWidth  + iLeftShift ? iMid - iViewWidth  - iLeftShift : 0 ;
+//    size_t iEnd      = iMid + iViewWidth;
+//    //-------------------------------------------
+//    DrawHorizontalLines (iBeg - iLeftShift,iEnd);
+//    DrawVertLines       (iBeg - iLeftShift,iEnd);
+//    DrawVertSideFrames();
+//    //-------------------------------------------
+
+//    iEnd = iEnd < iMaxSize ? iEnd : iMaxSize - 1;
+
+//    /////////////////////////////////////////////////////////////////
+
+//    if (bSuccess && iMaxSize > 0){
+//        T tM = holder->getByIndex<T>(iSelectedInterval,iMid);
+//        T tB = holder->getByIndex<T>(iSelectedInterval,iBeg );
+//        T tE = holder->getByIndex<T>(iSelectedInterval,iEnd );
+
+//        tStoredMiddlePointPosition = tM.Period();
+//        ////////////
+
+//        size_t j=0;
+//        while (j < vShowedGraphicsBars.size()){
+//            if (vShowedGraphicsBars[j]->Period() < tB.Period() ||   // out of view range
+//                vShowedGraphicsBars[j]->Period() > tE.Period() ||   // out of view range
+//                vShowedGraphicsBars[j]->realPosition() >= iMaxSize  // leftovers from old fillings
+//                    ){
+
+//               ui->grViewQuotes->scene()->removeItem(vShowedGraphicsBars[j]);
+//               delete (vShowedGraphicsBars[j]);
+//               vShowedGraphicsBars.erase(std::next(vShowedGraphicsBars.begin(),j));
+
+//            }
+//            else{
+//                T t = holder->getByIndex<T>(iSelectedInterval, vShowedGraphicsBars[j]->realPosition());
+//                if (t.Period() != vShowedGraphicsBars[j]->Period()){ // leftovers from old fillings
+
+//                    ui->grViewQuotes->scene()->removeItem(vShowedGraphicsBars[j]);
+//                    delete (vShowedGraphicsBars[j]);
+//                    vShowedGraphicsBars.erase(std::next(vShowedGraphicsBars.begin(),j));
+
+//                }
+//                else{
+//                    ++j;
+//                }
+//            }
+//        }
+//        //
+//        //TODO: what invalidate?
+//        ui->grViewQuotes->scene()->sceneRect(); //invalidate scene
+//        //InvalidateScenes();//invalidate scene
+//        //
+//        auto It = holder->beginIteratorByDate<T>(iSelectedInterval,tB.Period(),bSuccess);
+//        auto ItEnd = holder->beginIteratorByDate<T>(iSelectedInterval,tE.Period()+1,bSuccess);
+//        auto ItTotalEnd = holder->end<T>();
+
+//        while(It != ItTotalEnd && It != ItEnd){
+//            auto ItFound = std::find_if(vShowedGraphicsBars.begin(),vShowedGraphicsBars.end(),[&](const BarGraphicsItem *p){
+//                if(p->Period() == It->Period() &&
+//                   p->realPosition() == It.realPosition()
+//                        ) {
+//                    return true;
+//                }
+//                else return false;});
+//            if (ItFound == vShowedGraphicsBars.end())
+//            {
+//                BarGraphicsItem *item = new BarGraphicsItem(*It,It.realPosition(),3);
+//                vShowedGraphicsBars.push_back(item);
+//                ui->grViewQuotes->scene()->addItem(item);
+//                item->setPos((It.realPosition() + iLeftShift) * BarGraphicsItem::BarWidth * dHScale , -realYtoSceneY(It->Close()));
+//            }
+//            ++It;
+//        }
+//    }
+//}
+
 //---------------------------------------------------------------------------------------------------------------
 void GraphViewForm::resizeEvent(QResizeEvent *event)
 {
@@ -537,37 +696,6 @@ void GraphViewForm::slotVerticalScrollBarValueChanged(int iV)
     ui->grVertScroll->verticalScrollBar()->setValue(iV);
 }
 //---------------------------------------------------------------------------------------------------------------
-void GraphViewForm::slotVScaleValueChanged(double dScale)
-{
-    mVScale[iSelectedInterval] = dScale;
-    //
-    std::time_t tMinDate = holder->getViewGraphDateMin(Bar::eInterval::pTick);
-    std::time_t tMaxDate =  holder->getViewGraphDateMax(Bar::eInterval::pTick);
-    slotInvalidateGraph(tMinDate,tMaxDate,true);
-}
-//---------------------------------------------------------------------------------------------------------------
-void GraphViewForm::slotVVolumeScaleValueChanged(double)
-{
-    //mVScale
-
-}
-
-//---------------------------------------------------------------------------------------------------------------
-void GraphViewForm::slotHScaleValueChanged(double dScale)
-{
-    dHScale = dScale;
-    std::time_t tMinDate = holder->getViewGraphDateMin(Bar::eInterval::pTick);
-    std::time_t tMaxDate =  holder->getViewGraphDateMax(Bar::eInterval::pTick);
-    slotInvalidateGraph(tMinDate,tMaxDate,true);
-
-    {
-        ThreadFreeCout pcout;
-        pcout <<"HScale changed: "<<dScale<<"\n";
-
-    }
-
-}
-//---------------------------------------------------------------------------------------------------------------
 void GraphViewForm::DrawVertLines(int iBeg, int iEnd){
 
     if (iSelectedInterval == Bar::eInterval::pTick)
@@ -585,6 +713,10 @@ void GraphViewForm::DrawVertLinesT(int iBeg, int iEnd){
 //        pcout <<"draw lines to:"<<iEnd<<"\n";
 //    }
     //int iCount{0};
+    /// we must know what was before
+    iBeg--;
+    if (iBeg < 0) iBeg = 0;
+    ///
 
     EraseLinesUpper(mVLinesViewQuotes,  iBeg, ui->grViewQuotes->scene());
     EraseLinesUpper(mVLinesScaleUpper,  iBeg, ui->grViewScaleUpper->scene());
@@ -757,24 +889,16 @@ void GraphViewForm::DrawVertLinesT(int iBeg, int iEnd){
         }
     }
 
-    //-----------------------------------------
-
-
 }
 //---------------------------------------------------------------------------------------------------------------
 void GraphViewForm::DrawHorizontalLines(int /*iBeg*/, int /*iEnd*/)
 {
-//    qreal x1 = (iBeg + iLeftShift)     * BarGraphicsItem::BarWidth * dHScale;
-//    qreal x2 = (iEnd + iLeftShift)     * BarGraphicsItem::BarWidth * dHScale;
-//    qreal y;
-
-
     double realH = dStoredHighMax - dStoredLowMin;
-    double viewPortH = realYtoViewPortY(dStoredHighMax) - realYtoViewPortY(dStoredLowMin);
+    double viewPortH = realYtoSceneY(dStoredHighMax) - realYtoSceneY(dStoredLowMin);
 
-    std::pair<int,int> pPart =  getHPartStep( realH,viewPortH);
-    double dFirst = (int(dStoredLowMin / std::pow(10,pPart.second)) - int(dStoredLowMin / std::pow(10,pPart.second)) % pPart.first)*std::pow(10,pPart.second);
-    double dStep = pPart.first * std::pow(10,pPart.second);
+    auto [stepBase,stepPow,subBase,subPow] =  getHPartStep( realH,viewPortH);
+    double dFirst = (int(dStoredLowMin / std::pow(10,stepPow)) - int(dStoredLowMin / std::pow(10,stepPow)) % stepBase)*std::pow(10,stepPow);
+    double dStep = stepBase * std::pow(10,stepPow);
 
     double dCurrent = dFirst + dStep;
 
@@ -792,7 +916,6 @@ void GraphViewForm::DrawHorizontalLines(int /*iBeg*/, int /*iEnd*/)
         for (auto &d: vHLines){
             if (vHLinesViewQuotes[i].second == d.first){
                 d.second = true;
-                //y = d.first;
                 bWas = true;
                 break;
             }
@@ -803,8 +926,6 @@ void GraphViewForm::DrawHorizontalLines(int /*iBeg*/, int /*iEnd*/)
             vHLinesViewQuotes.erase(std::next(vHLinesViewQuotes.begin(),i));
         }
         else{
-            //vHLinesViewQuotes[i].first->moveBy(x2,-realYtoViewPortY(y));
-            //vHLinesViewQuotes[i].first->setPos(x1,-realYtoViewPortY(y));
             iMoveCount++;
              ++i;
         }
@@ -825,12 +946,11 @@ void GraphViewForm::DrawHorizontalLines(int /*iBeg*/, int /*iEnd*/)
     int iCount{0};
     for(const auto &d:vHLines){
         if (!d.second){
-            //QGraphicsLineItem *item = new QGraphicsLineItem(0,0,x2-x1,0);
             QGraphicsLineItem *item = new QGraphicsLineItem(0,0,ui->grViewQuotes->scene()->sceneRect().width(),0);
             item->setPen(Pen);
             vHLinesViewQuotes.push_back({item,d.first});
             ui->grViewQuotes->scene()->addItem(item);
-            item->setPos(0,-realYtoViewPortY(d.first));
+            item->setPos(0,-realYtoSceneY(d.first));
 
             std::stringstream ss;
             ss <<d.first;
@@ -839,15 +959,49 @@ void GraphViewForm::DrawHorizontalLines(int /*iBeg*/, int /*iEnd*/)
             iCount++;
         }
     }
-    ///
 //    ThreadFreeCout pcout;
 //    pcout <<"hor lines: "<<vHLinesViewQuotes.size()<<"\n";
 //    pcout <<"drown: "<<iCount<<"\n";
 //    pcout <<"moved: "<<iMoveCount<<"\n";
-
 }
 //---------------------------------------------------------------------------------------------------------------
-std::pair<int,int> GraphViewForm::getHPartStep(double realH, double viewportH)
+void GraphViewForm::DrawVertSideFrames()
+{
+    QRectF rL = ui->grViewL1->scene()->sceneRect();
+    QRectF rR = ui->grViewR1->scene()->sceneRect();
+
+    //QPen blackSolidPen(Qt::black,1,Qt::SolidLine);
+    QPen blackHalfPen(Qt::black,0.5,Qt::SolidLine);
+//    QPen blackDashPen(Qt::gray,1,Qt::DashLine);
+//    QPen blackDotPen(Qt::gray,1,Qt::DotLine);
+//    QPen simpleDashPen(Qt::gray,1,Qt::DashLine);
+
+    QFont font;
+    font.setPixelSize(12);
+    font.setBold(false);
+    font.setFamily("Times New Roman");
+
+
+    if (mLeftFrames.size() == 0){
+        DrawLineToScene(0, rL.width() - 1, 0, rL.width()-1 , -rL.height(), mLeftFrames, ui->grViewL1->scene(),blackHalfPen,0,false);
+        DrawLineToScene(0, 0,          0,          0 , -rR.height(), mRightFrames, ui->grViewR1->scene(),blackHalfPen,0,false);
+
+        qreal y;
+        for(const auto &d:vHLines){
+            y  = -realYtoSceneY(d.first);
+            DrawLineToScene(0, rL.width(), y, rL.width() -3 , y, mLeftFrames,  ui->grViewL1->scene(),blackHalfPen,0,false);
+            DrawLineToScene(0, 0,          y,             2 , y, mRightFrames, ui->grViewR1->scene(),blackHalfPen,0,false);
+
+
+            DrawDoubleToScene(0, rL.width() - 3, y, d.first,Qt::AlignmentFlag::AlignRight ,Qt::AlignmentFlag::AlignCenter ,mLeftFrames, ui->grViewL1->scene(), font);
+            DrawDoubleToScene(0, 3             , y, d.first,Qt::AlignmentFlag::AlignLeft  ,Qt::AlignmentFlag::AlignCenter ,mRightFrames, ui->grViewR1->scene(), font);
+
+        }
+
+    }
+}
+//---------------------------------------------------------------------------------------------------------------
+std::tuple<int,int,int,int> GraphViewForm::getHPartStep(double realH, double viewportH)
 {
     int iUpCount{0};
     double dParts = (viewportH / 600.0) * 4.0;
@@ -866,9 +1020,18 @@ std::pair<int,int> GraphViewForm::getHPartStep(double realH, double viewportH)
             dOldPart = realPartH;
             iUpCount++;
         }
-        if (dOldPart >=7.5) {iBaseH = 1; iUpCount++;}
-        else if (dOldPart >=2.5) iBaseH = 5 ;
-        else iBaseH = 1 ;
+        if (dOldPart >=7.5) {
+            iBaseH = 1;
+            iUpCount++;}
+        else if (dOldPart >=3.33){
+            iBaseH = 5 ;
+        }
+        else if (dOldPart >=1.66){
+            iBaseH = 2 ;
+        }
+        else {
+            iBaseH = 1 ;
+        }
     }
     else{
         while(realPartH * 10 < 1) {
@@ -876,13 +1039,56 @@ std::pair<int,int> GraphViewForm::getHPartStep(double realH, double viewportH)
             dOldPart = realPartH;
             iUpCount--;
         }
-        if (dOldPart >=0.75) iBaseH = 1 ;
-        else if (dOldPart >=0.25) {iBaseH = 5; iUpCount--;}
-        else {iBaseH = 1; iUpCount--;}
+        if (dOldPart >=0.75) {
+            iBaseH = 1 ;
+        }
+        else if (dOldPart >=3.33) {
+            iBaseH = 5;
+            iUpCount--;
+        }
+        else if (dOldPart >=1.66) {
+            iBaseH = 2;
+            iUpCount--;
+        }
+        else {
+            iBaseH = 1; iUpCount--;
+        }
     }
 
-    return  {iBaseH,iUpCount};
+    return  {iBaseH,iUpCount,0,0};
 }
+//---------------------------------------------------------------------------------------------------------------
+void GraphViewForm::DrawDoubleToScene(const int idx,const  qreal x ,const  qreal y,const double n,  Qt::AlignmentFlag alignH, Qt::AlignmentFlag alignV,
+                                    std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QFont & font)
+{
+    std::stringstream ss;
+    ss << std::fixed << std::setprecision(2) <<n;
+
+     QGraphicsTextItem * item = new QGraphicsTextItem(QString::fromStdString(ss.str()));
+     item->setFont(font);
+     mM[idx].push_back(item);
+     scene->addItem(item);
+
+     qreal X = x;
+     if (alignH == Qt::AlignmentFlag::AlignCenter || alignH == Qt::AlignmentFlag::AlignHCenter){
+         X = x - item->boundingRect().width()/2;
+     }
+     else if (alignH == Qt::AlignmentFlag::AlignRight){
+         X = x - item->boundingRect().width();
+     }
+
+     qreal Y = y;
+     if (alignV == Qt::AlignmentFlag::AlignCenter || alignV == Qt::AlignmentFlag::AlignVCenter){
+         Y = y - item->boundingRect().height()/2;
+     }
+     else if (alignV == Qt::AlignmentFlag::AlignBottom){
+         Y = y - item->boundingRect().height()/2;
+     }
+
+     item->setPos(X,Y);
+
+}
+
 //---------------------------------------------------------------------------------------------------------------
 void GraphViewForm::DrawIntToScene(const int idx,const  qreal x,const  qreal y,const  int n,
                                     std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QFont & font)
@@ -916,21 +1122,52 @@ void GraphViewForm::DrawTimeToScene(const int idx,const  qreal x,const  qreal y,
 void GraphViewForm::DrawLineToScene(const int idx,const  qreal x1,const  qreal y1,const qreal x2,const  qreal y2,
                                     std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QPen & pen, const  std::time_t t, bool bHasTooltip)
 {
+    std::stringstream ss;
+    if (bHasTooltip && t != 0){
+        ss <<threadfree_localtime_to_str(&t);
+    }
+    DrawLineToScene(idx,x1,y1,x2,y2,mM, scene,pen,ss.str(), bHasTooltip);
+}
+//---------------------------------------------------------------------------------------------------------------
+void GraphViewForm::DrawLineToScene(const int idx,const  qreal x1,const  qreal y1,const qreal x2,const  qreal y2,
+                     std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QPen & pen,
+                     const  std::string sToolTip, bool bHasTooltip)
+{
+
     QGraphicsLineItem *item = new QGraphicsLineItem(0,0,x2-x1,y2-y1);
     item->setPen(pen);
     mM[idx].push_back(item);
     scene->addItem(item);
     item->setPos(x1,y1);
 
-    if (bHasTooltip && t != 0){
-        std::stringstream ss;
-        ss <<threadfree_localtime_to_str(&t);
-        item->setToolTip(QString::fromStdString(ss.str()));
-    }
+    if (bHasTooltip)
+        item->setToolTip(QString::fromStdString(sToolTip));
 }
-
 //---------------------------------------------------------------------------------------------------------------
-void GraphViewForm::EraseLinesLower(std::map<int,std::vector<QGraphicsItem *>>& mM, int iStart, QGraphicsScene * scene)
+template<typename T>
+void GraphViewForm::EraseLinesMid(T& mM, int iStart,int iEnd, QGraphicsScene *scene)
+//void GraphViewForm::EraseLinesMid(std::map<int,std::vector<QGraphicsItem *>>& mM, int iStart,int iEnd, QGraphicsScene *scene)
+{
+    auto It     (mM.lower_bound(iStart));
+    auto ItCp   (It);
+    auto ItEnd  (mM.upper_bound(iEnd));
+
+    while(It != ItEnd){
+        for (auto &t:It->second){
+            scene->removeItem(t);
+            delete t;
+            t = nullptr;
+        }
+        It->second.clear();
+        It++;
+    }
+    mM.erase(ItCp,ItEnd);
+
+}
+//---------------------------------------------------------------------------------------------------------------
+template<typename T>
+void GraphViewForm::EraseLinesLower(T& mM, int iStart, QGraphicsScene * scene)
+//void GraphViewForm::EraseLinesLower(std::map<int,std::vector<QGraphicsItem *>>& mM, int iStart, QGraphicsScene * scene)
 {
     auto It (mM.lower_bound(iStart));
     auto ItCp(It);
@@ -946,7 +1183,9 @@ void GraphViewForm::EraseLinesLower(std::map<int,std::vector<QGraphicsItem *>>& 
     mM.erase(ItCp,mM.end());
 }
 //---------------------------------------------------------------------------------------------------------------
-void GraphViewForm::EraseLinesUpper(std::map<int,std::vector<QGraphicsItem *>>& mM, int iEnd, QGraphicsScene *scene)
+template<typename T>
+void GraphViewForm::EraseLinesUpper(T& mM, int iEnd, QGraphicsScene *scene)
+//void GraphViewForm::EraseLinesUpper(std::map<int,std::vector<QGraphicsItem *>>& mM, int iEnd, QGraphicsScene *scene)
 {
     auto ItEnd (mM.upper_bound(iEnd));
     auto It(mM.begin());
@@ -962,29 +1201,109 @@ void GraphViewForm::EraseLinesUpper(std::map<int,std::vector<QGraphicsItem *>>& 
     mM.erase(mM.begin(),ItEnd);
 }
 //---------------------------------------------------------------------------------------------------------------
-void GraphViewForm::slotHScaleQuotesClicked(bool b)
+void GraphViewForm::InvalidateScenes()
 {
-    {
-        ThreadFreeCout pcout;
-        pcout <<( (b)? "HScale plus":"HScale minus")<<"\n";
-    }
+    ui->grViewQuotes->scene()->invalidate(ui->grViewQuotes->scene()->sceneRect());
+    ui->grViewScaleUpper->scene()->invalidate(ui->grViewScaleUpper->scene()->sceneRect());
+    ui->grViewVolume->scene()->invalidate(ui->grViewVolume->scene()->sceneRect());
+    ui->grViewL1->scene()->invalidate(ui->grViewL1->scene()->sceneRect());
+    ui->grViewR1->scene()->invalidate(ui->grViewR1->scene()->sceneRect());
+
 }
-void GraphViewForm::slotVScaleQuotesClicked(bool b)
+//---------------------------------------------------------------------------------------------------------------
+void GraphViewForm::slotHScaleQuotesClicked(bool bPlus)
 {
-    {
-        ThreadFreeCout pcout;
-        pcout <<( (b)? "VScale plus":"VScale minus")<<"\n";
-    }
+    if (dHScale ==0) dHScale = 1.0;
+    if (bPlus) dHScale *= 1.1;
+    else dHScale *= 0.9;
+
+    if (dHScale < 0.5) dHScale = 0.5;
+
+    std::time_t tMinDate = holder->getViewGraphDateMin(Bar::eInterval::pTick);
+    std::time_t tMaxDate =  holder->getViewGraphDateMax(Bar::eInterval::pTick);
+    EraseLinesFrames();
+    slotInvalidateGraph(tMinDate,tMaxDate,true);
+    InvalidateScenes();
 }
-void GraphViewForm::slotHScaleVolumeClicked(bool b)
+void GraphViewForm::slotVScaleQuotesClicked(bool bPlus)
 {
+    if (mVScale[iSelectedInterval] ==0) mVScale[iSelectedInterval] = 1.0;
+    if (bPlus) mVScale[iSelectedInterval] *= 1.1;
+    else mVScale[iSelectedInterval] *= 0.9;
+
+    std::time_t tMinDate = holder->getViewGraphDateMin(Bar::eInterval::pTick);
+    std::time_t tMaxDate =  holder->getViewGraphDateMax(Bar::eInterval::pTick);
+    EraseLinesFrames();
+    slotInvalidateGraph(tMinDate,tMaxDate,true);
+    InvalidateScenes();
+}
+void GraphViewForm::slotHScaleVolumeClicked(bool bPlus)
+{
+
+    if (mVVolumeScale[iSelectedInterval] ==0) mVVolumeScale[iSelectedInterval] = 1.0;
+    if (bPlus) mVVolumeScale[iSelectedInterval] *= 1.1;
+    else mVVolumeScale[iSelectedInterval] *= 0.9;
+
+    std::time_t tMinDate = holder->getViewGraphDateMin(Bar::eInterval::pTick);
+    std::time_t tMaxDate =  holder->getViewGraphDateMax(Bar::eInterval::pTick);
+    slotInvalidateGraph(tMinDate,tMaxDate,true);
+
+    InvalidateScenes();
     {
         ThreadFreeCout pcout;
-        pcout <<( (b)? "Volume plus":"Volume minus")<<"\n";
+        pcout <<( (bPlus)? "Volume plus":"Volume minus")<<"\n";
     }
 }
 //---------------------------------------------------------------------------------------------------------------
+void GraphViewForm::EraseLinesFrames()
+{
+    size_t i = 0;
+    while ( vHLinesViewQuotes.size() > 0){
+        ui->grViewQuotes->scene()->removeItem(vHLinesViewQuotes[0].first);
+        delete vHLinesViewQuotes[0].first;
+        vHLinesViewQuotes.erase(std::next(vHLinesViewQuotes.begin(),0));
+        i++;
+    }
+//    {
+//        ThreadFreeCout pcout;
+//        pcout <<"Lines deleted:"<<i<<"\n";
+//    }
+    //////////////////////////
+    EraseLinesLower(mVLinesViewQuotes,  0, ui->grViewQuotes->scene());
+    EraseLinesLower(mVLinesScaleUpper,  0, ui->grViewScaleUpper->scene());
+    EraseLinesLower(mVLinesVolume,      0, ui->grViewVolume->scene());
+    //////////////////////////
+    EraseLinesLower(mLeftFrames,        0, ui->grViewL1->scene());
+    EraseLinesLower(mRightFrames,       0, ui->grViewR1->scene());
+
+}
 //---------------------------------------------------------------------------------------------------------------
+void GraphViewForm::SetMinMaxDateToControls()
+{
+    {
+        std::tm* tmSt=threadfree_localtime(&tStoredMinDate);
+        const QDate dtS(tmSt->tm_year+1900,tmSt->tm_mon+1,tmSt->tm_mday);
+        const QTime tmS(tmSt->tm_hour,tmSt->tm_min,tmSt->tm_sec);
+        QDateTime dt (dtS,tmS);
+        ui->dtBeginDate->setDateTime(dt);
+    }
+    {
+        std::tm* tmSt=threadfree_localtime(&tStoredMaxDate);
+        const QDate dtS(tmSt->tm_year+1900,tmSt->tm_mon+1,tmSt->tm_mday);
+        const QTime tmS(tmSt->tm_hour,tmSt->tm_min,tmSt->tm_sec);
+        QDateTime dt (dtS,tmS);
+        ui->dtEndDate->setDateTime(dt);
+    }
+}
 //---------------------------------------------------------------------------------------------------------------
+void GraphViewForm::dateTimeBeginChanged(const QDateTime&)
+{
+    SetMinMaxDateToControls(); // keep old value
+}
+//---------------------------------------------------------------------------------------------------------------
+void GraphViewForm::dateTimeEndChanged(const QDateTime&)
+{
+    SetMinMaxDateToControls(); // keep old value
+}
 //---------------------------------------------------------------------------------------------------------------
 
