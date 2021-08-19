@@ -865,9 +865,18 @@ void MainWindow::slotGraphViewWindow()
     auto lst (qml->selectedIndexes());
     //if(lst.count() > 0 && lst[0].isValid()){
 
+    bool bWas{false};
     for (auto item:lst){
         const Ticker &t = proxyTickerModel.getTicker(item);
         slotSetSelectedTicker(t.TickerID());
+        bWas = true;
+    }
+    if (!bWas){
+        //TODO: do non blocking floating warning
+        QMessageBox::warning(0,tr("Warning"),
+                                   tr("Please, select a ticker in the box at the bottom left to continue!\n"),
+                                   QMessageBox::Ok
+                                   );
     }
 }
 //--------------------------------------------------------------------------------------------------------------------------------
