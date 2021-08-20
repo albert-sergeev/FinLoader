@@ -226,8 +226,9 @@ public:
     bool AddBarsLists(std::vector<std::vector<BarTick>> &v, std::time_t dtStart,std::time_t dtEnd);
     bool CheckMap();
 
-private:
+protected:
 
+    bool BuildUpperList(std::time_t dtStart,std::time_t dtEnd);
 
 
 };

@@ -5,6 +5,7 @@
 #include "bar.h"
 #include "threadfreelocaltime.h"
 
+
 class BarGraphicsItem : public QGraphicsItem
 {
     Bar b;
@@ -12,6 +13,9 @@ class BarGraphicsItem : public QGraphicsItem
     bool bOHLC;
     int iState;
     double dHScale;
+
+    std::function<double()> funC;
+
 
     bool IsTick{false};
 public:
@@ -21,8 +25,11 @@ public:
     static const int nTickHalfHeight{3};
 
 public:
-    BarGraphicsItem(Bar bb,size_t idx, int State):b{bb},iRealIndex{idx},bOHLC{true},iState{State},IsTick{false}{
-        dHScale = 2.1;
+    BarGraphicsItem(Bar bb,size_t idx, int State, double dS):
+        b{bb},iRealIndex{idx},bOHLC{true},iState{State},
+        dHScale{dS},
+        IsTick{false}{
+        //dHScale = 2.1;
 
         std::time_t t = b.Period();
         std::stringstream ss;
@@ -34,8 +41,11 @@ public:
         ss << "value: " << b.Volume()<<"";
         this->setToolTip(QString::fromStdString(ss.str()));
     };
-    BarGraphicsItem(BarTick bb,size_t idx, int State):b{bb},iRealIndex{idx},bOHLC{true},iState{State},IsTick{true}{
-        dHScale = 2.1;
+    BarGraphicsItem(BarTick bb,size_t idx, int State, double dS):
+        b{bb},iRealIndex{idx},bOHLC{true},iState{State},
+        dHScale{dS},
+        IsTick{true}{
+        //dHScale = 2.1;
 
         std::time_t t = b.Period();
         std::stringstream ss;
@@ -57,7 +67,9 @@ public:
 
 private:
     bool IsOHLC()   const  {return  bOHLC;}
+
     double HScale() const {return dHScale;}
+
 
     // QGraphicsItem interface
 protected:

@@ -36,6 +36,9 @@ private:
     const Bar::eInterval iInterval;
     const int iTickerID;
 
+    friend class Graph<Bar>;
+    friend class Graph<BarTick>;
+
 public:
 
     inline size_t size() const {return vContainer.size(); };
@@ -59,6 +62,7 @@ public:
 //    void AddTick (Bar &b, bool bNewSec);
 //    void Add (std::list<Bar> &lst);
     bool AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,std::time_t dtEnd);
+    bool BuildFromLowerList(Graph<BarTick> &grSrc, std::time_t dtStart,std::time_t dtEnd);
 
     inline std::time_t GetDateMin() const  {return  vContainer.size()>0? vContainer.front().Period():0;};
     inline std::time_t GetDateMax() const  {return  vContainer.size()>0? vContainer.back().Period():0;};
@@ -356,6 +360,112 @@ size_t Graph<T>::getIndex(const std::time_t t) const
     }
 }
 //------------------------------------------------------------------------------------------------------------
+
+template<typename T>
+bool Graph<T>::BuildFromLowerList(Graph<BarTick> &grSrc, std::time_t dtStart,std::time_t dtEnd)
+{
+
+
+    std::time_t dtAccStart      = Bar::DateAccommodate(dtStart,iInterval);
+    std::time_t dtAccEndLower   = Bar::DateAccommodate(dtEnd,iInterval,false);
+    std::time_t dtAccEnd        = Bar::DateAccommodate(dtEnd,iInterval,true);
+
+    auto It     (grSrc.mDictionary.lower_bound(dtAccStart));
+    auto ItEnd  (grSrc.mDictionary.upper_bound(dtAccEnd - 1));
+
+    if (It == grSrc.mDictionary.end())  return true;
+
+    std::time_t dtNext          = It->first + iInterval * 60;
+    auto ItCur  (grSrc.mDictionary.lower_bound(dtNext));
+    dtNext = ItCur->first;
+
+
+//    {
+//        if (iTickerID == 9){
+//            ThreadFreeCout pcout;
+//            pcout << "dtStart:\t"       << threadfree_localtime_to_str(&dtStart) <<"\n";
+//            pcout << "dtEnd:\t"         << threadfree_localtime_to_str(&dtEnd) <<"\n";
+//            pcout << "dtAccStart:\t"    << threadfree_localtime_to_str(&dtAccStart) <<"\n";
+//            pcout << "dtAccEndLower:\t" << threadfree_localtime_to_str(&dtAccEndLower) <<"\n";
+//            pcout << "dtAccEnd:\t"      << threadfree_localtime_to_str(&dtAccEnd) <<"\n";
+
+//            pcout << "ItCur:\t"        << threadfree_localtime_to_str(&dtNext) <<"\n";
+//        }
+//    }
+
+    std::vector<std::vector<Bar>> v;
+    v.push_back(std::vector<Bar>{});
+    std::vector<Bar> & vRes = v.back();
+
+    auto v_ItBeg (grSrc.vContainer.end());
+    auto v_ItEnd (grSrc.vContainer.end());
+
+    // resize target container
+    if (It != grSrc.mDictionary.end()){
+        v_ItBeg = std::next(grSrc.vContainer.begin(), It->second);
+        if (ItEnd != grSrc.mDictionary.end()){
+            v_ItEnd = std::next(grSrc.vContainer.begin(), ItEnd->second);
+        }
+        vRes.reserve(std::distance(v_ItBeg,v_ItEnd));
+//        {
+//            if (iTickerID == 9){
+//                ThreadFreeCout pcout;
+//                pcout <<"resize TmpCont to: "<<std::distance(v_ItBeg,v_ItEnd)<<"\n";
+//            }
+//        }
+    }
+
+
+    while (It != ItEnd) { // loop throught the section contains data for target tic only
+
+        v_ItBeg = std::next(grSrc.vContainer.begin(), It->second);
+
+        if (ItCur != grSrc.mDictionary.end()){
+            v_ItEnd = std::next(grSrc.vContainer.begin(), ItCur->second);
+        }
+        else{
+            v_ItEnd = grSrc.vContainer.end();
+        }
+
+        Bar b (*v_ItBeg,iInterval);
+
+        b = std::accumulate(std::next(v_ItBeg),v_ItEnd,
+                        b,[](Bar &c, const auto &el){
+                        return c.Append(el);
+                        }
+                    );
+
+        vRes.push_back(b);
+        ////
+        It = ItCur;
+        dtNext += iInterval * 60;
+        ItCur = grSrc.mDictionary.lower_bound(dtNext);
+        if (ItCur != grSrc.mDictionary.end()){
+            dtNext = ItCur->first;
+        }
+    }
+
+    bool bRes = AddBarsList(v,dtAccStart,dtAccEndLower);
+
+    {
+        if (iTickerID == 9){
+            ThreadFreeCout pcout;
+            pcout <<"build out\n";
+        }
+    }
+
+    return bRes;
+}
+//------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------
 template<typename T>
 std::tuple<double,double,unsigned long,unsigned long>  Graph<T>::getMinMax() const
 {
@@ -401,7 +511,6 @@ std::tuple<double,double,unsigned long,unsigned long>  Graph<T>::getMinMax(std::
                                                       std::get<3>(p) > t.Volume() ? std::get<3>(p) : t.Volume()
                                             };
                            });
-}
-//------------------------------------------------------------------------------------------------------------
+};
 
 #endif // GRAPH_H

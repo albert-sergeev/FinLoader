@@ -67,8 +67,18 @@ bool GraphHolder::AddBarsLists(std::vector<std::vector<BarTick>> &v, std::time_t
     std::unique_lock lk(mutexHolder);
     //
     bool bRet = graphTick.AddBarsList(v,dtStart,dtEnd);
+    if (bRet){
+        bRet = BuildUpperList(dtStart,dtEnd);
+    }
     return bRet;
 
+}
+//------------------------------------------------------------------------------------------------------
+bool GraphHolder::BuildUpperList(std::time_t dtStart,std::time_t dtEnd)
+{
+    graph1.BuildFromLowerList(graphTick, dtStart,dtEnd);
+
+    return true;
 }
 //------------------------------------------------------------------------------------------------------
 bool GraphHolder::CheckMap()

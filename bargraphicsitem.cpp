@@ -19,8 +19,8 @@ QRectF BarGraphicsItem::boundingRect() const
         size = QSizeF(BarWidth , (HScale()*nTickHalfHeight*2)+2*nPenWidth);
     }
     else{
-        ptPosition = QPointF(-(BarWidth/2+1),-(HScale() * (b.Low()-b.Close())));
-        size = QSizeF(BarWidth, (HScale() * (b.High()-b.Low())));
+        ptPosition = QPointF(-((BarWidth+1)/2),(HScale() * (b.Low()-b.Close())));
+        size = QSizeF(BarWidth, ((b.High()-b.Low())*HScale()));
     }
 
     return QRectF(ptPosition, size);

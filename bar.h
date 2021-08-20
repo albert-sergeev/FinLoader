@@ -67,9 +67,21 @@ public:
     {
     };
     //--------------------------------------------------------------------------------------------------------
+    Bar (const Bar &b, eInterval Interval):BarTick {b},
+        dOpen{b.dOpen},dHigh{b.dHigh},dLow{b.dLow},iInterval{Interval}
+    {
+        tmPeriod = DateAccommodate(tmPeriod,Interval);
+    };
+    //--------------------------------------------------------------------------------------------------------
     Bar (const BarTick &b):BarTick {b},
         dOpen{b.Close()},dHigh{b.Close()},dLow{b.Close()},iInterval{eInterval::pTick}
     {
+    };
+    //--------------------------------------------------------------------------------------------------------
+    Bar (const BarTick &b, eInterval Interval):BarTick {b},
+        dOpen{b.Close()},dHigh{b.Close()},dLow{b.Close()},iInterval{Interval}
+    {
+        tmPeriod = DateAccommodate(tmPeriod,Interval);
     };
     //--------------------------------------------------------------------------------------------------------
     Bar & reinit (const Bar &b)

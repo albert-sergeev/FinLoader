@@ -134,7 +134,7 @@ public:
     }
     //--------------------------------------------------------------------------------------------------------
     // align dates to discret marks
-    static time_t DateAccommodate(time_t t, int iInterval)
+    static time_t DateAccommodate(time_t t, int iInterval, bool bUp = false)
     {
         time_t tRet = t;
 
@@ -147,10 +147,16 @@ public:
             if(iInterval < pDay){
                 int iSec = t % (iInterval*60);
                 if(iSec>0){
-                    tRet = t  + ((iInterval*60) - iSec);
+                    if (bUp){
+                        tRet = t  + ((iInterval*60) - iSec);
+                    }
+                    else{
+                        tRet = t  - iSec;
+                    }
                 }
             }
             else{
+                // TODO: more then days Up accomodate
                 std::tm tp =  *threadfree_localtime(&t);
 
                 if(iInterval == eInterval::pWeek){//weeks align to mondeys

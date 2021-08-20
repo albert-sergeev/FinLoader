@@ -527,7 +527,7 @@ void GraphViewForm::SliderValueChanged(int iMidPos)
 
             if (ItFound == mShowedGraphicsBars[It.realPosition()].end())
             {
-                BarGraphicsItem *item = new BarGraphicsItem(*It,It.realPosition(),3);
+                BarGraphicsItem *item = new BarGraphicsItem(*It,It.realPosition(),3,mVScale[iSelectedInterval]);
                 mShowedGraphicsBars[It.realPosition()].push_back(item);
                 ui->grViewQuotes->scene()->addItem(item);
                 qreal xCur = (It.realPosition() + iLeftShift)     * BarGraphicsItem::BarWidth * dHScale;
