@@ -34,4 +34,17 @@ inline static std::string  threadfree_localtime_to_str(const T* t)
     return strRet;
 }
 
+template <typename T>
+inline static std::string  threadfree_localtime_date_to_str(const T* t)
+{
+    std::unique_lock lk(mutexLocalTime);
+    tmTmp = *std::localtime(t);
+    char buffer[100];
+    std::strftime(buffer, 100, "%Y/%m/%d", &tmTmp);
+    std::string strRet(buffer);
+
+    return strRet;
+}
+
+
 #endif // TREADSAFELOCALTIME_H

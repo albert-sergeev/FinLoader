@@ -190,9 +190,9 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
     connect(ui->btn60,   SIGNAL(clicked()),this,SLOT(slotPeriodButtonChanged()));
     connect(ui->btn120,  SIGNAL(clicked()),this,SLOT(slotPeriodButtonChanged()));
     connect(ui->btn180,  SIGNAL(clicked()),this,SLOT(slotPeriodButtonChanged()));
-    connect(ui->btnWeek, SIGNAL(clicked()),this,SLOT(slotPeriodButtonChanged()));
     connect(ui->btnDay,  SIGNAL(clicked()),this,SLOT(slotPeriodButtonChanged()));
-
+    connect(ui->btnWeek, SIGNAL(clicked()),this,SLOT(slotPeriodButtonChanged()));
+    connect(ui->btnMonth,SIGNAL(clicked()),this,SLOT(slotPeriodButtonChanged()));
 
 
 }
@@ -379,6 +379,28 @@ bool GraphViewForm::RepainInvalidRange(RepainTask & data)
             if (!bS){
                 ui->horizontalScrollBar->setValue(iSize + iLeftShift + iRightShift - ui->grViewQuotes->width()/(dHScale * BarGraphicsItem::BarWidth));
             }
+//            {
+//                ThreadFreeCout pcout;
+//                size_t iMax = holder->getViewGraphSize(iSelectedInterval);
+//                if (iMax > 0){
+//                    if (iSelectedInterval == Bar::eInterval::pTick){
+//                        BarTick t1 =   holder->getByIndex<BarTick>(Bar::eInterval::pTick,0);
+//                        BarTick t2 =   holder->getByIndex<BarTick>(Bar::eInterval::pTick,iMax-1);
+//                        std::time_t tTime1 =  t1.Period();
+//                        std::time_t tTime2 =  t2.Period();
+//                        pcout  <<"min bar = "<< threadfree_localtime_to_str(&tTime1)<<"\n";
+//                        pcout  <<"max bar = "<< threadfree_localtime_to_str(&tTime2)<<"\n";
+//                    }
+//                    else{
+//                        BarTick t1 =   holder->getByIndex<Bar>(iSelectedInterval,0);
+//                        BarTick t2 =   holder->getByIndex<Bar>(iSelectedInterval,iMax-1);
+//                        std::time_t tTime1 =  t1.Period();
+//                        std::time_t tTime2 =  t2.Period();
+//                        pcout  <<"min bar = "<< threadfree_localtime_to_str(&tTime1)<<"\n";
+//                        pcout  <<"max bar = "<< threadfree_localtime_to_str(&tTime2)<<"\n";
+//                    }
+//                }
+//            }
         }
     }
     return bSuccess;
@@ -474,39 +496,14 @@ void GraphViewForm::SliderValueChanged(int iMidPos)
         tStoredMiddlePointPosition = tM.Period();
         ////////////
 
-//        size_t j=0;
-//        while (j < vShowedGraphicsBars.size()){
-//            if (vShowedGraphicsBars[j]->Period() < tB.Period() ||   // out of view range
-//                vShowedGraphicsBars[j]->Period() > tE.Period() ||   // out of view range
-//                vShowedGraphicsBars[j]->realPosition() >= iMaxSize  // leftovers from old fillings
-//                    ){
-
-//               ui->grViewQuotes->scene()->removeItem(vShowedGraphicsBars[j]);
-//               delete (vShowedGraphicsBars[j]);
-//               vShowedGraphicsBars.erase(std::next(vShowedGraphicsBars.begin(),j));
-
-//            }
-//            else{
-//                T t = holder->getByIndex<T>(iSelectedInterval, vShowedGraphicsBars[j]->realPosition());
-//                if (t.Period() != vShowedGraphicsBars[j]->Period()){ // leftovers from old fillings
-
-//                    ui->grViewQuotes->scene()->removeItem(vShowedGraphicsBars[j]);
-//                    delete (vShowedGraphicsBars[j]);
-//                    vShowedGraphicsBars.erase(std::next(vShowedGraphicsBars.begin(),j));
-
-//                }
-//                else{
-//                    ++j;
-//                }
-//            }
-//        }
         //
         //TODO: what invalidate?
         //ui->grViewQuotes->scene()->sceneRect(); //invalidate scene
         //InvalidateScenes();//invalidate scene
         //
         auto It = holder->beginIteratorByDate<T>(iSelectedInterval,tB.Period(),bSuccess);
-        auto ItEnd = holder->beginIteratorByDate<T>(iSelectedInterval,tE.Period()+1,bSuccess);
+        auto ItEnd = holder->beginIteratorByDate<T>(iSelectedInterval,tE.Period(),bSuccess);
+        ++ItEnd;
         auto ItTotalEnd = holder->end<T>();
 
         QPen bluePen(Qt::blue,1,Qt::SolidLine);

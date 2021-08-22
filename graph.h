@@ -62,7 +62,9 @@ public:
 //    void AddTick (Bar &b, bool bNewSec);
 //    void Add (std::list<Bar> &lst);
     bool AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,std::time_t dtEnd);
-    bool BuildFromLowerList(Graph<BarTick> &grSrc, std::time_t dtStart,std::time_t dtEnd);
+
+    template<typename T_SRC>
+    bool BuildFromLowerList(Graph<T_SRC> &grSrc, std::time_t dtStart,std::time_t dtEnd);
 
     inline std::time_t GetDateMin() const  {return  vContainer.size()>0? vContainer.front().Period():0;};
     inline std::time_t GetDateMax() const  {return  vContainer.size()>0? vContainer.back().Period():0;};
@@ -104,17 +106,17 @@ bool Graph<T>::AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,s
             iNewLength += lst.size();
             if (lst.front().Interval() != this->iInterval){
                 std::stringstream ss;
-                ss<< "graph onterval [" <<this->iInterval<<"] != ["<<lst.front().Interval()<<"]";
+                ss<< "AddBarsList. graph interval [" <<this->iInterval<<"] != ["<<lst.front().Interval()<<"]";
                 throw std::invalid_argument(ss.str());
             }
             if(lst.front().Period() < dtStart){
                 std::stringstream ss;
-                ss<< "the period of incoming data  [" <<lst.front().Period()<<"] is less than the beginning of the range ["<<dtStart<<"]";
+                ss<< "AddBarsList. the period of incoming data  [" <<lst.front().Period()<<"] is less than the beginning of the range ["<<dtStart<<"]";
                 throw std::invalid_argument(ss.str());
             }
             if(lst.back().Period() > dtEnd){
                 std::stringstream ss;
-                ss<< "the period of incoming data  [" <<lst.back().Period()<<"] is greater than the window of the range ["<<dtEnd<<"]";
+                ss<< "AddBarsList. the period of incoming data  [" <<lst.back().Period()<<"] is greater than the window of the range ["<<dtEnd<<"]";
                 throw std::invalid_argument(ss.str());
             }
             //
@@ -361,8 +363,9 @@ size_t Graph<T>::getIndex(const std::time_t t) const
 }
 //------------------------------------------------------------------------------------------------------------
 
-template<typename T>
-bool Graph<T>::BuildFromLowerList(Graph<BarTick> &grSrc, std::time_t dtStart,std::time_t dtEnd)
+template<typename T> template<typename T_SRC>
+//bool Graph<T>::BuildFromLowerList(Graph<BarTick> &grSrc, std::time_t dtStart,std::time_t dtEnd)
+bool Graph<T>::BuildFromLowerList(Graph<T_SRC> &grSrc, std::time_t dtStart,std::time_t dtEnd)
 {
 
 
@@ -371,27 +374,13 @@ bool Graph<T>::BuildFromLowerList(Graph<BarTick> &grSrc, std::time_t dtStart,std
     std::time_t dtAccEnd        = Bar::DateAccommodate(dtEnd,iInterval,true);
 
     auto It     (grSrc.mDictionary.lower_bound(dtAccStart));
-    auto ItEnd  (grSrc.mDictionary.upper_bound(dtAccEnd - 1));
+    auto ItEnd  (grSrc.mDictionary.lower_bound(dtAccEnd));
 
     if (It == grSrc.mDictionary.end())  return true;
 
-    std::time_t dtNext          = It->first + iInterval * 60;
+    std::time_t dtNext          = Bar::DateAccommodate(It->first,iInterval,true);
     auto ItCur  (grSrc.mDictionary.lower_bound(dtNext));
     dtNext = ItCur->first;
-
-
-//    {
-//        if (iTickerID == 9){
-//            ThreadFreeCout pcout;
-//            pcout << "dtStart:\t"       << threadfree_localtime_to_str(&dtStart) <<"\n";
-//            pcout << "dtEnd:\t"         << threadfree_localtime_to_str(&dtEnd) <<"\n";
-//            pcout << "dtAccStart:\t"    << threadfree_localtime_to_str(&dtAccStart) <<"\n";
-//            pcout << "dtAccEndLower:\t" << threadfree_localtime_to_str(&dtAccEndLower) <<"\n";
-//            pcout << "dtAccEnd:\t"      << threadfree_localtime_to_str(&dtAccEnd) <<"\n";
-
-//            pcout << "ItCur:\t"        << threadfree_localtime_to_str(&dtNext) <<"\n";
-//        }
-//    }
 
     std::vector<std::vector<Bar>> v;
     v.push_back(std::vector<Bar>{});
@@ -407,15 +396,10 @@ bool Graph<T>::BuildFromLowerList(Graph<BarTick> &grSrc, std::time_t dtStart,std
             v_ItEnd = std::next(grSrc.vContainer.begin(), ItEnd->second);
         }
         vRes.reserve(std::distance(v_ItBeg,v_ItEnd));
-//        {
-//            if (iTickerID == 9){
-//                ThreadFreeCout pcout;
-//                pcout <<"resize TmpCont to: "<<std::distance(v_ItBeg,v_ItEnd)<<"\n";
-//            }
-//        }
     }
 
 
+    try{
     while (It != ItEnd) { // loop throught the section contains data for target tic only
 
         v_ItBeg = std::next(grSrc.vContainer.begin(), It->second);
@@ -436,24 +420,29 @@ bool Graph<T>::BuildFromLowerList(Graph<BarTick> &grSrc, std::time_t dtStart,std
                     );
 
         vRes.push_back(b);
+
         ////
         It = ItCur;
-        dtNext += iInterval * 60;
+
+        //dtNext  = Bar::DateAccommodate(dtNext,iInterval) + iInterval * 60;
+
+        dtNext  = Bar::DateAccommodate(dtNext,iInterval,true);
+
         ItCur = grSrc.mDictionary.lower_bound(dtNext);
         if (ItCur != grSrc.mDictionary.end()){
             dtNext = ItCur->first;
         }
     }
 
-    bool bRes = AddBarsList(v,dtAccStart,dtAccEndLower);
-
-    {
-        if (iTickerID == 9){
-            ThreadFreeCout pcout;
-            pcout <<"build out\n";
-        }
     }
+    catch (std::exception &e){
+        ThreadFreeCout pcout;
+        pcout <<"error: "<<e.what()<<"\n";
+        return {};
 
+    }
+    /////
+    bool bRes = AddBarsList(v,dtAccStart,dtAccEndLower);
     return bRes;
 }
 //------------------------------------------------------------------------------------------------------------

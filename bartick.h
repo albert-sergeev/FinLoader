@@ -5,10 +5,12 @@
 #include <sstream>
 #include <chrono>
 #include "threadfreelocaltime.h"
+#include "threadfreecout.h"
 
 
 class BarTickMemcopier;
 
+inline std::once_flag bar_call_once_flag;
 
 class BarTick
 {
@@ -19,9 +21,11 @@ protected:
 
     friend class BarTickMemcopier;
 
+    static std::time_t t1990_01_010_00_00_00;
+
 public:
     //--------------------------------------------------------------------------------------------------------
-    enum eInterval:int {pTick=(0),p1=1,p5=5,p10=10,p15=15,p30=30,p60=60,p120=120,p180=180, pDay=1440, pWeek=10080, pMonth=302400};
+    enum eInterval:int {pUndefined=(-99), pTick=(0),p1=1,p5=5,p10=10,p15=15,p30=30,p60=60,p120=120,p180=180, pDay=1440, pWeek=10080, pMonth=302400};
     //--------------------------------------------------------------------------------------------------------
 
     virtual double Open()                   const   {return dClose;};
@@ -49,11 +53,12 @@ public:
     //--------------------------------------------------------------------------------------------------------
     BarTick(){};
     //--------------------------------------------------------------------------------------------------------
-    BarTick (double Close,unsigned long Value, std::time_t Period, int /*Interval*/ = eInterval::pTick):
+    BarTick (double Close,unsigned long Value, std::time_t Period, int Interval = eInterval::pTick):
         dClose{Close},iVolume{Value},tmPeriod{Period}
     {
         // accomodate time to discret intervals (to up)
-        tmPeriod = DateAccommodate(tmPeriod,eInterval::pTick);
+        //tmPeriod = DateAccommodate(tmPeriod,eInterval::pTick);
+        tmPeriod = DateAccommodate(tmPeriod,Interval);
 
     };
     //--------------------------------------------------------------------------------------------------------
@@ -132,55 +137,142 @@ public:
     {
         return Append(b);
     }
+
     //--------------------------------------------------------------------------------------------------------
     // align dates to discret marks
     static time_t DateAccommodate(time_t t, int iInterval, bool bUp = false)
     {
+        std::call_once(bar_call_once_flag,initStartConst);
+
         time_t tRet = t;
 
         //1. ticks dont align - they use seconds
         //2. interdays align by math: append addition to remainder of divide by interval
         //3. days and more by manipulate days and substract hours and mins
 
-
         if(iInterval != eInterval::pTick){
-            if(iInterval < pDay){
+            if(iInterval <= p60){
                 int iSec = t % (iInterval*60);
-                if(iSec>0){
-                    if (bUp){
-                        tRet = t  + ((iInterval*60) - iSec);
-                    }
-                    else{
-                        tRet = t  - iSec;
-                    }
+                if (bUp){
+                    tRet = t  + ((iInterval*60) - iSec);
+                }
+                else{
+                    tRet = t  - iSec;
                 }
             }
-            else{
-                // TODO: more then days Up accomodate
-                std::tm tp =  *threadfree_localtime(&t);
+            else if(iInterval == p120){
 
-                if(iInterval == eInterval::pWeek){//weeks align to mondeys
-                    t= t -  ((tp.tm_wday)*86400);
-                    tp  =  *threadfree_localtime(&t);
+                t = t - t1990_01_010_00_00_00;
+
+                int iSec = t % (86400);
+
+                std::time_t tD  = t - iSec;// day
+                int iHour       = iSec - iSec % 3600;
+                int iHour120    = iHour - iHour % (3600 * 2);
+                int iHour120Up  = iHour + (3600 * 2) - iHour % (3600 * 2);
+
+                if (bUp)
+                    tRet = tD + iHour120Up;
+                else
+                    tRet = tD + iHour120;
+
+                tRet = tRet + t1990_01_010_00_00_00;
+
+            }
+            else if(iInterval == p180){
+
+                t = t - t1990_01_010_00_00_00;
+
+                int iSec = t % (86400);
+
+                std::time_t tD  = t - iSec;// day
+                int iHour       = iSec - iSec % 3600;
+                int iHour180    = iHour - iHour % (3600 * 3);
+                int iHour180Up  = iHour + (3600 * 3) - iHour % (3600 * 3);
+
+                if (bUp)
+                    tRet = tD + iHour180Up;
+                else
+                    tRet = tD + iHour180;
+
+                tRet = tRet + t1990_01_010_00_00_00;
+
+            }
+            else if(iInterval == pDay){
+                t = t - t1990_01_010_00_00_00;
+
+                int iSec = t % (iInterval*60);
+                if (bUp){
+                    tRet = t  + ((iInterval*60) - iSec);
                 }
-                else if(iInterval == eInterval::pMonth){// month to first day
-                    tp.tm_mday = 1;
+                else{
+                    tRet = t  - iSec;
                 }
+
+                tRet = tRet + t1990_01_010_00_00_00;
+            }
+            else if(iInterval == pWeek){
+
+                std::tm tp =  *threadfree_localtime(&t);
 
                 tp.tm_hour = 0;
                 tp.tm_min = 0;
                 tp.tm_sec = 0;
                 tp.tm_isdst = 0;
 
+                tRet = std::mktime(&tp) -  ((tp.tm_wday)*86400);
+
+                if (bUp){
+                    tRet += 86400 * 7;
+                }
+            }
+            else if(iInterval == pMonth){
+
+                std::tm tp =  *threadfree_localtime(&t);
+                tp.tm_mday = 1;
+                tp.tm_hour = 0;
+                tp.tm_min = 0;
+                tp.tm_sec = 0;
+                tp.tm_isdst = 0;
+
+                if (bUp){
+                    tp.tm_mon++;
+                    if (tp.tm_mon >11){
+                        tp.tm_mon = 0;
+                        tp.tm_year++;
+                    }
+                }
+
                 tRet = std::mktime(&tp);
+            }
+            else{
+                std::stringstream ss;
+                ss<<"DateAccommodate. Interval is out of range {" << iInterval << "}";
+                throw std::invalid_argument(ss.str());
             }
         }
 
         return tRet;
     }
     //--------------------------------------------------------------------------------------------------------
+private:
+    //--------------------------------------------------------------------------------------------------------
+    static void initStartConst(){
+        std::tm t_tm;
+        t_tm.tm_year   = 1990 - 1900;
+        t_tm.tm_mon    = 01 - 1;
+        t_tm.tm_mday   = 0;
+        t_tm.tm_hour   = 0;
+        t_tm.tm_min    = 0;
+        t_tm.tm_sec    = 0;
+        t_tm.tm_isdst  = 0;
+
+        t1990_01_010_00_00_00 = std::mktime(&t_tm);
+    };
 
 };
+
+inline std::time_t BarTick::t1990_01_010_00_00_00;
 
 class BarTickMemcopier{
 

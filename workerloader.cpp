@@ -621,17 +621,17 @@ void workerLoader::workerLoadIntoGraph(BlockFreeQueue<dataFinLoadTask> & /*queue
         if(std::shared_ptr<std::vector<std::vector<BarTick>>>{} != data.pvBars){
 
             if(data.holder->AddBarsLists(*data.pvBars.get(),data.dtBegin,data.dtEnd)){
-                if (data.holder->CheckMap()){
-                    dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::logText,data.GetParentWnd());
-                    dt.SetTextInfo("map consistensy is good");
-                    queueTrdAnswers.Push(dt);
-                }
-                else{
-                    dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::logCriticalError,data.GetParentWnd());
-                    dt.SetErrString("map consistensy is broken");
-                    queueTrdAnswers.Push(dt);
-                    bSuccessfull = false;
-                }
+//                if (data.holder->CheckMap()){
+//                    dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::logText,data.GetParentWnd());
+//                    dt.SetTextInfo("map consistensy is good");
+//                    queueTrdAnswers.Push(dt);
+//                }
+//                else{
+//                    dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::logCriticalError,data.GetParentWnd());
+//                    dt.SetErrString("map consistensy is broken");
+//                    queueTrdAnswers.Push(dt);
+//                    bSuccessfull = false;
+//                }
             }
             if(this_thread_flagInterrup.isSet()){
                 //fout<<"exit on interrupt\n";

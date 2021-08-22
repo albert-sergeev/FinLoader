@@ -54,7 +54,7 @@ public:
     //--------------------------------------------------------------------------------------------------------
 
     //--------------------------------------------------------------------------------------------------------
-    Bar():BarTick{},iInterval{eInterval::p1}{};
+    Bar():BarTick{},iInterval{eInterval::pUndefined}{};
     //--------------------------------------------------------------------------------------------------------
     Bar (double Open, double High,double Low,double Close,unsigned long Value, std::time_t Period, int Interval = eInterval::p1):
         BarTick {Close,Value,Period,Interval},
@@ -98,9 +98,12 @@ public:
     Bar & operator= (const Bar &b)
     {
         if(b.iInterval != iInterval){
-            std::stringstream ss;
-            ss<<"Bar::operator=() Invalid interval value [Bar& Bar::operator=(Bar &)] {" << iInterval << "!=" << b.iInterval << "}";
-            throw std::invalid_argument(ss.str());
+            if(pUndefined != iInterval){
+                std::stringstream ss;
+                ss<<"Bar::operator=() Invalid interval value [Bar& Bar::operator=(Bar &)] {" << iInterval << "!=" << b.iInterval << "}";
+                throw std::invalid_argument(ss.str());
+            }
+            iInterval = b.iInterval;
         }
 
         dOpen       =   b.dOpen;

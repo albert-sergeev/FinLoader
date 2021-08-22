@@ -15,11 +15,14 @@ QRectF BarGraphicsItem::boundingRect() const
     QPointF ptPosition;
     QSizeF size;
     if (IsTick){
-        ptPosition = QPointF(-((BarWidth+1)/2),-(HScale() * nTickHalfHeight)-nPenWidth);
+        ptPosition = QPointF(-((BarWidth+1)/2),
+                             -(HScale() * nTickHalfHeight)-nPenWidth);
         size = QSizeF(BarWidth , (HScale()*nTickHalfHeight*2)+2*nPenWidth);
     }
     else{
-        ptPosition = QPointF(-((BarWidth+1)/2),(HScale() * (b.Low()-b.Close())));
+        ptPosition = QPointF(-((BarWidth+1)/2),
+                             -(HScale() * (b.High()-b.Close()))
+                             );
         size = QSizeF(BarWidth, ((b.High()-b.Low())*HScale()));
     }
 

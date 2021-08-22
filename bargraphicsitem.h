@@ -33,12 +33,17 @@ public:
 
         std::time_t t = b.Period();
         std::stringstream ss;
-        ss <<threadfree_localtime_to_str(&t)<<"\r\n";
+        if (b.Interval() >= Bar::eInterval::pDay){
+            ss <<threadfree_localtime_date_to_str(&t)<<"\r\n";
+        }
+        else{
+            ss <<threadfree_localtime_to_str(&t)<<"\r\n";
+        }
         ss << "open: "  << b.Open()<<"\r\n";
         ss << "high: "  << b.High()<<"\r\n";
         ss << "low: "   << b.Low()<<"\r\n";
         ss << "close: " << b.Close()<<"\r\n";
-        ss << "value: " << b.Volume()<<"";
+        ss << "volume: " << b.Volume()<<"";
         this->setToolTip(QString::fromStdString(ss.str()));
     };
     BarGraphicsItem(BarTick bb,size_t idx, int State, double dS):
@@ -49,9 +54,14 @@ public:
 
         std::time_t t = b.Period();
         std::stringstream ss;
-        ss <<threadfree_localtime_to_str(&t)<<"\r\n";
+        if (b.Interval() >= Bar::eInterval::pDay){
+            ss <<threadfree_localtime_date_to_str(&t)<<"\r\n";
+        }
+        else{
+            ss <<threadfree_localtime_to_str(&t)<<"\r\n";
+        }
         ss << "close: " << b.Close()<<"\r\n";
-        ss << "value: " << b.Volume()<<"";
+        ss << "volume: " << b.Volume()<<"";
         this->setToolTip(QString::fromStdString(ss.str()));
     };
 

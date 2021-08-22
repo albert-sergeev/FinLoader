@@ -1,3 +1,4 @@
+
 #include "graphholder.h"
 
 
@@ -34,18 +35,18 @@ GraphHolder::GraphHolder(int TickerID)://Bar::eInterval Interval
 //------------------------------------------------------------------------------------------------------
 GraphHolder::GraphHolder(GraphHolder && o):
     iTickerID{o.iTickerID}
-    ,graphTick{std::move(o.graphTick)}
-    ,graph1{std::move(o.graph1)}
-    ,graph5{std::move(o.graph1)}
-    ,graph10{std::move(o.graph1)}
-    ,graph15{std::move(o.graph1)}
-    ,graph30{std::move(o.graph1)}
-    ,graph60{std::move(o.graph1)}
-    ,graph120{std::move(o.graph1)}
-    ,graph180{std::move(o.graph1)}
-    ,graphDay{std::move(o.graph1)}
-    ,graphWeek{std::move(o.graph1)}
-    ,graphMonth{std::move(o.graph1)}
+    ,graphTick  {std::move(o.graphTick)}
+    ,graph1     {std::move(o.graph1)}
+    ,graph5     {std::move(o.graph5)}
+    ,graph10    {std::move(o.graph10)}
+    ,graph15    {std::move(o.graph15)}
+    ,graph30    {std::move(o.graph30)}
+    ,graph60    {std::move(o.graph60)}
+    ,graph120   {std::move(o.graph120)}
+    ,graph180   {std::move(o.graph180)}
+    ,graphDay   {std::move(o.graphDay)}
+    ,graphWeek  {std::move(o.graphWeek)}
+    ,graphMonth {std::move(o.graphMonth)}
     ,mpGraphs{{Bar::eInterval::p1,graph1}
              ,{Bar::eInterval::p5,graph5}
              ,{Bar::eInterval::p10,graph10}
@@ -77,6 +78,16 @@ bool GraphHolder::AddBarsLists(std::vector<std::vector<BarTick>> &v, std::time_t
 bool GraphHolder::BuildUpperList(std::time_t dtStart,std::time_t dtEnd)
 {
     graph1.BuildFromLowerList(graphTick, dtStart,dtEnd);
+    graph5.BuildFromLowerList(graph1, dtStart,dtEnd);
+    graph10.BuildFromLowerList(graph5, dtStart,dtEnd);
+    graph15.BuildFromLowerList(graph5, dtStart,dtEnd);
+    graph30.BuildFromLowerList(graph15, dtStart,dtEnd);
+    graph60.BuildFromLowerList(graph30, dtStart,dtEnd);
+    graph120.BuildFromLowerList(graph60, dtStart,dtEnd);
+    graph180.BuildFromLowerList(graph60, dtStart,dtEnd);
+    graphDay.BuildFromLowerList(graph60, dtStart,dtEnd);
+    graphWeek.BuildFromLowerList(graphDay, dtStart,dtEnd);
+    graphMonth.BuildFromLowerList(graphDay, dtStart,dtEnd);
 
     return true;
 }
