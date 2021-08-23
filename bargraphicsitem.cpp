@@ -43,7 +43,7 @@ void BarGraphicsItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, 
     }
     painter->save();
     painter->setPen(QPen(qtColor,nPenWidth));
-    painter->setRenderHint(QPainter::Antialiasing, true);
+    //painter->setRenderHint(QPainter::Antialiasing, true);
 
     if (IsOHLC()){
         if (IsTick){

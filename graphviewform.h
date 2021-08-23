@@ -49,6 +49,7 @@ private:
     QGraphicsScene *grSceneScaleUpper;
     QGraphicsScene *grSceneVolume;
     //QGraphicsScene *grSceneScaleLower;
+    QGraphicsScene *grSceneHorizScroll;
     QGraphicsScene *grSceneViewR1;
     QGraphicsScene *grSceneViewL1;
     QGraphicsScene *grSceneVertScroll;
@@ -65,6 +66,7 @@ private:
     //std::map<int,std::vector<QGraphicsItem *>> mVLinesScaleLower;
 
     std::vector<std::pair<QGraphicsItem *,double>>  vHLinesViewQuotes;
+    std::vector<QGraphicsItem *>  vHLinesScaleUpper;
 
     std::map<int,std::vector<QGraphicsItem *>> mLeftFrames;
     std::map<int,std::vector<QGraphicsItem *>> mRightFrames;
@@ -72,6 +74,7 @@ private:
 private:
 
     std::time_t tStoredMiddlePointPosition;
+    std::time_t tStoredRightPointPosition;
     std::time_t tStoredMinDate;
     std::time_t tStoredMaxDate;
     size_t  iStoredMaxSize;
@@ -93,9 +96,9 @@ private:
     static const int iLeftShift{20};
     static const int iRightShift{50};
 
-    static const int iViewPortHeight{1000};
-    static const int iViewPortHighStrip{100};
-    static const int iViewPortLowStrip{100};
+    static const int iViewPortHeight{600};
+    static const int iViewPortHighStrip{20};
+    static const int iViewPortLowStrip{20};
 
 
 public:
@@ -122,10 +125,11 @@ public slots:
 protected slots:
     void slotLoadGraphButton();
 
-    void slotSliderValueChanged(int i);
+    //void slotSliderValueChanged(int i);
 
     void slotSceneRectChanged( const QRectF &);
     void slotVerticalScrollBarValueChanged(int);
+    void slotHorizontalScrollBarValueChanged(int iH);
 
     void slotHScaleQuotesClicked(bool);
     void slotVScaleQuotesClicked(bool);
@@ -136,13 +140,27 @@ protected slots:
 
     void slotPeriodButtonChanged();
 
+    void PainViewPort               ();
+    void PainViewPort               (int iStart, int iEnd);
+    void PainHorizontalScales       ();
+    void PainHorizontalFrames       (int iStart, int iEnd);
+    void PainVerticalSideScales     ();
+    void PainVerticalFrames         (int iStart, int iEnd);
+
 
 private:
     Ui::GraphViewForm *ui;
 
 protected:
+
     template<typename T>
-    void SliderValueChanged(int i);
+    void PaintBars       (int iStart, int iEnd);
+
+    template<typename T>
+    void PainVerticalFramesT         (int iStart, int iEnd);
+
+//    template<typename T>
+//    void SliderValueChanged(int i);
 //    //------
 //    template<typename T>
 //    void SliderValueChangedBackup(int iMidPos);
@@ -151,9 +169,9 @@ protected:
     template<typename T>
     bool RepainInvalidRange(RepainTask &);
 
-    template<typename T>
-    bool RollSliderToMidTime(std::time_t tMidPos);
-    void SetSliderToPos(int iMiddlePos);
+//    template<typename T>
+//    bool RollSliderToMidTime(std::time_t tMidPos);
+//    void SetSliderToPos(int iMiddlePos);
 
     void DrawLineToScene(const int idx,const  qreal x1,const  qreal y1,const qreal x2,const  qreal y2,
                          std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QPen & pen,
@@ -172,21 +190,21 @@ protected:
 
     void DrawTimeToScene(const int idx,const  qreal x,const  qreal y,const  std::tm &,
                                         std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QFont & font);
-    void DrawIntToScene(const int idx,const  qreal x,const  qreal y,const  int n,
+    void DrawIntToScene(const int idx,const  qreal x,const  qreal y,const  int n, Qt::AlignmentFlag alignH, Qt::AlignmentFlag alignV,
                                         std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QFont & font);
     void DrawDoubleToScene(const int idx,const  qreal x ,const  qreal y,const double n, Qt::AlignmentFlag alignH, Qt::AlignmentFlag alignV,
                            std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QFont & font);
 
-    void DrawVertLines(int iBeg, int iEnd);
-    void DrawHorizontalLines(int iBeg, int iEnd);
-    void DrawVertSideFrames();
+    //void DrawVertLines(int iBeg, int iEnd);
+    //void DrawHorizontalLines(int iBeg, int iEnd);
+    //void DrawVertSideFrames();
 
     void InvalidateScenes();
 
     std::tuple<int,int,int,int> getHPartStep(double realH, double viewportH);
 
-    template<typename T>
-    void DrawVertLinesT(int iBeg, int iEnd);
+//    template<typename T>
+//    void DrawVertLinesT(int iBeg, int iEnd);
 
     void SetMinMaxDateToControls();
     void RepositionPlusMinusButtons();

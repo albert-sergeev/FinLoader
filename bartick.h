@@ -21,7 +21,7 @@ protected:
 
     friend class BarTickMemcopier;
 
-    static std::time_t t1990_01_010_00_00_00;
+    static std::time_t t1990_01_01_00_00_00;
 
 public:
     //--------------------------------------------------------------------------------------------------------
@@ -162,7 +162,7 @@ public:
             }
             else if(iInterval == p120){
 
-                t = t - t1990_01_010_00_00_00;
+                t = t - t1990_01_01_00_00_00;
 
                 int iSec = t % (86400);
 
@@ -176,12 +176,12 @@ public:
                 else
                     tRet = tD + iHour120;
 
-                tRet = tRet + t1990_01_010_00_00_00;
+                tRet = tRet + t1990_01_01_00_00_00;
 
             }
             else if(iInterval == p180){
 
-                t = t - t1990_01_010_00_00_00;
+                t = t - t1990_01_01_00_00_00;
 
                 int iSec = t % (86400);
 
@@ -195,11 +195,11 @@ public:
                 else
                     tRet = tD + iHour180;
 
-                tRet = tRet + t1990_01_010_00_00_00;
+                tRet = tRet + t1990_01_01_00_00_00;
 
             }
             else if(iInterval == pDay){
-                t = t - t1990_01_010_00_00_00;
+                t = t - t1990_01_01_00_00_00;
 
                 int iSec = t % (iInterval*60);
                 if (bUp){
@@ -209,7 +209,7 @@ public:
                     tRet = t  - iSec;
                 }
 
-                tRet = tRet + t1990_01_010_00_00_00;
+                tRet = tRet + t1990_01_01_00_00_00;
             }
             else if(iInterval == pWeek){
 
@@ -267,12 +267,12 @@ private:
         t_tm.tm_sec    = 0;
         t_tm.tm_isdst  = 0;
 
-        t1990_01_010_00_00_00 = std::mktime(&t_tm);
+        t1990_01_01_00_00_00 = std::mktime(&t_tm);
     };
 
 };
 
-inline std::time_t BarTick::t1990_01_010_00_00_00;
+inline std::time_t BarTick::t1990_01_01_00_00_00;
 
 class BarTickMemcopier{
 

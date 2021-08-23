@@ -76,6 +76,56 @@
         <property name="spacing">
          <number>0</number>
         </property>
+        <item row="5" column="0">
+         <widget class="QWidget" name="wtViewL5" native="true"/>
+        </item>
+        <item row="3" column="0">
+         <widget class="QGraphicsView" name="grViewL4">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>60</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="frameShape">
+           <enum>QFrame::NoFrame</enum>
+          </property>
+          <property name="horizontalScrollBarPolicy">
+           <enum>Qt::ScrollBarAlwaysOff</enum>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="2" colspan="2">
+         <widget class="QGraphicsView" name="grViewR4">
+          <property name="minimumSize">
+           <size>
+            <width>1</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="frameShape">
+           <enum>QFrame::NoFrame</enum>
+          </property>
+          <property name="verticalScrollBarPolicy">
+           <enum>Qt::ScrollBarAlwaysOff</enum>
+          </property>
+          <property name="horizontalScrollBarPolicy">
+           <enum>Qt::ScrollBarAlwaysOff</enum>
+          </property>
+         </widget>
+        </item>
         <item row="2" column="0">
          <widget class="QGraphicsView" name="grViewL3">
           <property name="maximumSize">
@@ -92,16 +142,53 @@
           </property>
          </widget>
         </item>
-        <item row="0" column="0">
-         <widget class="QGraphicsView" name="grViewL1">
+        <item row="4" column="1">
+         <widget class="QGraphicsView" name="grHorizScroll">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>14</height>
+           </size>
+          </property>
           <property name="maximumSize">
            <size>
-            <width>60</width>
-            <height>16777215</height>
+            <width>16777215</width>
+            <height>14</height>
+           </size>
+          </property>
+          <property name="verticalScrollBarPolicy">
+           <enum>Qt::ScrollBarAlwaysOff</enum>
+          </property>
+          <property name="horizontalScrollBarPolicy">
+           <enum>Qt::ScrollBarAlwaysOn</enum>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QGraphicsView" name="grViewScaleLower">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>40</height>
            </size>
           </property>
           <property name="frameShape">
            <enum>QFrame::NoFrame</enum>
+          </property>
+          <property name="frameShadow">
+           <enum>QFrame::Plain</enum>
           </property>
           <property name="verticalScrollBarPolicy">
            <enum>Qt::ScrollBarAlwaysOff</enum>
@@ -139,25 +226,6 @@
           </property>
          </widget>
         </item>
-        <item row="1" column="0">
-         <widget class="QGraphicsView" name="grViewL2">
-          <property name="maximumSize">
-           <size>
-            <width>60</width>
-            <height>30</height>
-           </size>
-          </property>
-          <property name="frameShape">
-           <enum>QFrame::NoFrame</enum>
-          </property>
-          <property name="horizontalScrollBarPolicy">
-           <enum>Qt::ScrollBarAlwaysOff</enum>
-          </property>
-         </widget>
-        </item>
-        <item row="5" column="0">
-         <widget class="QWidget" name="wtViewL5" native="true"/>
-        </item>
         <item row="2" column="2" colspan="2">
          <widget class="QGraphicsView" name="grViewR3">
           <property name="minimumSize">
@@ -180,11 +248,11 @@
           </property>
          </widget>
         </item>
-        <item row="1" column="1">
-         <widget class="QGraphicsView" name="grViewScaleUpper">
+        <item row="1" column="2" colspan="2">
+         <widget class="QGraphicsView" name="grViewR2">
           <property name="minimumSize">
            <size>
-            <width>0</width>
+            <width>1</width>
             <height>0</height>
            </size>
           </property>
@@ -197,8 +265,21 @@
           <property name="frameShape">
            <enum>QFrame::NoFrame</enum>
           </property>
-          <property name="frameShadow">
-           <enum>QFrame::Plain</enum>
+          <property name="horizontalScrollBarPolicy">
+           <enum>Qt::ScrollBarAlwaysOff</enum>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="2">
+         <widget class="QGraphicsView" name="grViewR1">
+          <property name="maximumSize">
+           <size>
+            <width>60</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="frameShape">
+           <enum>QFrame::NoFrame</enum>
           </property>
           <property name="verticalScrollBarPolicy">
            <enum>Qt::ScrollBarAlwaysOff</enum>
@@ -224,36 +305,8 @@
           </property>
          </widget>
         </item>
-        <item row="3" column="2" colspan="2">
-         <widget class="QGraphicsView" name="grViewR4">
-          <property name="minimumSize">
-           <size>
-            <width>1</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>30</height>
-           </size>
-          </property>
-          <property name="frameShape">
-           <enum>QFrame::NoFrame</enum>
-          </property>
-          <property name="verticalScrollBarPolicy">
-           <enum>Qt::ScrollBarAlwaysOff</enum>
-          </property>
-          <property name="horizontalScrollBarPolicy">
-           <enum>Qt::ScrollBarAlwaysOff</enum>
-          </property>
-         </widget>
-        </item>
-        <item row="5" column="2" colspan="2">
-         <widget class="QWidget" name="wtViewR5" native="true"/>
-        </item>
-        <item row="0" column="2">
-         <widget class="QGraphicsView" name="grViewR1">
+        <item row="0" column="0">
+         <widget class="QGraphicsView" name="grViewL1">
           <property name="maximumSize">
            <size>
             <width>60</width>
@@ -265,28 +318,6 @@
           </property>
           <property name="verticalScrollBarPolicy">
            <enum>Qt::ScrollBarAlwaysOff</enum>
-          </property>
-          <property name="horizontalScrollBarPolicy">
-           <enum>Qt::ScrollBarAlwaysOff</enum>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="0">
-         <widget class="QGraphicsView" name="grViewL4">
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>60</width>
-            <height>30</height>
-           </size>
-          </property>
-          <property name="frameShape">
-           <enum>QFrame::NoFrame</enum>
           </property>
           <property name="horizontalScrollBarPolicy">
            <enum>Qt::ScrollBarAlwaysOff</enum>
@@ -318,17 +349,11 @@
           </property>
          </widget>
         </item>
-        <item row="1" column="2" colspan="2">
-         <widget class="QGraphicsView" name="grViewR2">
-          <property name="minimumSize">
-           <size>
-            <width>1</width>
-            <height>0</height>
-           </size>
-          </property>
+        <item row="1" column="0">
+         <widget class="QGraphicsView" name="grViewL2">
           <property name="maximumSize">
            <size>
-            <width>16777215</width>
+            <width>60</width>
             <height>30</height>
            </size>
           </property>
@@ -340,18 +365,8 @@
           </property>
          </widget>
         </item>
-        <item row="4" column="1">
-         <widget class="QScrollBar" name="horizontalScrollBar">
-          <property name="focusPolicy">
-           <enum>Qt::StrongFocus</enum>
-          </property>
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="1">
-         <widget class="QGraphicsView" name="grViewScaleLower">
+        <item row="1" column="1">
+         <widget class="QGraphicsView" name="grViewScaleUpper">
           <property name="minimumSize">
            <size>
             <width>0</width>
@@ -361,7 +376,7 @@
           <property name="maximumSize">
            <size>
             <width>16777215</width>
-            <height>30</height>
+            <height>40</height>
            </size>
           </property>
           <property name="frameShape">
@@ -377,6 +392,9 @@
            <enum>Qt::ScrollBarAlwaysOff</enum>
           </property>
          </widget>
+        </item>
+        <item row="5" column="2" colspan="2">
+         <widget class="QWidget" name="wtViewR5" native="true"/>
         </item>
        </layout>
       </item>
