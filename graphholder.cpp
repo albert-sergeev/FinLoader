@@ -175,6 +175,17 @@ std::tuple<double,double,unsigned long,unsigned long>  GraphHolder::getMinMax(co
     }
 };
 //------------------------------------------------------------------------------------------------------
+std::time_t GraphHolder::getTimeByIndex(const Bar::eInterval it,const size_t indx)
+{
+    if(it == Bar::eInterval::pTick){
+        BarTick & b = getByIndex<BarTick>(it,indx);
+        return b.Period();
+    }
+    else{
+        Bar & b = getByIndex<Bar>(it,indx);
+        return b.Period();
+    }
+}
 //------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------

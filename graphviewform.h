@@ -71,8 +71,10 @@ private:
 
 private:
 
-    std::time_t tStoredMiddlePointPosition;
+    //std::time_t tStoredMiddlePointPosition;
     std::time_t tStoredRightPointPosition;
+    int iStoredRightAggregate;
+
     std::time_t tStoredMinDate;
     std::time_t tStoredMaxDate;
     size_t  iStoredMaxSize;
@@ -138,8 +140,8 @@ protected slots:
 
     void slotPeriodButtonChanged();
 
-    void PaintViewPort               (bool bFrames = true,bool bBars = true,bool bVolumes = true);
-    void PaintViewPort               (int iStart, int iEnd,bool bFrames = true,bool bBars = true,bool bVolumes = true);
+    void PaintViewPort               (bool bFrames,bool bBars,bool bVolumes, bool bStoreRightPos);
+    void PaintViewPort               (int iStart, int iEnd,bool bFrames ,bool bBars,bool bVolumes, bool bStoreRightPos);
     void PaintHorizontalScales       ();
     void PaintHorizontalFrames       (int iStart, int iEnd);
     void PaintVerticalSideScales     ();
@@ -152,7 +154,7 @@ private:
 protected:
 
     template<typename T>
-    void PaintBars       (int iStart, int iEnd, bool bPaintBars, bool bPaintVolumes);
+    void PaintBars       (int iStart, int iEnd, bool bPaintBars, bool bPaintVolumes, bool bStoreRightPos);
 
     template<typename T>
     void PainVerticalFramesT         (int iStart, int iEnd);
@@ -167,9 +169,11 @@ protected:
     template<typename T>
     bool RepainInvalidRange(RepainTask &);
 
-//    template<typename T>
-//    bool RollSliderToMidTime(std::time_t tMidPos);
-//    void SetSliderToPos(int iMiddlePos);
+
+    void SetSliderToPos (std::time_t tRightPos, int iRightAggregate);
+    template<typename T>
+    void SetSliderToPosT(std::time_t tRightPos, int iRightAggregate);
+
 
     void DrawLineToScene(const int idx,const  qreal x1,const  qreal y1,const qreal x2,const  qreal y2,
                          std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QPen & pen,

@@ -251,6 +251,11 @@ public:
                 throw std::invalid_argument(ss.str());
             }
         }
+        else{
+            if (bUp){
+                tRet++;
+            }
+        }
 
         return tRet;
     }

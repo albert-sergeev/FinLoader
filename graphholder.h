@@ -195,6 +195,8 @@ public:
     std::tuple<double,double,unsigned long,unsigned long>  getMinMax(const Bar::eInterval it) const;
     std::tuple<double,double,unsigned long,unsigned long>  getMinMax(const Bar::eInterval it, const  std::time_t dtStart, const std::time_t dtEnd) const;
 
+
+    std::time_t getTimeByIndex(const Bar::eInterval it,const size_t indx);
     template<typename T>
     T & getByIndex(const Bar::eInterval it,const size_t indx);
     //------------------------------------------------------------
