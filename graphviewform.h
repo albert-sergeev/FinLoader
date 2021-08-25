@@ -55,21 +55,19 @@ private:
     QGraphicsScene *grSceneVertScroll;
 
 
-    //std::vector<BarGraphicsItem *> vShowedGraphicsBars;
-    //std::time_t tMiddleDate{0};
+    std::map<int,std::vector<BarGraphicsItem *>>    mShowedGraphicsBars;
+    std::map<int,std::vector<QGraphicsItem *>>      mShowedVolumes;
 
-    std::map<int,std::vector<BarGraphicsItem *>> mShowedGraphicsBars;
+    std::map<int,std::vector<QGraphicsItem *>>      mVFramesViewQuotes;
+    std::map<int,std::vector<QGraphicsItem *>>      mVFramesScaleUpper;
+    std::map<int,std::vector<QGraphicsItem *>>      mVFramesVolume;
+    std::map<int,std::vector<QGraphicsItem *>>      mVFramesHorisSmallScale;
 
-    std::map<int,std::vector<QGraphicsItem *>> mVLinesViewQuotes;
-    std::map<int,std::vector<QGraphicsItem *>> mVLinesScaleUpper;
-    std::map<int,std::vector<QGraphicsItem *>> mVLinesVolume;
-    //std::map<int,std::vector<QGraphicsItem *>> mVLinesScaleLower;
+    std::vector<std::pair<QGraphicsItem *,double>>  vHorizFramesViewQuotes;
+    std::vector<QGraphicsItem *>                    vHorizFramesScaleUpper;
 
-    std::vector<std::pair<QGraphicsItem *,double>>  vHLinesViewQuotes;
-    std::vector<QGraphicsItem *>  vHLinesScaleUpper;
-
-    std::map<int,std::vector<QGraphicsItem *>> mLeftFrames;
-    std::map<int,std::vector<QGraphicsItem *>> mRightFrames;
+    std::map<int,std::vector<QGraphicsItem *>>      mLeftFrames;
+    std::map<int,std::vector<QGraphicsItem *>>      mRightFrames;
 
 private:
 
@@ -140,12 +138,12 @@ protected slots:
 
     void slotPeriodButtonChanged();
 
-    void PainViewPort               ();
-    void PainViewPort               (int iStart, int iEnd);
-    void PainHorizontalScales       ();
-    void PainHorizontalFrames       (int iStart, int iEnd);
-    void PainVerticalSideScales     ();
-    void PainVerticalFrames         (int iStart, int iEnd);
+    void PaintViewPort               (bool bFrames = true,bool bBars = true,bool bVolumes = true);
+    void PaintViewPort               (int iStart, int iEnd,bool bFrames = true,bool bBars = true,bool bVolumes = true);
+    void PaintHorizontalScales       ();
+    void PaintHorizontalFrames       (int iStart, int iEnd);
+    void PaintVerticalSideScales     ();
+    void PaintVerticalFrames         (int iStart, int iEnd);
 
 
 private:
@@ -154,7 +152,7 @@ private:
 protected:
 
     template<typename T>
-    void PaintBars       (int iStart, int iEnd);
+    void PaintBars       (int iStart, int iEnd, bool bPaintBars, bool bPaintVolumes);
 
     template<typename T>
     void PainVerticalFramesT         (int iStart, int iEnd);
@@ -221,7 +219,10 @@ protected:
 //    void EraseLinesLower(std::map<int,std::vector<QGraphicsItem *>>& mM, int iEnd, QGraphicsScene *);
 //    void EraseLinesMid(std::map<int,std::vector<QGraphicsItem *>>& mM, int iStart,int iEnd, QGraphicsScene *);
 
-    void EraseLinesFrames();
+    void Erase();
+    void EraseFrames();
+    void EraseBars();
+    void EraseVolumes();
 
 
     inline double realYtoSceneY      (double y) {return  ((y - dStoredLowMin)       * (mVScale.at      (iSelectedInterval))) + iViewPortLowStrip;};

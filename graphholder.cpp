@@ -157,6 +157,23 @@ size_t GraphHolder::getViewGraphIndex(const std::time_t t, const Bar::eInterval 
 //    }
 //}
 //------------------------------------------------------------------------------------------------------
+std::tuple<double,double,unsigned long,unsigned long>  GraphHolder::getMinMax(const Bar::eInterval it) const
+{
+    if(it == Bar::eInterval::pTick)
+        return graphTick.getMinMax();
+    else{
+        return  mpGraphs.at(it).getMinMax();
+    }
+};
+//-----------------------------------------------------------------------------------------------------------------------------------
+std::tuple<double,double,unsigned long,unsigned long>  GraphHolder::getMinMax(const Bar::eInterval it, const  std::time_t dtStart, const std::time_t dtEnd) const
+{
+    if(it == Bar::eInterval::pTick)
+        return graphTick.getMinMax(dtStart,dtEnd);
+    else{
+        return  mpGraphs.at(it).getMinMax(dtStart,dtEnd);
+    }
+};
 //------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------

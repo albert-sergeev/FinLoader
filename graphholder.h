@@ -192,9 +192,8 @@ public:
     std::time_t getViewGraphDateMin(Bar::eInterval it);
     std::time_t getViewGraphDateMax(Bar::eInterval it);
 
-// TODO: switch to grMonth.getMinMax();
-    std::tuple<double,double,unsigned long,unsigned long>  getMinMax() const {return graphTick.getMinMax();};
-    std::tuple<double,double,unsigned long,unsigned long>  getMinMax(std::time_t dtStart,std::time_t dtEnd) const {return graphTick.getMinMax(dtStart,dtEnd);};
+    std::tuple<double,double,unsigned long,unsigned long>  getMinMax(const Bar::eInterval it) const;
+    std::tuple<double,double,unsigned long,unsigned long>  getMinMax(const Bar::eInterval it, const  std::time_t dtStart, const std::time_t dtEnd) const;
 
     template<typename T>
     T & getByIndex(const Bar::eInterval it,const size_t indx);
@@ -261,7 +260,7 @@ T & GraphHolder::getByIndex(const Bar::eInterval it,const size_t indx)
     }
 }
 //-----------------------------------------------------------------------------------------------------------------------------------
-//-----------------------------------------------------------------------------------------------------------------------------------
+
 //-----------------------------------------------------------------------------------------------------------------------------------
 //-----------------------------------------------------------------------------------------------------------------------------------
 
