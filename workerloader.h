@@ -20,7 +20,8 @@ public:
 private:
     static void workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueFinQuotesLoad,
                        BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
-                       Storage &stStore,dataFinLoadTask & data);
+                       Storage &stStore,
+                       dataFinLoadTask & data);
 
     static void workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & queueTasks,
                                     BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
@@ -31,6 +32,13 @@ private:
                                     BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
                                     Storage & stStore,
                                     dataFinLoadTask & data);
+
+    static void workerOptimizeStorage(BlockFreeQueue<dataFinLoadTask> & queueTasks,
+                                    BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
+                                    Storage & stStore,
+                                    dataFinLoadTask & data);
+
+
 
 
     static int createCleanUpHeader(std::time_t tMonth, char* cBuff,std::time_t tBegin, std::time_t tEnd);

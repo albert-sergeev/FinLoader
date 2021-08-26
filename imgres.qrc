@@ -18,5 +18,6 @@
         <file>blackstyle.css</file>
         <file>FinLoader_ru_RU.qm</file>
         <file>FinLoader_en_US.qm</file>
+        <file>images/sc_err_log.png</file>
     </qresource>
 </RCC>

@@ -52,6 +52,7 @@ class Storage
     std::vector<int> vInitializedTickers;
     std::map<std::pair<int,std::time_t>,std::shared_mutex> mpStoreMutexes;
     std::map<std::pair<int,std::time_t>,std::shared_mutex> mpWriteMutexes;
+    std::map<std::pair<int,std::time_t>,std::shared_mutex> mpOptimizeMutexes;
     std::map<std::pair<int,std::time_t>,int> mpStoreStages;
 
     const std::vector<int> vStorageW;
@@ -64,7 +65,7 @@ class Storage
     const std::vector<bool> vStorage3;
     const std::vector<bool> vStorage4;
 
-    std::atomic<int> aIntCount{0};
+    //std::atomic<int> aIntCount{0};
 
 public:
     //-----------------------------------------------------------
@@ -130,10 +131,15 @@ public:
     int CreateAndGetFileStageForTicker(int iTickerID, std::time_t tMonth, std::stringstream & ssOut);
     bool WriteBarToStore(int iTickerID, Bar &b, std::stringstream & ssOut);
     bool WriteMemblockToStore(WriteMutexDefender &defLk,int iTickerID, std::time_t tMonth, char* cBuff,size_t length, std::stringstream & ssOut);
-    //std::time_t dtDayWindowBegin, std::time_t dtDayWindowEnd,
+
+
 
     bool ReadFromStore(int iTickerID, std::time_t tMonth, std::vector<BarTick> & vBarList,
                        std::time_t dtLoadBegin, std::time_t dtLoadEnd,
+                       std::stringstream & ssOut);
+
+
+    bool OptimizeStore(int iTickerID, std::time_t tMonth, bool & bToPlanNextShift,
                        std::stringstream & ssOut);
 
     static bool slotParseLine(dataFinQuotesParse & parseDt, std::istringstream & issLine, Bar &b);
@@ -157,8 +163,17 @@ private:
     void CreateDataFilesForEntry(std::string sFileName, std::string sFileNameShort, int iState,std::stringstream& ssOut);
 
 
+    bool ReadFromStoreFile(int iTickerID, std::time_t tMonth, std::map<std::time_t,std::vector<BarTick>> &mvHolder,
+                       std::time_t dtLoadBegin, std::time_t dtLoadEnd,
+                       std::string sFileName,
+                       std::stringstream & ssOut);
 
+    bool WriteMapToStore(std::string sFilename, std::map<std::time_t,std::vector<BarTick>>& mvHolder, std::stringstream & ssOut);
 
+    bool SwitchStage(std::pair<int,std::time_t> k, std::string sPath, std::string sFileNamePart, int iNewStage,
+                              std::stringstream & ssOut);
+
+    static size_t mapSize(std::map<std::time_t,std::vector<BarTick>> &m);
 
 };
 

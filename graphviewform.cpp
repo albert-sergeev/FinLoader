@@ -213,6 +213,9 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
 
    // {ThreadFreeCout pcout; pcout<<"const out\n";}
 
+    connect(ui->btnTestLoad,SIGNAL(clicked()),this,SLOT(slotLoadGraphButton()));
+
+
 }
 //---------------------------------------------------------------------------------------------------------------
 GraphViewForm::~GraphViewForm()
@@ -688,10 +691,17 @@ void GraphViewForm::showEvent(QShowEvent *event)
 //    iNewSize = iNewSize < 0? 0 : iNewSize;
 //    ui->horizontalScrollBar->setMaximum(iNewSize);
 
-    ui->grViewQuotes->horizontalScrollBar()->triggerAction(QAbstractSlider::SliderToMaximum);
-    ui->grViewL1->horizontalScrollBar()->triggerAction(QAbstractSlider::SliderToMaximum);
-    ui->grViewR1->horizontalScrollBar()->triggerAction(QAbstractSlider::SliderToMaximum);
-    ui->grHorizScroll->horizontalScrollBar()->triggerAction(QAbstractSlider::SliderToMaximum);
+//    ui->grViewQuotes->horizontalScrollBar()->triggerAction(QAbstractSlider::SliderToMaximum);
+//    ui->grViewL1->horizontalScrollBar()->triggerAction(QAbstractSlider::SliderToMaximum);
+//    ui->grViewR1->horizontalScrollBar()->triggerAction(QAbstractSlider::SliderToMaximum);
+//    ui->grHorizScroll->horizontalScrollBar()->triggerAction(QAbstractSlider::SliderToMaximum);
+
+    if (tStoredRightPointPosition != 0){
+        SetSliderToPos(tStoredRightPointPosition, iStoredRightAggregate);
+    }
+    else{
+        SetSliderToPos(tStoredMaxDate, iRightShift);
+    }
     ///////////
     RepositionPlusMinusButtons();
 
@@ -732,7 +742,7 @@ void GraphViewForm::slotHorizontalScrollBarValueChanged(int iH)
 
     ui->grViewScaleUpper->horizontalScrollBar()->setValue(iH);
     ui->grViewVolume->horizontalScrollBar()->setValue(iH);
-    //ui->grViewScaleLower->horizontalScrollBar()->setValue(iH);
+    ui->grViewScaleLower->horizontalScrollBar()->setValue(iH);
     ui->grViewQuotes->horizontalScrollBar()->setValue(iH);
     ui->grHorizScroll->horizontalScrollBar()->setValue(iH);
 

@@ -138,6 +138,7 @@ public:
 
 signals:
     void SendToLog(QString);
+    void SendToErrorLog(QString);
     void SaveUnsavedConfigs();
 
 protected:
@@ -174,6 +175,7 @@ protected slots: // for main window
     void slotNewDoc     ();
     void slotGraphViewWindow();
     void slotNewLogWnd  ();
+    void slotNewErrLogWnd();
     void slotWindows    ();
     void slotStyles     ();
     void slotLanguages  ();
@@ -206,13 +208,13 @@ protected slots: // for main window
 
     void slotSendSignalToInvalidateGraph(int TickerID, std::time_t dtDegin, std::time_t dtEnd);
 
-   // void slotTestPvBars(std::shared_ptr<std::vector<std::vector<Bar>>> pvBars);
+    //void slotTestPvBars(std::shared_ptr<std::vector<std::vector<BarTick>>> pvBars); // TODO: delete. for tests
 
     void slotGVFramesVisibilityStateChanged();
 
 
 private:
-   // std::vector<std::vector<Bar>> testPvBars;
+    //std::vector<std::vector<Bar>> testPvBars; // TODO: delete. for tests
 
     Ui::MainWindow *ui;
 };

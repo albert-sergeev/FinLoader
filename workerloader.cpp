@@ -54,10 +54,7 @@ void workerLoader::workerDataBaseWork(BlockFreeQueue<dataFinLoadTask> & queueTas
             workerLoadIntoGraph(queueTasks,queueTrdAnswers,stStore,data);
             break;
         case dataFinLoadTask::TaskType::storageOptimisation:
-            {
-            ThreadFreeCout pcout;
-            pcout << "data optimisaion task for TickerID: " << data.TickerID<<"\n";
-            }
+            workerOptimizeStorage(queueTasks,queueTrdAnswers,stStore,data);
             break;
 
         default:
@@ -501,7 +498,7 @@ void workerLoader::workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & queue
                                 dataFinLoadTask & data)
 
 {
-//                {
+//                if (data.TickerID == 9){
 //                ThreadFreeCout pcout;
 //                pcout << "load from base task for TickerID: " << data.TickerID<<"\n";
 //                }
@@ -543,6 +540,7 @@ void workerLoader::workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & queue
             ssOut.clear();
             //
             pvBars->push_back({});
+            //
             if (!stStore.ReadFromStore(data.TickerID, t, pvBars->back(), data.dtBegin,data.dtEnd,ssOut)){
                 bSuccessfull = false;
                 dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::storagLoadFromStorageGraphEnd,data.GetParentWnd());
@@ -550,6 +548,7 @@ void workerLoader::workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & queue
                 ssOut<<"\n\rError reading file.\n";
                 dt.SetErrString(ssOut.str());
                 queueTrdAnswers.Push(dt);
+
                 break;
             }
             else{
@@ -573,9 +572,11 @@ void workerLoader::workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & queue
         {
             // TODO: remove
             //for tests
-            dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::testPvBars,data.GetParentWnd());
-            dt.pvBars = pvBars;
-            queueTrdAnswers.Push(dt);
+//            if (data.TickerID == 9){
+//                dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::testPvBars,data.GetParentWnd());
+//                dt.pvBars = pvBars;
+//                queueTrdAnswers.Push(dt);
+//            }
         }
         dataFinLoadTask optTask(data);// copying data range and tickerID
         optTask.taskType = dataFinLoadTask::TaskType::LoadIntoGraph;
@@ -602,6 +603,11 @@ void workerLoader::workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & queue
         queueTrdAnswers.Push(dt);
     }
 
+//    if (data.TickerID == 9){
+//    ThreadFreeCout pcout;
+//    pcout << "load from base task finishes {" << data.TickerID<<"}\n";
+//    }
+
 }
 //------------------------------------------------------------------------------------------------------------------------------------------
 void workerLoader::workerLoadIntoGraph(BlockFreeQueue<dataFinLoadTask> & /*queueTasks*/,
@@ -621,17 +627,17 @@ void workerLoader::workerLoadIntoGraph(BlockFreeQueue<dataFinLoadTask> & /*queue
         if(std::shared_ptr<std::vector<std::vector<BarTick>>>{} != data.pvBars){
 
             if(data.holder->AddBarsLists(*data.pvBars.get(),data.dtBegin,data.dtEnd)){
-//                if (data.holder->CheckMap()){
-//                    dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::logText,data.GetParentWnd());
-//                    dt.SetTextInfo("map consistensy is good");
-//                    queueTrdAnswers.Push(dt);
-//                }
-//                else{
-//                    dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::logCriticalError,data.GetParentWnd());
-//                    dt.SetErrString("map consistensy is broken");
-//                    queueTrdAnswers.Push(dt);
-//                    bSuccessfull = false;
-//                }
+                //                if (data.holder->CheckMap()){
+                //                    dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::logText,data.GetParentWnd());
+                //                    dt.SetTextInfo("map consistensy is good");
+                //                    queueTrdAnswers.Push(dt);
+                //                }
+                //                else{
+                //                    dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::logCriticalError,data.GetParentWnd());
+                //                    dt.SetErrString("map consistensy is broken");
+                //                    queueTrdAnswers.Push(dt);
+                //                    bSuccessfull = false;
+                //                }
             }
             if(this_thread_flagInterrup.isSet()){
                 //fout<<"exit on interrupt\n";
@@ -680,3 +686,111 @@ void workerLoader::workerLoadIntoGraph(BlockFreeQueue<dataFinLoadTask> & /*queue
 //------------------------------------------------------------------------------------------------------------------------------------------
 ////////////////////////////////////////////////////////////////////////
 //  9. добавить очередь задач на оптимизацию данных
+void workerLoader::workerOptimizeStorage(BlockFreeQueue<dataFinLoadTask> & queueTasks,
+                                BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
+                                Storage & stStore,
+                                dataFinLoadTask & data)
+{
+//        {
+
+//            ThreadFreeCout pcout;
+//            pcout << "storage optimization task for TickerID: " << data.TickerID<<"\n";
+//        }
+        {
+            dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::storageOptimisationBegin,data.GetParentWnd());
+            queueTrdAnswers.Push(dt);
+        }
+        //
+        std::chrono::time_point dtStart(std::chrono::steady_clock::now());
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        bool bSuccessfull{true};
+
+        std::stringstream ssErr;
+        if (!stStore.InitializeTicker(data.TickerID,ssErr)){
+            dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportEnd,data.GetParentWnd());
+            dt.SetSuccessfull(false);
+            ssErr<<"\ncannot initialize stock quotes storage for ticker";
+            dt.SetErrString(ssErr.str());
+            queueTrdAnswers.Push(dt);
+        }
+        else{
+            std::vector<std::time_t> vMonthToLoad;
+
+            std::time_t dtMonthBegin = Storage::dateCastToMonth(data.dtBegin);
+            std::time_t dtMonthEnd   = Storage::dateAddMonth(data.dtEnd);
+
+            while (dtMonthBegin < dtMonthEnd) {
+                vMonthToLoad.push_back(dtMonthBegin);
+                dtMonthBegin = Storage::dateAddMonth(dtMonthBegin);
+            }
+            //
+            std::stringstream ssOut;
+
+            bool bToPlanNextShift{false};
+
+            for (const std::time_t &t:vMonthToLoad){
+                ssOut.str("");
+                ssOut.clear();
+                bToPlanNextShift = false;
+                //
+
+                if (!stStore.OptimizeStore( data.TickerID, t, bToPlanNextShift,ssOut))
+                {
+                    bSuccessfull = false;
+                    dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::storageOptimisationEnd,data.GetParentWnd());
+                    dt.SetSuccessfull(false);
+                    ssOut<<"\n\rError optimizing file.\n";
+                    dt.SetErrString(ssOut.str());
+                    queueTrdAnswers.Push(dt);
+                    break;
+                }
+                else{
+                    if (bToPlanNextShift){// plan next optimization task
+                        dataFinLoadTask optTask(data);// copying data range and tickerID
+                        optTask.dtBegin = t;    // only current month
+                        optTask.dtEnd   = t;    // only current month
+                        optTask.taskType = dataFinLoadTask::TaskType::storageOptimisation;
+                        queueTasks.Push(optTask);
+                    }
+                    if (ssOut.str().size()>0){
+                        dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::logText,data.GetParentWnd());
+                        dt.SetTextInfo(ssOut.str());
+                        queueTrdAnswers.Push(dt);
+                    }
+                }
+                if(this_thread_flagInterrup.isSet()){
+                    //fout<<"exit on interrupt\n";
+                    dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::storageOptimisationEnd,data.GetParentWnd());
+                    dt.SetSuccessfull(false);
+                    dt.SetErrString("loading process interrupted");
+                    queueTrdAnswers.Push(dt);
+                    bSuccessfull = false;
+                    break;
+                }
+            }
+        }
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        if (bSuccessfull){
+            std::chrono::time_point dtStop(std::chrono::steady_clock::now());
+            //milliseconds tCount = dtStop - dtStart;
+            seconds tCount = dtStop - dtStart;
+            {
+                std::stringstream ss;
+                ss << "Optimization time: "<<tCount.count()<<" seconds\n";
+                dataBuckgroundThreadAnswer dt (data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::logText,data.GetParentWnd());
+                dt.SetTextInfo(ss.str());
+                queueTrdAnswers.Push(dt);
+            }
+            //
+            dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::storageOptimisationEnd,data.GetParentWnd());
+            dt.SetSuccessfull(true);
+            queueTrdAnswers.Push(dt);
+        }
+
+//        {
+
+//            ThreadFreeCout pcout;
+//            pcout << "storage optimization task out {" << data.TickerID<<"}\n";
+//        }
+}
+//------------------------------------------------------------------------------------------------------------------------------------------

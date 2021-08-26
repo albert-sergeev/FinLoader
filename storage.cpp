@@ -36,10 +36,10 @@ Storage::Storage():bInitialized{false}
     ,vStorageL2 {0,1,1,0,2,2}
     ,vStorageS  {0,0,3,0,0,4}
 
-    ,vStorage1  {true ,true ,true ,false,true ,true ,}
-    ,vStorage2  {false,true ,true ,true ,true ,true ,}
-    ,vStorage3  {false,false,true ,true ,true ,true ,}
-    ,vStorage4  {true ,true ,true ,false,false,true ,}
+    ,vStorage1  {true ,true ,true ,false,true ,true }
+    ,vStorage2  {false,true ,true ,true ,true ,true }
+    ,vStorage3  {false,false,true ,true ,true ,true }
+    ,vStorage4  {true ,true ,true ,false,false,true }
 {
 
 
@@ -407,6 +407,14 @@ std::time_t Storage::dateAddMonth(std::time_t t, int iMonth)
     return std::mktime(&tmNew);
 }
 //--------------------------------------------------------------------------------------------------------
+size_t Storage::mapSize(std::map<std::time_t,std::vector<BarTick>>& m) {
+    int iRet{0};
+    for (const auto &v:m){
+        iRet +=v.second.size();
+    }
+    return iRet;
+};
+//--------------------------------------------------------------------------------------------------------
 bool Storage::InitializeTicker(int iTickerID,std::stringstream & ssOut, bool bCheckOnly)
 {
     std::shared_lock lk(mutexQuotesStoreInit);
@@ -522,6 +530,7 @@ bool Storage::InitializeTickerEntry(int iTickerID,std::stringstream& ssOut){//pr
         std::pair<int,std::time_t> k{iTickerID,t};
         mpStoreMutexes[k];
         mpWriteMutexes[k];
+        mpOptimizeMutexes[k];
         mpStoreStages[k] = iState;
     }
     ///////////////////////////////////////////
@@ -540,9 +549,15 @@ void Storage::CreateDataFilesForEntry(std::string sFileName, std::string sFileNa
     ss <<sFileName<<"_1";
     if(vStorage1[iState - 1] && !std::filesystem::exists(ss.str())){
         if (sFileNameShort.size()>0)
-            ssOut <<"data file ["<< sFileNameShort << "_1] is absent! Recreate.\n";
+            ssOut <<"data file ["<< sFileNameShort << "_1] is absent. Recreate.\n";
         std::ofstream ofF(ss.str());
     }
+    if(!vStorage1[iState - 1] && std::filesystem::exists(ss.str())){
+        if (sFileNameShort.size()>0)
+            ssOut <<"data file ["<< sFileNameShort << "_1] need to free. Delete.\n";
+        std::filesystem::remove(ss.str());
+    }
+
 
     ss.clear();
     ss.str("");
@@ -552,6 +567,12 @@ void Storage::CreateDataFilesForEntry(std::string sFileName, std::string sFileNa
             ssOut <<"data file ["<< sFileNameShort << "_2] is absent! Recreate.\n";
         std::ofstream ofF(ss.str());
     }
+    if(!vStorage2[iState - 1] && std::filesystem::exists(ss.str())){
+        if (sFileNameShort.size()>0)
+            ssOut <<"data file ["<< sFileNameShort << "_2] need to free. Delete.\n";
+        std::filesystem::remove(ss.str());
+    }
+
     ss.clear();
     ss.str("");
     ss <<sFileName<<"_3";
@@ -560,6 +581,12 @@ void Storage::CreateDataFilesForEntry(std::string sFileName, std::string sFileNa
             ssOut <<"data file ["<< sFileNameShort << "_3] is absent! Recreate.\n";
         std::ofstream ofF(ss.str());
     }
+    if(!vStorage3[iState - 1] && std::filesystem::exists(ss.str())){
+        if (sFileNameShort.size()>0)
+            ssOut <<"data file ["<< sFileNameShort << "_3] need to free. Delete.\n";
+        std::filesystem::remove(ss.str());
+    }
+
     ss.clear();
     ss.str("");
     ss <<sFileName<<"_4";
@@ -567,6 +594,11 @@ void Storage::CreateDataFilesForEntry(std::string sFileName, std::string sFileNa
         if (sFileNameShort.size()>0)
             ssOut <<"data file ["<< sFileNameShort << "_4] is absent! Recreate.\n";
         std::ofstream ofF(ss.str());
+    }
+    if(!vStorage4[iState - 1] && std::filesystem::exists(ss.str())){
+        if (sFileNameShort.size()>0)
+            ssOut <<"data file ["<< sFileNameShort << "_4] need to free. Delete.\n";
+        std::filesystem::remove(ss.str());
     }
 }
 //--------------------------------------------------------------------------------------------------------
@@ -632,6 +664,7 @@ int  Storage::CreateStageEntryForTicker(int iTickerID, std::time_t tMonth,std::s
 
     mpStoreMutexes[k];
     mpWriteMutexes[k];
+    mpOptimizeMutexes[k];
     mpStoreStages[k] = iState;
 
     return iState;
@@ -983,8 +1016,8 @@ bool Storage::ReadFromStore(int iTickerID, std::time_t tMonth, std::vector<BarTi
     auto It (mpStoreMutexes.find(k));
     if(It != mpStoreMutexes.end()){
         std::shared_lock entryLk(mpStoreMutexes.at(k));
-        std::shared_lock entryWriteLk (mpWriteMutexes.at(k));
-        //std::unique_lock entryWriteLk (mpWriteMutexes.at(k));
+        //std::shared_lock entryWriteLk (mpWriteMutexes.at(k)); // do lock below, befoure use writing file
+
 
         int iStage = mpStoreStages.at(k);
         if (iStage <1 || iStage >6){
@@ -994,136 +1027,431 @@ bool Storage::ReadFromStore(int iTickerID, std::time_t tMonth, std::vector<BarTi
         ///
         std::tm * tmT = threadfree_localtime(&tMonth);
 
+
         std::stringstream ss;
         ss <<iTickerID<<"_";
         ss <<std::setfill('0');
         ss <<std::right<< std::setw(4)<<tmT->tm_year+1900;
         ss <<std::right<< std::setw(2)<<(tmT->tm_mon+1);
-        ss <<"_"<<vStorageW[iStage-1];
-        std::string strNamePart(ss.str());
+        ss <<"_";
 
-        ss.str("");
-        ss.clear();
-        ss << pathStorageDir.c_str();
-        ss <<"/"<<iTickerID<<"/";
-        ss <<strNamePart;
-
-        std::string sFileName(ss.str());
-        ////
-
-        std::ifstream fileR (sFileName,std::ios_base::in | std::ios_base::binary);
-        if(fileR){
-
-            fileR.seekg(0,std::ios::end);
-            size_t filesize = fileR.tellg();
-            fileR.seekg(0, std::ios::beg);
-
-            BarTick b(0,0,0);
-            BarTickMemcopier bM(b);
-            const int iBlockSize (  sizeof (Storage::data_type)
-                            + sizeof (b.Close())
-                            + sizeof (b.Volume())
-                            + sizeof (b.Period())
-                            );
-            char cBuffer[iBlockSize];
-            int iInBuffPointer{0};
-            int iState{0};
-
-            const size_t iRecordsMax {filesize/iBlockSize};
+        std::map<std::time_t,std::vector<BarTick>> mvHolder;
 
 
-
-            std::map<std::time_t,std::vector<BarTick>> mvHolder;
-
-            ssOut<<"Storage contains "<<iRecordsMax<<" records.\n";
-
-
-            std::time_t tmStartDel{0};
-            std::time_t tmEndDel{0};
-            bool bWasRawDelete{false};
-
-
-            while(fileR.read(cBuffer,iBlockSize)){
-
-                iInBuffPointer = 0;
-
-                memcpy(&iState,     cBuffer + iInBuffPointer, sizeof (Storage::data_type));   iInBuffPointer += sizeof (Storage::data_type);
-                memcpy(&bM.Close(), cBuffer + iInBuffPointer, sizeof (bM.Close()));           iInBuffPointer += sizeof (bM.Close());
-                memcpy(&bM.Volume(),cBuffer + iInBuffPointer, sizeof (bM.Volume()));          iInBuffPointer += sizeof (bM.Volume());
-                memcpy(&bM.Period(),cBuffer + iInBuffPointer, sizeof (bM.Period()));          iInBuffPointer += sizeof (bM.Period());
-                ///////////////
-                if (iState == Storage::data_type::del_from){
-                    if (bWasRawDelete){
-                        ssOut<<"Broken delete sequence in storage file: "<<sFileName;
-                        return false;
-                    }
-                    tmStartDel = b.Period();
-                    bWasRawDelete = true;
-                }
-                else if (iState == Storage::data_type::del_to){
-                    tmEndDel = b.Period();
-
-                    for(auto & e:mvHolder){
-                        if (e.first >= tmStartDel && e.first <= tmEndDel)
-                            e.second.clear();
-                    }
-                    bWasRawDelete = false;
-                }
-                else{
-                    if (bWasRawDelete){
-                        ssOut<<"Broken delete sequence in storage file: "<<sFileName;
-                        return false;
-                    }
-                }
-                if (b.Period() >= dtLoadBegin && b.Period() <= dtLoadEnd){
-
-                    if (iState == Storage::data_type::usual || iState == Storage::data_type::new_sec){
-                        if (iState == Storage::data_type::new_sec){
-                            mvHolder[b.Period()].clear();
-
-                        }
-                        mvHolder[b.Period()].push_back(b);
-                    }
-                }
-                /////////////////////////////////////////////////////////////
-                if(this_thread_flagInterrup.isSet()){
-                    ssOut<<"loading process interrupted\n";
-                    return false;
-                }
+        if (vStorageL1[iStage - 1]>0){
+            std::stringstream ssNamePart;
+            ssNamePart << ss.str()<<vStorageL1[iStage-1];
+            if (!ReadFromStoreFile(iTickerID, tMonth,mvHolder,dtLoadBegin, dtLoadEnd,ssNamePart.str(),ssOut)){
+                return false;
             }
-            /////////////////////////////////////////////////////////////
-            /////////////////////////////////////////////////////////////
-            vBarList.reserve(filesize/iBlockSize);
-            for(auto e:mvHolder){
-                std::copy(e.second.begin(),e.second.end(),std::back_inserter(vBarList));
+        }
+
+        if (vStorageL2[iStage - 1]>0){
+            std::stringstream ssNamePart;
+            ssNamePart << ss.str()<<vStorageL2[iStage-1];
+            if (!ReadFromStoreFile(iTickerID, tMonth,mvHolder,dtLoadBegin, dtLoadEnd,ssNamePart.str(),ssOut)){
+                return false;
             }
-            /////////////////////////////////////////////////////////////
-
-
-
-            ssOut<<"active records: <"<<vBarList.size()<<">\n";
-            vBarList.shrink_to_fit();
-            ssOut<<"active records: <"<<vBarList.size()<<">\n";
-
-
-
-            ssOut<<"Read from file: "<<strNamePart<<"\n";
-            return true;
         }
-        else{
-            if (fileR.rdstate() == std::ios_base::goodbit) { ssOut << "stream state is goodbit\n";}
-            if (fileR.rdstate() == std::ios_base::badbit) { ssOut << "stream state is badbit\n";}
-            if (fileR.rdstate() == std::ios_base::failbit) { ssOut << "stream state is failbit\n";}
-            if (fileR.rdstate() == std::ios_base::eofbit) { ssOut << "stream state is eofbit\n";}
 
-            ssOut<<"Broken storage file: "<<sFileName;
-            return false;
+        std::shared_lock entryWriteLk (mpWriteMutexes.at(k)); // lock
+
+        if (vStorageW[iStage - 1]>0){
+            std::stringstream ssNamePart;
+            ssNamePart << ss.str()<<vStorageW[iStage-1];
+            if (!ReadFromStoreFile(iTickerID, tMonth,mvHolder,dtLoadBegin, dtLoadEnd,ssNamePart.str(),ssOut)){
+                return false;
+            }
         }
+
+        size_t iRecords{0};
+        for(auto &e:mvHolder){
+            iRecords += e.second.size();
+        }
+
+        vBarList.reserve(iRecords);
+        for(auto &e:mvHolder){
+            std::copy(e.second.begin(),e.second.end(),std::back_inserter(vBarList));
+        }
+
+        /////////////////////////////////////////////////////////////
+        vBarList.shrink_to_fit();
+        ssOut<<"active records: <"<<vBarList.size()<<">\n";
+
     }
     else{
         //ssOut <<"no data files for: " <<strM<<"\n";;
-        return true;
+        //return true;
     }
     return true;
 }
+//--------------------------------------------------------------------------------------------------------
+bool Storage::ReadFromStoreFile(int iTickerID, std::time_t /*tMonth*/, std::map<std::time_t,std::vector<BarTick>> &mvHolder,
+                   std::time_t dtLoadBegin, std::time_t dtLoadEnd,
+                   std::string strNamePart,
+                   std::stringstream & ssOut)
+{
+    std::stringstream ss;
+
+    ss.str("");
+    ss.clear();
+    ss << pathStorageDir.c_str();
+    ss <<"/"<<iTickerID<<"/";
+    ss <<strNamePart;
+
+    std::string sFileName(ss.str());
+    ////
+
+    std::ifstream fileR (sFileName,std::ios_base::in | std::ios_base::binary);
+    if(fileR){
+
+        fileR.seekg(0,std::ios::end);
+        size_t filesize = fileR.tellg();
+        fileR.seekg(0, std::ios::beg);
+
+        BarTick b(0,0,0);
+        BarTickMemcopier bM(b);
+        const int iBlockSize (  sizeof (Storage::data_type)
+                        + sizeof (b.Close())
+                        + sizeof (b.Volume())
+                        + sizeof (b.Period())
+                        );
+        char cBuffer[iBlockSize];
+        int iInBuffPointer{0};
+        int iState{0};
+
+        const size_t iRecordsMax {filesize/iBlockSize};
+
+
+        //std::map<std::time_t,std::vector<BarTick>> mvHolder;
+
+        ssOut<<"Storage contains "<<iRecordsMax<<" records.\n";
+
+
+        std::time_t tmStartDel{0};
+        std::time_t tmEndDel{0};
+        bool bWasRawDelete{false};
+
+
+        while(fileR.read(cBuffer,iBlockSize)){
+
+            iInBuffPointer = 0;
+
+            memcpy(&iState,     cBuffer + iInBuffPointer, sizeof (Storage::data_type));   iInBuffPointer += sizeof (Storage::data_type);
+            memcpy(&bM.Close(), cBuffer + iInBuffPointer, sizeof (bM.Close()));           iInBuffPointer += sizeof (bM.Close());
+            memcpy(&bM.Volume(),cBuffer + iInBuffPointer, sizeof (bM.Volume()));          iInBuffPointer += sizeof (bM.Volume());
+            memcpy(&bM.Period(),cBuffer + iInBuffPointer, sizeof (bM.Period()));          iInBuffPointer += sizeof (bM.Period());
+            ///////////////
+            if (iState == Storage::data_type::del_from){
+                if (bWasRawDelete){
+                    ssOut<<"Broken delete sequence in storage file: "<<sFileName;
+                    return false;
+                }
+                tmStartDel = b.Period();
+                bWasRawDelete = true;
+            }
+            else if (iState == Storage::data_type::del_to){
+                tmEndDel = b.Period();
+
+                for(auto & e:mvHolder){
+                    if (e.first >= tmStartDel && e.first <= tmEndDel)
+                        e.second.clear();
+                }
+                bWasRawDelete = false;
+            }
+            else{
+                if (bWasRawDelete){
+                    ssOut<<"Broken delete sequence in storage file: "<<sFileName;
+                    return false;
+                }
+            }
+            if (b.Period() >= dtLoadBegin && b.Period() <= dtLoadEnd){
+
+                if (iState == Storage::data_type::usual || iState == Storage::data_type::new_sec){
+                    if (iState == Storage::data_type::new_sec){
+                        mvHolder[b.Period()].clear();
+
+                    }
+                    mvHolder[b.Period()].push_back(b);
+                }
+            }
+            /////////////////////////////////////////////////////////////
+            if(this_thread_flagInterrup.isSet()){
+                ssOut<<"loading process interrupted\n";
+                return false;
+            }
+        }
+        /////////////////////////////////////////////////////////////
+        /////////////////////////////////////////////////////////////
+
+        ssOut<<"Read from file: "<<strNamePart<<"\n";
+        return true;
+    }
+    else{
+        if (fileR.rdstate() == std::ios_base::goodbit) { ssOut << "stream state is goodbit\n";}
+        if (fileR.rdstate() == std::ios_base::badbit) { ssOut << "stream state is badbit\n";}
+        if (fileR.rdstate() == std::ios_base::failbit) { ssOut << "stream state is failbit\n";}
+        if (fileR.rdstate() == std::ios_base::eofbit) { ssOut << "stream state is eofbit\n";}
+
+        ssOut<<"Broken storage file: "<<sFileName;
+        return false;
+    }
+    return true;
+}
+//--------------------------------------------------------------------------------------------------------
+////////////////////////////////////////////////////////////////////
+// file switch stages:
+//      1   2   3   4   5   6   (7)
+//  1.  W   L2  L2  U   W   W   (W)
+//  2.  U   W   W   W   L2  L2  (U)
+//  3.  U   U   S   L1  L1  L1  (U)
+//  4.  L1  L1  L1  U   U   S   (L1)
+//
+// Description:
+//  W   - write (append)
+//  U   - undefined (unused)
+//  L1  - read only (read order: first)
+//  L2  - read only (read order: second)
+//  S   - shrinked (compilation of L1 + L2)
+
+//    ,vStorageW  {1,2,2,2,1,1}
+//    ,vStorageL1 {4,4,4,3,3,3}
+//    ,vStorageL2 {0,1,1,0,2,2}
+//    ,vStorageS  {0,0,3,0,0,4}
+
+//    ,vStorage1  {true ,true ,true ,false,true ,true }
+//    ,vStorage2  {false,true ,true ,true ,true ,true }
+//    ,vStorage3  {false,false,true ,true ,true ,true }
+//    ,vStorage4  {true ,true ,true ,false,false,true }
+//
+
+bool Storage::OptimizeStore(int iTickerID, std::time_t tMonth, bool & bToPlanNextShift,
+                   std::stringstream & ssOut)
+{
+
+    bToPlanNextShift = false;
+
+    char buffer[100];
+    std::tm * ptm = threadfree_localtime(&tMonth);
+    std::strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", ptm);
+    std::string strM(buffer);
+    ////////////////////////////////////////////////
+    tMonth = dateCastToMonth(tMonth);
+    std::pair<int,std::time_t> k{iTickerID,tMonth};
+    std::shared_lock lkInit(mutexQuotesStoreInit);
+    ////////////////////////////////////////////////
+
+    auto It (mpOptimizeMutexes.find(k));
+    if(It != mpOptimizeMutexes.end()){
+        std::unique_lock lk(mpOptimizeMutexes.at(k),std::defer_lock);
+        if (lk.try_lock()){
+
+            std::vector<std::vector<BarTick>> vBarList;
+
+            int iStage = mpStoreStages.at(k);
+            if (iStage <1 || iStage >6){
+                ssOut <<"\n\rCannot get state for data storage file for TickerID: "<<iTickerID;
+                return false;
+            }
+            ///
+            int iNewStage = iStage >= 6 ? 1 : iStage + 1;
+            ///
+
+            std::tm * tmT = threadfree_localtime(&tMonth);
+
+            std::stringstream ssControlFileNamePart;
+            ssControlFileNamePart <<iTickerID<<"_";
+            ssControlFileNamePart <<std::setfill('0');
+            ssControlFileNamePart <<std::right<< std::setw(4)<<tmT->tm_year+1900;
+            ssControlFileNamePart <<std::right<< std::setw(2)<<(tmT->tm_mon+1);
+
+            std::stringstream ssControlPath;
+            ssControlPath << pathStorageDir.c_str();
+            ssControlPath <<"/"<<iTickerID<<"/";
+            ssControlPath <<ssControlFileNamePart.str();
+
+
+            //if( iStage <= 5) // TODO: delete. for tests
+            {
+
+            if (vStorageS[iStage - 1] == 0){
+
+
+
+                SwitchStage(k,ssControlPath.str(), ssControlFileNamePart.str(), iNewStage,ssOut);
+
+                bToPlanNextShift = true;
+                //return true;
+            }
+            else{
+
+                std::time_t dtLoadBegin = Bar::DateAccommodate(tMonth,Bar::eInterval::pMonth);
+                std::time_t dtLoadEnd = Bar::DateAccommodate(tMonth,Bar::eInterval::pMonth,true) - 1;
+
+
+                std::map<std::time_t,std::vector<BarTick>> mvHolder;
+
+                if (vStorageL1[iStage - 1]>0){
+                    std::stringstream ssNamePart;
+                    ssNamePart << ssControlFileNamePart.str()<<"_"<<vStorageL1[iStage-1];
+                    if (!ReadFromStoreFile(iTickerID, tMonth,mvHolder,dtLoadBegin, dtLoadEnd,ssNamePart.str(),ssOut)){
+                        return false;
+                    }
+                }
+
+
+                if (vStorageL2[iStage - 1]>0){
+                    std::stringstream ssNamePart;
+                    ssNamePart << ssControlFileNamePart.str()<<"_"<<vStorageL2[iStage-1];
+                    if (!ReadFromStoreFile(iTickerID, tMonth,mvHolder,dtLoadBegin, dtLoadEnd,ssNamePart.str(),ssOut)){
+                        return false;
+                    }
+                }
+
+
+                std::stringstream ssFullName;
+                ssFullName <<ssControlPath.str()<<"_"<<vStorageS[iStage-1];
+
+                if (!WriteMapToStore(ssFullName.str(),  mvHolder, ssOut)){
+                    return false;
+                }
+
+                SwitchStage(k,ssControlPath.str(), ssControlFileNamePart.str(), iNewStage, ssOut);
+
+                //bToPlanNextShift = false;
+                //return true;
+            }
+            }
+        }
+        else{
+            //now optimisation is going on somewere
+        }
+    }
+    else{
+        //no data files to optimize
+    }
+    return true;
+}
+//--------------------------------------------------------------------------------------------------------
+bool Storage::SwitchStage(std::pair<int,std::time_t> k, std::string sPath, std::string sFileNamePart, int iNewStage,
+                          std::stringstream & ssOut)
+{
+    std::unique_lock entryLk(mpStoreMutexes.at(k));
+    mpStoreStages[k] = iNewStage;
+
+    std::ofstream ofCF(sPath);
+    if(ofCF.good()){
+        ofCF<<iNewStage;
+    }
+    else{
+        ssOut<<"Broken File: "<<sPath;
+        return false;
+    }
+
+    std::stringstream ssDevNull;
+    CreateDataFilesForEntry(sPath,sFileNamePart,iNewStage,ssDevNull);
+    ssOut << ssDevNull.str(); // TODO: delete. for tests
+    return true;
+}
+//--------------------------------------------------------------------------------------------------------
+
+bool Storage::WriteMapToStore(std::string sFileName, std::map<std::time_t,std::vector<BarTick>> & mvHolder, std::stringstream & ssOut)
+{
+    BarTick bb(0,0,0);
+    BarTickMemcopier bM(bb);
+    const int iOutBuffMax {65535};
+    char cOutBuff[iOutBuffMax];
+    int iOutBuffPointer {0};
+    Storage::data_type iState = Storage::data_type::new_sec;
+
+    int iBlockSize (  sizeof (Storage::data_type)
+                    + sizeof (bb.Close())
+                    + sizeof (bb.Volume())
+                    + sizeof (bb.Period())
+                    );
+
+//    if (std::filesystem::exists(sFileName) && !std::filesystem::remove(sFileName)){
+//        ssOut <<"Cannot clear storage file\n";
+//        return false;
+//    }
+
+    std::ofstream fileW (sFileName,/*std::ios_base::app |*/ std::ios_base::binary);
+
+    if(fileW){
+
+        for (const auto & v:mvHolder){
+            if (iOutBuffPointer!=0 && iOutBuffPointer + iBlockSize * v.second.size() >  iOutBuffMax ){
+                ///write
+                if(!fileW.write(cOutBuff,iOutBuffPointer)){
+                    ssOut <<"Unsuccessful write operation\n";
+                    return false;
+                }
+                iOutBuffPointer = 0;
+            }
+            auto It (v.second.begin());
+            if (It != v.second.end()){
+
+                bb = *It;
+
+                iState = Storage::data_type::new_sec;
+                memcpy(cOutBuff + iOutBuffPointer,&iState,      sizeof (Storage::data_type));      iOutBuffPointer += sizeof (Storage::data_type);
+                memcpy(cOutBuff + iOutBuffPointer,&bM.Close(),  sizeof (bM.Close()));           iOutBuffPointer += sizeof (bM.Close());
+                memcpy(cOutBuff + iOutBuffPointer,&bM.Volume(), sizeof (bM.Volume()));          iOutBuffPointer += sizeof (bM.Volume());
+                memcpy(cOutBuff + iOutBuffPointer,&bM.Period(), sizeof (bM.Period()));          iOutBuffPointer += sizeof (bM.Period());
+
+
+                iState = Storage::data_type::usual;
+                It++;
+
+            }
+            while (It != v.second.end()){
+                if (iOutBuffPointer + iBlockSize >  iOutBuffMax ){
+                    ///write
+                    if(!fileW.write(cOutBuff,iOutBuffPointer)){
+                        ssOut <<"Unsuccessful write operation\n";
+                        return false;
+                    }
+                    iOutBuffPointer = 0;
+                }
+                bb = *It;
+
+                memcpy(cOutBuff + iOutBuffPointer,&iState,   sizeof (Storage::data_type));      iOutBuffPointer += sizeof (Storage::data_type);
+                memcpy(cOutBuff + iOutBuffPointer,&bM.Close(),  sizeof (bM.Close()));           iOutBuffPointer += sizeof (bM.Close());
+                memcpy(cOutBuff + iOutBuffPointer,&bM.Volume(), sizeof (bM.Volume()));          iOutBuffPointer += sizeof (bM.Volume());
+                memcpy(cOutBuff + iOutBuffPointer,&bM.Period(), sizeof (bM.Period()));          iOutBuffPointer += sizeof (bM.Period());
+
+                if(this_thread_flagInterrup.isSet()){
+                    ssOut<<"loading process interrupted";
+                    return  false;
+                }
+
+                It++;
+            }
+        }
+        // write
+        if (iOutBuffPointer > 0){
+            if(!fileW.write(cOutBuff,iOutBuffPointer)){
+                ssOut <<"Unsuccessful write operation\n";
+                return false;
+            }
+        }
+    }
+    else{
+        if (fileW.rdstate() == std::ios_base::goodbit) { ssOut << "stream state is goodbit\n";}
+        if (fileW.rdstate() == std::ios_base::badbit) { ssOut << "stream state is badbit\n";}
+        if (fileW.rdstate() == std::ios_base::failbit) { ssOut << "stream state is failbit\n";}
+        if (fileW.rdstate() == std::ios_base::eofbit) { ssOut << "stream state is eofbit\n";}
+
+        ssOut<<"Broken storage file: "<<sFileName;
+        return false;
+    }
+
+    ////////////////////////////////////////////
+    return true;
+
+}
+//--------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------

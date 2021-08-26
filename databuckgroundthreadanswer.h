@@ -13,9 +13,11 @@ class dataBuckgroundThreadAnswer
 {
 
 public:
-    enum eAnswerType:int {nop,famImportBegin,famImportEnd,famImportCurrent,LoadActivity,TextInfoMessage
+    enum eAnswerType:int {nop,
+                          famImportBegin,famImportEnd,famImportCurrent,LoadActivity,TextInfoMessage
                           ,storagLoadFromStorageGraphBegin,storagLoadFromStorageGraphEnd, logText
                           ,storagLoadToGraphBegin,storagLoadToGraphEnd, logCriticalError, testPvBars
+                          ,storageOptimisationBegin, storageOptimisationEnd
                          };
 
     //-------------------------------------------------------------------------------
