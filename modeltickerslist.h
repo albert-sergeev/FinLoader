@@ -6,13 +6,13 @@
 #include <QSortFilterProxyModel>
 #include "ticker.h"
 
-class TickersListModel : public QAbstractTableModel
+class modelTickersList : public QAbstractTableModel
 {
     Q_OBJECT
 
 public:
 
-    explicit TickersListModel(std::vector<Ticker> &v,std::vector<Market> &m,
+    explicit modelTickersList(std::vector<Ticker> &v,std::vector<Market> &m,
                               std::map<int,std::pair<bool,std::chrono::time_point<std::chrono::steady_clock>>> &mS,
                               QObject *parent = nullptr):
         QAbstractTableModel{parent},vTickersLst{&v},vMarketsLst{&m},mBlinkedState{&mS}{};
@@ -86,7 +86,7 @@ public:
 
     const Ticker & getTicker(const QModelIndex &index){
         QModelIndex src_indx =  mapToSource(index);
-        return  ((TickersListModel*)this->sourceModel())->getTicker(src_indx);
+        return  ((modelTickersList*)this->sourceModel())->getTicker(src_indx);
     };
 
     bool setData(const QModelIndex &index,const QVariant &value, int role = Qt::DisplayRole) override
@@ -96,23 +96,23 @@ public:
     };
     bool setData(const QModelIndex& index,const Ticker &t,int role) {
         QModelIndex src_indx =  mapToSource(index);
-        return  ((TickersListModel*)this->sourceModel())->setData(src_indx,t,role);
+        return  ((modelTickersList*)this->sourceModel())->setData(src_indx,t,role);
     };
 
     int AddRow(Ticker &t){
-        int i_src= ((TickersListModel*)this->sourceModel())->AddRow(t);
+        int i_src= ((modelTickersList*)this->sourceModel())->AddRow(t);
         return mapFromSource(sourceModel()->index(i_src,0)).row();
     }
     bool removeRow(int i,const QModelIndex &parent = QModelIndex()){
         QModelIndex src_indx =  mapToSource(index(i,0));
-        return ((TickersListModel*)this->sourceModel())->removeRow(src_indx.row(),parent);
+        return ((modelTickersList*)this->sourceModel())->removeRow(src_indx.row(),parent);
     }
 
     bool filterAcceptsRow ( int source_row, const QModelIndex & source_parent ) const override
     {
         QModelIndex indx= sourceModel()->index(source_row, 0, source_parent);
         if(indx.isValid()){
-            const Ticker & t  (((TickersListModel*)this->sourceModel())->getTicker(indx));
+            const Ticker & t  (((modelTickersList*)this->sourceModel())->getTicker(indx));
             if (iDefaultMarket >=0 && t.MarketID() != iDefaultMarket){
                 return false;
             }

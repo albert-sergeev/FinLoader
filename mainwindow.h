@@ -26,8 +26,8 @@
 #include "importfinqotesform.h"
 #include "workerloader.h"
 #include "bar.h"
-#include "marketslistmodel.h"
-#include "tickerslistmodel.h"
+#include "modelmarketslist.h"
+#include "modeltickerslist.h"
 #include "storage.h"
 #include "threadpool.h"
 #include "datafinloadtask.h"
@@ -106,14 +106,14 @@ private:
     QSettings m_settings;
     Storage stStore;
     std::vector<Market> vMarketsLst;
-    MarketsListModel m_MarketLstModel;
+    modelMarketsList m_MarketLstModel;
 
     // for condig subwindow
     int iDefaultTickerMarket;
     bool bConfigTickerShowByName;
     bool bConfigTickerSortByName;
     std::vector<Ticker> vTickersLst;
-    TickersListModel m_TickerLstModel;
+    modelTickersList m_TickerLstModel;
 
     // for inport FinQuotes subwindow
     QString qsDefaultOpenDir;

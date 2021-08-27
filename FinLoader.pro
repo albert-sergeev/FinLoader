@@ -31,7 +31,8 @@ SOURCES += \
     importfinqotesform.cpp \
     main.cpp \
     mainwindow.cpp \
-    marketslistmodel.cpp \
+    modelmarketslist.cpp \
+    modeltickerslist.cpp \
     plusbutton.cpp \
     storage.cpp \
     styledswitcher.cpp \
@@ -39,7 +40,6 @@ SOURCES += \
     threadfreelocaltime.cpp \
     threadpool.cpp \
     ticker.cpp \
-    tickerslistmodel.cpp \
     workerloader.cpp
 
 HEADERS += \
@@ -57,7 +57,8 @@ HEADERS += \
     graphviewform.h \
     importfinqotesform.h \
     mainwindow.h \
-    marketslistmodel.h \
+    modelmarketslist.h \
+    modeltickerslist.h \
     plusbutton.h \
     storage.h \
     styledswitcher.h \
@@ -65,7 +66,6 @@ HEADERS += \
     threadfreelocaltime.h \
     threadpool.h \
     ticker.h \
-    tickerslistmodel.h \
     workerloader.h
 
 FORMS += \

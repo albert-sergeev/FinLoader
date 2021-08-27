@@ -13,8 +13,8 @@
 #include<ostream>
 
 
-ImportFinQuotesForm::ImportFinQuotesForm(MarketsListModel *modelM, int DefaultTickerMarket,
-                                 TickersListModel *modelT,
+ImportFinQuotesForm::ImportFinQuotesForm(modelMarketsList *modelM, int DefaultTickerMarket,
+                                 modelTickersList *modelT,
                                  QWidget *parent) :
     QWidget(parent),
     iDefaultTickerMarket{DefaultTickerMarket},

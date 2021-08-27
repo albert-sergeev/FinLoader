@@ -1,4 +1,4 @@
-#include "tickerslistmodel.h"
+#include "modeltickerslist.h"
 #include "storage.h"
 #include<iostream>
 
@@ -10,7 +10,7 @@
 //}
 
 
-QVariant TickersListModel::headerData(int nSection, Qt::Orientation orientation, int nRole) const
+QVariant modelTickersList::headerData(int nSection, Qt::Orientation orientation, int nRole) const
 {
     if(nRole!=Qt::DisplayRole){
         return QVariant();
@@ -23,7 +23,7 @@ QVariant TickersListModel::headerData(int nSection, Qt::Orientation orientation,
     }
 }
 //--------------------------------------------------------------------------------------------------------
-int TickersListModel::rowCount(const QModelIndex &parent) const
+int modelTickersList::rowCount(const QModelIndex &parent) const
 {
     // For list models only the root node (an invalid parent) should return the list's size. For all
     // other (valid) parents, rowCount() should return 0 so that it does not become a tree model.
@@ -32,7 +32,7 @@ int TickersListModel::rowCount(const QModelIndex &parent) const
     return (int)vTickersLst->size();
 }
 //--------------------------------------------------------------------------------------------------------
-QVariant TickersListModel::data(const QModelIndex &index, int nRole) const
+QVariant modelTickersList::data(const QModelIndex &index, int nRole) const
 {
     if (!index.isValid())
         return QVariant();
@@ -83,7 +83,7 @@ QVariant TickersListModel::data(const QModelIndex &index, int nRole) const
     return  QVariant();
 }
 ////--------------------------------------------------------------------------------------------------------
-void TickersListModel::blinkTicker(int TickerID){
+void modelTickersList::blinkTicker(int TickerID){
 
     auto It = std::find_if(vTickersLst->begin(),vTickersLst->end(),[&](const Ticker &t){
                         return t.TickerID() == TickerID;});
@@ -96,7 +96,7 @@ void TickersListModel::blinkTicker(int TickerID){
 
 }
 ////--------------------------------------------------------------------------------------------------------
-QString TickersListModel::getMarketNameByID(const int ID) const
+QString modelTickersList::getMarketNameByID(const int ID) const
 {
     for (const Market &m: *vMarketsLst){
         if (m.MarketID() == ID){
@@ -106,7 +106,7 @@ QString TickersListModel::getMarketNameByID(const int ID) const
     return "";
 }
 ////--------------------------------------------------------------------------------------------------------
-const Ticker & TickersListModel::getTicker(const QModelIndex &index)
+const Ticker & modelTickersList::getTicker(const QModelIndex &index)
 {
     if(index.row() < 0    || index.row() >= (int)vTickersLst->size()) {
         throw std::invalid_argument("Index out of range {MarketsListModel::getMarket}");
@@ -114,13 +114,13 @@ const Ticker & TickersListModel::getTicker(const QModelIndex &index)
     return vTickersLst->at(index.row());
 }
 //--------------------------------------------------------------------------------------------------------
-bool TickersListModel::setData(const QModelIndex &index,const QVariant &value,int nRole)
+bool modelTickersList::setData(const QModelIndex &index,const QVariant &value,int nRole)
 {
         return QAbstractTableModel::setData(index,value,nRole);
 }
 //--------------------------------------------------------------------------------------------------------
 
-bool TickersListModel::setData(const QModelIndex& index,const Ticker &t,int role)
+bool modelTickersList::setData(const QModelIndex& index,const Ticker &t,int role)
 {
     if(index.isValid() && role == Qt::EditRole){
         (*vTickersLst)[index.row()] = t;
@@ -129,7 +129,7 @@ bool TickersListModel::setData(const QModelIndex& index,const Ticker &t,int role
     return  0;
 }
 //--------------------------------------------------------------------------------------------------------
-int TickersListModel::AddRow(Ticker &t)
+int modelTickersList::AddRow(Ticker &t)
 {
     beginInsertRows(QModelIndex(),(int)vTickersLst->size(),(int)vTickersLst->size());
     vTickersLst->push_back(t);
@@ -148,7 +148,7 @@ int TickersListModel::AddRow(Ticker &t)
 }
 
 //--------------------------------------------------------------------------------------------------------
-bool TickersListModel::removeRow(int indx,const QModelIndex &parent )
+bool modelTickersList::removeRow(int indx,const QModelIndex &parent )
 {
 
     if(parent.isValid()){
@@ -176,14 +176,14 @@ bool TickersListModel::removeRow(int indx,const QModelIndex &parent )
     }
 }
 //--------------------------------------------------------------------------------------------------------
-Qt::ItemFlags TickersListModel::flags(const QModelIndex &indx)const
+Qt::ItemFlags modelTickersList::flags(const QModelIndex &indx)const
 {
     Qt::ItemFlags flgs=QAbstractTableModel::flags(indx);
     if(indx.isValid()) return flgs/*|Qt::ItemIsEditable*/;
     else return flgs;
 }
 //--------------------------------------------------------------------------------------------------------
-bool TickersListModel::searchTickerBySign(const std::string &sSign, QModelIndex & indx)
+bool modelTickersList::searchTickerBySign(const std::string &sSign, QModelIndex & indx)
 {
     auto It = std::find_if(vTickersLst->begin(),vTickersLst->end(),[&](const auto &c){
         return c.TickerSign() == sSign && c.TickerSignFinam() == "";
@@ -198,7 +198,7 @@ bool TickersListModel::searchTickerBySign(const std::string &sSign, QModelIndex 
     return  true;
 }
 //--------------------------------------------------------------------------------------------------------
-bool TickersListModel::searchTickerByFinamSign(const std::string &sSign, QModelIndex & indx)
+bool modelTickersList::searchTickerByFinamSign(const std::string &sSign, QModelIndex & indx)
 {
     auto It = std::find_if(vTickersLst->begin(),vTickersLst->end(),[&](const auto &c){
                         return c.TickerSignFinam() == sSign;
@@ -214,7 +214,7 @@ bool TickersListModel::searchTickerByFinamSign(const std::string &sSign, QModelI
 }
 
 //--------------------------------------------------------------------------------------------------------
-bool TickersListModel::searchTickerByTickerID(const int TickerID, QModelIndex & indx)
+bool modelTickersList::searchTickerByTickerID(const int TickerID, QModelIndex & indx)
 {
     auto It = std::find_if(vTickersLst->begin(),vTickersLst->end(),[&](const auto &c){
                         return c.TickerID() == TickerID;

@@ -1,4 +1,4 @@
-#include "marketslistmodel.h"
+#include "modelmarketslist.h"
 #include<iostream>
 #include<algorithm>
 //--------------------------------------------------------------------------------------------------------
@@ -8,7 +8,7 @@ MarketsListModel::MarketsListModel(QObject *parent)
 {
 }*/
 //--------------------------------------------------------------------------------------------------------
-QVariant MarketsListModel::headerData(int nSection, Qt::Orientation orientation, int nRole) const
+QVariant modelMarketsList::headerData(int nSection, Qt::Orientation orientation, int nRole) const
 {
     if(nRole!=Qt::DisplayRole){
         return QVariant();
@@ -21,7 +21,7 @@ QVariant MarketsListModel::headerData(int nSection, Qt::Orientation orientation,
     }
 }
 //--------------------------------------------------------------------------------------------------------
-int MarketsListModel::rowCount(const QModelIndex &parent) const
+int modelMarketsList::rowCount(const QModelIndex &parent) const
 {
     // For list models only the root node (an invalid parent) should return the list's size. For all
     // other (valid) parents, rowCount() should return 0 so that it does not become a tree model.
@@ -30,7 +30,7 @@ int MarketsListModel::rowCount(const QModelIndex &parent) const
     return (int)vMarketsLst->size();
 }
 //--------------------------------------------------------------------------------------------------------
-QVariant MarketsListModel::data(const QModelIndex &index, int nRole) const
+QVariant modelMarketsList::data(const QModelIndex &index, int nRole) const
 {
     if (!index.isValid())
         return QVariant();
@@ -53,7 +53,7 @@ QVariant MarketsListModel::data(const QModelIndex &index, int nRole) const
     return  QVariant();
 }
 //--------------------------------------------------------------------------------------------------------
-Market & MarketsListModel::getMarket(const QModelIndex &index)
+Market & modelMarketsList::getMarket(const QModelIndex &index)
 {
     if(index.row() < 0    || index.row() >= (int)vMarketsLst->size()) {
         throw std::invalid_argument("Index out of range {MarketsListModel::getMarket}");
@@ -61,7 +61,7 @@ Market & MarketsListModel::getMarket(const QModelIndex &index)
     return vMarketsLst->at(index.row());
 }
 //--------------------------------------------------------------------------------------------------------
-int MarketsListModel::AddRow(Market &m)
+int modelMarketsList::AddRow(Market &m)
 {
     beginInsertRows(QModelIndex(),(int)vMarketsLst->size(),(int)vMarketsLst->size());
     vMarketsLst->push_back(m);
@@ -80,7 +80,7 @@ int MarketsListModel::AddRow(Market &m)
 }
 
 //--------------------------------------------------------------------------------------------------------
-bool MarketsListModel::removeRow(int indx,const QModelIndex &parent )
+bool modelMarketsList::removeRow(int indx,const QModelIndex &parent )
 {
     if(parent.isValid()){
         return false;
@@ -120,14 +120,14 @@ bool MarketsListModel::removeRow(int indx,const QModelIndex &parent )
 
 //--------------------------------------------------------------------------------------------------------
 
-Qt::ItemFlags MarketsListModel::flags(const QModelIndex &indx)const
+Qt::ItemFlags modelMarketsList::flags(const QModelIndex &indx)const
 {
     Qt::ItemFlags flgs=QAbstractTableModel::flags(indx);
     if(indx.isValid()) return flgs/*|Qt::ItemIsEditable*/;
     else return flgs;
 }
 //--------------------------------------------------------------------------------------------------------
-bool MarketsListModel::searchMarketByMarketID(const int MarketID, QModelIndex & indx)
+bool modelMarketsList::searchMarketByMarketID(const int MarketID, QModelIndex & indx)
 {
     auto It = std::find_if(vMarketsLst->begin(),vMarketsLst->end(),[&](const auto &c){
                         return c.MarketID() == MarketID;

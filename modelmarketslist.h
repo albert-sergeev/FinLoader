@@ -5,7 +5,7 @@
 #include <vector>
 #include "ticker.h"
 
-class MarketsListModel : public QAbstractTableModel
+class modelMarketsList : public QAbstractTableModel
 {
     Q_OBJECT
 
@@ -15,7 +15,7 @@ private:
 
 public:
 
-    explicit MarketsListModel(std::vector<Market> &v, QObject *parent = nullptr):QAbstractTableModel{parent},vMarketsLst{&v}{};
+    explicit modelMarketsList(std::vector<Market> &v, QObject *parent = nullptr):QAbstractTableModel{parent},vMarketsLst{&v}{};
 
     // Header:
     QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;

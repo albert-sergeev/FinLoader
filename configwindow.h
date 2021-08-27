@@ -6,8 +6,8 @@
 #include <QTime>
 #include <QSortFilterProxyModel>
 
-#include "marketslistmodel.h"
-#include "tickerslistmodel.h"
+#include "modelmarketslist.h"
+#include "modeltickerslist.h"
 #include "storage.h"
 #include "styledswitcher.h"
 
@@ -24,8 +24,8 @@ class ConfigWindow : public QWidget
 //////////////////////////////////////////
 public:
 
-    explicit ConfigWindow(MarketsListModel *modelM,int iDefaultTickerMarket,
-                          TickersListModel *modelT, bool ShowByName,bool SortByName,
+    explicit ConfigWindow(modelMarketsList *modelM,int iDefaultTickerMarket,
+                          modelTickersList *modelT, bool ShowByName,bool SortByName,
                           QWidget *parent = nullptr);
     ~ConfigWindow();
 private:
@@ -57,8 +57,8 @@ private:
     StyledSwitcher *swtUpToSysWholeMarket;
 
     int iDefaultTickerMarket;
-    MarketsListModel *modelMarket;
-    TickersListModel *modelTicker;
+    modelMarketsList *modelMarket;
+    modelTickersList *modelTicker;
     TickerProxyListModel proxyTickerModel;
 
 

@@ -5,8 +5,8 @@
 #include <QDateTime>
 #include<filesystem>
 
-#include "marketslistmodel.h"
-#include "tickerslistmodel.h"
+#include "modelmarketslist.h"
+#include "modeltickerslist.h"
 #include "storage.h"
 #include "bar.h"
 #include "datafinloadtask.h"
@@ -36,8 +36,8 @@ private:
 
     int iDefaultTickerMarket;
 
-    MarketsListModel * const modelMarket;
-    TickersListModel * const modelTicker;
+    modelMarketsList * const modelMarket;
+    modelTickersList * const modelTicker;
     TickerProxyListModel proxyTickerModel;
 
     bool bInLoading{false};
@@ -58,8 +58,8 @@ private:
     QDateTime qdtMax;
 
 public:
-    explicit ImportFinQuotesForm(MarketsListModel *modelM, int DefaultTickerMarket,
-                             TickersListModel *modelT,/*bool ShowByName,bool SortByName,*/
+    explicit ImportFinQuotesForm(modelMarketsList *modelM, int DefaultTickerMarket,
+                             modelTickersList *modelT,/*bool ShowByName,bool SortByName,*/
                              QWidget *parent = nullptr);
     ~ImportFinQuotesForm();
 

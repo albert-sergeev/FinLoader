@@ -8,8 +8,8 @@
 
 
 //--------------------------------------------------------------------------------------------------------
-ConfigWindow::ConfigWindow(MarketsListModel *modelM,int DefaultTickerMarket,
-                           TickersListModel *modelT, bool ShowByName,bool SortByName,
+ConfigWindow::ConfigWindow(modelMarketsList *modelM,int DefaultTickerMarket,
+                           modelTickersList *modelT, bool ShowByName,bool SortByName,
                            QWidget *parent) :
     QWidget(parent)
     , bDataMarketChanged{false}
