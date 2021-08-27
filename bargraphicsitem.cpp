@@ -16,8 +16,8 @@ QRectF BarGraphicsItem::boundingRect() const
     QSizeF size;
     if (IsTick){
         ptPosition = QPointF(-((BarWidth+1)/2),
-                             -(HScale() * nTickHalfHeight)-nPenWidth);
-        size = QSizeF(BarWidth , (HScale()*nTickHalfHeight*2)+2*nPenWidth);
+                             -(/*HScale() **/ nTickHalfHeight)-nPenWidth);
+        size = QSizeF(BarWidth , (/*HScale()**/nTickHalfHeight*2)+2*nPenWidth);
     }
     else{
         ptPosition = QPointF(-((BarWidth+1)/2),
@@ -47,7 +47,7 @@ void BarGraphicsItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, 
 
     if (IsOHLC()){
         if (IsTick){
-            painter->drawLine(0                ,-(HScale() * nTickHalfHeight),0                  ,+(HScale() * nTickHalfHeight) ); // HLine
+            painter->drawLine(0                ,-(/*HScale() **/ nTickHalfHeight),0                  ,+(/*HScale() **/ nTickHalfHeight) ); // HLine
           //painter->drawLine(-nPenWidth * 2   ,0                            ,0                  ,0                             ); // OpenLine
             painter->drawLine(0                ,0                            ,0 + nPenWidth * 2  ,0                             ); // CloseLine
         }

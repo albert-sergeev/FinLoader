@@ -61,8 +61,8 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
     connect(btnScaleVViewPlus,SIGNAL(clicked(bool)),this,SLOT(slotVScaleQuotesClicked(bool)));
     connect(btnScaleVViewMinus,SIGNAL(clicked(bool)),this,SLOT(slotVScaleQuotesClicked(bool)));
 
-    connect(btnScaleVVolumePlus,SIGNAL(clicked(bool)),this,SLOT(slotHScaleVolumeClicked(bool)));
-    connect(btnScaleVVolumeMinus,SIGNAL(clicked(bool)),this,SLOT(slotHScaleVolumeClicked(bool)));
+    connect(btnScaleVVolumePlus,SIGNAL(clicked(bool)),this,SLOT(slotVScaleVolumeClicked(bool)));
+    connect(btnScaleVVolumeMinus,SIGNAL(clicked(bool)),this,SLOT(slotVScaleVolumeClicked(bool)));
 
 
     btnScaleHViewPlus->setToolTip(tr("increase the horizontal scale of the graph"));
@@ -213,7 +213,7 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
 
    // {ThreadFreeCout pcout; pcout<<"const out\n";}
 
-    connect(ui->btnTestLoad,SIGNAL(clicked()),this,SLOT(slotLoadGraphButton()));
+//    connect(ui->btnTestLoad,SIGNAL(clicked()),this,SLOT(slotLoadGraphButton()));
 
 
 }
@@ -409,7 +409,10 @@ bool GraphViewForm::RepainInvalidRange(RepainTask & data)
             // resize Scene rect for Volume
             if (iStoredMaxSize !=iSize || bNeedRescale || data.bNeedToRescale){
 
-                int iNewVolumeSceneH = (mVVolumeScale.at(iSelectedInterval) * (dStoredVolumeHighMax - dStoredVolumeLowMin) );
+                int iNewVolumeSceneH = (mVVolumeScale.at(iSelectedInterval) * (dStoredVolumeHighMax - dStoredVolumeLowMin) + iVolumeViewPortHighStrip);
+                if (ui->grViewVolume->maximumHeight() > iNewVolumeSceneH){
+                    iNewVolumeSceneH = ui->grViewVolume->maximumHeight();
+                }
 
                 QRectF newRec(0,-iNewVolumeSceneH,
                               (iSize + iLeftShift + iRightShift) * BarGraphicsItem::BarWidth * dHScale  ,
@@ -1038,45 +1041,85 @@ void GraphViewForm::slotHScaleQuotesClicked(bool bPlus)
         if (bPlus) dHScale *= 1.1;
         else dHScale *= 0.9;
 
-//        std::time_t tMinDate = holder->getViewGraphDateMin(Bar::eInterval::pTick);
-//        std::time_t tMaxDate =  holder->getViewGraphDateMax(Bar::eInterval::pTick);
         Erase();
-        PaintViewPort(true,true,true,true);
-        //slotInvalidateGraph(tMinDate,tMaxDate,true);
-        //InvalidateScenes();
+
+        int iNewWidth =  (iStoredMaxSize + iLeftShift + iRightShift) * BarGraphicsItem::BarWidth * dHScale;
+
+        QRectF newRec(0,ui->grViewQuotes->scene()->sceneRect().y(),
+                      iNewWidth  ,
+                      ui->grViewQuotes->scene()->sceneRect().height()
+                      );
+        disconnect(ui->grHorizScroll->horizontalScrollBar(),SIGNAL(valueChanged(int)),this,SLOT(slotHorizontalScrollBarValueChanged(int)));
+        grScene->setSceneRect(newRec);
+        connect(ui->grHorizScroll->horizontalScrollBar(),SIGNAL(valueChanged(int)),this,SLOT(slotHorizontalScrollBarValueChanged(int)));
+
+        PaintViewPort(true,true,true,false);
+
+        if (tStoredRightPointPosition != 0){
+            SetSliderToPos(tStoredRightPointPosition, iStoredRightAggregate);
+        }
+        else{
+            SetSliderToPos(tStoredMaxDate, iRightShift);
+        }
+
     }
 }
 void GraphViewForm::slotVScaleQuotesClicked(bool bPlus)
 {
-    if (mVScale[iSelectedInterval] ==0) mVScale[iSelectedInterval] = 1.0;
-    if (bPlus) mVScale[iSelectedInterval] *= 1.1;
-    else mVScale[iSelectedInterval] *= 0.9;
+    int iNewViewPortH = (mVScale.at(iSelectedInterval) * (dStoredHighMax - dStoredLowMin)  + iViewPortLowStrip + iViewPortHighStrip );
 
-//    std::time_t tMinDate = holder->getViewGraphDateMin(Bar::eInterval::pTick);
-//    std::time_t tMaxDate =  holder->getViewGraphDateMax(Bar::eInterval::pTick);
-//    EraseFrames();
-//    slotInvalidateGraph(tMinDate,tMaxDate,true);
-//    InvalidateScenes();
-    Erase();
-    PaintViewPort(true,true,true,false);
+    if (mVScale[iSelectedInterval] ==0) mVScale[iSelectedInterval] = 1.0;
+
+    if (iViewPortHeight < iNewViewPortH || bPlus){
+        if (bPlus) mVScale[iSelectedInterval] *= 1.1;
+        else mVScale[iSelectedInterval] *= 0.9;
+
+        EraseFrames();
+        EraseBars();
+
+        ui->grViewL1->scene()->invalidate(ui->grViewL1->sceneRect());
+        ui->grViewR1->scene()->invalidate(ui->grViewR1->sceneRect());
+
+        iNewViewPortH = (mVScale.at(iSelectedInterval) * (dStoredHighMax - dStoredLowMin)  + iViewPortLowStrip + iViewPortHighStrip );
+
+        if ( iViewPortHeight > iNewViewPortH){
+            iNewViewPortH = iViewPortHeight;
+        }
+
+        QRectF newRec(0,-iNewViewPortH,
+                      ui->grViewQuotes->scene()->sceneRect().width()  ,
+                      iNewViewPortH
+                      );
+        disconnect(ui->grHorizScroll->horizontalScrollBar(),SIGNAL(valueChanged(int)),this,SLOT(slotHorizontalScrollBarValueChanged(int)));
+        grScene->setSceneRect(newRec);
+        connect(ui->grHorizScroll->horizontalScrollBar(),SIGNAL(valueChanged(int)),this,SLOT(slotHorizontalScrollBarValueChanged(int)));
+
+        PaintViewPort(true,true,false,false);
+    }
 }
-void GraphViewForm::slotHScaleVolumeClicked(bool bPlus)
+void GraphViewForm::slotVScaleVolumeClicked(bool bPlus)
 {
 
     if (mVVolumeScale[iSelectedInterval] ==0) mVVolumeScale[iSelectedInterval] = 1.0;
     if (bPlus) mVVolumeScale[iSelectedInterval] *= 1.1;
     else mVVolumeScale[iSelectedInterval] *= 0.9;
 
+
     EraseLinesLower(mShowedVolumes,        0, ui->grViewVolume->scene());
+
+    int iNewVolumeSceneH = (mVVolumeScale.at(iSelectedInterval) * (dStoredVolumeHighMax - dStoredVolumeLowMin) + iVolumeViewPortHighStrip);
+    if (ui->grViewVolume->maximumHeight() > iNewVolumeSceneH){
+        iNewVolumeSceneH = ui->grViewVolume->maximumHeight();
+    }
+
+    QRectF newRec(0,-iNewVolumeSceneH,
+                  ui->grViewVolume->scene()->sceneRect().width(),
+                  iNewVolumeSceneH
+                  );
+
+    ui->grViewVolume->scene()->setSceneRect(newRec);
+
     PaintViewPort(false,false,true,false);
-
-    //ui->grViewVolume->scene()->invalidate(ui->grViewVolume->scene()->sceneRect());
-    //ui->grViewVolume->scene()->invalidate(ui->grViewVolume->sceneRect());
-
-//    {
-//        ThreadFreeCout pcout;
-//        pcout <<( (bPlus)? "Volume plus":"Volume minus")<<"\n";
-//    }
 }
 //---------------------------------------------------------------------------------------------------------------
 void GraphViewForm::Erase()
@@ -1252,7 +1295,7 @@ void GraphViewForm::slotPeriodButtonChanged()
     //EraseLinesFrames();
     Erase();
 
-    slotInvalidateGraph(tStoredMinDate, tStoredMaxDate);
+    slotInvalidateGraph(tStoredMinDate, tStoredMaxDate,true);
 
 }
 //---------------------------------------------------------------------------------------------------------------

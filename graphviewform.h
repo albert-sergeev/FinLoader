@@ -100,6 +100,7 @@ private:
     static const int iViewPortHighStrip{20};
     static const int iViewPortLowStrip{20};
 
+    static const int iVolumeViewPortHighStrip{3};
 
 public:
 signals:
@@ -133,7 +134,7 @@ protected slots:
 
     void slotHScaleQuotesClicked(bool);
     void slotVScaleQuotesClicked(bool);
-    void slotHScaleVolumeClicked(bool);
+    void slotVScaleVolumeClicked(bool);
 
     void dateTimeBeginChanged(const QDateTime&);
     void dateTimeEndChanged(const QDateTime&);
@@ -159,12 +160,6 @@ protected:
     template<typename T>
     void PainVerticalFramesT         (int iStart, int iEnd);
 
-//    template<typename T>
-//    void SliderValueChanged(int i);
-//    //------
-//    template<typename T>
-//    void SliderValueChangedBackup(int iMidPos);
-//    //------
 
     template<typename T>
     bool RepainInvalidRange(RepainTask &);
@@ -230,7 +225,7 @@ protected:
 
 
     inline double realYtoSceneY      (double y) {return  ((y - dStoredLowMin)       * (mVScale.at      (iSelectedInterval))) + iViewPortLowStrip;};
-    inline double realYtoSceneYVolume(double y) {return  ((y - dStoredVolumeLowMin) * (mVVolumeScale.at(iSelectedInterval)))                    ;};
+    inline double realYtoSceneYVolume(double y) {return  ((y - dStoredVolumeLowMin) * (mVVolumeScale.at(iSelectedInterval))) + iVolumeViewPortHighStrip;};
 
     // QWidget interface
 protected:

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1033</width>
-    <height>663</height>
+    <width>750</width>
+    <height>635</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -18,8 +18,8 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>700</width>
-    <height>200</height>
+    <width>750</width>
+    <height>280</height>
    </size>
   </property>
   <property name="maximumSize">
@@ -743,6 +743,9 @@
         </item>
         <item>
          <widget class="QDateTimeEdit" name="dtBeginDate">
+          <property name="displayFormat">
+           <string>dd.MM.yyyy</string>
+          </property>
           <property name="calendarPopup">
            <bool>true</bool>
           </property>
@@ -751,17 +754,10 @@
         <item>
          <widget class="QDateTimeEdit" name="dtEndDate">
           <property name="displayFormat">
-           <string>dd.MM.yyyy HH:mm</string>
+           <string>dd.MM.yyyy</string>
           </property>
           <property name="calendarPopup">
            <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="btnTestLoad">
-          <property name="text">
-           <string>Test load</string>
           </property>
          </widget>
         </item>
