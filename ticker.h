@@ -5,6 +5,8 @@
 #include<memory>
 #include<QVariant>
 
+#include "bar.h"
+
 
 //REDO: warning. in multithread redo to atomic tipe.
 static int iTickerCounter {1};
@@ -108,6 +110,8 @@ class Ticker
 {
 private:
 
+    // main data
+
     std::string             sTickerName;
     std::string             sTickerSign;
 
@@ -117,11 +121,23 @@ private:
     int                     iTickerID;
     int                     iMarketID;
 
+    // utility parameters
+
     bool                    bAutoLoad;
     bool                    bUpToSys;
 
     bool                    bBulbululator;
     bool                    bBuble;
+
+    // viewport cast parameters
+    Bar::eInterval                  iStoredSelectedInterval;
+    bool                            bOHLC;
+    std::time_t                     tStoredTimePosition;
+    double                          dHScale;
+    double                          dVVolumeScale;
+    std::time_t                     tViewBegin;
+    std::time_t                     tViewEnd;
+    std::map<std::time_t,double>    mVScalse;
 
 
 public:
@@ -137,6 +153,15 @@ public:
     inline bool                     Bulbululator()      const   {return bBulbululator;};
     inline bool                     Buble()             const   {return bBuble;};
 
+    inline Bar::eInterval                  StoredSelectedInterval()     const   {return iStoredSelectedInterval;};
+    inline bool                            OHLC()                       const   {return bOHLC;};
+    inline std::time_t                     StoredTimePosition()         const   {return tStoredTimePosition;};
+    inline double                          HScale()                     const   {return dHScale;};
+    inline double                          VVolumeScale()               const   {return dVVolumeScale;};
+    inline std::time_t                     ViewBeginDate()              const   {return tViewBegin;};
+    inline std::time_t                     ViewEndDate()                const   {return tViewEnd;};
+    inline std::map<std::time_t,double> &  VScalse()                            {return mVScalse;};
+
     inline void SetTickerName           (const std::string  TickerName)     {sTickerName            = TickerName;};
     inline void SetTickerSign           (const std::string  TickerSign)     {sTickerSign            = TickerSign;};
     inline void SetTickerSignFinam      (const std::string  TickerSign)     {sTickerSignFinam       = TickerSign;};
@@ -145,6 +170,17 @@ public:
     inline void SetUpToSys              (const bool         UpToSys)        {bUpToSys               = UpToSys;};
     inline void SetBulbululator         (const bool         Bulbululator)   {bBulbululator          = Bulbululator;};
     inline void SetBuble                (const bool         Buble)          {bBuble                 = Buble;};
+
+
+    inline void SetStoredSelectedInterval   (const Bar::eInterval Interval)         {iStoredSelectedInterval = Interval;};
+    inline void SetOHLC                     (const bool OHLC)                       {bOHLC = OHLC;};
+    inline void SetStoredTimePosition       (const std::time_t t)                   {tStoredTimePosition = t;};
+    inline void SetHScale                   (const double Scale)                    {dHScale = Scale;};
+    inline void SetVVolumeScale             (const double VolumeScale)              {dVVolumeScale = VolumeScale;};
+    inline void SetViewBegin                (const std::time_t Begin)               {tViewBegin = Begin;};
+    inline void SetViewEnd                  (const std::time_t End)                 {tViewEnd = End;};
+    inline void SetVScalse                  (const std::map<std::time_t,double> m)  {mVScalse = m; };
+
 
 public:
     //--------------------------------------------------------------------------------------------------------
@@ -170,6 +206,29 @@ public:
 
         bBulbululator   = true;
         bBuble          = true;
+
+        iStoredSelectedInterval = Bar::p60;
+        bOHLC                   = false;
+        tStoredTimePosition     = 0;
+        dHScale                 = 0;
+        dVVolumeScale           = 0;
+        tViewBegin              = 0;
+        tViewEnd                = 0;
+
+        mVScalse[Bar::eInterval::pTick] = 0;
+        mVScalse[Bar::eInterval::p1]    = 0;
+        mVScalse[Bar::eInterval::p5]    = 0;
+        mVScalse[Bar::eInterval::p10]   = 0;
+        mVScalse[Bar::eInterval::p15]   = 0;
+        mVScalse[Bar::eInterval::p30]   = 0;
+        mVScalse[Bar::eInterval::p60]   = 0;
+        mVScalse[Bar::eInterval::p120]  = 0;
+        mVScalse[Bar::eInterval::p180]  = 0;
+        mVScalse[Bar::eInterval::pDay]  = 0;
+        mVScalse[Bar::eInterval::pWeek] = 0;
+        mVScalse[Bar::eInterval::pMonth]= 0;
+
+
         //
         if (TickerID >= iTickerCounter) iTickerCounter = TickerID + 1;
     }
@@ -190,6 +249,15 @@ public:
 
         bBulbululator   = t.bBulbululator;
         bBuble          = t.bBuble;
+
+        iStoredSelectedInterval = t.iStoredSelectedInterval;
+        bOHLC                   = t.bOHLC;
+        tStoredTimePosition     = t.tStoredTimePosition;
+        dHScale                 = t.dHScale;
+        dVVolumeScale           = t.dVVolumeScale;
+        tViewBegin              = t.tViewBegin;
+        tViewEnd                = t.tViewEnd;
+        mVScalse                = t.mVScalse;
     }
     //--------------------------------------------------------------------------------------------------------
     Ticker & operator= (const Ticker & t){
@@ -206,6 +274,15 @@ public:
 
         bBulbululator   = t.bBulbululator;
         bBuble          = t.bBuble;
+
+        iStoredSelectedInterval = t.iStoredSelectedInterval;
+        bOHLC                   = t.bOHLC;
+        tStoredTimePosition     = t.tStoredTimePosition;
+        dHScale                 = t.dHScale;
+        dVVolumeScale           = t.dVVolumeScale;
+        tViewBegin              = t.tViewBegin;
+        tViewEnd                = t.tViewEnd;
+        mVScalse                = t.mVScalse;
 
         return  *this;
     }
