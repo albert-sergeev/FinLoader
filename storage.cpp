@@ -51,6 +51,10 @@ void Storage::Initialize()
     /// for speed optimisation
     std::ios::sync_with_stdio(false);
 
+
+    std::unique_lock lk1(mutexMarketConfigFile);
+    std::unique_lock lk2(mutexTickerConfigFile);
+
     //std::filesystem::path pathCurr;
     //std::filesystem::path pathDataDir;
     //std::filesystem::path pathStorageDir;
@@ -83,7 +87,7 @@ void Storage::Initialize()
     //
     if(!std::filesystem::exists(pathMarkersFile)){ // if no file - create new with defaults
         std::ofstream fileMarket(pathMarkersFile);
-        std::vector<Market> m{{trim("ММВБ"),trim("MICEX_SHR_T")}};
+        std::vector<Market> m{{trim("MOEX"),trim("MICEX")}};
         SaveMarketConfig(m);
         if(!std::filesystem::exists(pathMarkersFile)){
             throw std::runtime_error("Error create file: ./data/markets.dat");
@@ -93,7 +97,19 @@ void Storage::Initialize()
         throw std::runtime_error("./data/markets.dat - has wrong type");
     }
     ///========
-    pathTickersFile = std::filesystem::absolute(pathDataDir/"tickers.dat");
+    pathTickersSwitcherFile = std::filesystem::absolute(pathDataDir/"tickers.swr");
+    //
+    if(!std::filesystem::exists(pathTickersSwitcherFile)){ // if no file - create new with defaults
+        SwitchTickersConfigFile();
+        if(!std::filesystem::exists(pathTickersSwitcherFile)){
+            throw std::runtime_error("Error create file: ./data/tickers.swr");
+        }
+    }
+    if(!std::filesystem::is_regular_file(pathTickersSwitcherFile)){
+        throw std::runtime_error("./data/tickers.swr - has wrong type");
+    }
+    ///========
+    pathTickersFile = ReadTickersConfigFileName(true);
     //
     if(!std::filesystem::exists(pathTickersFile)){ // if no file - create new with defaults
         FormatTickerConfigV_1();
@@ -111,6 +127,8 @@ void Storage::Initialize()
 void Storage::LoadMarketConfig(std::vector<Market> & vMarketsLst)
 {
     if (!bInitialized) Initialize();
+    //
+    std::unique_lock lk(mutexMarketConfigFile);
     //
     std::string sBuff;
     std::istringstream iss{sBuff};
@@ -163,6 +181,8 @@ void Storage::ParsMarketConfigV_1(std::vector<Market> & vMarketsLst, std::ifstre
 // plug for different versions
 void Storage::SaveMarketConfig(std::vector<Market> & vMarketsLst)
 {
+    std::unique_lock lk(mutexMarketConfigFile);
+    //
     SaveMarketConfigV_1(vMarketsLst);
 }
 void Storage::SaveMarketConfig(std::vector<Market> && vMarketsLst)
@@ -188,9 +208,104 @@ void Storage::SaveMarketConfigV_1(std::vector<Market> & vMarketsLst)
 }
 //--------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------
+void Storage::SwitchTickersConfigFile()
+{
+    int iSW{0};
+    int iSWNew{0};
+    if(!std::filesystem::exists(pathTickersSwitcherFile)){
+        std::ofstream fileSW(pathTickersSwitcherFile);
+        if (fileSW){
+            fileSW <<"1\n";
+            iSWNew = 1;
+        }
+        else{
+            throw std::runtime_error("Error create file: ./data/tickers.swr");
+        }
+    }
+    else{
+        std::string sBuff;
+        std::ifstream fileSW(pathTickersSwitcherFile.c_str());
+        if(std::getline(fileSW,sBuff) && sBuff.size() >0){
+            if(sBuff == "1"){
+                iSW = 1;
+                iSWNew = 2;
+            }
+            else{
+                iSW = 2;
+                iSWNew = 1;
+            }
+        }
+        else{
+            throw std::runtime_error("Error reading file: ./data/tickers.swr");
+        }
+    }
+    //-----------------------------------------------------------
+    std::filesystem::path oldfile   = std::filesystem::absolute(pathDataDir/"tickers.dat");
+    std::filesystem::path buckup1   = std::filesystem::absolute(pathDataDir/"tickers.backup");
+    std::filesystem::path buckup2   = std::filesystem::absolute(pathDataDir/"tickers.backup2");
+    std::filesystem::path datafile1 = std::filesystem::absolute(pathDataDir/"tickers.dt1");
+    std::filesystem::path datafile2 = std::filesystem::absolute(pathDataDir/"tickers.dt2");
+
+    if (std::filesystem::exists(buckup2)){
+        std::filesystem::remove(buckup2);
+    }
+    if (std::filesystem::exists(buckup1)){
+        std::filesystem::rename(buckup1,buckup2);
+    }
+    if (iSW == 0 && std::filesystem::exists(oldfile)){
+        if (std::filesystem::exists(datafile1)){
+            std::filesystem::rename(datafile1,buckup1);
+        }
+        std::filesystem::rename(oldfile,datafile1);
+
+        if (std::filesystem::exists(datafile2)){
+            std::filesystem::remove(datafile2);
+        }
+    }
+    else{
+        if (iSW == 1){
+            std::filesystem::rename(datafile1,buckup1);
+        }
+        else{
+            std::filesystem::rename(datafile2,buckup1);
+        }
+        std::ofstream fileSW(pathTickersSwitcherFile);
+        if (fileSW){
+            fileSW << iSWNew<<"\n";
+        }
+        else{
+            throw std::runtime_error("Error create file: ./data/tickers.swr");
+        }
+    }
+}
+//--------------------------------------------------------------------------------------------------------
+std::filesystem::path Storage::ReadTickersConfigFileName(bool bOld)
+{
+    std::filesystem::path datafile1 = std::filesystem::absolute(pathDataDir/"tickers.dt1");
+    std::filesystem::path datafile2 = std::filesystem::absolute(pathDataDir/"tickers.dt2");
+
+    std::string sBuff;
+    std::ifstream fileSW(pathTickersSwitcherFile.c_str());
+    if(std::getline(fileSW,sBuff) && sBuff.size() >0){
+        if(sBuff == "1"){
+            if (bOld) return datafile1;
+            else      return datafile2;
+        }
+        else{
+            if (bOld) return datafile2;
+            else      return datafile1;
+        }
+    }
+    else{
+        throw std::runtime_error("Error reading file: ./data/tickers.swr");
+    }
+}
+//--------------------------------------------------------------------------------------------------------
 void Storage::SaveTickerConfig(const Ticker & tT, op_type tp)
 {
-    SaveTickerConfigV_1(tT,tp);
+    std::unique_lock lk(mutexTickerConfigFile);
+    SaveTickerConfigV_1(pathTickersFile,tT,tp);
 };
 //--------------------------------------------------------------------------------------------------------
 void Storage::SaveTickerConfig(Ticker && tT, op_type tp)
@@ -204,12 +319,18 @@ void Storage::FormatTickerConfigV_1()
     fileTicker<<"v1\n";
 }
 //--------------------------------------------------------------------------------------------------------
-void Storage::SaveTickerConfigV_1(const Ticker & tT, op_type tp)
+void Storage::SaveTickerConfigV_1(std::filesystem::path  pathFile,const Ticker & tT, op_type tp, int iForceMark)
 {
 
-        std::ofstream fileTicker(pathTickersFile,std::ios_base::app);
+        std::ofstream fileTicker(pathFile,std::ios_base::app);
 
-        fileTicker<<(iTickerMark++)<<",";
+        if (iForceMark > 0){
+            fileTicker<<(iForceMark)<<",";
+        }
+        else{
+            fileTicker<<(iTickerMark++)<<",";
+        }
+
 
         fileTicker<<tp<<",";
 
@@ -232,28 +353,30 @@ void Storage::SaveTickerConfigV_1(const Ticker & tT, op_type tp)
 //--------------------------------------------------------------------------------------------------------
 void Storage::LoadTickerConfig(std::vector<Ticker> & vTickersLst)
 {
+
     if (!bInitialized) Initialize();
+    //
+    std::unique_lock lk(mutexTickerConfigFile);
     //
     std::string sBuff;
     std::istringstream iss{sBuff};
     std::ifstream fileTicker(pathTickersFile.c_str());
 
-//    if (fileTicker.good()){
-//        ParsTickerConfigV_1(vTickersLst,fileTicker);
-//    }
-//    else{
-//        std::stringstream ss;
-//        ss <<"error reading file: "<<pathTickersFile;
-//        throw std::runtime_error(ss.str());
-//    }
-
 
     if(std::getline(fileTicker,sBuff)){
+        int iCollisions{0};
         if(sBuff == "v1"){
-            ParsTickerConfigV_1(vTickersLst,fileTicker);
+            iCollisions = ParsTickerConfigV_1(vTickersLst,fileTicker);
         }
         else{
-            throw std::runtime_error("wrong file format ./data/Tickers.dat!");
+            std::stringstream ss;
+            ss <<"wrong file format: ./data/"<<pathTickersFile.filename();
+            throw std::runtime_error(ss.str());
+        }
+        if (iCollisions > 10){
+            fileTicker.close();
+            CompressTickerConfigFile(vTickersLst);
+            pathTickersFile = ReadTickersConfigFileName(true);
         }
     }
     else{
@@ -264,10 +387,35 @@ void Storage::LoadTickerConfig(std::vector<Ticker> & vTickersLst)
 
 };
 //--------------------------------------------------------------------------------------------------------
-void Storage::ParsTickerConfigV_1(std::vector<Ticker> & vTickersLst, std::ifstream & file)
+void Storage::CompressTickerConfigFile(std::vector<Ticker> & vTickersLst)
+{
+    std::filesystem::path  pathNewTickersFile = ReadTickersConfigFileName(false);
+
+    std::ofstream fileTicker(pathNewTickersFile);
+    if (!fileTicker){
+        std::stringstream ss;
+        ss <<"error during creation of file: ./data/"<<pathNewTickersFile.filename();
+        throw std::runtime_error(ss.str());
+    }
+    fileTicker<<"v1\n";
+    fileTicker.close();
+
+    int iForceMark{1};
+    for (const auto & t:vTickersLst){
+        SaveTickerConfigV_1(pathNewTickersFile,t,op_type::update,iForceMark);
+        iForceMark++;
+    }
+    SwitchTickersConfigFile();
+    pathTickersFile = ReadTickersConfigFileName(true);
+    iTickerMark = iForceMark;
+}
+//--------------------------------------------------------------------------------------------------------
+int Storage::ParsTickerConfigV_1(std::vector<Ticker> & vTickersLst, std::ifstream & file)
 {
     int iMark{0};
+    int iCollisionCount{0};
     op_type tp;
+
 
     int iMarketID{0};
     int iTickerID{0};
@@ -316,6 +464,7 @@ void Storage::ParsTickerConfigV_1(std::vector<Ticker> & vTickersLst, std::ifstre
         auto ItM (mM.find(t.TickerID()));
 
         if(ItM != mM.end()){
+            iCollisionCount++;
             if (tp == op_type::update){
                 vTickersLst[ItM->second] = t;
             }
@@ -333,8 +482,7 @@ void Storage::ParsTickerConfigV_1(std::vector<Ticker> & vTickersLst, std::ifstre
             }
         }
     }
-
-
+    return iCollisionCount;
 };
 //--------------------------------------------------------------------------------------------------------
 

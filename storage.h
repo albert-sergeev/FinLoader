@@ -41,11 +41,15 @@ class Storage
     std::filesystem::path pathDataDir;
     std::filesystem::path pathStorageDir;
     std::filesystem::path pathMarkersFile;
+    //std::filesystem::path pathMarkersSwitcherFile;
     std::filesystem::path pathTickersFile;
+    std::filesystem::path pathTickersSwitcherFile;
 
     //---------------------------------------
     // for tickers configs
     int iTickerMark{1};
+    std::shared_mutex mutexTickerConfigFile;
+    std::shared_mutex mutexMarketConfigFile;
     //---------------------------------------
     // for market quotes storage
     std::shared_mutex mutexQuotesStoreInit;
@@ -154,8 +158,12 @@ private:
     void ParsMarketConfigV_1(std::vector<Market> & vMarketsLst, std::ifstream &file);
 
     void FormatTickerConfigV_1();
-    void SaveTickerConfigV_1(const Ticker & /*tT*/, op_type tp = op_type::update);
-    void ParsTickerConfigV_1(std::vector<Ticker> & /*vTickersLst*/, std::ifstream & /*file*/);
+    void SaveTickerConfigV_1(std::filesystem::path  /*pathFile*/,const Ticker & /*tT*/, op_type tp = op_type::update, int iForceMark = 0);
+    int ParsTickerConfigV_1(std::vector<Ticker> & /*vTickersLst*/, std::ifstream & /*file*/);
+
+    void SwitchTickersConfigFile();
+    std::filesystem::path ReadTickersConfigFileName(bool bOld);
+    void CompressTickerConfigFile(std::vector<Ticker> & /*vTickersLst*/);
     //--------------------------------------------------------------------------------------------------------
     bool InitializeTickerEntry(int iTickerID,std::stringstream & ssOut);
     int CreateStageEntryForTicker(int iTickerID, std::time_t tMonth,std::stringstream& ssOut);
