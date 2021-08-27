@@ -161,6 +161,10 @@ private:
     void SaveTickerConfigV_1(std::filesystem::path  /*pathFile*/,const Ticker & /*tT*/, op_type tp = op_type::update, int iForceMark = 0);
     int ParsTickerConfigV_1(std::vector<Ticker> & /*vTickersLst*/, std::ifstream & /*file*/);
 
+    void FormatTickerConfigV_2();
+    void SaveTickerConfigV_2(std::filesystem::path  /*pathFile*/,const Ticker & /*tT*/, op_type tp = op_type::update, int iForceMark = 0);
+    int ParsTickerConfigV_2(std::vector<Ticker> & /*vTickersLst*/, std::ifstream & /*file*/);
+
     void SwitchTickersConfigFile();
     std::filesystem::path ReadTickersConfigFileName(bool bOld);
     void CompressTickerConfigFile(std::vector<Ticker> & /*vTickersLst*/);

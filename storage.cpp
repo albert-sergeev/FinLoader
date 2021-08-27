@@ -1,4 +1,4 @@
-#include "storage.h"
+﻿#include "storage.h"
 
 #include<filesystem>
 #include<iostream>
@@ -305,7 +305,7 @@ std::filesystem::path Storage::ReadTickersConfigFileName(bool bOld)
 void Storage::SaveTickerConfig(const Ticker & tT, op_type tp)
 {
     std::unique_lock lk(mutexTickerConfigFile);
-    SaveTickerConfigV_1(pathTickersFile,tT,tp);
+    SaveTickerConfigV_2(pathTickersFile,tT,tp);
 };
 //--------------------------------------------------------------------------------------------------------
 void Storage::SaveTickerConfig(Ticker && tT, op_type tp)
@@ -367,6 +367,10 @@ void Storage::LoadTickerConfig(std::vector<Ticker> & vTickersLst)
         int iCollisions{0};
         if(sBuff == "v1"){
             iCollisions = ParsTickerConfigV_1(vTickersLst,fileTicker);
+            iCollisions = 1000;// to force format switch
+        }
+        else if(sBuff == "v2"){
+            iCollisions = ParsTickerConfigV_2(vTickersLst,fileTicker);
         }
         else{
             std::stringstream ss;
@@ -397,12 +401,12 @@ void Storage::CompressTickerConfigFile(std::vector<Ticker> & vTickersLst)
         ss <<"error during creation of file: ./data/"<<pathNewTickersFile.filename();
         throw std::runtime_error(ss.str());
     }
-    fileTicker<<"v1\n";
+    fileTicker<<"v2\n";
     fileTicker.close();
 
     int iForceMark{1};
     for (const auto & t:vTickersLst){
-        SaveTickerConfigV_1(pathNewTickersFile,t,op_type::update,iForceMark);
+        SaveTickerConfigV_2(pathNewTickersFile,t,op_type::update,iForceMark);
         iForceMark++;
     }
     SwitchTickersConfigFile();
@@ -484,6 +488,191 @@ int Storage::ParsTickerConfigV_1(std::vector<Ticker> & vTickersLst, std::ifstrea
     }
     return iCollisionCount;
 };
+//--------------------------------------------------------------------------------------------------------
+void Storage::FormatTickerConfigV_2()
+{
+    std::ofstream fileTicker(pathTickersFile);
+    fileTicker<<"v2\n";
+}
+//--------------------------------------------------------------------------------------------------------
+void Storage::SaveTickerConfigV_2(std::filesystem::path  pathFile,const Ticker & tT, op_type tp , int iForceMark )
+{
+    std::ofstream fileTicker(pathFile,std::ios_base::app);
+
+    //--------------------------------------------
+    // v1
+    if (iForceMark > 0){
+        fileTicker<<(iForceMark)<<",";
+    }
+    else{
+        fileTicker<<(iTickerMark++)<<",";
+    }
+
+
+    fileTicker<<tp<<",";
+
+    fileTicker<<tT.MarketID()<<",";
+    fileTicker<<tT.TickerID()<<",";
+
+    fileTicker<<trim(tT.TickerName())<<",";
+    fileTicker<<trim(tT.TickerSign())<<",";
+    fileTicker<<trim(tT.TickerSignFinam())<<",";
+    fileTicker<<trim(tT.TickerSignQuik())<<",";
+    fileTicker<<tT.AutoLoad()<<",";
+    fileTicker<<tT.UpToSys()<<",";
+    fileTicker<<tT.Bulbululator()<<",";
+    fileTicker<<tT.Buble()<<",";
+    //--------------------------------------------
+    // v2
+
+    fileTicker<<tT.StoredSelectedInterval()<<",";
+    fileTicker<<tT.OHLC()<<",";
+    fileTicker<<tT.StoredTimePosition()<<",";
+    fileTicker<<tT.ViewBeginDate()<<",";
+    fileTicker<<tT.ViewEndDate()<<",";
+
+    fileTicker<<tT.HScale()<<"|";
+    fileTicker<<tT.VVolumeScale()<<"|";
+    fileTicker<< tT.VScalse(Bar::eInterval::pTick)<<"|";
+    fileTicker<< tT.VScalse(Bar::eInterval::p1)<<"|";
+    fileTicker<< tT.VScalse(Bar::eInterval::p5)<<"|";
+    fileTicker<< tT.VScalse(Bar::eInterval::p10)<<"|";
+    fileTicker<< tT.VScalse(Bar::eInterval::p15)<<"|";
+    fileTicker<< tT.VScalse(Bar::eInterval::p30)<<"|";
+    fileTicker<< tT.VScalse(Bar::eInterval::p60)<<"|";
+    fileTicker<< tT.VScalse(Bar::eInterval::p120)<<"|";
+    fileTicker<< tT.VScalse(Bar::eInterval::p180)<<"|";
+    fileTicker<< tT.VScalse(Bar::eInterval::pDay)<<"|";
+    fileTicker<< tT.VScalse(Bar::eInterval::pWeek)<<"|";
+    fileTicker<< tT.VScalse(Bar::eInterval::pMonth)<<"";
+
+
+    fileTicker<<"\n";
+}
+//--------------------------------------------------------------------------------------------------------
+int Storage::ParsTickerConfigV_2(std::vector<Ticker> & vTickersLst, std::ifstream & file)
+{
+    int iMark{0};
+    int iCollisionCount{0};
+    op_type tp;
+
+
+    int iMarketID{0};
+    int iTickerID{0};
+
+
+    std::map<int,int> mM;
+
+    //
+    vTickersLst.clear();
+    //
+    std::string sBuff;
+    std::istringstream iss;
+    while (std::getline(file,sBuff)) {
+        // link stringstream
+        iss.clear();
+        iss.str(sBuff);
+        //
+        std::vector<std::string> vS{std::istream_iterator<StringDelimiter<','>>{iss},{}};
+
+        if(vS.size()<18){
+            std::stringstream ss;
+            ss <<"error parsing file. wrong format: "<<pathTickersFile;
+            throw std::runtime_error(ss.str());
+        }
+        //copy(vS.begin(),vS.end(),std::ostream_iterator<std::string>(std::cout,","));std::cout<<"\n";
+
+        //
+        iMark                   =std::stoi(vS[0]);
+        if (iTickerMark <= iMark) iTickerMark = iMark + 1;
+
+        tp                      = std::stoi(vS[1]) == 2 ? op_type::remove : op_type::update;
+
+        iMarketID               =std::stoi(vS[2]);
+        iTickerID               =std::stoi(vS[3]);
+
+        Ticker t{iTickerID,vS[4],vS[5],iMarketID};
+
+        t.SetTickerSignFinam    (vS[6]);
+        t.SetTickerSignQuik     (vS[7]);
+        t.SetAutoLoad           (std::stoi(vS[8]));
+        t.SetUpToSys            (std::stoi(vS[9]));
+        t.SetBulbululator       (std::stoi(vS[10]));
+        t.SetBuble              (std::stoi(vS[11]));
+
+        //--------------------------------------------
+        // v2
+        t.SetStoredSelectedInterval(Bar::castInterval(std::stoi(vS[12])));
+        t.SetOHLC(std::stoi(vS[13]));
+        t.SetStoredTimePosition(std::stoi(vS[14]));
+        t.SetViewBegin(std::stol(vS[15]));
+        t.SetViewEnd(std::stol(vS[16]));
+
+
+
+        std::stringstream ssTail;
+        auto It (std::next(vS.begin(),17));
+        while (It != vS.end()) {
+            ssTail << (*It)<<",";
+            It++;
+        }
+
+        iss.clear();
+        iss.str(ssTail.str());
+        std::vector<std::string> vS2{std::istream_iterator<StringDelimiter<'|'>>{iss},{}};
+
+        if(vS2.size()<14){
+            std::stringstream ss;
+            ss <<"error parsing file. wrong format: "<<pathTickersFile;
+            throw std::runtime_error(ss.str());
+        }
+
+        std::stringstream ss;
+        double d;
+        std::map<int,double> m;
+
+        ss.clear(); ss.str(vS2[0]);  ss >> d; t.SetHScale(d);
+        ss.clear(); ss.str(vS2[1]);  ss >> d; t.SetVVolumeScale(d);
+
+        ss.clear(); ss.str(vS2[2]);  ss >> d; m[Bar::eInterval::pTick]        = d;
+        ss.clear(); ss.str(vS2[3]);  ss >> d; m[Bar::eInterval::p1]           = d;
+        ss.clear(); ss.str(vS2[4]);  ss >> d; m[Bar::eInterval::p5]           = d;
+        ss.clear(); ss.str(vS2[5]);  ss >> d; m[Bar::eInterval::p10]          = d;
+        ss.clear(); ss.str(vS2[6]);  ss >> d; m[Bar::eInterval::p15]          = d;
+        ss.clear(); ss.str(vS2[7]);  ss >> d; m[Bar::eInterval::p30]          = d;
+        ss.clear(); ss.str(vS2[8]);  ss >> d; m[Bar::eInterval::p60]          = d;
+        ss.clear(); ss.str(vS2[9]);  ss >> d; m[Bar::eInterval::p120]         = d;
+        ss.clear(); ss.str(vS2[10]); ss >> d; m[Bar::eInterval::p180]         = d;
+        ss.clear(); ss.str(vS2[11]); ss >> d; m[Bar::eInterval::pDay]         = d;
+        ss.clear(); ss.str(vS2[12]); ss >> d; m[Bar::eInterval::pWeek]        = d;
+        ss.clear(); ss.str(vS2[13]); ss >> d; m[Bar::eInterval::pMonth]       = d;
+
+
+        t.SetVScalse(m);
+
+        auto ItM (mM.find(t.TickerID()));
+
+        if(ItM != mM.end()){
+            iCollisionCount++;
+            if (tp == op_type::update){
+                vTickersLst[ItM->second] = t;
+            }
+            else{// do remove
+                mM[vTickersLst[vTickersLst.size()-1].TickerID()] = ItM->second;
+                vTickersLst[ItM->second] = vTickersLst[vTickersLst.size()-1];
+                vTickersLst.erase(next(begin(vTickersLst),vTickersLst.size()-1));
+                mM.erase(ItM);
+            }
+        }
+        else{
+            if (tp == op_type::update){
+                mM[t.TickerID()] = vTickersLst.size();
+                vTickersLst.push_back(t);
+            }
+        }
+    }
+    return iCollisionCount;
+}
 //--------------------------------------------------------------------------------------------------------
 
 std::time_t Storage::dateCastToMonth(std::time_t t)

@@ -137,7 +137,7 @@ private:
     double                          dVVolumeScale;
     std::time_t                     tViewBegin;
     std::time_t                     tViewEnd;
-    std::map<std::time_t,double>    mVScalse;
+    std::map<int,double>            mVScalse;
 
 
 public:
@@ -160,7 +160,7 @@ public:
     inline double                          VVolumeScale()               const   {return dVVolumeScale;};
     inline std::time_t                     ViewBeginDate()              const   {return tViewBegin;};
     inline std::time_t                     ViewEndDate()                const   {return tViewEnd;};
-    inline std::map<std::time_t,double> &  VScalse()                            {return mVScalse;};
+    inline double                          VScalse(int Interval)        const   {return ( mVScalse.at(Interval)); };
 
     inline void SetTickerName           (const std::string  TickerName)     {sTickerName            = TickerName;};
     inline void SetTickerSign           (const std::string  TickerSign)     {sTickerSign            = TickerSign;};
@@ -172,14 +172,14 @@ public:
     inline void SetBuble                (const bool         Buble)          {bBuble                 = Buble;};
 
 
-    inline void SetStoredSelectedInterval   (const Bar::eInterval Interval)         {iStoredSelectedInterval = Interval;};
-    inline void SetOHLC                     (const bool OHLC)                       {bOHLC = OHLC;};
-    inline void SetStoredTimePosition       (const std::time_t t)                   {tStoredTimePosition = t;};
-    inline void SetHScale                   (const double Scale)                    {dHScale = Scale;};
-    inline void SetVVolumeScale             (const double VolumeScale)              {dVVolumeScale = VolumeScale;};
-    inline void SetViewBegin                (const std::time_t Begin)               {tViewBegin = Begin;};
-    inline void SetViewEnd                  (const std::time_t End)                 {tViewEnd = End;};
-    inline void SetVScalse                  (const std::map<std::time_t,double> m)  {mVScalse = m; };
+    inline void SetStoredSelectedInterval   (const Bar::eInterval Interval)           {iStoredSelectedInterval = Interval;};
+    inline void SetOHLC                     (const bool OHLC)                         {bOHLC = OHLC;};
+    inline void SetStoredTimePosition       (const std::time_t t)                     {tStoredTimePosition = t;};
+    inline void SetHScale                   (const double Scale)                      {dHScale = Scale;};
+    inline void SetVVolumeScale             (const double VolumeScale)                {dVVolumeScale = VolumeScale;};
+    inline void SetViewBegin                (const std::time_t Begin)                 {tViewBegin = Begin;};
+    inline void SetViewEnd                  (const std::time_t End)                   {tViewEnd = End;};
+    inline void SetVScalse                  (const std::map<int,double>&m)            {mVScalse = m; };
 
 
 public:

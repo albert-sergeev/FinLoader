@@ -26,6 +26,26 @@ protected:
 public:
     //--------------------------------------------------------------------------------------------------------
     enum eInterval:int {pUndefined=(-99), pTick=(0),p1=1,p5=5,p10=10,p15=15,p30=30,p60=60,p120=120,p180=180, pDay=1440, pWeek=10080, pMonth=302400};
+
+    static eInterval castInterval(int Interval ){
+        eInterval eRet {eInterval::pUndefined};
+        switch (Interval) {
+            case 0:         eRet = eInterval::pTick; break;
+            case 1:         eRet = eInterval::p1; break;
+            case 5:         eRet = eInterval::p5; break;
+            case 10:        eRet = eInterval::p10; break;
+            case 15:        eRet = eInterval::p15; break;
+            case 30:        eRet = eInterval::p30; break;
+            case 60:        eRet = eInterval::p60; break;
+            case 120:       eRet = eInterval::p120; break;
+            case 180:       eRet = eInterval::p180; break;
+            case 1440:      eRet = eInterval::pDay; break;
+            case 10080:     eRet = eInterval::pWeek; break;
+            case 302400:    eRet = eInterval::pMonth; break;
+            default: eRet  = eInterval::pUndefined;
+        }
+        return eRet;
+    }
     //--------------------------------------------------------------------------------------------------------
 
     virtual double Open()                   const   {return dClose;};
@@ -260,6 +280,7 @@ public:
         return tRet;
     }
     //--------------------------------------------------------------------------------------------------------
+    //--------------------------------------------------------------------------------------------------------
 private:
     //--------------------------------------------------------------------------------------------------------
     static void initStartConst(){
@@ -274,7 +295,6 @@ private:
 
         t1990_01_01_00_00_00 = std::mktime(&t_tm);
     };
-
 };
 
 inline std::time_t BarTick::t1990_01_01_00_00_00;
