@@ -80,6 +80,17 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow()
 {
     SaveSettings();
+
+//    delete m_mnuWindows;
+//    delete m_mnuStyles;
+//    delete m_mnuLangs;
+//    delete m_mnuGraphViewConfig;
+
+//    delete pmnuFile;
+//    delete pmnuTools;
+//    delete pmnuSettings;
+//    delete pmnuHelp;
+
     delete ui;
 }
 //--------------------------------------------------------------------------------------------------------------------------------
@@ -550,8 +561,9 @@ void MainWindow::InitAction()
     pacGVVolumeSc->setChecked(!bGVVolumeScOnLoadIsHidden);
     connect(pacGVVolumeSc,SIGNAL(triggered()),SLOT(slotGVFramesVisibilityStateChanged()));
     //------------------------------------------------
+
     //
-    QMenu * pmnuFile = new QMenu(tr("&File","menu"));
+    pmnuFile = new QMenu(tr("&File","menu"));
     pmnuFile->addAction(pacNewDoc);
     pmnuFile->addAction(pacOpen);
     pmnuFile->addAction(pacSave);
@@ -568,12 +580,12 @@ void MainWindow::InitAction()
     connect(m_mnuWindows,SIGNAL(aboutToShow()),SLOT(slotWindows()));
     menuBar()->addSeparator();
     //
-    QMenu * pmnuTools = new QMenu(tr("&Tools"));
+    pmnuTools = new QMenu(tr("&Tools"));
     pmnuTools->addAction(pacLogWnd);
     pmnuTools->addAction(pacErrLogWnd);
     menuBar()->addMenu(pmnuTools);
     //
-    QMenu * pmnuSettings = new QMenu(tr("&Settings"));
+    pmnuSettings = new QMenu(tr("&Settings"));
 
     pmnuSettings->addAction(pacToolBar);
     pmnuSettings->addAction(pacTickersBar);
@@ -601,7 +613,7 @@ void MainWindow::InitAction()
 
     menuBar()->addMenu(pmnuSettings);
     //
-    QMenu * pmnuHelp = new QMenu(tr("&Help"));
+    pmnuHelp = new QMenu(tr("&Help"));
     pmnuHelp->addAction(tr("&About"),this,SLOT(slotAbout()),Qt::Key_F1);
     menuBar()->addMenu(pmnuHelp);
 

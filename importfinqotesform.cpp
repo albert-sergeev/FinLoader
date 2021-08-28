@@ -96,6 +96,10 @@ ImportFinQuotesForm::ImportFinQuotesForm(modelMarketsList *modelM, int DefaultTi
 //--------------------------------------------------------------------------------------------------------
 ImportFinQuotesForm::~ImportFinQuotesForm()
 {
+    delete pImportContextMenu ;
+    delete pacCheck;
+    delete pacImport;
+
     delete ui;
 }
 //--------------------------------------------------------------------------------------------------------

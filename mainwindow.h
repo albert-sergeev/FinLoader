@@ -57,6 +57,18 @@ class MainWindow : public QMainWindow
 
 private:
     // for main window
+
+    QMenu * m_mnuWindows;
+    QMenu * m_mnuStyles;
+    QMenu * m_mnuLangs;
+    QMenu * m_mnuGraphViewConfig;
+
+    QMenu * pmnuFile;
+    QMenu * pmnuTools;
+    QMenu * pmnuSettings;
+    QMenu * pmnuHelp;
+
+
     QAction * pacTickersBar;
     QAction * pacStatusBar;
     QAction * pacToolBar;
@@ -84,10 +96,7 @@ private:
     std::queue<std::pair<int,std::chrono::time_point<std::chrono::steady_clock>>> qActivityQueue;
     std::map<int,std::pair<bool,std::chrono::time_point<std::chrono::steady_clock>>> mBlinkedState;
     //------------------------------------------------
-    QMenu * m_mnuWindows;
-    QMenu * m_mnuStyles;
-    QMenu * m_mnuLangs;
-    QMenu * m_mnuGraphViewConfig;
+
     QSignalMapper * m_psigmapper;
     QSignalMapper * m_psigmapperStyle;
     QSignalMapper * m_psigmapperLang;
