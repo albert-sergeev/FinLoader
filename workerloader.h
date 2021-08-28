@@ -1,8 +1,8 @@
 #ifndef WORKERLOADERFINAM_H
 #define WORKERLOADERFINAM_H
 
-#include"blockfreequeue.h"
-#include"datafinloadtask.h"
+#include "blockfreequeue.h"
+#include "datafinloadtask.h"
 #include "databuckgroundthreadanswer.h"
 #include "datafinquotesparse.h"
 
@@ -23,6 +23,11 @@ private:
                        Storage &stStore,
                        dataFinLoadTask & data);
 
+    static void workerFinQuotesCheck(BlockFreeQueue<dataFinLoadTask> & queueFinQuotesLoad,
+                       BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
+                       Storage &stStore,
+                       dataFinLoadTask & data);
+
     static void workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & queueTasks,
                                     BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
                                     Storage & stStore,
@@ -39,6 +44,9 @@ private:
                                     dataFinLoadTask & data);
 
 
+    static bool compareBars(dataFinLoadTask & data,std::vector<Bar> &vBars,BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers);
+    template<typename T>
+    static bool compareBarsT(dataFinLoadTask & data,std::vector<Bar> &vBars,BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers);
 
 
     static int createCleanUpHeader(std::time_t tMonth, char* cBuff,std::time_t tBegin, std::time_t tEnd);

@@ -1249,6 +1249,7 @@ void MainWindow::InitAction()
         dataTask.dtBegin        = tBegin;
         dataTask.dtEnd          = tEnd;
         dataTask.holder         = Holders[iTickerID];
+        dataTask.mSessionRange  = Market::buildDefaultSessionsMap(); //TODO: copy range from real Market object
 
 
         queueFinQuotesLoad.Push(dataFinLoadTask(dataTask));
@@ -1357,6 +1358,7 @@ void MainWindow::InitAction()
                 dataTask.dtBegin        = tBegin;
                 dataTask.dtEnd          = tNow;
                 dataTask.holder         = Holders[t.TickerID()];
+                dataTask.mSessionRange  = Market::buildDefaultSessionsMap(); //TODO: copy range from real Market object
 
 
                 queueFinQuotesLoad.Push(dataFinLoadTask(dataTask));

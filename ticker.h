@@ -23,14 +23,21 @@ class Market
 {
 private:
 
+    // main data
+
     std::string sMarketName;
     std::string sMarketSign;
     int         iMarketID;
 
+    // utility data
     bool        bAutoLoad;
     bool        bUpToSys;
     std::time_t tStartTime;
     std::time_t tEndTime;
+
+    std::map<std::time_t,std::pair<
+                std::time_t,
+                    std::map<std::time_t,std::time_t>>> mTradeSessions;
 
 public:
 
@@ -63,8 +70,8 @@ public:
 
         std::tm tmPer;
         {
-            tmPer.tm_year   = 2000 - 1900;
-            tmPer.tm_mon    = 1;
+            tmPer.tm_year   = 1990 - 1900;
+            tmPer.tm_mon    = 1 - 1;
             tmPer.tm_mday   = 1;
             tmPer.tm_hour   = 0;
             tmPer.tm_min    = 0;
@@ -87,6 +94,9 @@ public:
         }
         tEndTime = std::mktime(&tmPer);
         //
+        mTradeSessions = buildDefaultSessionsMap();
+
+        //
         if (MarketID >= iMarketCounter) iMarketCounter = MarketID + 1;
     }
     //
@@ -100,6 +110,12 @@ public:
 //    }
     //--------------------------------------------------------------------------------------------------------
 
+    static std::map<std::time_t,std::pair<std::time_t,std::map<std::time_t,std::time_t>>>
+    buildDefaultSessionsMap();
+
+    static bool IsInSessionRange(std::map<std::time_t,std::pair<std::time_t,std::map<std::time_t,std::time_t>>> &m, std::time_t &t);
+
+    //--------------------------------------------------------------------------------------------------------
 };
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// \brief Class for store paper data

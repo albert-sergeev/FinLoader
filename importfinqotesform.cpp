@@ -1,10 +1,13 @@
 #include "importfinqotesform.h"
 #include "ui_importfinqotesform.h"
 
+
 #include<QFileDialog>
 #include<QDebug>
 #include<QStringList>
 #include<QMessageBox>
+#include<QMenu>
+#include<QContextMenuEvent>
 
 #include<iostream>
 #include<filesystem>
@@ -38,7 +41,20 @@ ImportFinQuotesForm::ImportFinQuotesForm(modelMarketsList *modelM, int DefaultTi
     lt1->addWidget(swtShowByName);
     swtShowByName->SetOnColor(QPalette::Window,colorDarkGreen);
     swtShowByName->SetOffColor(QPalette::Window,colorDarkRed);
+    /////////////////////////////////
 
+    pImportContextMenu = new QMenu(this);
+    pacCheck =new QAction("Check");
+    pacCheck->setText(tr("&Check"));
+    pacImport =new QAction("Import");
+    pacImport->setText(tr("&Import"));
+    pImportContextMenu->addAction(pacCheck);
+    pImportContextMenu->addAction(pacImport);
+
+    connect(pacCheck,SIGNAL(triggered()),SLOT(slotSetToCheck()));
+    connect(pacImport,SIGNAL(triggered()),SLOT(slotSetToImport()));
+
+    ui->btnImport->installEventFilter(this);
     /////////////////////////////////
 
     connect(ui->btnOpen,SIGNAL(clicked()),this,SLOT(slotBtnOpenClicked()));
@@ -72,6 +88,8 @@ ImportFinQuotesForm::ImportFinQuotesForm(modelMarketsList *modelM, int DefaultTi
 
     ui->edText->append(str);
 
+
+
     //Добро пожаловать в форму для импорта данных с сайта finam.ru. Если   вы хотите импортировать данные, сначала загрузите файл с котировками с финам или аналогичной площадки и сохраните его у себя на компьютере. Затем выберите файл с помощью кнопки открыть (см. вверху этой формы). После этого в этом текстовом окне вы увидите результаты проверки файла. Если все хорошо, то для загрузки данных в базу, нажмите кнопку импорт. Имейте ввиду, что импортировать можно только данные с периодом тик. Данные с другими периодами можно только загружены в базу для проверки.
     //вы можете открыть сразу несколько форм для импорта и одновременно загружать несколько бумаг даже если  запущен импорт из quik
 }
@@ -84,6 +102,22 @@ ImportFinQuotesForm::~ImportFinQuotesForm()
 void ImportFinQuotesForm::SetDefaultOpenDir(QString &s)
 {
     pathDir = s.toStdString();
+}
+//--------------------------------------------------------------------------------------------------------
+void ImportFinQuotesForm::slotSetToCheck()
+{
+    if(!bInLoading){
+        bInChecking = true;
+        ui->btnImport->setText("Check");
+    }
+}
+//--------------------------------------------------------------------------------------------------------
+void ImportFinQuotesForm::slotSetToImport()
+{
+    if(!bInLoading){
+        bInChecking = false;
+        ui->btnImport->setText("Import");
+    }
 }
 //--------------------------------------------------------------------------------------------------------
 void ImportFinQuotesForm::slotBtnOpenClicked()
@@ -123,7 +157,9 @@ void ImportFinQuotesForm::slotBtnOpenClicked()
 void ImportFinQuotesForm::slotBtnCreateClicked(){
 
     //pathFile ="/home/albert/Загрузки/SBER_210322_210330.txt";
-    pathFile ="/home/albert/Загрузки/FINAM/SBER_210322_210328.txt";
+    //pathFile ="/home/albert/Загрузки/FINAM/SBER_210322_210328.txt";
+    pathFile ="/home/albert/Загрузки/SBER_210301_210331(3).txt";
+
     pathDir=pathFile.parent_path();
     QString qsDir=QString::fromStdString(pathDir.string());;
     OpenImportFilePathChanged(qsDir);
@@ -487,10 +523,17 @@ void ImportFinQuotesForm::slotPreparseImportFile()
                 if(bb.Interval() == Bar::eInterval::pTick){
                     bInChecking = false;
                     ui->btnImport->setText("Import");
+
+                    pacCheck->setEnabled(true);
+                    pacImport->setEnabled(true);
+
                 }
                 else{
                     bInChecking = true;
                     ui->btnImport->setText("Check");
+
+                    pacCheck->setEnabled(true);
+                    pacImport->setEnabled(false);
                 }
 
 
@@ -794,6 +837,13 @@ void ImportFinQuotesForm::slotBtnImportClicked()
 
             dataFinLoadTask dataTask;
 
+            if (bInChecking){
+                dataTask.taskType = dataFinLoadTask::TaskType::finQuotesCheck;
+            }
+            else{
+                dataTask.taskType = dataFinLoadTask::TaskType::finQuotesImport;
+            }
+
             dataTask.TickerID       = iSelectedTickerId;
             dataTask.iInterval      = iTimePeriod;
             dataTask.sSign          = sSelectedTickerSignFinam;
@@ -824,6 +874,8 @@ void ImportFinQuotesForm::slotBtnImportClicked()
             dataTask.dtEnd = std::mktime(&tmEnd);
 
             dataTask.parseData = parseDataReady;
+
+            dataTask.mSessionRange = Market::buildDefaultSessionsMap(); //TODO: copy range from real Market object
 
             emit NeedParseImportFinQuotesFile(dataTask);
 
@@ -927,4 +979,19 @@ void ImportFinQuotesForm::slotDateTimeEndChanged(const QDateTime &)
         ui->dtEnd->setDateTime(qdtMax);
     }
 }
+//--------------------------------------------------------------------------------------------------------
+bool ImportFinQuotesForm::eventFilter(QObject *watched, QEvent *event)
+{
+    if (watched == ui->btnImport){
+        if(event->type() == QEvent::ContextMenu){
+            //QContextMenuEvent* pe = qobject_cast<QContextMenuEvent*>(event);
+            QContextMenuEvent* pe = (QContextMenuEvent*)event;
+            if (pe){
+                pImportContextMenu->exec(pe->globalPos());
+            }
+        }
+    }
+    return QObject::eventFilter(watched, event);
+}
+
 //--------------------------------------------------------------------------------------------------------

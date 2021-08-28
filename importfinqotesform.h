@@ -29,6 +29,10 @@ private:
 
     StyledSwitcher * swtShowByName;
 
+    QMenu   *pImportContextMenu;
+    QAction * pacCheck;
+    QAction * pacImport;
+
 
     std::filesystem::path pathFile;
     std::filesystem::path pathDir;
@@ -106,12 +110,19 @@ private slots:
 
     void slotSetWidgetsInLoadState(bool);
 
+    void slotSetToCheck();
+    void slotSetToImport();
+
 private:
 
     void setMarketModel();
     void setTickerModel();
 
     Ui::ImportFinamForm *ui;
+
+    // QObject interface
+public:
+    bool eventFilter(QObject *watched, QEvent *event);
 };
 
 

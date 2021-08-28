@@ -16,11 +16,10 @@ class dataFinLoadTask
 private:
     Storage * stStore;
     QWidget * parentWnd;
-    //void*  parentWnd;
 
 public:
 
-    enum TaskType:int { finQuotesImport = 1, finQuotesLoadFromStorage = 2, storageOptimisation = 3, LoadIntoGraph };
+    enum TaskType:int { finQuotesImport = 1, finQuotesLoadFromStorage = 2, storageOptimisation = 3, LoadIntoGraph = 4, finQuotesCheck = 5 };
 
     int             TickerID;
     std::string     sSign;
@@ -36,6 +35,8 @@ public:
     TaskType taskType;
 
     std::shared_ptr<GraphHolder> holder;
+
+    std::map<std::time_t,std::pair<std::time_t,std::map<std::time_t,std::time_t>>> mSessionRange;
 
     //--------------------------------------------------------------
     dataFinLoadTask():stStore{nullptr},parentWnd{nullptr},parseData{nullptr,nullptr},taskType{TaskType::finQuotesImport},holder{nullptr}{;};
@@ -59,6 +60,8 @@ public:
         taskType        = o.taskType;
 
         holder          = o.holder;
+
+        mSessionRange   = o.mSessionRange;
     };
     //--------------------------------------------------------------
     inline void SetStore(Storage * const stSt)      { stStore = stSt;};

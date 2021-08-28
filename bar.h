@@ -171,6 +171,10 @@ public:
 
         return tmPeriod < b.tmPeriod;
     }
+    bool operator< (const std::time_t &t) const
+    {
+        return tmPeriod < t;
+    }
     //--------------------------------------------------------------------------------------------------------
     Bar & Append (const Bar &b)
     {
