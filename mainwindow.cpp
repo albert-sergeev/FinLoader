@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 
 #include<QListView>
+#include<QDir>
 #include<QHBoxLayout>
 #include<QStandardPaths>
 
@@ -76,9 +77,6 @@ MainWindow::MainWindow(QWidget *parent)
     startTimer(100); // timer to process GUID events
 
     InitHolders();
-
-    const QString appDataFolder = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
-    qDebug() << "appDataFolder: "<< appDataFolder<<"\n";
 
 }
 //--------------------------------------------------------------------------------------------------------------------------------
@@ -307,6 +305,9 @@ void MainWindow::LoadSettings()
             swtShowAll->setChecked(m_settings.value("docShowAll",true).toBool());
             swtShowMarkets->setChecked(m_settings.value("docShowMarkets",false).toBool());
 
+            qsStorageDirPath            = m_settings.value("StorageDirPath","").toString();
+            bDefaultStoragePath         = m_settings.value("DefaultStoragePath",true).toBool();
+
         m_settings.endGroup();
 
         m_settings.beginGroup("Configwindow");
@@ -352,6 +353,10 @@ void MainWindow::SaveSettings()
             m_settings.setValue("docShowByName",swtShowByName->isChecked());
             m_settings.setValue("docShowAll",swtShowAll->isChecked());
             m_settings.setValue("docShowMarkets",swtShowMarkets->isChecked());
+
+            m_settings.setValue("StorageDirPath", qsStorageDirPath);
+            m_settings.setValue("DefaultStoragePath",bDefaultStoragePath);
+
         m_settings.endGroup();
 
         m_settings.beginGroup("Configwindow");
@@ -382,7 +387,23 @@ void MainWindow::SaveSettings()
 void MainWindow::LoadDataStorage()
 {
     try{
-        stStore.Initialize();
+        QString appDataFolder;
+        if (bDefaultStoragePath){
+            auto path = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+            if (path.isEmpty()){
+                throw std::runtime_error("Unable determine standart application data path");
+            }
+            QDir d{path};
+            if (!d.mkpath(d.absolutePath())){
+                throw std::runtime_error("Error creating standart application data path");
+                }
+            appDataFolder = d.absolutePath();
+        }
+        else{
+            appDataFolder = qsStorageDirPath;
+        }
+        stStore.Initialize(appDataFolder.toStdString());
+
         stStore.LoadMarketConfig(vMarketsLst);
         stStore.LoadTickerConfig(vTickersLst);
     }
@@ -1020,7 +1041,9 @@ void MainWindow::InitAction()
     void MainWindow::slotConfigWndow()
     {
         ConfigWindow *pdoc=new ConfigWindow(&m_MarketLstModel,iDefaultTickerMarket,
-                                            &m_TickerLstModel,bConfigTickerShowByName,bConfigTickerSortByName);
+                                            &m_TickerLstModel,bConfigTickerShowByName,bConfigTickerSortByName,
+                                            bDefaultStoragePath,qsStorageDirPath
+                                            );
         pdoc->setAttribute(Qt::WA_DeleteOnClose);
         pdoc->setWindowTitle(tr("Config"));
         pdoc->setWindowIcon(QPixmap(":/store/images/sc_config"));
@@ -1037,6 +1060,9 @@ void MainWindow::InitAction()
 
         connect(this,SIGNAL(SaveUnsavedConfigs()),pdoc,SLOT(slotBtnSaveMarketClicked()));
         connect(this,SIGNAL(SaveUnsavedConfigs()),pdoc,SLOT(slotBtnSaveTickerClicked()));
+
+        connect(pdoc,SIGNAL(NeedChangeDefaultPath(bool,QString)),this,SLOT(slotSaveNewDefaultPath(bool,QString)));
+
 
         pdoc->show();
     }
@@ -1403,11 +1429,8 @@ void MainWindow::InitAction()
                     });
             }
         }
-
-
     }
     //--------------------------------------------------------------------------------------------------------------------------------
-
     void MainWindow::slotGVFramesVisibilityStateChanged()
     {
         std::tuple<bool,bool,bool,bool,bool> tp{
@@ -1427,6 +1450,15 @@ void MainWindow::InitAction()
         }
     }
     //--------------------------------------------------------------------------------------------------------------------------------
+    void MainWindow::slotSaveNewDefaultPath(bool bDef,QString qsPath)
+    {
+        qsStorageDirPath    = qsPath;
+        bDefaultStoragePath = bDef;
+        //qDebug()<<"reboot!!!";
+        SaveSettings();
+        qApp->quit();
+        //TODO: auto start app
+    }
     //--------------------------------------------------------------------------------------------------------------------------------
     //--------------------------------------------------------------------------------------------------------------------------------
     //--------------------------------------------------------------------------------------------------------------------------------

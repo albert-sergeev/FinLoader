@@ -2,7 +2,9 @@
 #include "ui_configwindow.h"
 
 #include<QMessageBox>
+#include<QStandardPaths>
 #include<QDebug>
+#include<QFileDialog>
 #include <QKeyEvent>
 #include <iostream>
 
@@ -10,6 +12,7 @@
 //--------------------------------------------------------------------------------------------------------
 ConfigWindow::ConfigWindow(modelMarketsList *modelM,int DefaultTickerMarket,
                            modelTickersList *modelT, bool ShowByName,bool SortByName,
+                           bool DefStoragePath, QString StoragePath,
                            QWidget *parent) :
     QWidget(parent)
     , bDataMarketChanged{false}
@@ -18,6 +21,7 @@ ConfigWindow::ConfigWindow(modelMarketsList *modelM,int DefaultTickerMarket,
     , bDataTickerChanged{false}
     , bAddingTickerRow {false}
     , bIsAboutTickerChanged{false}
+    , bDataGeneralChanged{false}
     ,iDefaultTickerMarket{DefaultTickerMarket}
     , modelMarket{modelM}
     , modelTicker{modelT}
@@ -25,7 +29,23 @@ ConfigWindow::ConfigWindow(modelMarketsList *modelM,int DefaultTickerMarket,
 {
     ui->setupUi(this);
     try{
-        stStore.Initialize();
+        QString appDataFolder;
+        if (DefStoragePath){
+            //appDataFolder = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+            auto path = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+            if (path.isEmpty()){
+                throw std::runtime_error("Unable determine standart application data path");
+            }
+            QDir d{path};
+            if (!d.mkpath(d.absolutePath())){
+                throw std::runtime_error("Error creating standart application data path");
+                }
+            appDataFolder = d.absolutePath();
+        }
+        else{
+            appDataFolder = StoragePath;
+        }
+        stStore.Initialize(appDataFolder.toStdString());
     }
     catch (std::exception &e){
         //
@@ -90,6 +110,17 @@ ConfigWindow::ConfigWindow(modelMarketsList *modelM,int DefaultTickerMarket,
     swtUpToSysWholeMarket = new StyledSwitcher(tr("On "),tr(" Off"),true,10,this);
     lt7->addWidget(swtUpToSysWholeMarket);
     //-------------------------------------------------------------
+    //-------------------------------------------------------------
+    // for general config
+    //-------------------------------------------------------------
+    //-------------------------------------------------------------
+    QHBoxLayout *lt8 = new QHBoxLayout();
+    lt8->setMargin(0);
+    ui->wtDefPath->setLayout(lt8);
+    swtDefPath = new StyledSwitcher(tr("On "),tr(" Off"),true,10,this);
+    lt8->addWidget(swtDefPath);
+    //-------------------------------------------------------------
+
 
 
 
@@ -139,6 +170,24 @@ ConfigWindow::ConfigWindow(modelMarketsList *modelM,int DefaultTickerMarket,
     swtShowByNameTicker->setChecked(ShowByName);
     swtSortByNameTicker->setChecked(SortByName);
 
+    ///////////////////////////////////////////////////////////////////////
+    // general-tab work
+
+    connect(swtDefPath,SIGNAL(stateChanged(int)),this,SLOT(slotDefPathChenged(int)));
+    connect(ui->edStoragePath,SIGNAL(textChanged(const QString &)),this,SLOT(slotStoragePathChanged(const QString &)));
+
+    connect(ui->btnGeneralSave,SIGNAL(clicked()),  this,SLOT(slotGeneralSaveClicked()));
+    connect(ui->btnGeneralCancel,SIGNAL(clicked()),  this,SLOT(slotGeneralCancelClicked()));
+
+    connect(ui->btnSelectStoragePath,SIGNAL(clicked()),  this,SLOT(slotGeneralOpenStorageDirClicked()));
+
+    bDefStoragePath = DefStoragePath;
+    qsStoragePath   = StoragePath;
+    slotGeneralCancelClicked();
+
+    ///////////////////////////////////////////////////////////////////////
+    // common
+
     setMarketModel();
     setTickerModel();
 
@@ -176,6 +225,7 @@ void ConfigWindow::keyPressEvent(QKeyEvent *event)
     if(event->key() == Qt::Key_Escape){
         slotBtnCancelMarketClicked();
         slotBtnSaveTickerClicked();
+        slotGeneralCancelClicked();
     }
 }
 //--------------------------------------------------------------------------------------------------------
@@ -185,6 +235,7 @@ void ConfigWindow::slotAboutQuit()
     if(bDataMarketChanged){
         slotBtnSaveMarketClicked();
         slotBtnSaveTickerClicked();
+        slotGeneralSaveClicked();
     }
 }
 
@@ -913,4 +964,69 @@ void ConfigWindow::ClearTickerWidgetsValues()
 
 }
 
+//--------------------------------------------------------------------------------------------------------
+void ConfigWindow::slotDefPathChenged(int /*iDef*/)
+{
+    slotSetPathVisibility();
+    if(swtDefPath->isChecked() && bDefStoragePath){
+        slotGeneralCancelClicked();
+    }
+    else{
+        slotStoragePathChanged({});
+    }
+}
+//--------------------------------------------------------------------------------------------------------
+void ConfigWindow::slotStoragePathChanged(const QString &)
+{
+    bDataGeneralChanged = true;
+    ui->btnGeneralSave ->setEnabled(true);
+    ui->btnGeneralCancel ->setEnabled(true);
+
+}
+//--------------------------------------------------------------------------------------------------------
+void ConfigWindow::slotGeneralCancelClicked()
+{
+    ui->btnGeneralSave ->setEnabled(false);
+    ui->btnGeneralCancel ->setEnabled(false);
+
+    swtDefPath->setChecked(bDefStoragePath);
+    ui->edStoragePath->setText(qsStoragePath);
+    slotSetPathVisibility();
+
+    bDataGeneralChanged = false;
+}
+//--------------------------------------------------------------------------------------------------------
+void ConfigWindow::slotSetPathVisibility()
+{
+    if(!swtDefPath->isChecked()){
+        ui->btnSelectStoragePath->setEnabled(true);
+        ui->edStoragePath->setEnabled(true);
+    }
+    else{
+        ui->btnSelectStoragePath->setEnabled(false);
+        ui->edStoragePath->setEnabled(false);
+    }
+}
+//--------------------------------------------------------------------------------------------------------
+void ConfigWindow::slotGeneralSaveClicked()
+{
+    if (bDataGeneralChanged){
+        int n=QMessageBox::warning(0,tr("Warning"),
+                               tr("To change the path to the storage, programm need to be restarted. Continue?"),
+                               QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel
+                               );
+        if (n==QMessageBox::Yes){
+            emit NeedChangeDefaultPath(swtDefPath->isChecked(),ui->edStoragePath->text());
+        }
+        else if (n==QMessageBox::Cancel){
+            slotGeneralCancelClicked();
+        }
+    }
+}
+//--------------------------------------------------------------------------------------------------------
+void ConfigWindow::slotGeneralOpenStorageDirClicked()
+{
+    QString str=QFileDialog::getExistingDirectory(0,"Open dialog","");
+    ui->edStoragePath->setText(str);
+}
 //--------------------------------------------------------------------------------------------------------

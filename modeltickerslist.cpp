@@ -66,7 +66,7 @@ QVariant modelTickersList::data(const QModelIndex &index, int nRole) const
         }
     }
 
-    if(nRole == Qt::BackgroundColorRole){
+    if(nRole == Qt::BackgroundColorRole ){
         const Ticker & t ( vTickersLst->at(index.row()));
         auto It (mBlinkedState->find(t.TickerID()));
         if (It != mBlinkedState->end() && It->second.first){

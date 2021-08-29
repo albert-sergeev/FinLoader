@@ -45,8 +45,9 @@ Storage::Storage():bInitialized{false}
 
 }
 //--------------------------------------------------------------------------------------------------------
-void Storage::Initialize()
+void Storage::Initialize(std::string sPath)
 {
+    if (bInitialized) return;
 
     /// for speed optimisation
     std::ios::sync_with_stdio(false);
@@ -58,11 +59,22 @@ void Storage::Initialize()
     //std::filesystem::path pathCurr;
     //std::filesystem::path pathDataDir;
     //std::filesystem::path pathStorageDir;
-    //
-    pathCurr = std::filesystem::current_path();
+
+    sStoragePath = sPath;
+    pathCurr = std::filesystem::absolute(sStoragePath);
+    std::string sTmp = pathCurr;
+
+    if(!std::filesystem::exists(pathCurr)){
+        if(!std::filesystem::create_directory(pathCurr)){
+            throw std::runtime_error("Unable to create directory " + sTmp);
+        }
+    }
+    pathCurr = std::filesystem::absolute(sStoragePath);
+    if(!std::filesystem::is_directory(pathCurr)){
+        throw std::runtime_error(sStoragePath + " - is not directory");
+    }
     ///========
     if(!std::filesystem::exists(pathCurr/"data")){
-
         if(!std::filesystem::create_directory(pathCurr/"data")){
             throw std::runtime_error("Unable to create ./data/ directory");
         }
@@ -73,7 +85,6 @@ void Storage::Initialize()
     }
     ///========
     if(!std::filesystem::exists(pathDataDir/"storage")){
-
         if(!std::filesystem::create_directory(pathDataDir/"storage")){
             throw std::runtime_error("Unable to create ./data/dtorage/ directory");
         }
@@ -88,7 +99,7 @@ void Storage::Initialize()
     if(!std::filesystem::exists(pathMarkersFile)){ // if no file - create new with defaults
         std::ofstream fileMarket(pathMarkersFile);
         std::vector<Market> m{{trim("MOEX"),trim("MICEX")}};
-        SaveMarketConfig(m);
+        SaveMarketConfigLocal(m);
         if(!std::filesystem::exists(pathMarkersFile)){
             throw std::runtime_error("Error create file: ./data/markets.dat");
         }
@@ -126,7 +137,7 @@ void Storage::Initialize()
 //--------------------------------------------------------------------------------------------------------
 void Storage::LoadMarketConfig(std::vector<Market> & vMarketsLst)
 {
-    if (!bInitialized) Initialize();
+    if (!bInitialized) Initialize(sStoragePath);
     //
     std::unique_lock lk(mutexMarketConfigFile);
     //
@@ -183,11 +194,17 @@ void Storage::SaveMarketConfig(std::vector<Market> & vMarketsLst)
 {
     std::unique_lock lk(mutexMarketConfigFile);
     //
-    SaveMarketConfigV_1(vMarketsLst);
+    SaveMarketConfigLocal(vMarketsLst);
 }
 void Storage::SaveMarketConfig(std::vector<Market> && vMarketsLst)
 {
     SaveMarketConfig(vMarketsLst);
+}
+//--------------------------------------------------------------------------------------------------------
+// to avoid mutex
+void Storage::SaveMarketConfigLocal(std::vector<Market> & vMarketsLst)
+{
+    SaveMarketConfigV_1(vMarketsLst);
 }
 //--------------------------------------------------------------------------------------------------------
 void Storage::SaveMarketConfigV_1(std::vector<Market> & vMarketsLst)
@@ -265,10 +282,14 @@ void Storage::SwitchTickersConfigFile()
     }
     else{
         if (iSW == 1){
-            std::filesystem::rename(datafile1,buckup1);
+            if (std::filesystem::exists(datafile1)){
+                std::filesystem::rename(datafile1,buckup1);
+            }
         }
         else{
-            std::filesystem::rename(datafile2,buckup1);
+            if (std::filesystem::exists(datafile2)){
+                std::filesystem::rename(datafile2,buckup1);
+            }
         }
         std::ofstream fileSW(pathTickersSwitcherFile);
         if (fileSW){
@@ -305,7 +326,7 @@ std::filesystem::path Storage::ReadTickersConfigFileName(bool bOld)
 void Storage::SaveTickerConfig(const Ticker & tT, op_type tp)
 {
     std::unique_lock lk(mutexTickerConfigFile);
-    SaveTickerConfigV_2(pathTickersFile,tT,tp);
+    SaveTickerConfigLocal(tT,tp);
 };
 //--------------------------------------------------------------------------------------------------------
 void Storage::SaveTickerConfig(Ticker && tT, op_type tp)
@@ -317,6 +338,11 @@ void Storage::FormatTickerConfigV_1()
 {
     std::ofstream fileTicker(pathTickersFile);
     fileTicker<<"v1\n";
+}
+//--------------------------------------------------------------------------------------------------------
+void Storage::SaveTickerConfigLocal(const Ticker & tT, op_type tp)
+{
+    SaveTickerConfigV_2(pathTickersFile,tT,tp);
 }
 //--------------------------------------------------------------------------------------------------------
 void Storage::SaveTickerConfigV_1(std::filesystem::path  pathFile,const Ticker & tT, op_type tp, int iForceMark)
@@ -354,7 +380,7 @@ void Storage::SaveTickerConfigV_1(std::filesystem::path  pathFile,const Ticker &
 void Storage::LoadTickerConfig(std::vector<Ticker> & vTickersLst)
 {
 
-    if (!bInitialized) Initialize();
+    if (!bInitialized) Initialize(sStoragePath);
     //
     std::unique_lock lk(mutexTickerConfigFile);
     //

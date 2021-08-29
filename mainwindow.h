@@ -110,12 +110,13 @@ private:
     BlockFreeQueue<dataBuckgroundThreadAnswer> queueTrdAnswers;
     workerLoader wrkrLoadFinQuotes;
 
-
     // global storage objects
     QSettings m_settings;
     Storage stStore;
     std::vector<Market> vMarketsLst;
     modelMarketsList m_MarketLstModel;
+    QString qsStorageDirPath;
+    bool bDefaultStoragePath;
 
     // for condig subwindow
     int iDefaultTickerMarket;
@@ -177,6 +178,8 @@ public slots: // for import FinQuotes winow
     void slotStopFinQuotesLoadings();
 
     void slotLoadGraph(const  int iTickerID, const std::time_t tBegin, const std::time_t tEnd);
+
+    void slotSaveNewDefaultPath(bool,QString);
 
 
 protected slots: // for main window

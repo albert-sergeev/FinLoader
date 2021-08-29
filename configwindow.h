@@ -26,6 +26,7 @@ public:
 
     explicit ConfigWindow(modelMarketsList *modelM,int iDefaultTickerMarket,
                           modelTickersList *modelT, bool ShowByName,bool SortByName,
+                          bool DefStoragePath, QString StoragePath,
                           QWidget *parent = nullptr);
     ~ConfigWindow();
 private:
@@ -46,6 +47,10 @@ private:
     bool bAddingTickerRow;
     bool bIsAboutTickerChanged;
 
+    bool bDataGeneralChanged;
+    bool bDefStoragePath;
+    QString qsStoragePath;
+
     StyledSwitcher *swtAutoLoadTicker;
     StyledSwitcher *swtUpToSysTicker;
     StyledSwitcher *swtBulbululatorTicker;
@@ -55,6 +60,8 @@ private:
 
     StyledSwitcher *swtAutoLoadWholeMarket;
     StyledSwitcher *swtUpToSysWholeMarket;
+
+    StyledSwitcher *swtDefPath;
 
     int iDefaultTickerMarket;
     modelMarketsList *modelMarket;
@@ -98,6 +105,7 @@ signals:
     void NeedSaveDefaultTickerMarket(int);
     void NeedSaveShowByNames(bool);
     void NeedSaveSortByNames(bool);
+    void NeedChangeDefaultPath(bool,QString);
 
 public slots:
     void slotBtnAddTickerClicked();
@@ -117,6 +125,14 @@ protected slots:
     void slotSortByNamesChecked(int Checked);
     void ClearTickerWidgetsValues();
     void setEnableTickerWidgets(bool);
+
+    void slotDefPathChenged(int);
+    void slotStoragePathChanged(const QString &);
+    void slotSetPathVisibility();
+
+    void slotGeneralSaveClicked();
+    void slotGeneralCancelClicked();
+    void slotGeneralOpenStorageDirClicked();
 
 //    void slotAboutQuit();
 
