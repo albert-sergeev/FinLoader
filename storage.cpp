@@ -1335,6 +1335,10 @@ bool Storage::WriteMemblockToStore(WriteMutexDefender &defLk,int iTickerID, std:
 //--------------------------------------------------------------------------------------------------------
 bool Storage::ReadFromStore(int iTickerID, std::time_t tMonth, std::vector<BarTick> & vBarList,
                    std::time_t dtLoadBegin, std::time_t dtLoadEnd,
+                   bool bFilterRepo,
+                   std::vector<std::pair<std::time_t,std::pair<std::time_t,std::vector<std::pair<std::time_t,std::time_t>>>>> &vRepoTable,
+                   bool bFilterSessionTable,
+                   std::vector<std::pair<std::time_t,std::pair<std::time_t,std::vector<std::pair<std::time_t,std::time_t>>>>> &vSessionTable,
                    std::stringstream & ssOut)
 {
     char buffer[100];
@@ -1378,7 +1382,10 @@ bool Storage::ReadFromStore(int iTickerID, std::time_t tMonth, std::vector<BarTi
         if (vStorageL1[iStage - 1]>0){
             std::stringstream ssNamePart;
             ssNamePart << ss.str()<<vStorageL1[iStage-1];
-            if (!ReadFromStoreFile(iTickerID, tMonth,mvHolder,dtLoadBegin, dtLoadEnd,ssNamePart.str(),ssOut)){
+            if (!ReadFromStoreFile(iTickerID, tMonth,mvHolder,dtLoadBegin, dtLoadEnd,ssNamePart.str(),
+                                   bFilterRepo,vRepoTable,
+                                   bFilterSessionTable,vSessionTable,
+                                   ssOut)){
                 return false;
             }
         }
@@ -1386,7 +1393,10 @@ bool Storage::ReadFromStore(int iTickerID, std::time_t tMonth, std::vector<BarTi
         if (vStorageL2[iStage - 1]>0){
             std::stringstream ssNamePart;
             ssNamePart << ss.str()<<vStorageL2[iStage-1];
-            if (!ReadFromStoreFile(iTickerID, tMonth,mvHolder,dtLoadBegin, dtLoadEnd,ssNamePart.str(),ssOut)){
+            if (!ReadFromStoreFile(iTickerID, tMonth,mvHolder,dtLoadBegin, dtLoadEnd,ssNamePart.str(),
+                                   bFilterRepo,vRepoTable,
+                                   bFilterSessionTable,vSessionTable,
+                                   ssOut)){
                 return false;
             }
         }
@@ -1396,7 +1406,10 @@ bool Storage::ReadFromStore(int iTickerID, std::time_t tMonth, std::vector<BarTi
         if (vStorageW[iStage - 1]>0){
             std::stringstream ssNamePart;
             ssNamePart << ss.str()<<vStorageW[iStage-1];
-            if (!ReadFromStoreFile(iTickerID, tMonth,mvHolder,dtLoadBegin, dtLoadEnd,ssNamePart.str(),ssOut)){
+            if (!ReadFromStoreFile(iTickerID, tMonth,mvHolder,dtLoadBegin, dtLoadEnd,ssNamePart.str(),
+                                   bFilterRepo,vRepoTable,
+                                   bFilterSessionTable,vSessionTable,
+                                   ssOut)){
                 return false;
             }
         }
@@ -1426,6 +1439,10 @@ bool Storage::ReadFromStore(int iTickerID, std::time_t tMonth, std::vector<BarTi
 bool Storage::ReadFromStoreFile(int iTickerID, std::time_t /*tMonth*/, std::map<std::time_t,std::vector<BarTick>> &mvHolder,
                    std::time_t dtLoadBegin, std::time_t dtLoadEnd,
                    std::string strNamePart,
+                   bool bFilterRepo,
+                   std::vector<std::pair<std::time_t,std::pair<std::time_t,std::vector<std::pair<std::time_t,std::time_t>>>>> &vRepoTable,
+                   bool bFilterSessionTable,
+                   std::vector<std::pair<std::time_t,std::pair<std::time_t,std::vector<std::pair<std::time_t,std::time_t>>>>> &vSessionTable,
                    std::stringstream & ssOut)
 {
     std::stringstream ss;
@@ -1438,6 +1455,10 @@ bool Storage::ReadFromStoreFile(int iTickerID, std::time_t /*tMonth*/, std::map<
 
     std::string sFileName(ss.str());
     ////
+    bool bLastWasRepo{false};
+    bool bLastWasSessionTable{false};
+    std::time_t tLastTime{0};
+    //////////////////////////////////////////////////////////////////////////////////////////////////
 
     std::ifstream fileR (sFileName,std::ios_base::in | std::ios_base::binary);
     if(fileR){
@@ -1505,11 +1526,26 @@ bool Storage::ReadFromStoreFile(int iTickerID, std::time_t /*tMonth*/, std::map<
             if (b.Period() >= dtLoadBegin && b.Period() <= dtLoadEnd){
 
                 if (iState == Storage::data_type::usual || iState == Storage::data_type::new_sec){
-                    if (iState == Storage::data_type::new_sec){
-                        mvHolder[b.Period()].clear();
-
+                    if (tLastTime != b.Period()){
+                        tLastTime = b.Period();
+                        if (bFilterRepo ){
+                            bLastWasRepo = Market::IsInSessionTabe(vRepoTable,tLastTime);
+                        }
+                        if (bFilterSessionTable){
+                            bLastWasSessionTable = Market::IsInSessionTabe(vSessionTable,tLastTime);
+                        }
                     }
-                    mvHolder[b.Period()].push_back(b);
+
+                    if ((!bFilterRepo         ||  (bFilterRepo && !bLastWasRepo)) &&
+                        (!bFilterSessionTable ||  (bFilterSessionTable && bLastWasSessionTable))
+                            )
+                    {
+                        if (iState == Storage::data_type::new_sec){
+                            mvHolder[b.Period()].clear();
+
+                        }
+                        mvHolder[b.Period()].push_back(b);
+                    }
                 }
             }
             /////////////////////////////////////////////////////////////
@@ -1577,6 +1613,7 @@ bool Storage::OptimizeStore(int iTickerID, std::time_t tMonth, bool & bToPlanNex
     std::pair<int,std::time_t> k{iTickerID,tMonth};
     std::shared_lock lkInit(mutexQuotesStoreInit);
     ////////////////////////////////////////////////
+    std::vector<std::pair<std::time_t,std::pair<std::time_t,std::vector<std::pair<std::time_t,std::time_t>>>>> vRepoNull{};
 
     auto It (mpOptimizeMutexes.find(k));
     if(It != mpOptimizeMutexes.end()){
@@ -1631,7 +1668,7 @@ bool Storage::OptimizeStore(int iTickerID, std::time_t tMonth, bool & bToPlanNex
                 if (vStorageL1[iStage - 1]>0){
                     std::stringstream ssNamePart;
                     ssNamePart << ssControlFileNamePart.str()<<"_"<<vStorageL1[iStage-1];
-                    if (!ReadFromStoreFile(iTickerID, tMonth,mvHolder,dtLoadBegin, dtLoadEnd,ssNamePart.str(),ssOut)){
+                    if (!ReadFromStoreFile(iTickerID, tMonth,mvHolder,dtLoadBegin, dtLoadEnd,ssNamePart.str(),false,vRepoNull,false,vRepoNull,ssOut)){
                         return false;
                     }
                 }
@@ -1640,7 +1677,7 @@ bool Storage::OptimizeStore(int iTickerID, std::time_t tMonth, bool & bToPlanNex
                 if (vStorageL2[iStage - 1]>0){
                     std::stringstream ssNamePart;
                     ssNamePart << ssControlFileNamePart.str()<<"_"<<vStorageL2[iStage-1];
-                    if (!ReadFromStoreFile(iTickerID, tMonth,mvHolder,dtLoadBegin, dtLoadEnd,ssNamePart.str(),ssOut)){
+                    if (!ReadFromStoreFile(iTickerID, tMonth,mvHolder,dtLoadBegin, dtLoadEnd,ssNamePart.str(),false,vRepoNull,false,vRepoNull,ssOut)){
                         return false;
                     }
                 }

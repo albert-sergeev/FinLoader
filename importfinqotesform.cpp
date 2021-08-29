@@ -879,11 +879,13 @@ void ImportFinQuotesForm::slotBtnImportClicked()
 
             dataTask.parseData = parseDataReady;
 
-            dataTask.mSessionRange = Market::buildDefaultSessionsMap(); //TODO: copy range from real Market object
+            dataTask.vSessionTable = Market::buildDefaultSessionsTable(); //TODO: copy range from real Market object
+            dataTask.vRepoTable = Market::buildDefaultRepoTable(); //TODO: copy range from real Market object
 
             emit NeedParseImportFinQuotesFile(dataTask);
 
             bInLoading = true;
+            ui->progressBar->setValue(0);
             slotSetWidgetsInLoadState(bInLoading);
 
         }
@@ -935,8 +937,13 @@ void ImportFinQuotesForm::slotLoadingHasFinished(bool bSuccess, QString qsErr){
 
         ui->edText->append(qsErr);
         ui->edText->append("\n");
+
+        if(bInChecking){
+            ui->edText->append(tr("If there are too many errors, you may have taken a checkfile containing candle data aligned to the close time. Try open-aligned."));
+        }
     }
 
+    ui->progressBar->setValue(100);
     bInLoading = false;
     slotSetWidgetsInLoadState(bInLoading);
 }

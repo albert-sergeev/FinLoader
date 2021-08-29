@@ -36,7 +36,8 @@ public:
 
     std::shared_ptr<GraphHolder> holder;
 
-    std::map<std::time_t,std::pair<std::time_t,std::map<std::time_t,std::time_t>>> mSessionRange;
+    std::vector<std::pair<std::time_t,std::pair<std::time_t,std::vector<std::pair<std::time_t,std::time_t>>>>> vSessionTable;
+    std::vector<std::pair<std::time_t,std::pair<std::time_t,std::vector<std::pair<std::time_t,std::time_t>>>>> vRepoTable;
 
     //--------------------------------------------------------------
     dataFinLoadTask():stStore{nullptr},parentWnd{nullptr},parseData{nullptr,nullptr},taskType{TaskType::finQuotesImport},holder{nullptr}{;};
@@ -61,7 +62,8 @@ public:
 
         holder          = o.holder;
 
-        mSessionRange   = o.mSessionRange;
+        vSessionTable   = o.vSessionTable;
+        vRepoTable      = o.vRepoTable;
     };
     //--------------------------------------------------------------
     inline void SetStore(Storage * const stSt)      { stStore = stSt;};

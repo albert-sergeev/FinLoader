@@ -1,6 +1,10 @@
 #ifndef WORKERLOADERFINAM_H
 #define WORKERLOADERFINAM_H
 
+
+#include<chrono>
+
+
 #include "blockfreequeue.h"
 #include "datafinloadtask.h"
 #include "databuckgroundthreadanswer.h"
@@ -44,9 +48,11 @@ private:
                                     dataFinLoadTask & data);
 
 
-    static bool compareBars(dataFinLoadTask & data,std::vector<Bar> &vBars,BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers);
+    static bool compareBars(GraphHolder &hl,dataFinLoadTask & data,std::vector<Bar> &vBars,BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
+                            std::chrono::time_point<std::chrono::steady_clock> dtActivity);
     template<typename T>
-    static bool compareBarsT(dataFinLoadTask & data,std::vector<Bar> &vBars,BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers);
+    static bool compareBarsT(GraphHolder &hl,dataFinLoadTask & data,std::vector<Bar> &vBars,BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
+                             std::chrono::time_point<std::chrono::steady_clock> dtActivity);
 
 
     static int createCleanUpHeader(std::time_t tMonth, char* cBuff,std::time_t tBegin, std::time_t tEnd);

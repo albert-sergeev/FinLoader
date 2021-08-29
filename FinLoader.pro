@@ -31,6 +31,7 @@ SOURCES += \
     importfinqotesform.cpp \
     main.cpp \
     mainwindow.cpp \
+    market.cpp \
     modelmarketslist.cpp \
     modeltickerslist.cpp \
     plusbutton.cpp \
@@ -57,6 +58,7 @@ HEADERS += \
     graphviewform.h \
     importfinqotesform.h \
     mainwindow.h \
+    market.h \
     modelmarketslist.h \
     modeltickerslist.h \
     plusbutton.h \

@@ -140,6 +140,10 @@ public:
 
     bool ReadFromStore(int iTickerID, std::time_t tMonth, std::vector<BarTick> & vBarList,
                        std::time_t dtLoadBegin, std::time_t dtLoadEnd,
+                       bool bFilterRepo,
+                       std::vector<std::pair<std::time_t,std::pair<std::time_t,std::vector<std::pair<std::time_t,std::time_t>>>>> &vRepoTable,
+                       bool bFilterSessionTable,
+                       std::vector<std::pair<std::time_t,std::pair<std::time_t,std::vector<std::pair<std::time_t,std::time_t>>>>> &vSessionTable,
                        std::stringstream & ssOut);
 
 
@@ -178,6 +182,10 @@ private:
     bool ReadFromStoreFile(int iTickerID, std::time_t tMonth, std::map<std::time_t,std::vector<BarTick>> &mvHolder,
                        std::time_t dtLoadBegin, std::time_t dtLoadEnd,
                        std::string sFileName,
+                       bool bFilterRepo,
+                       std::vector<std::pair<std::time_t,std::pair<std::time_t,std::vector<std::pair<std::time_t,std::time_t>>>>> &vRepoTable,
+                       bool bFilterSessionTable,
+                       std::vector<std::pair<std::time_t,std::pair<std::time_t,std::vector<std::pair<std::time_t,std::time_t>>>>> &vSessionTable,
                        std::stringstream & ssOut);
 
     bool WriteMapToStore(std::string sFilename, std::map<std::time_t,std::vector<BarTick>>& mvHolder, std::stringstream & ssOut);
