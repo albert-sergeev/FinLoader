@@ -5,6 +5,8 @@
 #include<QDir>
 #include<QHBoxLayout>
 #include<QStandardPaths>
+#include<QProcess>
+
 
 
 
@@ -381,6 +383,8 @@ void MainWindow::SaveSettings()
         m_settings.endGroup();
 
     m_settings.endGroup();
+
+    m_settings.sync();
 
 }
 //--------------------------------------------------------------------------------------------------------------------------------
@@ -906,7 +910,7 @@ void MainWindow::InitAction()
                     //qDebug()<<"reboot!!!";
                     SaveSettings();
                     qApp->quit();
-                    //TODO: auto start app
+                    QProcess::startDetached(qApp->arguments()[0], qApp->arguments());
                 }
             }
         }
@@ -1012,7 +1016,7 @@ void MainWindow::InitAction()
                 //qDebug()<<"reboot!!!";
                 SaveSettings();
                 qApp->quit();
-                //TODO: auto start app
+                QProcess::startDetached(qApp->arguments()[0], qApp->arguments());
             }
         }
     }
@@ -1454,10 +1458,10 @@ void MainWindow::InitAction()
     {
         qsStorageDirPath    = qsPath;
         bDefaultStoragePath = bDef;
-        //qDebug()<<"reboot!!!";
+
         SaveSettings();
         qApp->quit();
-        //TODO: auto start app
+        QProcess::startDetached(qApp->arguments()[0], qApp->arguments());
     }
     //--------------------------------------------------------------------------------------------------------------------------------
     //--------------------------------------------------------------------------------------------------------------------------------

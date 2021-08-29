@@ -235,6 +235,8 @@ void ConfigWindow::slotAboutQuit()
     if(bDataMarketChanged){
         slotBtnSaveMarketClicked();
         slotBtnSaveTickerClicked();
+    }
+    if (bDataGeneralChanged){
         slotGeneralSaveClicked();
     }
 }
@@ -986,11 +988,10 @@ void ConfigWindow::slotStoragePathChanged(const QString &)
 //--------------------------------------------------------------------------------------------------------
 void ConfigWindow::slotGeneralCancelClicked()
 {
-    ui->btnGeneralSave ->setEnabled(false);
-    ui->btnGeneralCancel ->setEnabled(false);
-
     swtDefPath->setChecked(bDefStoragePath);
     ui->edStoragePath->setText(qsStoragePath);
+    ui->btnGeneralSave ->setEnabled(false);
+    ui->btnGeneralCancel ->setEnabled(false);
     slotSetPathVisibility();
 
     bDataGeneralChanged = false;
