@@ -198,7 +198,45 @@ public:
         return  *this;
     }
     //--------------------------------------------------------------------------------------------------------
+    bool equal (const Ticker & t){
+        if (sTickerName == t.sTickerName &&
+            sTickerSign == t.sTickerSign &&
+            iTickerID   == t.iTickerID &&
+            iMarketID   == t.iMarketID &&
+            sTickerSignFinam == t.sTickerSignFinam &&
+            sTickerSignQuik == t.sTickerSignQuik &&
+            bAutoLoad == t.bAutoLoad &&
+            bUpToSys == t.bUpToSys &&
+            bBulbululator   == t.bBulbululator &&
+            bBuble          == t.bBuble &&
+            iStoredSelectedInterval == t.iStoredSelectedInterval &&
+            bOHLC                   == t.bOHLC &&
+            tStoredTimePosition     == t.tStoredTimePosition &&
+            dHScale                 == t.dHScale &&
+            dVVolumeScale           == t.dVVolumeScale &&
+            tViewBegin              == t.tViewBegin &&
+            tViewEnd                == t.tViewEnd){
 
+                auto It (mVScalse.begin());
+                auto ItT (t.mVScalse.begin());
+                while(It != mVScalse.end() && ItT != t.mVScalse.end()){
+                    if (*It != *ItT){
+                        return  false;
+                    }
+                    It++;
+                    ItT++;
+                }
+                if(It != mVScalse.end() || ItT != t.mVScalse.end()){
+                    return false;
+                }
+            return true;
+        }
+        else{
+            return false;
+        }
+
+    }
+    //--------------------------------------------------------------------------------------------------------
 };
 
 //std::ostream & operator<<(std::ostream &os, Ticker &t)

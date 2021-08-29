@@ -129,6 +129,26 @@ public:
         vRepoTable      = o.vRepoTable;
     }
     //--------------------------------------------------------------------------------------------------------
+    bool equal(const Market &o)
+    {
+        if (
+            sMarketName == o.sMarketName &&
+            sMarketSign == o.sMarketSign &&
+            iMarketID   == o.iMarketID &&
+            bAutoLoad   == o.bAutoLoad &&
+            bUpToSys    == o.bUpToSys &&
+            tStartTime  == o.tStartTime &&
+            tEndTime    == o.tEndTime){
+// TODO: SessionTable comparison
+//            vSessionTable   = o.vSessionTable;
+//            vRepoTable      = o.vRepoTable;
+            return true;
+        }
+        else{
+            return false;
+        }
+    }
+    //--------------------------------------------------------------------------------------------------------
     static SessionTable_type buildDefaultSessionsTable()
     {
 

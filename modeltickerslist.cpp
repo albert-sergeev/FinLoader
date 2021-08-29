@@ -124,8 +124,10 @@ bool modelTickersList::setData(const QModelIndex &index,const QVariant &value,in
 bool modelTickersList::setData(const QModelIndex& index,const Ticker &t,int role)
 {
     if(index.isValid() && role == Qt::EditRole){
-        (*vTickersLst)[index.row()] = t;
-        emit dataChanged(index,index);
+        if(!(*vTickersLst)[index.row()].equal(t)){
+            (*vTickersLst)[index.row()] = t;
+            emit dataChanged(index,index);
+        }
     }
     return  0;
 }
