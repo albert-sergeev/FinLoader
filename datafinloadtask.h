@@ -36,8 +36,8 @@ public:
 
     std::shared_ptr<GraphHolder> holder;
 
-    std::vector<std::pair<std::time_t,std::pair<std::time_t,std::vector<std::pair<std::time_t,std::time_t>>>>> vSessionTable;
-    std::vector<std::pair<std::time_t,std::pair<std::time_t,std::vector<std::pair<std::time_t,std::time_t>>>>> vRepoTable;
+    Market::SessionTable_type vSessionTable;
+    Market::SessionTable_type  vRepoTable;
 
     //--------------------------------------------------------------
     dataFinLoadTask():stStore{nullptr},parentWnd{nullptr},parseData{nullptr,nullptr},taskType{TaskType::finQuotesImport},holder{nullptr}{;};

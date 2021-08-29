@@ -3,6 +3,7 @@
 
 #include<QListView>
 #include<QHBoxLayout>
+#include<QStandardPaths>
 
 
 
@@ -75,6 +76,10 @@ MainWindow::MainWindow(QWidget *parent)
     startTimer(100); // timer to process GUID events
 
     InitHolders();
+
+    const QString appDataFolder = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    qDebug() << "appDataFolder: "<< appDataFolder<<"\n";
+
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 MainWindow::~MainWindow()
@@ -1261,8 +1266,20 @@ void MainWindow::InitAction()
         dataTask.dtBegin        = tBegin;
         dataTask.dtEnd          = tEnd;
         dataTask.holder         = Holders[iTickerID];
-        dataTask.vSessionTable  = Market::buildDefaultSessionsTable(); //TODO: copy range from real Market object
 
+
+        auto ItT (std::find_if(vTickersLst.begin(),vTickersLst.end(),[&](const Ticker &t){
+            return t.TickerID() == iTickerID;
+            }));
+        if (ItT != vTickersLst.end()){
+            auto ItM (std::find_if(vMarketsLst.begin(),vMarketsLst.end(),[&](const Market &m){
+                return m.MarketID() == ItT->MarketID();
+                }));
+            if (ItM != vMarketsLst.end()){
+                dataTask.vSessionTable  = ItM->SessionTable();
+                dataTask.vRepoTable     = ItM->RepoTable();
+            }
+        }
 
         queueFinQuotesLoad.Push(dataFinLoadTask(dataTask));
 
@@ -1370,9 +1387,14 @@ void MainWindow::InitAction()
                 dataTask.dtBegin        = tBegin;
                 dataTask.dtEnd          = tNow;
                 dataTask.holder         = Holders[t.TickerID()];
-                dataTask.vSessionTable  = Market::buildDefaultSessionsTable(); //TODO: copy range from real Market object
-                dataTask.vRepoTable     = Market::buildDefaultRepoTable(); //TODO: copy range from real Market object
 
+                auto ItM (std::find_if(vMarketsLst.begin(),vMarketsLst.end(),[&](const Market &m){
+                    return m.MarketID() == t.MarketID();
+                    }));
+                if (ItM != vMarketsLst.end()){
+                    dataTask.vSessionTable  = ItM->SessionTable();
+                    dataTask.vRepoTable     = ItM->RepoTable();
+                }
 
                 queueFinQuotesLoad.Push(dataFinLoadTask(dataTask));
 

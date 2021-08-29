@@ -21,6 +21,9 @@ inline std::once_flag market_call_once_flag;
 
 class Market
 {
+public:
+    typedef  std::vector<std::pair<std::time_t,std::pair<std::time_t,std::vector<std::pair<std::time_t,std::time_t>>>>> SessionTable_type;
+
 private:
 
     // main data
@@ -35,13 +38,15 @@ private:
     std::time_t tStartTime;
     std::time_t tEndTime;
 
-    std::vector<std::pair<std::time_t,std::pair<std::time_t,std::vector<std::pair<std::time_t,std::time_t>>>>> vSessionTable;
-    std::vector<std::pair<std::time_t,std::pair<std::time_t,std::vector<std::pair<std::time_t,std::time_t>>>>> vRepoTable;
+    SessionTable_type vSessionTable;
+    SessionTable_type vRepoTable;
 
 
     static std::time_t t1990_01_01_00_00_00;
 
 public:
+
+
 
     inline std::string MarketName() const {return sMarketName;};
     inline std::string MarketSign() const {return sMarketSign;};
@@ -58,6 +63,8 @@ public:
     inline void SetStartTime    (const std::time_t  StartTime)  {tStartTime     = StartTime;};
     inline void SetEndTime      (const std::time_t  EndTime)    {tEndTime       = EndTime;};
 
+    SessionTable_type SessionTable()  {return vSessionTable;};
+    SessionTable_type RepoTable()     {return vRepoTable;};
 
 public:
     //--------------------------------------------------------------------------------------------------------
@@ -122,8 +129,7 @@ public:
         vRepoTable      = o.vRepoTable;
     }
     //--------------------------------------------------------------------------------------------------------
-    static std::vector<std::pair<std::time_t,std::pair<std::time_t,std::vector<std::pair<std::time_t,std::time_t>>>>>
-    buildDefaultSessionsTable()
+    static SessionTable_type buildDefaultSessionsTable()
     {
 
         std::tm tmPer;
@@ -172,14 +178,13 @@ public:
         std::time_t tE   = std::mktime(&tmPer);
 
 
-        //std::vector<std::pair<std::time_t,std::pair<std::time_t,std::vector<std::pair<std::time_t,std::time_t>>>>> v{{t,{tE,{{t1_1,t1_2},{t2_1,t2_2}}}}};
-        std::vector<std::pair<std::time_t,std::pair<std::time_t,std::vector<std::pair<std::time_t,std::time_t>>>>> v{{t,{tE,{{t1_1,t1_2}/*,{t2_1,t2_2}*/}}}};
+        //SessionTable_type v{{t,{tE,{{t1_1,t1_2},{t2_1,t2_2}}}}};
+        SessionTable_type v{{t,{tE,{{t1_1,t1_2}/*,{t2_1,t2_2}*/}}}};
 
         return v;
     };
-
-    static std::vector<std::pair<std::time_t,std::pair<std::time_t,std::vector<std::pair<std::time_t,std::time_t>>>>>
-    buildDefaultRepoTable()
+    //--------------------------------------------------------------------------------------------------------
+    static SessionTable_type buildDefaultRepoTable()
     {
 
         std::tm tmPer;
@@ -225,14 +230,14 @@ public:
 
         std::time_t tE   = std::mktime(&tmPer);
 
-        std::vector<std::pair<std::time_t,std::pair<std::time_t,std::vector<std::pair<std::time_t,std::time_t>>>>> v{{t,{tE,{{t1_1,t1_2},{t2_1,t2_2}}}}};
-        //std::vector<std::pair<std::time_t,std::pair<std::time_t,std::vector<std::pair<std::time_t,std::time_t>>>>> v{{t,{tE,{{t1_1,t1_2}}}}};
-        //std::vector<std::pair<std::time_t,std::pair<std::time_t,std::vector<std::pair<std::time_t,std::time_t>>>>> v{{t,{tE,{{t2_1,t2_2}}}}};
+        SessionTable_type v{{t,{tE,{{t1_1,t1_2},{t2_1,t2_2}}}}};
+        //SessionTable_type v{{t,{tE,{{t1_1,t1_2}}}}};
+        //SessionTable_type v{{t,{tE,{{t2_1,t2_2}}}}};
         return v;
     };
 
     //--------------------------------------------------------------------------------------------------------
-    static bool IsInSessionTabe(std::vector<std::pair<std::time_t,std::pair<std::time_t,std::vector<std::pair<std::time_t,std::time_t>>>>> &v, std::time_t t)
+    static bool IsInSessionTabe(SessionTable_type &v, std::time_t t)
     {
         size_t iFirst = LeftIndex(v,t);
 

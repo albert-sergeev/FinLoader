@@ -1335,10 +1335,8 @@ bool Storage::WriteMemblockToStore(WriteMutexDefender &defLk,int iTickerID, std:
 //--------------------------------------------------------------------------------------------------------
 bool Storage::ReadFromStore(int iTickerID, std::time_t tMonth, std::vector<BarTick> & vBarList,
                    std::time_t dtLoadBegin, std::time_t dtLoadEnd,
-                   bool bFilterRepo,
-                   std::vector<std::pair<std::time_t,std::pair<std::time_t,std::vector<std::pair<std::time_t,std::time_t>>>>> &vRepoTable,
-                   bool bFilterSessionTable,
-                   std::vector<std::pair<std::time_t,std::pair<std::time_t,std::vector<std::pair<std::time_t,std::time_t>>>>> &vSessionTable,
+                   bool bFilterRepo,        Market::SessionTable_type  &vRepoTable,
+                   bool bFilterSessionTable,Market::SessionTable_type  &vSessionTable,
                    std::stringstream & ssOut)
 {
     char buffer[100];
@@ -1439,10 +1437,8 @@ bool Storage::ReadFromStore(int iTickerID, std::time_t tMonth, std::vector<BarTi
 bool Storage::ReadFromStoreFile(int iTickerID, std::time_t /*tMonth*/, std::map<std::time_t,std::vector<BarTick>> &mvHolder,
                    std::time_t dtLoadBegin, std::time_t dtLoadEnd,
                    std::string strNamePart,
-                   bool bFilterRepo,
-                   std::vector<std::pair<std::time_t,std::pair<std::time_t,std::vector<std::pair<std::time_t,std::time_t>>>>> &vRepoTable,
-                   bool bFilterSessionTable,
-                   std::vector<std::pair<std::time_t,std::pair<std::time_t,std::vector<std::pair<std::time_t,std::time_t>>>>> &vSessionTable,
+                   bool bFilterRepo,        Market::SessionTable_type  &vRepoTable,
+                   bool bFilterSessionTable,Market::SessionTable_type  &vSessionTable,
                    std::stringstream & ssOut)
 {
     std::stringstream ss;
@@ -1613,7 +1609,7 @@ bool Storage::OptimizeStore(int iTickerID, std::time_t tMonth, bool & bToPlanNex
     std::pair<int,std::time_t> k{iTickerID,tMonth};
     std::shared_lock lkInit(mutexQuotesStoreInit);
     ////////////////////////////////////////////////
-    std::vector<std::pair<std::time_t,std::pair<std::time_t,std::vector<std::pair<std::time_t,std::time_t>>>>> vRepoNull{};
+    Market::SessionTable_type  vRepoNull{};
 
     auto It (mpOptimizeMutexes.find(k));
     if(It != mpOptimizeMutexes.end()){

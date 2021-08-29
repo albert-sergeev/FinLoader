@@ -879,8 +879,17 @@ void ImportFinQuotesForm::slotBtnImportClicked()
 
             dataTask.parseData = parseDataReady;
 
-            dataTask.vSessionTable = Market::buildDefaultSessionsTable(); //TODO: copy range from real Market object
-            dataTask.vRepoTable = Market::buildDefaultRepoTable(); //TODO: copy range from real Market object
+            QModelIndex indxT;
+            if (modelTicker->searchTickerByTickerID(iSelectedTickerId,indxT)){
+                const Ticker &t = modelTicker->getTicker(indxT);
+                QModelIndex indxM;
+                if (modelMarket->searchMarketByMarketID(t.MarketID(),indxM)){
+                    Market &m = modelMarket->getMarket(indxM);
+
+                    dataTask.vSessionTable  = m.SessionTable();
+                    dataTask.vRepoTable     = m.RepoTable();
+                }
+            }
 
             emit NeedParseImportFinQuotesFile(dataTask);
 
