@@ -78,7 +78,7 @@ MainWindow::MainWindow(QWidget *parent)
     ///
     startTimer(100); // timer to process GUID events
 
-//    InitHolders();
+    InitHolders();
 
 }
 //--------------------------------------------------------------------------------------------------------------------------------

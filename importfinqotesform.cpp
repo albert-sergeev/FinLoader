@@ -934,9 +934,9 @@ void ImportFinQuotesForm::slotLoadingHasFinished(bool bSuccess, QString qsErr){
 
     if (bSuccess){
         if(!bInChecking)
-            ui->edText->append(tr("Import has been complited successfuly.\n"));
+            ui->edText->append(tr("Import has been complited successfully.\n"));
         else
-            ui->edText->append(tr("Data verification has been complited successfuly.\n"));
+            ui->edText->append(tr("Data verification has been complited successfully.\n"));
     }
     else{
         if(!bInChecking)
