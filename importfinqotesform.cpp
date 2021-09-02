@@ -317,7 +317,7 @@ void ImportFinQuotesForm::slotPreparseImportFile()
                             try{
                                 std::stod(sWordBuff);
                             }
-                            catch (std::exception &e){
+                            catch (std::exception &/*e*/){
                                 ui->edText->append(QString::fromStdString(sBuff));
                                 ui->edText->append("Wrong file format");
 

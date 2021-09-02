@@ -101,9 +101,9 @@ public:
 
 public:
 
-    inline std::string GetCurrentPath() {return  pathCurr;};
-    inline std::string GetDataPath()    {return  pathDataDir;};
-    inline std::string GetStoragePath() {return  pathStorageDir;};
+    inline std::string GetCurrentPath() {return  pathCurr.string();};
+    inline std::string GetDataPath()    {return  pathDataDir.string();};
+    inline std::string GetStoragePath() {return  pathStorageDir.string();};
 
 
     enum data_type:char { usual = 0, new_sec = 1, del_from = 2 , del_to = 3};

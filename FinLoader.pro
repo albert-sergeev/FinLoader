@@ -5,8 +5,8 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 #QMAKE_CXXFLAGS += -std=gnu++0x -pthread
 #QMAKE_CFLAGS += -std=gnu++0x -pthread
 
-LIBS += -lstdc++fs
-LIBS += -pthread
+qnx: LIBS += -lstdc++fs
+qnx: LIBS += -pthread
 CONFIG += c++1z
 
 

@@ -322,7 +322,7 @@ bool GraphViewForm::RepainInvalidRange(RepainTask & data)
             }
 
             // clean invalid range
-            size_t iEnd = ItEnd.realPosition() + 1;
+            int iEnd = ItEnd.realPosition() + 1;
             iEnd = iEnd > iSize ? iSize : iEnd;
             //
             EraseLinesMid(mShowedGraphicsBars,  It.realPosition(),iEnd, ui->grViewQuotes->scene());

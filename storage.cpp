@@ -63,7 +63,7 @@ void Storage::Initialize(std::string sPath)
 
     sStoragePath = sPath;
     pathCurr = std::filesystem::absolute(sStoragePath);
-    std::string sTmp = pathCurr;
+    std::string sTmp = pathCurr.string();
 
     if(!std::filesystem::exists(pathCurr)){
         if(!std::filesystem::create_directory(pathCurr)){
@@ -834,7 +834,7 @@ bool Storage::InitializeTickerEntry(int iTickerID,std::stringstream& ssOut){//pr
 
     std::copy_if(std::filesystem::directory_iterator{pathTickerDir},{},std::back_inserter(vControlFiles),[&reControlfile](const std::filesystem::directory_entry &c){
                      if ( c.exists() && c.is_regular_file()){
-                         std::string ss(c.path().filename());
+                         std::string ss(c.path().filename().string());
                          if (std::sregex_token_iterator(ss.begin(),ss.end(),reControlfile) != std::sregex_token_iterator())
                              return  true;
                          else
@@ -869,9 +869,9 @@ bool Storage::InitializeTickerEntry(int iTickerID,std::stringstream& ssOut){//pr
             return false;;
         }
 
-        std::string sFileName(f.path().filename());
+        std::string sFileName(f.path().filename().string());
 
-        CreateDataFilesForEntry(f.path(),sFileName,iState,ssOut);
+        CreateDataFilesForEntry(f.path().string(),sFileName,iState,ssOut);
         /////////////
 
         std::copy( std::next(sFileName.begin(),sFileName.size()-6)
@@ -1281,7 +1281,7 @@ bool Storage::slotParseLine(dataFinQuotesParse & parseDt, std::istringstream & i
         b.setPeriod(std::mktime(&parseDt.t_tp));
     }
     catch (std::exception &e){
-        parseDt.ossErr() << "Wrong file format";
+        parseDt.ossErr() << "Wrong file format:"<<e.what();
         return false;
         }
 
