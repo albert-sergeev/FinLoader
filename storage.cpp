@@ -47,6 +47,7 @@ Storage::Storage():bInitialized{false}
 //--------------------------------------------------------------------------------------------------------
 void Storage::Initialize(std::string sPath)
 {
+    // comment
     if (bInitialized) return;
 
     /// for speed optimisation
