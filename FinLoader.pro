@@ -2,6 +2,7 @@ QT       += core gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
+# TODO: delete
 #QMAKE_CXXFLAGS += -std=gnu++0x -pthread
 #QMAKE_CFLAGS += -std=gnu++0x -pthread
 
