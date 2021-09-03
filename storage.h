@@ -29,8 +29,7 @@
 //  S   - shrinked (compilation of L1 + L2)
 ///////////////////////////////////////////////////////////////////
 /// \brief The Storage class
-///
-
+/// main storage work class
 class Storage
 {
     bool bInitialized;
