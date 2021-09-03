@@ -105,11 +105,6 @@ private:
     QString m_Language;
     QTranslator m_translator;
 
-    // thread manipulation
-    BlockFreeQueue<dataFinLoadTask> queueFinQuotesLoad;
-    BlockFreeQueue<dataBuckgroundThreadAnswer> queueTrdAnswers;
-    workerLoader wrkrLoadFinQuotes;
-
     // global storage objects
     QSettings m_settings;
     Storage stStore;
@@ -138,6 +133,10 @@ private:
 
     std::vector<Bulbululator *> vBulbululators;
 
+    // thread manipulation
+    BlockFreeQueue<dataFinLoadTask> queueFinQuotesLoad;
+    BlockFreeQueue<dataBuckgroundThreadAnswer> queueTrdAnswers;
+    workerLoader wrkrLoadFinQuotes;
 
     ///////////////////////////////////
     ThreadPool thrdPoolLoadFinQuotes;

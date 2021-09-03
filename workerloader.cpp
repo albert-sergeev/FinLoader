@@ -97,11 +97,11 @@ void workerLoader::workerEtalon(BlockFreeQueue<dataFinLoadTask> & queueFilLoad,
         dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage,data.GetParentWnd());
         std::stringstream ss;
         char buffer[100];
-        std::tm * ptmB = threadfree_localtime(&data.dtBegin);
+        std::tm * ptmB = threadfree_gmtime(&data.dtBegin);
         std::strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", ptmB);
         std::string strB(buffer);
 
-        std::tm * ptmE = threadfree_localtime(&data.dtEnd);
+        std::tm * ptmE = threadfree_gmtime(&data.dtEnd);
         std::strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", ptmE);
         std::string strE(buffer);
 
@@ -186,11 +186,11 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
     dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage,data.GetParentWnd());
     std::stringstream ss;
     char buffer[100];
-    std::tm * ptmB = threadfree_localtime(&data.dtBegin);
+    std::tm * ptmB = threadfree_gmtime(&data.dtBegin);
     std::strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", ptmB);
     std::string strB(buffer);
 
-    std::tm * ptmE = threadfree_localtime(&data.dtEnd);
+    std::tm * ptmE = threadfree_gmtime(&data.dtEnd);
     std::strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", ptmE);
     std::string strE(buffer);
     ss << "Loading <"<<data.sSign<<">\n";
@@ -269,9 +269,9 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
                 ////
                 file.seekg(0,std::ios::end);
                 size_t filesize = file.tellg();
-                size_t currsize = file.tellg();
-                size_t iProgressSent{0};
-                size_t iCurrProgress{0};
+                size_t currsize{0};
+                int iProgressSent{0};
+                int iCurrProgress{0};
                 file.seekg(0, std::ios::beg);
                 {
                     std::stringstream ss;
@@ -512,10 +512,10 @@ void workerLoader::workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & queue
                                 dataFinLoadTask & data)
 
 {
-//                if (data.TickerID == 9){
-//                ThreadFreeCout pcout;
-//                pcout << "load from base task for TickerID: " << data.TickerID<<"\n";
-//                }
+                if (data.TickerID == 1){
+                ThreadFreeCout pcout;
+                pcout << "load from base task for TickerID: " << data.TickerID<<"\n";
+                }
     {
         dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::storagLoadFromStorageGraphBegin,data.GetParentWnd());
         queueTrdAnswers.Push(dt);
@@ -618,10 +618,10 @@ void workerLoader::workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & queue
         queueTrdAnswers.Push(dt);
     }
 
-//    if (data.TickerID == 9){
-//    ThreadFreeCout pcout;
-//    pcout << "load from base task finishes {" << data.TickerID<<"}\n";
-//    }
+    if (data.TickerID == 1){
+    ThreadFreeCout pcout;
+    pcout << "out load from base {" << data.TickerID<<"}\n";
+    }
 
 }
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -630,6 +630,10 @@ void workerLoader::workerLoadIntoGraph(BlockFreeQueue<dataFinLoadTask> & /*queue
                                 Storage & /*stStore*/,
                                 dataFinLoadTask & data)
 {
+    if (data.TickerID == 1){
+        ThreadFreeCout pcout;
+        pcout << "in load into Graph for TickerID: " << data.TickerID<<"\n";
+    }
     {
         dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::storagLoadToGraphBegin,data.GetParentWnd());
         queueTrdAnswers.Push(dt);
@@ -698,6 +702,10 @@ void workerLoader::workerLoadIntoGraph(BlockFreeQueue<dataFinLoadTask> & /*queue
         dt.SetSuccessfull(true);
         queueTrdAnswers.Push(dt);
     }
+    if (data.TickerID == 1){
+        ThreadFreeCout pcout;
+        pcout << "out load into Graph {" << data.TickerID<<"}\n";
+    }
 }
 //------------------------------------------------------------------------------------------------------------------------------------------
 ////////////////////////////////////////////////////////////////////////
@@ -706,11 +714,11 @@ void workerLoader::workerOptimizeStorage(BlockFreeQueue<dataFinLoadTask> & queue
                                 Storage & stStore,
                                 dataFinLoadTask & data)
 {
-//        {
+        {
 
-//            ThreadFreeCout pcout;
-//            pcout << "storage optimization task for TickerID: " << data.TickerID<<"\n";
-//        }
+            ThreadFreeCout pcout;
+            pcout << "storage optimization task for TickerID: " << data.TickerID<<"\n";
+        }
         {
             dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::storageOptimisationBegin,data.GetParentWnd());
             queueTrdAnswers.Push(dt);
@@ -841,11 +849,11 @@ void workerLoader::workerFinQuotesCheck(BlockFreeQueue<dataFinLoadTask> & /*queu
     dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage,data.GetParentWnd());
     std::stringstream ss;
     char buffer[100];
-    std::tm * ptmB = threadfree_localtime(&data.dtBegin);
+    std::tm * ptmB = threadfree_gmtime(&data.dtBegin);
     std::strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", ptmB);
     std::string strB(buffer);
 
-    std::tm * ptmE = threadfree_localtime(&data.dtEnd);
+    std::tm * ptmE = threadfree_gmtime(&data.dtEnd);
     std::strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", ptmE);
     std::string strE(buffer);
     ss << "Loading <"<<data.sSign<<">\n";
@@ -894,9 +902,9 @@ void workerLoader::workerFinQuotesCheck(BlockFreeQueue<dataFinLoadTask> & /*queu
                 ////
                 file.seekg(0,std::ios::end);
                 size_t filesize = file.tellg();
-                size_t currsize = file.tellg();
-                size_t iProgressSent{0};
-                size_t iCurrProgress{0};
+                size_t currsize{0};
+                int iProgressSent{0};
+                int iCurrProgress{0};
                 file.seekg(0, std::ios::beg);
                 {
                     std::stringstream ss;
@@ -1213,7 +1221,7 @@ bool workerLoader::compareBarsT(GraphHolder &hl, dataFinLoadTask & data,std::vec
                     bSuccess = false;
                     // send text
                     std::stringstream ss;
-                    ss <<"storage has no data from: " <<threadfree_localtime_to_str(&t1) <<" prior to: " <<threadfree_localtime_to_str(&t2)<<"";
+                    ss <<"storage has no data from: " <<threadfree_gmtime_to_str(&t1) <<" prior to: " <<threadfree_gmtime_to_str(&t2)<<"";
                     dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage,data.GetParentWnd());
                     dt.SetTextInfo(ss.str());
                     queueTrdAnswers.Push(dt);
@@ -1233,7 +1241,7 @@ bool workerLoader::compareBarsT(GraphHolder &hl, dataFinLoadTask & data,std::vec
                     bSuccess = false;
                     // send text
                     std::stringstream ss;
-                    ss <<"no data in checkfile from: " <<threadfree_localtime_to_str(&t1) <<" prior to: " <<threadfree_localtime_to_str(&t2)<<"";
+                    ss <<"no data in checkfile from: " <<threadfree_gmtime_to_str(&t1) <<" prior to: " <<threadfree_gmtime_to_str(&t2)<<"";
                     dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage,data.GetParentWnd());
                     dt.SetTextInfo(ss.str());
                     queueTrdAnswers.Push(dt);
@@ -1242,7 +1250,7 @@ bool workerLoader::compareBarsT(GraphHolder &hl, dataFinLoadTask & data,std::vec
                     // send text
                     t1 = ItChck->Period();
                     std::stringstream ss;
-                    ss <<"not equal data at: " <<threadfree_localtime_to_str(&t1)<<"\n";
+                    ss <<"not equal data at: " <<threadfree_gmtime_to_str(&t1)<<"\n";
                     ss <<"store OHLCV:\t{"<<It->Open()<<","<<It->High()<<","<<It->Low()<<","<<It->Close()<<","<<It->Volume()<<"}\n";
                     ss <<"check OHLCV:\t{"<<ItChck->Open()<<","<<ItChck->High()<<","<<ItChck->Low()<<","<<ItChck->Close()<<","<<ItChck->Volume()<<"}";
                     dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage,data.GetParentWnd());
@@ -1289,7 +1297,7 @@ bool workerLoader::compareBarsT(GraphHolder &hl, dataFinLoadTask & data,std::vec
                     // send text
                     t1 = It->Period();
                     std::stringstream ss;
-                    ss <<"no tail data in checkfile from: " << threadfree_localtime_to_str(&t1) <<" to: " <<threadfree_localtime_to_str(&data.dtEnd);
+                    ss <<"no tail data in checkfile from: " << threadfree_gmtime_to_str(&t1) <<" to: " <<threadfree_gmtime_to_str(&data.dtEnd);
                     dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage,data.GetParentWnd());
                     dt.SetTextInfo(ss.str());
                     queueTrdAnswers.Push(dt);
@@ -1298,7 +1306,7 @@ bool workerLoader::compareBarsT(GraphHolder &hl, dataFinLoadTask & data,std::vec
                     // send text
                     t1 = ItChck->Period();
                     std::stringstream ss;
-                    ss <<"no tail data in storage from: " <<threadfree_localtime_to_str(&t1) <<" to: " <<threadfree_localtime_to_str(&data.dtEnd);
+                    ss <<"no tail data in storage from: " <<threadfree_gmtime_to_str(&t1) <<" to: " <<threadfree_gmtime_to_str(&data.dtEnd);
                     dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage,data.GetParentWnd());
                     dt.SetTextInfo(ss.str());
 

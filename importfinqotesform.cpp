@@ -358,7 +358,7 @@ void ImportFinQuotesForm::slotPreparseImportFile()
                     }
 
                     oss<<vS[0];
-                    std::accumulate(next(vS.begin()),vS.end(),0,[&](auto &ss, const auto c){ oss<<" | "<<c; return  ss;});
+                    (void)std::accumulate(next(vS.begin()),vS.end(),0,[&](auto &ss, const auto c){ oss<<" | "<<c; return  ss;});
                     oss <<"\n";
                 }
                 else{
@@ -405,7 +405,7 @@ void ImportFinQuotesForm::slotPreparseImportFile()
 
                 {
                     std::time_t tS (bb.Period());
-                    std::tm* tmSt=threadfree_localtime(&tS);
+                    std::tm* tmSt=threadfree_gmtime(&tS);
                     const QDate dtS(tmSt->tm_year+1900,tmSt->tm_mon+1,tmSt->tm_mday);
                     const QTime tmS(tmSt->tm_hour,tmSt->tm_min,tmSt->tm_sec);
                     QDateTime dt (dtS,tmS);
@@ -453,7 +453,7 @@ void ImportFinQuotesForm::slotPreparseImportFile()
 
                 {
                     std::time_t tS (bb.Period());
-                    std::tm* tmSt=threadfree_localtime(&tS);
+                    std::tm* tmSt=threadfree_gmtime(&tS);
                     const QDate dtS(tmSt->tm_year+1900,tmSt->tm_mon+1,tmSt->tm_mday);
                     const QTime tmS(tmSt->tm_hour,tmSt->tm_min,tmSt->tm_sec);
                     QDateTime dt (dtS,tmS);
@@ -865,7 +865,7 @@ void ImportFinQuotesForm::slotBtnImportClicked()
             tmSt.tm_min     = qdtSt.time().minute();
             tmSt.tm_sec     = qdtSt.time().second();
             tmSt.tm_isdst   = 0;
-            dataTask.dtBegin = std::mktime(&tmSt);
+            dataTask.dtBegin = mktime_gm(&tmSt);
 
             std::tm   tmEnd;
             tmEnd.tm_year    = qdtEnd.date().year()     - 1900;
@@ -875,7 +875,7 @@ void ImportFinQuotesForm::slotBtnImportClicked()
             tmEnd.tm_min     = qdtEnd.time().minute();
             tmEnd.tm_sec     = qdtEnd.time().second();
             tmEnd.tm_isdst   = 0;
-            dataTask.dtEnd = std::mktime(&tmEnd);
+            dataTask.dtEnd = mktime_gm(&tmEnd);
 
             dataTask.parseData = parseDataReady;
 

@@ -1357,8 +1357,8 @@ void MainWindow::InitAction()
 //                        pcout<<"testPvBars and pvBars not equal 1!!!\n";
 //                        std::time_t pvP = ItTst->Period();
 //                        std::time_t pvS = It->Period();
-//                        pcout <<"test time:   "<< threadfree_localtime_to_str(&pvP)<<"\n";
-//                        pcout <<"stored time: "<< threadfree_localtime_to_str(&pvS)<<"\n";
+//                        pcout <<"test time:   "<< threadfree_gmtime_to_str(&pvP)<<"\n";
+//                        pcout <<"stored time: "<< threadfree_gmtime_to_str(&pvS)<<"\n";
 //                        bEqual = false;
 //                        break;
 //                    }

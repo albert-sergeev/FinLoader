@@ -34,10 +34,10 @@ public:
         std::time_t t = b.Period();
         std::stringstream ss;
         if (b.Interval() >= Bar::eInterval::pDay){
-            ss <<threadfree_localtime_date_to_str(&t)<<"\r\n";
+            ss <<threadfree_gmtime_date_to_str(&t)<<"\r\n";
         }
         else{
-            ss <<threadfree_localtime_to_str(&t)<<"\r\n";
+            ss <<threadfree_gmtime_to_str(&t)<<"\r\n";
         }
         ss << "open: "  << b.Open()<<"\r\n";
         ss << "high: "  << b.High()<<"\r\n";
@@ -57,10 +57,10 @@ public:
         std::time_t t = b.Period();
         std::stringstream ss;
         if (b.Interval() >= Bar::eInterval::pDay){
-            ss <<threadfree_localtime_date_to_str(&t)<<"\r\n";
+            ss <<threadfree_gmtime_date_to_str(&t)<<"\r\n";
         }
         else{
-            ss <<threadfree_localtime_to_str(&t)<<"\r\n";
+            ss <<threadfree_gmtime_to_str(&t)<<"\r\n";
         }
         ss << "close: " << b.Close()<<"\r\n";
         ss << "volume: " << b.Volume()<<"\n";

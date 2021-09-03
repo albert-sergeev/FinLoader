@@ -237,14 +237,14 @@ public:
             }
             else if(iInterval == pWeek){
 
-                std::tm tp =  *threadfree_localtime(&t);
+                std::tm tp =  *threadfree_gmtime(&t);
 
                 tp.tm_hour = 0;
                 tp.tm_min = 0;
                 tp.tm_sec = 0;
                 tp.tm_isdst = 0;
 
-                tRet = std::mktime(&tp) -  ((tp.tm_wday)*86400);
+                tRet = mktime_gm(&tp) -  ((tp.tm_wday)*86400);
 
                 if (bUp){
                     tRet += 86400 * 7;
@@ -252,7 +252,7 @@ public:
             }
             else if(iInterval == pMonth){
 
-                std::tm tp =  *threadfree_localtime(&t);
+                std::tm tp =  *threadfree_gmtime(&t);
                 tp.tm_mday = 1;
                 tp.tm_hour = 0;
                 tp.tm_min = 0;
@@ -267,7 +267,7 @@ public:
                     }
                 }
 
-                tRet = std::mktime(&tp);
+                tRet = mktime_gm(&tp);
             }
             else{
                 std::stringstream ss;
@@ -297,7 +297,7 @@ private:
         t_tm.tm_sec    = 0;
         t_tm.tm_isdst  = 0;
 
-        t1990_01_01_00_00_00 = std::mktime(&t_tm);
+        t1990_01_01_00_00_00 = mktime_gm(&t_tm);
     };
 };
 

@@ -95,13 +95,13 @@ public:
             tmPer.tm_hour   = 9;
             tmPer.tm_min    = 30;
         }
-        tStartTime = std::mktime(&tmPer);
+        tStartTime = mktime_gm(&tmPer);
         //
         {
             tmPer.tm_hour   = 19;
             tmPer.tm_min    = 0;
         }
-        tEndTime = std::mktime(&tmPer);
+        tEndTime = mktime_gm(&tmPer);
         //
         vSessionTable = buildDefaultSessionsTable();
         vRepoTable = buildDefaultRepoTable();
@@ -164,29 +164,29 @@ public:
         }
 
 
-        std::time_t t   = std::mktime(&tmPer);
+        std::time_t t   = mktime_gm(&tmPer);
 
         tmPer.tm_hour   = 10;
         tmPer.tm_min    = 0;
         tmPer.tm_sec    = 0;
-        std::time_t t1_1   = std::mktime(&tmPer);
+        std::time_t t1_1   = mktime_gm(&tmPer);
 
 //        tmPer.tm_hour   = 18;
 //        tmPer.tm_min    = 39;
         tmPer.tm_hour   = 23;
         tmPer.tm_min    = 49;
         tmPer.tm_sec    = 59;
-        std::time_t t1_2   = std::mktime(&tmPer);
+        std::time_t t1_2   = mktime_gm(&tmPer);
 
 //        tmPer.tm_hour   = 19;
 //        tmPer.tm_min    = 05;
 //        tmPer.tm_sec    = 0;
-//        std::time_t t2_1   = std::mktime(&tmPer);
+//        std::time_t t2_1   = mktime_gm(&tmPer);
 
 //        tmPer.tm_hour   = 23;
 //        tmPer.tm_min    = 49;
 //        tmPer.tm_sec    = 59;
-//        std::time_t t2_2   = std::mktime(&tmPer);
+//        std::time_t t2_2   = mktime_gm(&tmPer);
 
 
         tmPer.tm_year   = 2100 - 1900;
@@ -195,7 +195,7 @@ public:
         tmPer.tm_sec    = 0;
         tmPer.tm_isdst  = 0;
 
-        std::time_t tE   = std::mktime(&tmPer);
+        std::time_t tE   = mktime_gm(&tmPer);
 
 
         //SessionTable_type v{{t,{tE,{{t1_1,t1_2},{t2_1,t2_2}}}}};
@@ -219,27 +219,27 @@ public:
         }
 
 
-        std::time_t t   = std::mktime(&tmPer);
+        std::time_t t   = mktime_gm(&tmPer);
 
         tmPer.tm_hour   = 9;
         tmPer.tm_min    = 59;
         tmPer.tm_sec    = 0;
-        std::time_t t1_1   = std::mktime(&tmPer);
+        std::time_t t1_1   = mktime_gm(&tmPer);
 
         tmPer.tm_hour   = 9;
         tmPer.tm_min    = 59;
         tmPer.tm_sec    = 59;
-        std::time_t t1_2   = std::mktime(&tmPer);
+        std::time_t t1_2   = mktime_gm(&tmPer);
 
         tmPer.tm_hour   = 18;
         tmPer.tm_min    = 40;
         tmPer.tm_sec    = 0;
-        std::time_t t2_1   = std::mktime(&tmPer);
+        std::time_t t2_1   = mktime_gm(&tmPer);
 
         tmPer.tm_hour   = 19;
         tmPer.tm_min    = 04;
         tmPer.tm_sec    = 59;
-        std::time_t t2_2   = std::mktime(&tmPer);
+        std::time_t t2_2   = mktime_gm(&tmPer);
 
 
         tmPer.tm_year   = 2100 - 1900;
@@ -248,7 +248,7 @@ public:
         tmPer.tm_sec    = 0;
         tmPer.tm_isdst  = 0;
 
-        std::time_t tE   = std::mktime(&tmPer);
+        std::time_t tE   = mktime_gm(&tmPer);
 
         SessionTable_type v{{t,{tE,{{t1_1,t1_2},{t2_1,t2_2}}}}};
         //SessionTable_type v{{t,{tE,{{t1_1,t1_2}}}}};
@@ -293,7 +293,7 @@ protected:
             tmPer.tm_sec    = 0;
             tmPer.tm_isdst  = 0;
         }
-        t1990_01_01_00_00_00 = std::mktime(&tmPer);
+        t1990_01_01_00_00_00 = mktime_gm(&tmPer);
     };
     //--------------------------------------------------------------------------------------------------------
     static std::time_t AccomodateToTime(std::time_t t){

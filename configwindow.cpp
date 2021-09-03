@@ -380,7 +380,7 @@ void ConfigWindow::slotBtnSaveMarketClicked()
                       tmSt.tm_sec    = tmS.second();
                       tmSt.tm_isdst  = 0;
                   }
-                  std::time_t tS (std::mktime(&tmSt));
+                  std::time_t tS (mktime_gm(&tmSt));
                   m.SetStartTime(tS);
                   //
                   const QTime tmE(ui->dateTimeEnd->time());
@@ -389,7 +389,7 @@ void ConfigWindow::slotBtnSaveMarketClicked()
                       tmSt.tm_min    = tmE.minute();
                       tmSt.tm_sec    = tmE.second();
                   }
-                  std::time_t tE (std::mktime(&tmSt));
+                  std::time_t tE (mktime_gm(&tmSt));
                   m.SetEndTime(tE);
                   ///
                   NeedSaveMarketsChanges();
@@ -542,10 +542,10 @@ void ConfigWindow::slotSetSelectedMarket(const  QModelIndex& indx)
 
 
         std::time_t tS (m.StartTime());
-        std::tm* tmSt=threadfree_localtime(&tS);
+        std::tm* tmSt=threadfree_gmtime(&tS);
         const QTime tmS(tmSt->tm_hour,tmSt->tm_min,0);
         std::time_t tE (m.EndTime());
-        std::tm* tmEn=threadfree_localtime(&tE);
+        std::tm* tmEn=threadfree_gmtime(&tE);
         const QTime tmE(tmEn->tm_hour,tmEn->tm_min,0);
 
 
