@@ -94,6 +94,12 @@ public:
             //lk = new std::unique_lock<std::shared_mutex>(m);
             lk = new T(m);
         };
+        void Unlock(){
+            if (lk !=nullptr){
+                delete lk;
+                lk = nullptr;
+            }
+        }
         ~MutexDefender(){
             if (lk !=nullptr){
                 delete lk;

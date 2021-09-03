@@ -1316,7 +1316,11 @@ bool Storage::WriteMemblockToStore(MutexDefender<std::shared_lock<std::shared_mu
     std::pair<int,std::time_t> k{iTickerID,tMonth};
     auto It (mpStoreMutexes.find(k));
     if(It == mpStoreMutexes.end()){
+
+        defUk.Unlock();
+        defSk.Unlock();
         lk.unlock();
+
         std::unique_lock<std::shared_mutex> ulk(mutexQuotesStoreInit);
         if(CreateStageEntryForTicker(iTickerID, tMonth, ssOut) == 0){
             ssOut <<"cannot create data storage file for TickerID: "<<iTickerID;
