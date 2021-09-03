@@ -102,7 +102,8 @@ public:
     //-------------------------------------------------------------------------------------------
     virtual ~BlockFreeQueue(){
         clear();
-        delete head;
+        // TODO: if no crashing -- redo
+       // delete head;
     };
     //-------------------------------------------------------------------------------------------
     // to simplify drop copy constructors

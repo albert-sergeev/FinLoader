@@ -75,13 +75,15 @@ class Storage
 
 public:
     //-----------------------------------------------------------
-    class WriteMutexDefender{
-        std::unique_lock<std::shared_mutex> *lk;
+    template<typename T>
+    class MutexDefender{
+        //std::unique_lock<std::shared_mutex> *lk;
+        T *lk;
 
     public:
-        WriteMutexDefender():lk{nullptr}{}
-        WriteMutexDefender(WriteMutexDefender&) = delete;
-        WriteMutexDefender & operator=(WriteMutexDefender &o){
+        MutexDefender():lk{nullptr}{}
+        MutexDefender(MutexDefender&) = delete;
+        MutexDefender & operator=(MutexDefender &o){
             lk = std::move(o.lk);
             return *this;
         }
@@ -89,9 +91,10 @@ public:
         void Lock(std::shared_mutex &m){
             if( lk != nullptr && lk->mutex() == &m)     {return;}
             if( lk != nullptr && lk->mutex() != &m)     {delete lk;}
-            lk = new std::unique_lock<std::shared_mutex>(m);
+            //lk = new std::unique_lock<std::shared_mutex>(m);
+            lk = new T(m);
         };
-        ~WriteMutexDefender(){
+        ~MutexDefender(){
             if (lk !=nullptr){
                 delete lk;
             }
@@ -136,7 +139,9 @@ public:
     bool InitializeTicker(int iTickerID,std::stringstream & ssOut, bool bCheckOnly = false);
     int CreateAndGetFileStageForTicker(int iTickerID, std::time_t tMonth, std::stringstream & ssOut);
     bool WriteBarToStore(int iTickerID, Bar &b, std::stringstream & ssOut);
-    bool WriteMemblockToStore(WriteMutexDefender &defLk,int iTickerID, std::time_t tMonth, char* cBuff,size_t length, std::stringstream & ssOut);
+    bool WriteMemblockToStore(MutexDefender<std::shared_lock<std::shared_mutex>> &defSk,
+                              MutexDefender<std::unique_lock<std::shared_mutex>> &defUk,
+                              int iTickerID, std::time_t tMonth, char* cBuff,size_t length, std::stringstream & ssOut);
 
 
 

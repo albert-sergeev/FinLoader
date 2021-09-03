@@ -393,7 +393,7 @@ void Storage::LoadTickerConfig(std::vector<Ticker> & vTickersLst)
     if(std::getline(fileTicker,sBuff)){
         int iCollisions{0};
         if(sBuff == "v1"){
-            iCollisions = ParsTickerConfigV_1(vTickersLst,fileTicker);
+            (void) ParsTickerConfigV_1(vTickersLst,fileTicker);
             iCollisions = 1000;// to force format switch
         }
         else if(sBuff == "v2"){
@@ -783,6 +783,7 @@ size_t Storage::mapSize(std::map<std::time_t,std::vector<BarTick>>& m) {
 bool Storage::InitializeTicker(int iTickerID,std::stringstream & ssOut, bool bCheckOnly)
 {
     std::shared_lock lk(mutexQuotesStoreInit);
+
     for (auto const &t:vInitializedTickers){
         if (t == iTickerID){
             return true;
@@ -798,7 +799,8 @@ bool Storage::InitializeTicker(int iTickerID,std::stringstream & ssOut, bool bCh
             return true;
         }
     }
-    return  InitializeTickerEntry(iTickerID,ssOut);
+    bool bRet =   InitializeTickerEntry(iTickerID,ssOut);
+    return bRet;
 }
 //--------------------------------------------------------------------------------------------------------
 bool Storage::InitializeTickerEntry(int iTickerID,std::stringstream& ssOut){//private
@@ -969,20 +971,21 @@ void Storage::CreateDataFilesForEntry(std::string sFileName, std::string sFileNa
 //--------------------------------------------------------------------------------------------------------
 int Storage::CreateAndGetFileStageForTicker(int iTickerID, std::time_t tMonth, std::stringstream& ssOut)
 {
-
+    int iRet{0};
     std::shared_lock lk(mutexQuotesStoreInit);
     tMonth = dateCastToMonth(tMonth);
     std::pair<int,std::time_t> k{iTickerID,tMonth};
     auto It (mpStoreMutexes.find(k));
     if(It != mpStoreMutexes.end()){
         std::shared_lock entryLk(mpStoreMutexes.at(k));
-        return GetStageEntryForTicker(iTickerID, tMonth, ssOut);
+        iRet = GetStageEntryForTicker(iTickerID, tMonth, ssOut);
     }
     else{
         lk.unlock();
         std::unique_lock<std::shared_mutex> ulk(mutexQuotesStoreInit);
-        return CreateStageEntryForTicker(iTickerID, tMonth, ssOut);
+        iRet = CreateStageEntryForTicker(iTickerID, tMonth, ssOut);
     }
+    return  iRet;
 }
 //--------------------------------------------------------------------------------------------------------
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -999,7 +1002,8 @@ int  Storage::CreateStageEntryForTicker(int iTickerID, std::time_t tMonth,std::s
     auto It (mpStoreMutexes.find(k));
     if(It != mpStoreMutexes.end()){
         std::shared_lock entryLk(mpStoreMutexes.at(k));
-        return GetStageEntryForTicker(iTickerID, tMonth, ssOut);
+        int iRet = GetStageEntryForTicker(iTickerID, tMonth, ssOut);
+        return iRet;
     }
     //////////////
     std::tm * tmT = threadfree_gmtime(&tMonth);
@@ -1291,7 +1295,9 @@ bool Storage::slotParseLine(dataFinQuotesParse & parseDt, std::istringstream & i
 
 //--------------------------------------------------------------------------------------------------------
 
-bool Storage::WriteMemblockToStore(WriteMutexDefender &defLk,int iTickerID, std::time_t tMonth, char* cBuff,size_t length, std::stringstream & ssOut)
+bool Storage::WriteMemblockToStore(MutexDefender<std::shared_lock<std::shared_mutex>> &defSk,
+                                   MutexDefender<std::unique_lock<std::shared_mutex>> &defUk,
+                                   int iTickerID, std::time_t tMonth, char* cBuff,size_t length, std::stringstream & ssOut)
 {
     std::shared_lock lk(mutexQuotesStoreInit);
     //
@@ -1325,9 +1331,10 @@ bool Storage::WriteMemblockToStore(WriteMutexDefender &defLk,int iTickerID, std:
         }
     }
 
-    std::shared_lock entryLk(mpStoreMutexes.at(k));
+    defSk.Lock(mpStoreMutexes.at(k));
+    //std::shared_lock entryLk(mpStoreMutexes.at(k));
     //std::unique_lock entryWriteLk (mpWriteMutexes.at(k));
-    defLk.Lock(mpWriteMutexes.at(k));
+    defUk.Lock(mpWriteMutexes.at(k));
     ////////////////////////////////////////////
     //int iStage = GetStageEntryForTicker(iTickerID, tMonth, ssOut);
     int iStage = mpStoreStages.at(k);
@@ -1426,7 +1433,6 @@ bool Storage::ReadFromStore(int iTickerID, std::time_t tMonth, std::vector<BarTi
                 return false;
             }
         }
-
         std::shared_lock entryWriteLk (mpWriteMutexes.at(k)); // lock
 
         if (vStorageW[iStage - 1]>0){
@@ -1459,6 +1465,7 @@ bool Storage::ReadFromStore(int iTickerID, std::time_t tMonth, std::vector<BarTi
         //ssOut <<"no data files for: " <<strM<<"\n";;
         //return true;
     }
+
     return true;
 }
 //--------------------------------------------------------------------------------------------------------
@@ -1635,14 +1642,18 @@ bool Storage::OptimizeStore(int iTickerID, std::time_t tMonth, bool & bToPlanNex
     ////////////////////////////////////////////////
     tMonth = dateCastToMonth(tMonth);
     std::pair<int,std::time_t> k{iTickerID,tMonth};
+
     std::shared_lock lkInit(mutexQuotesStoreInit);
     ////////////////////////////////////////////////
     Market::SessionTable_type  vRepoNull{};
 
     auto It (mpOptimizeMutexes.find(k));
     if(It != mpOptimizeMutexes.end()){
+
+
         std::unique_lock lk(mpOptimizeMutexes.at(k),std::defer_lock);
         if (lk.try_lock()){
+
 
             std::vector<std::vector<BarTick>> vBarList;
 
@@ -1735,6 +1746,7 @@ bool Storage::SwitchStage(std::pair<int,std::time_t> k, std::string sPath, std::
                           std::stringstream & ssOut)
 {
     std::unique_lock entryLk(mpStoreMutexes.at(k));
+
     mpStoreStages[k] = iNewStage;
 
     std::ofstream ofCF(sPath);
@@ -1748,7 +1760,7 @@ bool Storage::SwitchStage(std::pair<int,std::time_t> k, std::string sPath, std::
 
     std::stringstream ssDevNull;
     CreateDataFilesForEntry(sPath,sFileNamePart,iNewStage,ssDevNull);
-    ssOut << ssDevNull.str(); // TODO: delete. for tests
+    //ssOut << ssDevNull.str(); // TODO: delete. for tests
     return true;
 }
 //--------------------------------------------------------------------------------------------------------

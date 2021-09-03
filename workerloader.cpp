@@ -33,6 +33,11 @@ void workerLoader::workerDataBaseWork(BlockFreeQueue<dataFinLoadTask> & queueTas
                                       BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
                                        Storage & stStore)
 {
+
+//    int iID = WorkerThreadCounter.load();
+//    while (!WorkerThreadCounter.compare_exchange_weak(iID,iID + 1)) {;}
+//    WorkerThreadID = iID;
+
     bool bSuccess{false};
     auto pdata = queueTasks.Pop(bSuccess);
     while(bSuccess){
@@ -290,7 +295,8 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
                 std::string sBuff;
                 std::istringstream iss;
 
-                Storage::WriteMutexDefender def;
+                Storage::MutexDefender<std::shared_lock<std::shared_mutex>> defSlk;
+                Storage::MutexDefender<std::unique_lock<std::shared_mutex>> defUlk;
 
                 bWasSuccessfull = true;
 
@@ -324,7 +330,7 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
                     if (tMonth !=  tCurrentMonth){
                         if (iOutBuffPointer >0){
                             // do write
-                            if(!stStore.WriteMemblockToStore(def,data.TickerID, tCurrentMonth, cOutBuff,iOutBuffPointer, ssErr)){
+                            if(!stStore.WriteMemblockToStore(defSlk,defUlk,data.TickerID, tCurrentMonth, cOutBuff,iOutBuffPointer, ssErr)){
                                 dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportEnd,data.GetParentWnd());
                                 dt.SetSuccessfull(false);
                                 ssErr<<"\n\rError writing file.\n";
@@ -339,7 +345,7 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
                     }
                     else if( iOutBuffPointer + iBlockSize*4 > iOutBuffMax){ // do write to iSecChangedPointer
 
-                        if(!stStore.WriteMemblockToStore(def,data.TickerID, tMonth, cOutBuff,iOutBuffPointer/*iSecChangedPointer*/, ssErr)){
+                        if(!stStore.WriteMemblockToStore(defSlk,defUlk,data.TickerID, tMonth, cOutBuff,iOutBuffPointer/*iSecChangedPointer*/, ssErr)){
                             dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportEnd,data.GetParentWnd());
                             dt.SetSuccessfull(false);
                             ssErr<<"\n\rError writing file.\n";
@@ -407,7 +413,7 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
                 if (bWasSuccessfull && iOutBuffPointer>0){
                     ////////////////////////
                     /// write tail
-                    if(!stStore.WriteMemblockToStore(def,data.TickerID, tMonth, cOutBuff,iOutBuffPointer, ssErr)){
+                    if(!stStore.WriteMemblockToStore(defSlk,defUlk,data.TickerID, tMonth, cOutBuff,iOutBuffPointer, ssErr)){
                         dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportEnd,data.GetParentWnd());
                         dt.SetSuccessfull(false);
                         ssErr<<"\n\rError writing file.\n";
@@ -630,10 +636,10 @@ void workerLoader::workerLoadIntoGraph(BlockFreeQueue<dataFinLoadTask> & /*queue
                                 Storage & /*stStore*/,
                                 dataFinLoadTask & data)
 {
-    if (data.TickerID == 1){
-        ThreadFreeCout pcout;
-        pcout << "in load into Graph for TickerID: " << data.TickerID<<"\n";
-    }
+//    if (data.TickerID == 1){
+//        ThreadFreeCout pcout;
+//        pcout << "in load into Graph for TickerID: " << data.TickerID<<"\n";
+//    }
     {
         dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::storagLoadToGraphBegin,data.GetParentWnd());
         queueTrdAnswers.Push(dt);
@@ -702,10 +708,10 @@ void workerLoader::workerLoadIntoGraph(BlockFreeQueue<dataFinLoadTask> & /*queue
         dt.SetSuccessfull(true);
         queueTrdAnswers.Push(dt);
     }
-    if (data.TickerID == 1){
-        ThreadFreeCout pcout;
-        pcout << "out load into Graph {" << data.TickerID<<"}\n";
-    }
+//    if (data.TickerID == 1){
+//        ThreadFreeCout pcout;
+//        pcout << "out load into Graph {" << data.TickerID<<"}\n";
+//    }
 }
 //------------------------------------------------------------------------------------------------------------------------------------------
 ////////////////////////////////////////////////////////////////////////
@@ -919,7 +925,8 @@ void workerLoader::workerFinQuotesCheck(BlockFreeQueue<dataFinLoadTask> & /*queu
                 std::string sBuff;
                 std::istringstream iss;
 
-                Storage::WriteMutexDefender def;
+//                Storage::MutexDefender<std::shared_lock<std::shared_mutex>> defSlk;
+//                Storage::MutexDefender<std::unique_lock<std::shared_mutex>> defUlk;
 
                 {
                     dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage,data.GetParentWnd());

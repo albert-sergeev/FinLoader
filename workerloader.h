@@ -11,6 +11,7 @@
 #include "datafinquotesparse.h"
 
 
+
 class workerLoader
 {
 public:
