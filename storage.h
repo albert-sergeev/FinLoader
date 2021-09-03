@@ -30,6 +30,7 @@
 ///////////////////////////////////////////////////////////////////
 /// \brief The Storage class
 /// main storage work class
+/// 2 for 2
 class Storage
 {
     bool bInitialized;
