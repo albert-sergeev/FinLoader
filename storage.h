@@ -215,7 +215,7 @@ operator>>(std::istream & is, StringDelimiter<D> & output)
 //--------------------------------------------------------------------------------------------------------
 // trimming functions
 static inline std::string & ltrim(std::string &s){
-    s.erase(begin(s),std::find_if(s.begin(),s.end(),[](const char t){
+    s.erase(begin(s),std::find_if(s.begin(),s.end(),[](const unsigned char t){
         return !std::isspace(t);
     }));
     return s;

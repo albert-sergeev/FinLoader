@@ -535,13 +535,14 @@ void Storage::SaveTickerConfigV_2(std::filesystem::path  pathFile,const Ticker &
         fileTicker<<(iTickerMark++)<<",";
     }
 
-
     fileTicker<<tp<<",";
 
     fileTicker<<tT.MarketID()<<",";
     fileTicker<<tT.TickerID()<<",";
 
     fileTicker<<trim(tT.TickerName())<<",";
+    //fileTicker<<tT.TickerName()<<",";
+
     fileTicker<<trim(tT.TickerSign())<<",";
     fileTicker<<trim(tT.TickerSignFinam())<<",";
     fileTicker<<trim(tT.TickerSignQuik())<<",";
