@@ -381,8 +381,9 @@ bool Graph<T>::BuildFromLowerList(Graph<T_SRC> &grSrc, std::time_t dtStart,std::
     std::time_t dtNext          = Bar::DateAccommodate(It->first,iInterval,true);
 
     auto ItCur  (grSrc.mDictionary.lower_bound(dtNext));
-    if (ItCur == grSrc.mDictionary.end())  return true;
-    dtNext = ItCur->first;
+    if (ItCur != grSrc.mDictionary.end()){
+        dtNext = ItCur->first;
+    }
 
     std::vector<std::vector<Bar>> v;
     v.push_back(std::vector<Bar>{});

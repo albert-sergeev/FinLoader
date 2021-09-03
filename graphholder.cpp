@@ -67,21 +67,9 @@ bool GraphHolder::AddBarsLists(std::vector<std::vector<BarTick>> &v, std::time_t
 {
     std::unique_lock lk(mutexHolder);
     //
-    {
-        ThreadFreeCout pcout;
-        pcout <<"adding bars begins\n";
-    }
     bool bRet = graphTick.AddBarsList(v,dtStart,dtEnd);
     if (bRet){
-        {
-            ThreadFreeCout pcout;
-            pcout <<"building upper begins\n";
-        }
         bRet = BuildUpperList(dtStart,dtEnd);
-        {
-            ThreadFreeCout pcout;
-            pcout <<"building upper out\n";
-        }
     }
     return bRet;
 

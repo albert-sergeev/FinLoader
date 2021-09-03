@@ -512,10 +512,10 @@ void workerLoader::workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & queue
                                 dataFinLoadTask & data)
 
 {
-                if (data.TickerID == 1){
-                ThreadFreeCout pcout;
-                pcout << "load from base task for TickerID: " << data.TickerID<<"\n";
-                }
+//                if (data.TickerID == 1){
+//                ThreadFreeCout pcout;
+//                pcout << "load from base task for TickerID: " << data.TickerID<<"\n";
+//                }
     {
         dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::storagLoadFromStorageGraphBegin,data.GetParentWnd());
         queueTrdAnswers.Push(dt);
@@ -618,10 +618,10 @@ void workerLoader::workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & queue
         queueTrdAnswers.Push(dt);
     }
 
-    if (data.TickerID == 1){
-    ThreadFreeCout pcout;
-    pcout << "out load from base {" << data.TickerID<<"}\n";
-    }
+//    if (data.TickerID == 1){
+//    ThreadFreeCout pcout;
+//    pcout << "out load from base {" << data.TickerID<<"}\n";
+//    }
 
 }
 //------------------------------------------------------------------------------------------------------------------------------------------
