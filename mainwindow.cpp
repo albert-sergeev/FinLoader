@@ -493,6 +493,16 @@ void MainWindow::InitAction()
     connect(pacNewDoc,SIGNAL(triggered()),SLOT(slotGraphViewWindow()));
 
     //------------------------------------------------
+    QAction * pacAmiPipe =new QAction("AmiPipe");
+    pacAmiPipe->setText(tr("&Import from trade sistem"));
+    pacAmiPipe->setShortcut(QKeySequence(tr("CTRL+I")));
+    pacAmiPipe->setToolTip(tr("Import from trade sistem"));
+    pacAmiPipe->setStatusTip(tr("Import from trade sistem"));
+    pacAmiPipe->setWhatsThis(tr("Import from trade sistem"));
+    pacAmiPipe->setIcon(QPixmap(":/store/images/sc_cut"));
+    connect(pacAmiPipe,SIGNAL(triggered()),SLOT(slotAmiPipeWndow()));
+
+    //------------------------------------------------
     QAction * pacOpen =new QAction("Open");
     pacOpen->setText(tr("&Open"));
     pacOpen->setShortcut(QKeySequence(tr("CTRL+O")));
@@ -595,6 +605,7 @@ void MainWindow::InitAction()
     //
     pmnuFile = new QMenu(tr("&File","menu"));
     pmnuFile->addAction(pacNewDoc);
+    pmnuFile->addAction(pacAmiPipe);
     pmnuFile->addAction(pacOpen);
     pmnuFile->addAction(pacSave);
     pmnuFile->addSeparator();
@@ -659,6 +670,7 @@ void MainWindow::InitAction()
     tbrToolBar =new QToolBar("Toolbar");
     tbrToolBar->setObjectName("Toolbar");
     tbrToolBar->addAction(pacNewDoc);
+    tbrToolBar->addAction(pacAmiPipe);
     tbrToolBar->addAction(pacOpen);
     tbrToolBar->addAction(pacSave);
     tbrToolBar->addAction(pacConfig);
@@ -1464,6 +1476,21 @@ void MainWindow::InitAction()
         QProcess::startDetached(qApp->arguments()[0], qApp->arguments());
     }
     //--------------------------------------------------------------------------------------------------------------------------------
+    void MainWindow::slotAmiPipeWndow()
+    {
+
+        AmiPiperForm  *pdoc=new AmiPiperForm (&m_MarketLstModel,iDefaultTickerMarket,&m_TickerLstModel,pipesHolder);
+        pdoc->setAttribute(Qt::WA_DeleteOnClose);
+        pdoc->setWindowTitle(tr("Import from trade sistems"));
+        pdoc->setWindowIcon(QPixmap(":/store/images/sc_cut"));
+
+        ui->mdiArea->addSubWindow(pdoc);
+
+        connect(pdoc,SIGNAL(SendToMainLog(QString)),this,SIGNAL(SendToLog(QString)));
+
+        pdoc->show();
+
+    }
     //--------------------------------------------------------------------------------------------------------------------------------
     //--------------------------------------------------------------------------------------------------------------------------------
     //--------------------------------------------------------------------------------------------------------------------------------

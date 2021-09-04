@@ -37,6 +37,8 @@
 #include "styledswitcher.h"
 #include "graphviewform.h"
 #include "graphholder.h"
+#include "amipiperform.h"
+#include "amipipeholder.h"
 
 
 
@@ -124,6 +126,9 @@ private:
     QString qsDefaultOpenDir;
     char cImportDelimiter;
 
+    // for AmiPipes
+    AmiPipeHolder pipesHolder;
+
     // for docked bar
     StyledSwitcher * swtShowByName;
     StyledSwitcher * swtShowAll;
@@ -197,6 +202,7 @@ protected slots: // for main window
     void slotSetActiveLang      (QString);
     void slotConfigWndow ();
     void slotImportFinQuotesWndow ();
+    void slotAmiPipeWndow();
 
     void BulbululatorAddActive      (int TickerID);
     void BulbululatorRemoveActive   (int TickerID);

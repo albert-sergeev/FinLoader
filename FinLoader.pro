@@ -18,6 +18,8 @@ CONFIG += c++1z
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    amipipeholder.cpp \
+    amipiperform.cpp \
     bar.cpp \
     bargraphicsitem.cpp \
     bartick.cpp \
@@ -46,6 +48,8 @@ SOURCES += \
     workerloader.cpp
 
 HEADERS += \
+    amipipeholder.h \
+    amipiperform.h \
     bar.h \
     bargraphicsitem.h \
     bartick.h \
@@ -73,6 +77,7 @@ HEADERS += \
     workerloader.h
 
 FORMS += \
+    amipiperform.ui \
     configwindow.ui \
     graphviewform.ui \
     importfinqotesform.ui \
