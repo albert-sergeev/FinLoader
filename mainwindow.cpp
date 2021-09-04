@@ -48,7 +48,7 @@ MainWindow::MainWindow(QWidget *parent)
     QHBoxLayout *lt3 = new QHBoxLayout();
     lt3->setMargin(0);
     ui->wtShowByName->setLayout(lt3);
-    swtShowByName = new StyledSwitcher(tr("Show by name "),tr(" Show by ticker"),true,10,this);
+    swtShowByName = new StyledSwitcher(tr("Show name "),tr(" Show ticker"),true,10,this);
     lt3->addWidget(swtShowByName);
     swtShowByName->SetOnColor(QPalette::Window,colorDarkGreen);
     swtShowByName->SetOffColor(QPalette::Window,colorDarkRed);

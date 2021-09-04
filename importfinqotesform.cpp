@@ -112,7 +112,7 @@ void ImportFinQuotesForm::slotSetToCheck()
 {
     if(!bInLoading){
         bInChecking = true;
-        ui->btnImport->setText("Check");
+        ui->btnImport->setText(tr("Check"));
     }
 }
 //--------------------------------------------------------------------------------------------------------
@@ -120,7 +120,7 @@ void ImportFinQuotesForm::slotSetToImport()
 {
     if(!bInLoading){
         bInChecking = false;
-        ui->btnImport->setText("Import");
+        ui->btnImport->setText(tr("Import"));
     }
 }
 //--------------------------------------------------------------------------------------------------------
@@ -526,7 +526,7 @@ void ImportFinQuotesForm::slotPreparseImportFile()
 
                 if(bb.Interval() == Bar::eInterval::pTick){
                     bInChecking = false;
-                    ui->btnImport->setText("Import");
+                    ui->btnImport->setText(tr("Import"));
 
                     pacCheck->setEnabled(true);
                     pacImport->setEnabled(true);
@@ -534,7 +534,7 @@ void ImportFinQuotesForm::slotPreparseImportFile()
                 }
                 else{
                     bInChecking = true;
-                    ui->btnImport->setText("Check");
+                    ui->btnImport->setText(tr("Check"));
 
                     pacCheck->setEnabled(true);
                     pacImport->setEnabled(false);
@@ -978,10 +978,10 @@ void ImportFinQuotesForm::slotSetWidgetsInLoadState(bool bInLoad)
     }
     else{
         if(!bInChecking){
-            ui->btnImport->setText("Import");
+            ui->btnImport->setText(tr("Import"));
         }
         else{
-            ui->btnImport->setText("Check");
+            ui->btnImport->setText(tr("Check"));
         }
     }
 }
