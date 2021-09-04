@@ -329,7 +329,7 @@ bool GraphViewForm::RepainInvalidRange(RepainTask & data)
             EraseLinesMid(mShowedVolumes,       (int)It.realPosition(),iEnd, ui->grViewVolume->scene());
 
 
-            if (!bWasTotalErase && It.realPosition() < iEnd){
+            if (!bWasTotalErase && (int)It.realPosition() < iEnd){
 
                 qreal x1 = (It.realPosition() + iLeftShift ) * BarGraphicsItem::BarWidth * dHScale;
                 qreal x2 = (iEnd + iLeftShift ) * BarGraphicsItem::BarWidth * dHScale;
@@ -1091,7 +1091,7 @@ void GraphViewForm::slotPeriodButtonChanged()
      if (bStoreRightPos && iEnd > 0){
          tStoredRightPointPosition = Bar::DateAccommodate(holder->getTimeByIndex(iSelectedInterval,iEnd),iSelectedInterval,true);
          iStoredRightAggregate = (iEndI > 0 ? iEndI : 0);
-         iStoredRightAggregate = (size_t)iStoredRightAggregate > iEnd ? iStoredRightAggregate - iEnd : 0 ;
+         iStoredRightAggregate = iStoredRightAggregate > iEnd ? iStoredRightAggregate - iEnd : 0 ;
      }
 
 

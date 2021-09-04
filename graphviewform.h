@@ -76,7 +76,7 @@ private:
 
     std::time_t tStoredMinDate;
     std::time_t tStoredMaxDate;
-    size_t  iStoredMaxSize;
+    /*size_t*/ int  iStoredMaxSize;
     double dStoredLowMin;
     double dStoredHighMax;
 
