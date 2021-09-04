@@ -144,7 +144,7 @@ void Storage::LoadMarketConfig(std::vector<Market> & vMarketsLst)
     //
     std::string sBuff;
     std::istringstream iss{sBuff};
-    std::ifstream fileMarket(pathMarkersFile.c_str());
+    std::ifstream fileMarket(pathMarkersFile.string());
     if(std::getline(fileMarket,sBuff)){
         if(sBuff == "v1"){
             ParsMarketConfigV_1(vMarketsLst,fileMarket);
@@ -243,7 +243,7 @@ void Storage::SwitchTickersConfigFile()
     }
     else{
         std::string sBuff;
-        std::ifstream fileSW(pathTickersSwitcherFile.c_str());
+        std::ifstream fileSW(pathTickersSwitcherFile.string());
         if(std::getline(fileSW,sBuff) && sBuff.size() >0){
             if(sBuff == "1"){
                 iSW = 1;
@@ -308,7 +308,7 @@ std::filesystem::path Storage::ReadTickersConfigFileName(bool bOld)
     std::filesystem::path datafile2 = std::filesystem::absolute(pathDataDir/"tickers.dt2");
 
     std::string sBuff;
-    std::ifstream fileSW(pathTickersSwitcherFile.c_str());
+    std::ifstream fileSW(pathTickersSwitcherFile.string());
     if(std::getline(fileSW,sBuff) && sBuff.size() >0){
         if(sBuff == "1"){
             if (bOld) return datafile1;
@@ -387,13 +387,13 @@ void Storage::LoadTickerConfig(std::vector<Ticker> & vTickersLst)
     //
     std::string sBuff;
     std::istringstream iss{sBuff};
-    std::ifstream fileTicker(pathTickersFile.c_str());
+    std::ifstream fileTicker(pathTickersFile.string());
 
 
     if(std::getline(fileTicker,sBuff)){
         int iCollisions{0};
         if(sBuff == "v1"){
-            iCollisions = ParsTickerConfigV_1(vTickersLst,fileTicker);
+            (void) ParsTickerConfigV_1(vTickersLst,fileTicker);
             iCollisions = 1000;// to force format switch
         }
         else if(sBuff == "v2"){
@@ -452,7 +452,7 @@ int Storage::ParsTickerConfigV_1(std::vector<Ticker> & vTickersLst, std::ifstrea
     int iTickerID{0};
 
 
-    std::map<int,int> mM;
+    std::map<size_t,size_t> mM;
 
     //
     vTickersLst.clear();
@@ -535,13 +535,14 @@ void Storage::SaveTickerConfigV_2(std::filesystem::path  pathFile,const Ticker &
         fileTicker<<(iTickerMark++)<<",";
     }
 
-
     fileTicker<<tp<<",";
 
     fileTicker<<tT.MarketID()<<",";
     fileTicker<<tT.TickerID()<<",";
 
     fileTicker<<trim(tT.TickerName())<<",";
+    //fileTicker<<tT.TickerName()<<",";
+
     fileTicker<<trim(tT.TickerSign())<<",";
     fileTicker<<trim(tT.TickerSignFinam())<<",";
     fileTicker<<trim(tT.TickerSignQuik())<<",";
@@ -588,7 +589,7 @@ int Storage::ParsTickerConfigV_2(std::vector<Ticker> & vTickersLst, std::ifstrea
     int iTickerID{0};
 
 
-    std::map<int,int> mM;
+    std::map<size_t,size_t> mM;
 
     //
     vTickersLst.clear();
@@ -704,7 +705,7 @@ int Storage::ParsTickerConfigV_2(std::vector<Ticker> & vTickersLst, std::ifstrea
 
 std::time_t Storage::dateCastToMonth(std::time_t t)
 {
-    std::tm* tmT = threadfree_localtime(&t);
+    std::tm* tmT = threadfree_gmtime(&t);
     std::tm tmNew;
 
     tmNew.tm_year   = tmT->tm_year;
@@ -715,7 +716,7 @@ std::time_t Storage::dateCastToMonth(std::time_t t)
     tmNew.tm_sec    = 0;
     tmNew.tm_isdst   = tmT->tm_isdst;
 
-    return std::mktime(&tmNew);
+    return mktime_gm(&tmNew);
 }
 //--------------------------------------------------------------------------------------------------------
 ////
@@ -726,7 +727,7 @@ std::time_t Storage::dateCastToMonth(std::time_t t)
 std::time_t Storage::dateAddMonth(std::time_t t)
 {
 
-    std::tm* tmT = threadfree_localtime(&t);
+    std::tm* tmT = threadfree_gmtime(&t);
     std::tm tmNew;
 
     tmNew.tm_year   = tmT->tm_year;
@@ -742,12 +743,12 @@ std::time_t Storage::dateAddMonth(std::time_t t)
         tmNew.tm_mon = 0;
         tmNew.tm_year++;
     }
-    return std::mktime(&tmNew);
+    return mktime_gm(&tmNew);
 }
 //--------------------------------------------------------------------------------------------------------
 std::time_t Storage::dateAddMonth(std::time_t t, int iMonth)
 {
-    std::tm* tmT = threadfree_localtime(&t);
+    std::tm* tmT = threadfree_gmtime(&t);
     std::tm tmNew;
 
     tmNew.tm_year   = tmT->tm_year;
@@ -768,11 +769,11 @@ std::time_t Storage::dateAddMonth(std::time_t t, int iMonth)
         tmNew.tm_mon += 12;
     }
     ////////////////////////////////////
-    return std::mktime(&tmNew);
+    return mktime_gm(&tmNew);
 }
 //--------------------------------------------------------------------------------------------------------
 size_t Storage::mapSize(std::map<std::time_t,std::vector<BarTick>>& m) {
-    int iRet{0};
+    size_t iRet{0};
     for (const auto &v:m){
         iRet +=v.second.size();
     }
@@ -782,6 +783,7 @@ size_t Storage::mapSize(std::map<std::time_t,std::vector<BarTick>>& m) {
 bool Storage::InitializeTicker(int iTickerID,std::stringstream & ssOut, bool bCheckOnly)
 {
     std::shared_lock lk(mutexQuotesStoreInit);
+
     for (auto const &t:vInitializedTickers){
         if (t == iTickerID){
             return true;
@@ -797,7 +799,8 @@ bool Storage::InitializeTicker(int iTickerID,std::stringstream & ssOut, bool bCh
             return true;
         }
     }
-    return  InitializeTickerEntry(iTickerID,ssOut);
+    bool bRet =   InitializeTickerEntry(iTickerID,ssOut);
+    return bRet;
 }
 //--------------------------------------------------------------------------------------------------------
 bool Storage::InitializeTickerEntry(int iTickerID,std::stringstream& ssOut){//private
@@ -808,7 +811,7 @@ bool Storage::InitializeTickerEntry(int iTickerID,std::stringstream& ssOut){//pr
         throw std::runtime_error("corrupted ./data  directory");
     }
     std::stringstream ssD;
-    ssD <<pathStorageDir.c_str();
+    ssD <<pathStorageDir.string();
     ssD <<"/"<<iTickerID;
     std::string sTickerDir(ssD.str());
     //--
@@ -889,7 +892,7 @@ bool Storage::InitializeTickerEntry(int iTickerID,std::stringstream& ssOut){//pr
         tmT.tm_min = 0;
         tmT.tm_sec = 0;
         tmT.tm_isdst = 0;
-        std::time_t t = std::mktime(&tmT);
+        std::time_t t = mktime_gm(&tmT);
 
         std::pair<int,std::time_t> k{iTickerID,t};
         mpStoreMutexes[k];
@@ -968,20 +971,21 @@ void Storage::CreateDataFilesForEntry(std::string sFileName, std::string sFileNa
 //--------------------------------------------------------------------------------------------------------
 int Storage::CreateAndGetFileStageForTicker(int iTickerID, std::time_t tMonth, std::stringstream& ssOut)
 {
-
+    int iRet{0};
     std::shared_lock lk(mutexQuotesStoreInit);
     tMonth = dateCastToMonth(tMonth);
     std::pair<int,std::time_t> k{iTickerID,tMonth};
     auto It (mpStoreMutexes.find(k));
     if(It != mpStoreMutexes.end()){
         std::shared_lock entryLk(mpStoreMutexes.at(k));
-        return GetStageEntryForTicker(iTickerID, tMonth, ssOut);
+        iRet = GetStageEntryForTicker(iTickerID, tMonth, ssOut);
     }
     else{
         lk.unlock();
         std::unique_lock<std::shared_mutex> ulk(mutexQuotesStoreInit);
-        return CreateStageEntryForTicker(iTickerID, tMonth, ssOut);
+        iRet = CreateStageEntryForTicker(iTickerID, tMonth, ssOut);
     }
+    return  iRet;
 }
 //--------------------------------------------------------------------------------------------------------
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -998,13 +1002,14 @@ int  Storage::CreateStageEntryForTicker(int iTickerID, std::time_t tMonth,std::s
     auto It (mpStoreMutexes.find(k));
     if(It != mpStoreMutexes.end()){
         std::shared_lock entryLk(mpStoreMutexes.at(k));
-        return GetStageEntryForTicker(iTickerID, tMonth, ssOut);
+        int iRet = GetStageEntryForTicker(iTickerID, tMonth, ssOut);
+        return iRet;
     }
     //////////////
-    std::tm * tmT = threadfree_localtime(&tMonth);
+    std::tm * tmT = threadfree_gmtime(&tMonth);
 
     std::stringstream ss;
-    ss <<pathStorageDir.c_str();
+    ss <<pathStorageDir.string();
     ss <<"/"<<iTickerID;
     ss <<"/"<<iTickerID<<"_";
     ss <<std::setfill('0');
@@ -1044,11 +1049,11 @@ int  Storage::CreateStageEntryForTicker(int iTickerID, std::time_t tMonth,std::s
 int  Storage::GetStageEntryForTicker(int iTickerID, std::time_t tMonth,std::stringstream& ssOut) // private
 {
     //
-    std::tm * tmT = threadfree_localtime(&tMonth);
+    std::tm * tmT = threadfree_gmtime(&tMonth);
     std::pair<int,std::time_t> k{iTickerID,tMonth};
 
     std::stringstream ss;
-    ss <<pathStorageDir.c_str();
+    ss <<pathStorageDir.string();
     ss <<"/"<<iTickerID;
     ss <<"/"<<iTickerID<<"_";
     ss <<std::setfill('0');
@@ -1113,10 +1118,10 @@ bool Storage::WriteBarToStore(int /*iTickerID*/, Bar &/*b*/, std::stringstream &
 //        ssOut <<"Cannot get state for data storage file for:"<<iTickerID;
 //        return false;
 //    }
-//    std::tm * tmT = threadfree_localtime(&tMonth);
+//    std::tm * tmT = threadfree_gmtime(&tMonth);
 
 //    std::stringstream ss;
-//    ss <<pathStorageDir.c_str();
+//    ss <<pathStorageDir.string();
 //    ss <<"/"<<iTickerID;
 //    ss <<"/"<<iTickerID<<"_";
 //    ss <<std::setfill('0');
@@ -1175,13 +1180,13 @@ bool Storage::slotParseLine(dataFinQuotesParse & parseDt, std::istringstream & i
                 }
                 break;
             case dataFinQuotesParse::fieldType::PER:
-                if(parseDt.t_sWordBuff == "day"){
+                if(parseDt.t_sWordBuff == "D" || parseDt.t_sWordBuff == "d"){
                     parseDt.t_iInterval = Bar::eInterval::pDay;
                 }
-                else if(parseDt.t_sWordBuff == "week"){
+                else if(parseDt.t_sWordBuff == "W" || parseDt.t_sWordBuff == "w"){
                     parseDt.t_iInterval = Bar::eInterval::pWeek;
                 }
-                else if(parseDt.t_sWordBuff == "month"){
+                else if(parseDt.t_sWordBuff == "M" || parseDt.t_sWordBuff == "m"){
                     parseDt.t_iInterval = Bar::eInterval::pMonth;
                 }
                 else{
@@ -1278,7 +1283,7 @@ bool Storage::slotParseLine(dataFinQuotesParse & parseDt, std::istringstream & i
         }
         if (parseDt.DefaultInterval() < 0 ) parseDt.setDefaultInterval ( Bar::eInterval::pTick);
 
-        b.setPeriod(std::mktime(&parseDt.t_tp));
+        b.setPeriod(mktime_gm(&parseDt.t_tp));
     }
     catch (std::exception &e){
         parseDt.ossErr() << "Wrong file format:"<<e.what();
@@ -1290,14 +1295,16 @@ bool Storage::slotParseLine(dataFinQuotesParse & parseDt, std::istringstream & i
 
 //--------------------------------------------------------------------------------------------------------
 
-bool Storage::WriteMemblockToStore(WriteMutexDefender &defLk,int iTickerID, std::time_t tMonth, char* cBuff,size_t length, std::stringstream & ssOut)
+bool Storage::WriteMemblockToStore(MutexDefender<std::shared_lock<std::shared_mutex>> &defSk,
+                                   MutexDefender<std::unique_lock<std::shared_mutex>> &defUk,
+                                   int iTickerID, std::time_t tMonth, char* cBuff,size_t length, std::stringstream & ssOut)
 {
     std::shared_lock lk(mutexQuotesStoreInit);
     //
     tMonth = dateCastToMonth(tMonth);
 
 //    char buffer[100];
-//    std::tm * ptm = threadfree_localtime(&tMonth);
+//    std::tm * ptm = threadfree_gmtime(&tMonth);
 //    std::strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", ptm);
 //    std::string strB(buffer);
 //    {
@@ -1309,7 +1316,11 @@ bool Storage::WriteMemblockToStore(WriteMutexDefender &defLk,int iTickerID, std:
     std::pair<int,std::time_t> k{iTickerID,tMonth};
     auto It (mpStoreMutexes.find(k));
     if(It == mpStoreMutexes.end()){
+
+        defUk.Unlock();
+        defSk.Unlock();
         lk.unlock();
+
         std::unique_lock<std::shared_mutex> ulk(mutexQuotesStoreInit);
         if(CreateStageEntryForTicker(iTickerID, tMonth, ssOut) == 0){
             ssOut <<"cannot create data storage file for TickerID: "<<iTickerID;
@@ -1324,9 +1335,10 @@ bool Storage::WriteMemblockToStore(WriteMutexDefender &defLk,int iTickerID, std:
         }
     }
 
-    std::shared_lock entryLk(mpStoreMutexes.at(k));
+    defSk.Lock(mpStoreMutexes.at(k));
+    //std::shared_lock entryLk(mpStoreMutexes.at(k));
     //std::unique_lock entryWriteLk (mpWriteMutexes.at(k));
-    defLk.Lock(mpWriteMutexes.at(k));
+    defUk.Lock(mpWriteMutexes.at(k));
     ////////////////////////////////////////////
     //int iStage = GetStageEntryForTicker(iTickerID, tMonth, ssOut);
     int iStage = mpStoreStages.at(k);
@@ -1334,10 +1346,10 @@ bool Storage::WriteMemblockToStore(WriteMutexDefender &defLk,int iTickerID, std:
         ssOut <<"\n\rCannot get state for data storage file for TickerID: "<<iTickerID;
         return false;
     }
-    std::tm * tmT = threadfree_localtime(&tMonth);
+    std::tm * tmT = threadfree_gmtime(&tMonth);
 
     std::stringstream ss;
-    ss <<pathStorageDir.c_str();
+    ss <<pathStorageDir.string();
     ss <<"/"<<iTickerID;
     ss <<"/"<<iTickerID<<"_";
     ss <<std::setfill('0');
@@ -1367,7 +1379,7 @@ bool Storage::ReadFromStore(int iTickerID, std::time_t tMonth, std::vector<BarTi
                    std::stringstream & ssOut)
 {
     char buffer[100];
-    std::tm * ptm = threadfree_localtime(&tMonth);
+    std::tm * ptm = threadfree_gmtime(&tMonth);
     std::strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", ptm);
     std::string strM(buffer);
 
@@ -1391,7 +1403,7 @@ bool Storage::ReadFromStore(int iTickerID, std::time_t tMonth, std::vector<BarTi
             return false;
         }
         ///
-        std::tm * tmT = threadfree_localtime(&tMonth);
+        std::tm * tmT = threadfree_gmtime(&tMonth);
 
 
         std::stringstream ss;
@@ -1425,7 +1437,6 @@ bool Storage::ReadFromStore(int iTickerID, std::time_t tMonth, std::vector<BarTi
                 return false;
             }
         }
-
         std::shared_lock entryWriteLk (mpWriteMutexes.at(k)); // lock
 
         if (vStorageW[iStage - 1]>0){
@@ -1458,6 +1469,7 @@ bool Storage::ReadFromStore(int iTickerID, std::time_t tMonth, std::vector<BarTi
         //ssOut <<"no data files for: " <<strM<<"\n";;
         //return true;
     }
+
     return true;
 }
 //--------------------------------------------------------------------------------------------------------
@@ -1472,7 +1484,7 @@ bool Storage::ReadFromStoreFile(int iTickerID, std::time_t /*tMonth*/, std::map<
 
     ss.str("");
     ss.clear();
-    ss << pathStorageDir.c_str();
+    ss << pathStorageDir.string();
     ss <<"/"<<iTickerID<<"/";
     ss <<strNamePart;
 
@@ -1628,20 +1640,24 @@ bool Storage::OptimizeStore(int iTickerID, std::time_t tMonth, bool & bToPlanNex
     bToPlanNextShift = false;
 
     char buffer[100];
-    std::tm * ptm = threadfree_localtime(&tMonth);
+    std::tm * ptm = threadfree_gmtime(&tMonth);
     std::strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", ptm);
     std::string strM(buffer);
     ////////////////////////////////////////////////
     tMonth = dateCastToMonth(tMonth);
     std::pair<int,std::time_t> k{iTickerID,tMonth};
+
     std::shared_lock lkInit(mutexQuotesStoreInit);
     ////////////////////////////////////////////////
     Market::SessionTable_type  vRepoNull{};
 
     auto It (mpOptimizeMutexes.find(k));
     if(It != mpOptimizeMutexes.end()){
+
+
         std::unique_lock lk(mpOptimizeMutexes.at(k),std::defer_lock);
         if (lk.try_lock()){
+
 
             std::vector<std::vector<BarTick>> vBarList;
 
@@ -1654,7 +1670,7 @@ bool Storage::OptimizeStore(int iTickerID, std::time_t tMonth, bool & bToPlanNex
             int iNewStage = iStage >= 6 ? 1 : iStage + 1;
             ///
 
-            std::tm * tmT = threadfree_localtime(&tMonth);
+            std::tm * tmT = threadfree_gmtime(&tMonth);
 
             std::stringstream ssControlFileNamePart;
             ssControlFileNamePart <<iTickerID<<"_";
@@ -1663,7 +1679,7 @@ bool Storage::OptimizeStore(int iTickerID, std::time_t tMonth, bool & bToPlanNex
             ssControlFileNamePart <<std::right<< std::setw(2)<<(tmT->tm_mon+1);
 
             std::stringstream ssControlPath;
-            ssControlPath << pathStorageDir.c_str();
+            ssControlPath << pathStorageDir.string();
             ssControlPath <<"/"<<iTickerID<<"/";
             ssControlPath <<ssControlFileNamePart.str();
 
@@ -1734,6 +1750,7 @@ bool Storage::SwitchStage(std::pair<int,std::time_t> k, std::string sPath, std::
                           std::stringstream & ssOut)
 {
     std::unique_lock entryLk(mpStoreMutexes.at(k));
+
     mpStoreStages[k] = iNewStage;
 
     std::ofstream ofCF(sPath);
@@ -1747,7 +1764,7 @@ bool Storage::SwitchStage(std::pair<int,std::time_t> k, std::string sPath, std::
 
     std::stringstream ssDevNull;
     CreateDataFilesForEntry(sPath,sFileNamePart,iNewStage,ssDevNull);
-    ssOut << ssDevNull.str(); // TODO: delete. for tests
+    //ssOut << ssDevNull.str(); // TODO: delete. for tests
     return true;
 }
 //--------------------------------------------------------------------------------------------------------

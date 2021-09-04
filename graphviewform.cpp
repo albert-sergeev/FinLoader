@@ -248,8 +248,8 @@ bool GraphViewForm::RepainInvalidRange(RepainTask & data)
         auto ItEnd (holder->beginIteratorByDate<T>(iSelectedInterval,Bar::DateAccommodate(data.dtEnd,iSelectedInterval),bSuccess));
         if (bSuccess){
             {   ThreadFreeCout pcout; pcout <<"do invalidate\n";
-//                pcout <<"data.dtStart: "<<threadfree_localtime_to_str(&data.dtStart)<<"\n";
-//                pcout <<"data.dtEnd: "<<threadfree_localtime_to_str(&data.dtEnd)<<"\n";
+//                pcout <<"data.dtStart: "<<threadfree_gmtime_to_str(&data.dtStart)<<"\n";
+//                pcout <<"data.dtEnd: "<<threadfree_gmtime_to_str(&data.dtEnd)<<"\n";
             }
             auto ItTotalEnd (holder->end<T>());
 
@@ -261,7 +261,7 @@ bool GraphViewForm::RepainInvalidRange(RepainTask & data)
             ///{ThreadFreeCout pcout; pcout<<"inv 1";}
 
 
-            size_t iSize =  holder->getViewGraphSize(iSelectedInterval);
+            int iSize =  (int)holder->getViewGraphSize(iSelectedInterval);
             std::time_t tMinDate = holder->getViewGraphDateMin(Bar::eInterval::pTick);
             std::time_t tMaxDate =  holder->getViewGraphDateMax(Bar::eInterval::pTick);
 
@@ -322,11 +322,11 @@ bool GraphViewForm::RepainInvalidRange(RepainTask & data)
             }
 
             // clean invalid range
-            int iEnd = ItEnd.realPosition() + 1;
+            int iEnd = (int)ItEnd.realPosition() + 1;
             iEnd = iEnd > iSize ? iSize : iEnd;
             //
-            EraseLinesMid(mShowedGraphicsBars,  It.realPosition(),iEnd, ui->grViewQuotes->scene());
-            EraseLinesMid(mShowedVolumes,       It.realPosition(),iEnd, ui->grViewVolume->scene());
+            EraseLinesMid(mShowedGraphicsBars,  (int)It.realPosition(),iEnd, ui->grViewQuotes->scene());
+            EraseLinesMid(mShowedVolumes,       (int)It.realPosition(),iEnd, ui->grViewVolume->scene());
 
 
             if (!bWasTotalErase && It.realPosition() < iEnd){
@@ -606,7 +606,7 @@ void GraphViewForm::DrawIntermittentLineToScene(const int idx,const  qreal x1,co
 {
     std::stringstream ss;
     if (bHasTooltip && t != 0){
-        ss <<threadfree_localtime_to_str(&t);
+        ss <<threadfree_gmtime_to_str(&t);
     }
 
     DrawIntermittentLineToScene(idx,x1,y1,x2,y2,mM,scene, pen,ss.str(),  bHasTooltip);
@@ -657,7 +657,7 @@ void GraphViewForm::DrawLineToScene(const int idx,const  qreal x1,const  qreal y
 {
     std::stringstream ss;
     if (bHasTooltip && t != 0){
-        ss <<threadfree_localtime_to_str(&t);
+        ss <<threadfree_gmtime_to_str(&t);
     }
     DrawLineToScene(idx,x1,y1,x2,y2,mM, scene,pen,ss.str(), bHasTooltip);
 }
@@ -884,14 +884,14 @@ void GraphViewForm::EraseFrames()
 void GraphViewForm::SetMinMaxDateToControls()
 {
     {
-        std::tm* tmSt=threadfree_localtime(&tStoredMinDate);
+        std::tm* tmSt=threadfree_gmtime(&tStoredMinDate);
         const QDate dtS(tmSt->tm_year+1900,tmSt->tm_mon+1,tmSt->tm_mday);
         const QTime tmS(tmSt->tm_hour,tmSt->tm_min,tmSt->tm_sec);
         QDateTime dt (dtS,tmS);
         ui->dtBeginDate->setDateTime(dt);
     }
     {
-        std::tm* tmSt=threadfree_localtime(&tStoredMaxDate);
+        std::tm* tmSt=threadfree_gmtime(&tStoredMaxDate);
         const QDate dtS(tmSt->tm_year+1900,tmSt->tm_mon+1,tmSt->tm_mday);
         const QTime tmS(tmSt->tm_hour,tmSt->tm_min,tmSt->tm_sec);
         QDateTime dt (dtS,tmS);
@@ -1074,17 +1074,17 @@ void GraphViewForm::slotPeriodButtonChanged()
      auto ItDefender = holder->beginIteratorByDate<T>(iSelectedInterval,0,bSuccess);
      if (!bSuccess) return;
      //
-     size_t iMaxSize = holder->getViewGraphSize(iSelectedInterval);
+     int iMaxSize = (int)holder->getViewGraphSize(iSelectedInterval);
      if (iMaxSize == 0 ) return;
      /////////////////////////////////////////////////////////////////////////////////////////
 
      //size_t iViewWidth = ui->grViewQuotes->width()/(dHScale *BarGraphicsItem::BarWidth);
 
 
-     size_t iBeg    = iStartI >= 0          ? iStartI   : 0 ;
+     int iBeg    = iStartI >= 0          ? iStartI   : 0 ;
      iBeg           = iBeg < iMaxSize       ? iBeg      : iMaxSize - 1;
 
-     size_t iEnd    = iEndI >= 0             ? iEndI      : 0 ;
+     int iEnd    = iEndI >= 0             ? iEndI      : 0 ;
      iEnd           = iEnd < iMaxSize ? iEnd     : iMaxSize - 1;
 
 
@@ -1120,7 +1120,7 @@ void GraphViewForm::slotPeriodButtonChanged()
          std::time_t tTmp;
          QPen bluePen(Qt::blue,1,Qt::SolidLine);
 
-         for (size_t i = iBeg ; i <= iEnd; ++i){
+         for (int i = iBeg ; i <= iEnd; ++i){
              qreal xCur = (i + iLeftShift)     * BarGraphicsItem::BarWidth * dHScale;
              T &b = holder->getByIndex<T>(iSelectedInterval,i);
              //
@@ -1145,7 +1145,7 @@ void GraphViewForm::slotPeriodButtonChanged()
                      ss.str("");
                      ss.clear();
                      tTmp = b.Period();
-                     ss << threadfree_localtime_to_str(&tTmp)<<"\r\n";
+                     ss << threadfree_gmtime_to_str(&tTmp)<<"\r\n";
                      ss << b.Volume();
 
                      DrawLineToScene(i, xCur,-3,xCur,-realYtoSceneYVolume(b.Volume()),
@@ -1320,12 +1320,12 @@ void GraphViewForm::slotPeriodButtonChanged()
      int iSecCounter{0};
      std::time_t tTmp{0};
 
-     std::tm tmPre = *threadfree_localtime(&tTmp);
+     std::tm tmPre = *threadfree_gmtime(&tTmp);
      std::tm tmCur = tmPre;
 
      bool bFifstLine{true};
-     int iSizeMax =  holder->getViewGraphSize(iSelectedInterval);
-     tmCur = *threadfree_localtime(&tTmp);
+     int iSizeMax =  (int)holder->getViewGraphSize(iSelectedInterval);
+     tmCur = *threadfree_gmtime(&tTmp);
 
 
      std::time_t tBegTmp{0};
@@ -1334,13 +1334,13 @@ void GraphViewForm::slotPeriodButtonChanged()
      if (iBeg  < iSizeMax && iSelectedInterval >= Bar::eInterval::p120){
          T &b = holder->getByIndex<T>(iSelectedInterval, iBeg);
          tBegTmp = b.Period();
-         std::tm tmBegTmp = *threadfree_localtime(&tBegTmp);
+         std::tm tmBegTmp = *threadfree_gmtime(&tBegTmp);
          tmBegTmp.tm_mon--;
          if (tmBegTmp.tm_mon < 0){
              tmBegTmp.tm_mon = 11;
              tmBegTmp.tm_year--;
          }
-         tNextTmp = std::mktime(&tmBegTmp);
+         tNextTmp = mktime_gm(&tmBegTmp);
      }
      else if (iBeg  < iSizeMax && iSelectedInterval >= Bar::eInterval::p15) {
          T &b = holder->getByIndex<T>(iSelectedInterval, iBeg);
@@ -1364,14 +1364,14 @@ void GraphViewForm::slotPeriodButtonChanged()
      if (iSelectedInterval == Bar::eInterval::pTick){
          auto It  (holder->beginIteratorByDate<BarTick>(iSelectedInterval,tNextTmp,bSuccess));
          if (bSuccess){
-             iLeftBeg = It.realPosition();
+             iLeftBeg = (int)It.realPosition();
          }
 
      }
      else{
          auto It  (holder->beginIteratorByDate<Bar>(iSelectedInterval,tNextTmp,bSuccess));
          if (bSuccess){
-             iLeftBeg = It.realPosition();
+             iLeftBeg = (int)It.realPosition();
          }
      }
 
@@ -1435,7 +1435,7 @@ void GraphViewForm::slotPeriodButtonChanged()
 
              T & tM = holder->getByIndex<T>(iSelectedInterval,i );
              tTmp = tM.Period();
-             tmCur = *threadfree_localtime(&tTmp);
+             tmCur = *threadfree_gmtime(&tTmp);
              //--------------------------
              if (!bFifstLine ){
 
@@ -1462,7 +1462,7 @@ void GraphViewForm::slotPeriodButtonChanged()
 
                      if (iBeg <= i && !bLineExists){
                          ss <<"Year\n";
-                         ss <<threadfree_localtime_date_to_str(&tTmp);
+                         ss <<threadfree_gmtime_date_to_str(&tTmp);
 
                          DrawLineToScene             (i, xCur, 0,xCur,iLineH * 2, mVFramesScaleUpper, ui->grViewScaleUpper->scene(),blackSolidPen,tTmp,true); // down line
 
@@ -1482,7 +1482,7 @@ void GraphViewForm::slotPeriodButtonChanged()
 
                      if (iBeg <= i && !bLineExists){
                          ss <<"Month\n";
-                         ss <<threadfree_localtime_date_to_str(&tTmp);
+                         ss <<threadfree_gmtime_date_to_str(&tTmp);
                          //
 
                          DrawLineToScene             (i, xCur, 0,xCur,iLineH * 2, mVFramesScaleUpper, ui->grViewScaleUpper->scene(),blackSolidPen,tTmp,true); // down line
@@ -1505,7 +1505,7 @@ void GraphViewForm::slotPeriodButtonChanged()
                          ){
                      if (iBeg <= i && !bLineExists){
                          ss <<"Day\n";
-                         ss <<threadfree_localtime_date_to_str(&tTmp);
+                         ss <<threadfree_gmtime_date_to_str(&tTmp);
 
                          DrawLineToScene             (i, xCur, -iShiftH ,xCur, - rectVolume.height() + iShiftH * 2, mVFramesVolume, ui->grViewVolume ->scene(),blackDashPen,tTmp,true); // volume line
                          DrawIntermittentLineToScene (i, xCur, -iShiftH ,xCur, - rectQuotes.height() + iShiftH * 2, mVFramesViewQuotes, ui->grViewQuotes->scene(),blackDashPen,ss.str(),true); // middle line
@@ -1684,7 +1684,7 @@ void GraphViewForm::slotPeriodButtonChanged()
              xCur += iRightAggregate * BarGraphicsItem::BarWidth * dHScale;
          }
          else{
-             int iSize = holder->getViewGraphSize(iSelectedInterval);
+             int iSize = (int)holder->getViewGraphSize(iSelectedInterval);
              xCur = (iSize + iLeftShift - 1) * BarGraphicsItem::BarWidth * dHScale - ui->grViewQuotes->horizontalScrollBar()->pageStep();
              xCur += iRightAggregate * BarGraphicsItem::BarWidth * dHScale;
          }

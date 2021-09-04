@@ -379,12 +379,17 @@ bool Graph<T>::BuildFromLowerList(Graph<T_SRC> &grSrc, std::time_t dtStart,std::
     if (It == grSrc.mDictionary.end())  return true;
 
     std::time_t dtNext          = Bar::DateAccommodate(It->first,iInterval,true);
+
     auto ItCur  (grSrc.mDictionary.lower_bound(dtNext));
-    dtNext = ItCur->first;
+    if (ItCur != grSrc.mDictionary.end()){
+        dtNext = ItCur->first;
+    }
 
     std::vector<std::vector<Bar>> v;
     v.push_back(std::vector<Bar>{});
     std::vector<Bar> & vRes = v.back();
+
+    try{
 
     auto v_ItBeg (grSrc.vContainer.end());
     auto v_ItEnd (grSrc.vContainer.end());
@@ -398,8 +403,6 @@ bool Graph<T>::BuildFromLowerList(Graph<T_SRC> &grSrc, std::time_t dtStart,std::
         vRes.reserve(std::distance(v_ItBeg,v_ItEnd));
     }
 
-
-    try{
     while (It != ItEnd) { // loop throught the section contains data for target tic only
 
         v_ItBeg = std::next(grSrc.vContainer.begin(), It->second);

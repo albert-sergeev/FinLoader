@@ -64,7 +64,7 @@ public:
           ,bEndIterator{false}
           ,lk {hl.mutexHolder,std::defer_lock}
         {
-            lk.try_lock();
+            (void)lk.try_lock();
             iCurrentIndex = holder->getViewGraphIndex(tBeg,selectedViewInterval);
         };
         //
@@ -76,7 +76,7 @@ public:
         {
             if (!o.bEndIterator && o.owns_lock()){
                 lk = {holder->mutexHolder,std::defer_lock};
-                lk.try_lock();
+                (void)lk.try_lock();
             }
         };
         //
@@ -89,7 +89,7 @@ public:
             if (!o.bEndIterator){
                 lk = {holder->mutexHolder,std::defer_lock};
                 if ( o.owns_lock()) {
-                    lk.try_lock();
+                    (void)lk.try_lock();
                 }
             }
             else{
