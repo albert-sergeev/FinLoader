@@ -1180,13 +1180,13 @@ bool Storage::slotParseLine(dataFinQuotesParse & parseDt, std::istringstream & i
                 }
                 break;
             case dataFinQuotesParse::fieldType::PER:
-                if(parseDt.t_sWordBuff == "day"){
+                if(parseDt.t_sWordBuff == "D" || parseDt.t_sWordBuff == "d"){
                     parseDt.t_iInterval = Bar::eInterval::pDay;
                 }
-                else if(parseDt.t_sWordBuff == "week"){
+                else if(parseDt.t_sWordBuff == "W" || parseDt.t_sWordBuff == "w"){
                     parseDt.t_iInterval = Bar::eInterval::pWeek;
                 }
-                else if(parseDt.t_sWordBuff == "month"){
+                else if(parseDt.t_sWordBuff == "M" || parseDt.t_sWordBuff == "m"){
                     parseDt.t_iInterval = Bar::eInterval::pMonth;
                 }
                 else{
