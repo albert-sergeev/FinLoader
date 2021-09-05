@@ -2,6 +2,7 @@
 #define AMIPIPERFORM_H
 
 #include <QWidget>
+#include <QMenu>
 #include "modelmarketslist.h"
 #include "modeltickerslist.h"
 #include "amipipeholder.h"
@@ -20,7 +21,9 @@ protected:
 
     modelMarketsList * const modelMarket;
     modelTickersList * const modelTicker;
-    TickerProxyListModel proxyTickerModel;
+    TickerProxyListModel proxyTickerModelUnallocated;
+    TickerProxyListModel proxyTickerModelActive;
+    TickerProxyListModel proxyTickerModelOff;
 
     AmiPipeHolder &pipes;
 
@@ -34,9 +37,40 @@ public:
 public:
 signals:
     void SendToMainLog(QString);
+    void NeedSaveDefaultTickerMarket(int);
+
+protected:
+    void SetMarketModel();
+    void SetTickerModel();
+
 
 protected slots:
-    void btnCheckClicked();
+    void slotBtnCheckClicked();
+    void slotSetSelectedTickersMarket(int i);
+
+    void slotSetSelectedTickerActive        (const  QModelIndex&,const QModelIndex&);
+    void slotSetSelectedTickerOff           (const  QModelIndex&,const QModelIndex&);
+    void slotSetSelectedTickerUnallocated   (const  QModelIndex&,const QModelIndex&);
+
+    void slotSetSelectedTickerActive        (const QModelIndex&);
+    void slotSetSelectedTickerOff           (const QModelIndex&);
+    void slotSetSelectedTickerUnallocated   (const QModelIndex&);
+
+    void slotOffAllClicked();
+    void slotOffOneClicked();
+    void slotOnAllClicked();
+    void slotOnOneClicked();
+
+    void slotActiveDissociateClicked();
+    void slotOffDissociateClicked();
+
+    void slotDoubleClickedActive(const  QModelIndex&);
+    void slotDoubleClickedOff(const  QModelIndex&);
+
+    void slotActiveContextMenuRequested(const QPoint &);
+    void slotOffContextMenuRequested(const QPoint &);
+    void slotUnallocatedContextMenuRequested(const QPoint &);
+
 private:
     Ui::AmiPiperForm *ui;
 };

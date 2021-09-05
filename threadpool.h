@@ -48,6 +48,10 @@ public:
             if(threads[i].joinable())
                 threads[i].join();
         }
+        {
+            ThreadFreeCout pcout;
+            pcout <<"~join_threads() {"<<(&threads)<<"}\n";
+        }
     };
 };
 
@@ -98,11 +102,13 @@ private:
     std::vector<std::thread> threads;
     std::vector<std::thread> threadsDeleted;
 
-    join_threads<std::thread> joiner;
-    join_threads<std::thread> joinerDeleted;
+
 
     std::vector<std::future<bool>>  vFutures;
     std::vector<flagInterrupt *>  vInterruptFlags;
+
+    join_threads<std::thread> joinerDeleted;
+    join_threads<std::thread> joiner;
 
 
     //---------------------------------------------------------------------------------------------------
@@ -134,7 +140,7 @@ public:
 
 
     ThreadPool(int MaxThreads = std::thread::hardware_concurrency())
-        :bQuit{false},joiner{threads},joinerDeleted{threadsDeleted}{
+        :bQuit{false},joinerDeleted{threadsDeleted},joiner{threads}{
 
         MaxThreads = MaxThreads > (int)std::thread::hardware_concurrency() ?  std::thread::hardware_concurrency() : MaxThreads;
         threadMaxCount = MaxThreads > 0 ? MaxThreads : 1;
@@ -155,6 +161,10 @@ public:
     ~ThreadPool(){
         bQuit = true;
         Interrupt();
+        {
+            ThreadFreeCout pcout;
+            pcout <<"~ThreadPool()\n";
+        }
     }
     //---------------------------------------------------------------------------------------------------
     void Interrupt(){

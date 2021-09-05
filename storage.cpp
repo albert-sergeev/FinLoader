@@ -10,6 +10,7 @@
 
 #include "threadpool.h"
 #include "threadfreelocaltime.h"
+#include "trimutils.h"
 
 //using namespace std::filesystem;
 

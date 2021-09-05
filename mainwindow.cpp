@@ -76,7 +76,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 
     ///
-    startTimer(100); // timer to process GUID events
+    iTimerID = startTimer(100); // timer to process GUID events
 
     InitHolders();
 
@@ -97,12 +97,23 @@ MainWindow::~MainWindow()
 //    delete pmnuHelp;
 
     delete ui;
+    //
+    {
+        ThreadFreeCout pcout;
+        pcout <<"~MainWindow()\n";
+    }
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 bool MainWindow::event(QEvent *event)
 {
     if(event->type() == QEvent::Close){
-        SaveUnsavedConfigs();
+        this->killTimer(iTimerID);
+        {
+            ThreadFreeCout pcout;
+            pcout <<"Received close event\n";
+        }
+
+        emit SaveUnsavedConfigs();
 
         for(auto w: vBulbululators){
             if(w!=nullptr){
@@ -1483,6 +1494,7 @@ void MainWindow::InitAction()
         pdoc->setAttribute(Qt::WA_DeleteOnClose);
         pdoc->setWindowTitle(tr("Import from trade sistems"));
         pdoc->setWindowIcon(QPixmap(":/store/images/sc_cut"));
+        connect(pdoc,SIGNAL(NeedSaveDefaultTickerMarket(int)),this,SLOT(slotStoreDefaultTickerMarket(int)));
 
         ui->mdiArea->addSubWindow(pdoc);
 

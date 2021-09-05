@@ -313,7 +313,7 @@ void ConfigWindow::slotBtnRemoveMarketClicked()
             //modelMarket->removeItem(lst[0].row());
             modelMarket->removeRow(lst[0].row());
             qml->select(lst[0],QItemSelectionModel::SelectionFlag::Clear);
-            NeedSaveMarketsChanges();
+            emit NeedSaveMarketsChanges();
             ClearMarketWidgetsValues();
             slotMarketDataChanged(false);
 

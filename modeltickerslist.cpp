@@ -57,7 +57,7 @@ QVariant modelTickersList::data(const QModelIndex &index, int nRole) const
             QString qstrN = QString::fromStdString(trim(t.TickerName()));
             qstrN = qstrN.leftJustified(20, ' ', true);
 
-            return QVariant::fromValue(qstrN+"\t"+getMarketNameByID(t.MarketID())+"}");
+            return QVariant::fromValue(qstrN+"\t{"+getMarketNameByID(t.MarketID())+"}");
         }
         else if(index.column()  ==  4){
             const Ticker & t ( vTickersLst->at(index.row()));

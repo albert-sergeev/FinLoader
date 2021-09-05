@@ -5,6 +5,7 @@
 #include <QAbstractTableModel>
 #include <QSortFilterProxyModel>
 #include "ticker.h"
+#include "trimutils.h"
 
 class modelTickersList : public QAbstractTableModel
 {
@@ -64,9 +65,17 @@ class TickerProxyListModel: public QSortFilterProxyModel
 private:
     int iDefaultMarket;
     bool bFilterByActive;
+    bool bFilterByOff;
+    bool bFilterByUnallocate;
+    bool bFilterByAllocate;
 
 public:
-    TickerProxyListModel (QObject *parent = nullptr): QSortFilterProxyModel(parent),iDefaultMarket(-1),bFilterByActive{false}{};
+    TickerProxyListModel (QObject *parent = nullptr): QSortFilterProxyModel(parent),iDefaultMarket(-1),
+        bFilterByActive{false},
+        bFilterByOff{false},
+        bFilterByUnallocate{false},
+        bFilterByAllocate{false}
+    {};
 
     bool lessThan(const QModelIndex & L, const QModelIndex & R)  const override {
 
@@ -119,6 +128,15 @@ public:
             if (bFilterByActive && !t.AutoLoad()){
                 return false;
             }
+            if (bFilterByOff && t.AutoLoad()){
+                return false;
+            }
+            if (bFilterByUnallocate && trim(t.TickerSignQuik()).size() == 0){
+                return false;
+            }
+            if (bFilterByAllocate && trim(t.TickerSignQuik()).size() != 0){
+                return false;
+            }
             return true;
         }
         return QSortFilterProxyModel::filterAcceptsRow(source_row, source_parent);
@@ -134,6 +152,25 @@ public:
     void setFilterByActive(bool bFilter){
         if (bFilter != bFilterByActive){
             bFilterByActive = bFilter;
+            this->invalidate();
+        }
+    }
+
+    void setFilterByOff(bool bFilter){
+        if (bFilter != bFilterByOff){
+            bFilterByOff = bFilter;
+            this->invalidate();
+        }
+    }
+    void setFilterByUnallocate(bool bFilter){
+        if (bFilter != bFilterByUnallocate){
+            bFilterByUnallocate = bFilter;
+            this->invalidate();
+        }
+    }
+    void setFilterByAllocate(bool bFilter){
+        if (bFilter != bFilterByAllocate){
+            bFilterByAllocate = bFilter;
             this->invalidate();
         }
     }

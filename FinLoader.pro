@@ -45,6 +45,7 @@ SOURCES += \
     threadfreelocaltime.cpp \
     threadpool.cpp \
     ticker.cpp \
+    trimutils.cpp \
     workerloader.cpp
 
 HEADERS += \
@@ -74,6 +75,7 @@ HEADERS += \
     threadfreelocaltime.h \
     threadpool.h \
     ticker.h \
+    trimutils.h \
     workerloader.h
 
 FORMS += \

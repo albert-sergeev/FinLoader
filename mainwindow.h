@@ -60,6 +60,8 @@ class MainWindow : public QMainWindow
 private:
     // for main window
 
+    int iTimerID;
+
     QMenu * m_mnuWindows;
     QMenu * m_mnuStyles;
     QMenu * m_mnuLangs;
@@ -109,7 +111,6 @@ private:
 
     // global storage objects
     QSettings m_settings;
-    Storage stStore;
     std::vector<Market> vMarketsLst;
     modelMarketsList m_MarketLstModel;
     QString qsStorageDirPath;
@@ -143,6 +144,8 @@ private:
     BlockFreeQueue<dataBuckgroundThreadAnswer> queueTrdAnswers;
     workerLoader wrkrLoadFinQuotes;
 
+    ///////////////////////////////////
+    Storage stStore;
     ///////////////////////////////////
     ThreadPool thrdPoolLoadFinQuotes;
     ///////////////////////////////////
