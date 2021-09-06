@@ -1490,7 +1490,7 @@ void MainWindow::InitAction()
     void MainWindow::slotAmiPipeWndow()
     {
 
-        AmiPiperForm  *pdoc=new AmiPiperForm (&m_MarketLstModel,iDefaultTickerMarket,&m_TickerLstModel,pipesHolder);
+        AmiPiperForm  *pdoc=new AmiPiperForm (&m_MarketLstModel,iDefaultTickerMarket,&m_TickerLstModel,pipesHolder,vTickersLst);
         pdoc->setAttribute(Qt::WA_DeleteOnClose);
         pdoc->setWindowTitle(tr("Import from trade sistems"));
         pdoc->setWindowIcon(QPixmap(":/store/images/sc_cut"));

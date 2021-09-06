@@ -3,6 +3,7 @@
 
 #include <QWidget>
 #include <QMenu>
+#include <QStringListModel>
 #include "modelmarketslist.h"
 #include "modeltickerslist.h"
 #include "amipipeholder.h"
@@ -25,12 +26,18 @@ protected:
     TickerProxyListModel proxyTickerModelActive;
     TickerProxyListModel proxyTickerModelOff;
 
+    QStringListModel    *modelNew;
+    AmiPipeHolder::pipes_type mFreePipes;
+
     AmiPipeHolder &pipes;
+
+    std::vector<Ticker> &vTickersLst;
 
 public:
     explicit AmiPiperForm(modelMarketsList *modelM, int DefaultTickerMarket,
                           modelTickersList *modelT,
                           AmiPipeHolder & p,
+                          std::vector<Ticker> &v,
                           QWidget *parent = nullptr);
     ~AmiPiperForm();
 
@@ -70,6 +77,9 @@ protected slots:
     void slotActiveContextMenuRequested(const QPoint &);
     void slotOffContextMenuRequested(const QPoint &);
     void slotUnallocatedContextMenuRequested(const QPoint &);
+
+    void slotSelectNewTicker(const  QModelIndex&);
+    void slotBindClicked();
 
 private:
     Ui::AmiPiperForm *ui;

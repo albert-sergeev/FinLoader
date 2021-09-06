@@ -3,18 +3,27 @@
 
 #include<vector>
 #include<filesystem>
+#include<map>
+
+#include"ticker.h"
+
 
 class AmiPipeHolder
 {
+public:
+    typedef std::map<std::string,std::pair<int,std::tuple<std::string,std::string,std::filesystem::directory_entry>>> pipes_type;
 protected:
-    std::vector<std::filesystem::directory_entry> vActivePipes;
+    pipes_type mPipes;
 
 public:
-
-
     AmiPipeHolder();
 
-    std::vector<std::string> CheckActivePipes();
+    static void CheckPipes(std::vector<Ticker> &vT,pipes_type & mBindedPipes, pipes_type &mFreePipes);
+
+protected:
+    static pipes_type ScanActivePipes();
+
+
 };
 
 #endif // AMIPIPEHOLDER_H

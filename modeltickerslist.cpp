@@ -201,10 +201,41 @@ bool modelTickersList::searchTickerBySign(const std::string &sSign, QModelIndex 
     return  true;
 }
 //--------------------------------------------------------------------------------------------------------
+bool modelTickersList::searchTickerByPureSign(const std::string &sSign, QModelIndex & indx)
+{
+    auto It = std::find_if(vTickersLst->begin(),vTickersLst->end(),[&](const auto &c){
+        return c.TickerSign() == sSign;
+        });
+    if(It == vTickersLst->end()){
+            return false;
+    }
+    /////////////////
+
+    indx = this->index(std::distance(vTickersLst->begin(),It),0);
+
+    return  true;
+}
+//--------------------------------------------------------------------------------------------------------
+
 bool modelTickersList::searchTickerByFinamSign(const std::string &sSign, QModelIndex & indx)
 {
     auto It = std::find_if(vTickersLst->begin(),vTickersLst->end(),[&](const auto &c){
                         return c.TickerSignFinam() == sSign;
+    });
+    if(It == vTickersLst->end()){
+            return false;
+    }
+    /////////////////
+
+    indx = this->index(std::distance(vTickersLst->begin(),It),0);
+
+    return  true;
+}
+//--------------------------------------------------------------------------------------------------------
+bool modelTickersList::searchTickerByQuikSign(const std::string &sSign, QModelIndex & indx)
+{
+    auto It = std::find_if(vTickersLst->begin(),vTickersLst->end(),[&](const auto &c){
+                        return c.TickerSignQuik() == sSign;
     });
     if(It == vTickersLst->end()){
             return false;

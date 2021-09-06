@@ -364,8 +364,8 @@ void ConfigWindow::slotBtnSaveMarketClicked()
 
                   Market& m=modelMarket->getMarket(lst[0]);
 
-                  m.SetMarketName(ui->edName->text().toStdString());
-                  m.SetMarketSign(ui->edSign->text().toStdString());
+                  m.SetMarketName   (trim(ui->edName->text().toStdString()));
+                  m.SetMarketSign   (trim(ui->edSign->text().toStdString()));
                   m.SetAutoLoad(swtAutoLoadWholeMarket->isChecked()? true:false);
                   m.SetUpToSys(swtUpToSysWholeMarket->isChecked()? true:false);
                   //
@@ -392,8 +392,8 @@ void ConfigWindow::slotBtnSaveMarketClicked()
                   std::time_t tE (mktime_gm(&tmSt));
                   m.SetEndTime(tE);
                   ///
-                  NeedSaveMarketsChanges();
-                  modelMarket->dataChanged(lst[0],lst[0]);
+                  emit NeedSaveMarketsChanges();
+                  emit modelMarket->dataChanged(lst[0],lst[0]);
 
                   bAddingMarketRow = false;
                   slotMarketDataChanged(false);
@@ -783,11 +783,11 @@ void ConfigWindow::slotBtnSaveTickerClicked(){
             }
 
             if(bAddingTickerRow){
-                Ticker t {  ui->edTickerName->text().toStdString(),
-                            ui->edTickerSign->text().toStdString(),
-                            iDefaultTickerMarket};
-                t.SetTickerSignFinam(ui->edTickerSignFinam->text().toStdString());
-                t.SetTickerSignQuik(ui->edTickerSignQuik->text().toStdString());
+                Ticker t {              trim(ui->edTickerName->text().toStdString()),
+                                        trim(ui->edTickerSign->text().toStdString()),
+                                        iDefaultTickerMarket};
+                t.SetTickerSignFinam    (trim(ui->edTickerSignFinam->text().toStdString()));
+                t.SetTickerSignQuik     (trim(ui->edTickerSignQuik->text().toStdString()));
                 t.SetAutoLoad(swtAutoLoadTicker->isChecked()? true:false);
                 t.SetUpToSys(swtUpToSysTicker->isChecked()? true:false);
                 t.SetBulbululator(swtBulbululatorTicker->isChecked()? true:false);
@@ -821,13 +821,13 @@ void ConfigWindow::slotBtnSaveTickerClicked(){
                       //Ticker& t=modelTicker->getTicker(lst[0]);
                       Ticker t=proxyTickerModel.getTicker(lst[0]);
 
-                      t.SetTickerName(ui->edTickerName->text().toStdString());
-                      t.SetTickerSign(ui->edTickerSign->text().toStdString());
-                      t.SetTickerSignFinam(ui->edTickerSignFinam->text().toStdString());
-                      t.SetTickerSignQuik(ui->edTickerSignQuik->text().toStdString());
-                      t.SetAutoLoad(swtAutoLoadTicker->isChecked()? true:false);
-                      t.SetUpToSys(swtUpToSysTicker->isChecked()? true:false);
-                      t.SetBulbululator(swtBulbululatorTicker->isChecked()? true:false);
+                      t.SetTickerName           (trim(ui->edTickerName->text().toStdString()));
+                      t.SetTickerSign           (trim(ui->edTickerSign->text().toStdString()));
+                      t.SetTickerSignFinam      (trim(ui->edTickerSignFinam->text().toStdString()));
+                      t.SetTickerSignQuik       (trim(ui->edTickerSignQuik->text().toStdString()));
+                      t.SetAutoLoad             (swtAutoLoadTicker->isChecked()? true:false);
+                      t.SetUpToSys              (swtUpToSysTicker->isChecked()? true:false);
+                      t.SetBulbululator         (swtBulbululatorTicker->isChecked()? true:false);
                       ///
                       proxyTickerModel.setData(lst[0],t,Qt::EditRole);
                 }

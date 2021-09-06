@@ -47,8 +47,10 @@ public:
 
     Qt::ItemFlags flags(const QModelIndex &indx) const override;
 
+    bool searchTickerByQuikSign(const std::string &sSign, QModelIndex & indx);
     bool searchTickerByFinamSign(const std::string &sSign, QModelIndex & indx);
     bool searchTickerBySign(const std::string &sSign, QModelIndex & indx);
+    bool searchTickerByPureSign(const std::string &sSign, QModelIndex & indx);
     bool searchTickerByTickerID(const int TickerID, QModelIndex & indx);
 
     void blinkTicker(int iTickerID);
@@ -175,7 +177,18 @@ public:
         }
     }
 
-
+    bool searchTickerByQuikSign(const std::string &sSign, QModelIndex & indx){
+        QModelIndex src_indx ;//=  mapToSource(index)
+        bool bRet =((modelTickersList*)this->sourceModel())->searchTickerByQuikSign(sSign,src_indx);
+        indx = mapFromSource(src_indx);
+        return bRet;
+    }
+    bool searchTickerByPureSign(const std::string &sSign, QModelIndex & indx){
+        QModelIndex src_indx ;//=  mapToSource(index)
+        bool bRet =((modelTickersList*)this->sourceModel())->searchTickerByPureSign(sSign,src_indx);
+        indx = mapFromSource(src_indx);
+        return bRet;
+    }
 };
 
 
