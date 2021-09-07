@@ -13,8 +13,10 @@
 ConfigWindow::ConfigWindow(modelMarketsList *modelM,int DefaultTickerMarket,
                            modelTickersList *modelT, bool ShowByName,bool SortByName,
                            bool DefStoragePath, QString StoragePath,
+                           Storage &st,
                            QWidget *parent) :
     QWidget(parent)
+    , stStore{st}
     , bDataMarketChanged{false}
     , bAddingMarketRow{false}
     , bIsAboutMarkerChanged(false)

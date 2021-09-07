@@ -18,7 +18,7 @@ protected:
 public:
     AmiPipeHolder();
 
-    static void CheckPipes(std::vector<Ticker> &vT,pipes_type & mBindedPipes, pipes_type &mFreePipes);
+    static void CheckPipes(std::vector<Ticker> &vT,pipes_type & mBindedPipes,AmiPipeHolder::pipes_type & mBindedPipesOff, pipes_type &mFreePipes);
 
 protected:
     static pipes_type ScanActivePipes();

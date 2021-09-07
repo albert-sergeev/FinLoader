@@ -46,23 +46,6 @@
      <layout class="QVBoxLayout" name="verticalLayout_2">
       <item>
        <layout class="QGridLayout" name="gridLayout_2">
-        <item row="0" column="0">
-         <widget class="QPushButton" name="btnCheck">
-          <property name="text">
-           <string>Check</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="2">
-         <widget class="QLabel" name="label_3">
-          <property name="text">
-           <string>Unallocated</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignCenter</set>
-          </property>
-         </widget>
-        </item>
         <item row="1" column="0">
          <widget class="QLabel" name="label_4">
           <property name="text">
@@ -73,13 +56,13 @@
           </property>
          </widget>
         </item>
-        <item row="1" column="2">
-         <widget class="QComboBox" name="cmbMarketsUnallocated"/>
-        </item>
-        <item row="2" column="0" rowspan="3">
-         <widget class="QListView" name="lstTickersNew">
-          <property name="editTriggers">
-           <set>QAbstractItemView::DoubleClicked</set>
+        <item row="0" column="2">
+         <widget class="QLabel" name="label_3">
+          <property name="text">
+           <string>Unallocated</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
           </property>
          </widget>
         </item>
@@ -95,13 +78,6 @@
            </size>
           </property>
          </spacer>
-        </item>
-        <item row="2" column="2" rowspan="3">
-         <widget class="QListView" name="lstTickersUnallocated">
-          <property name="editTriggers">
-           <set>QAbstractItemView::AnyKeyPressed|QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed</set>
-          </property>
-         </widget>
         </item>
         <item row="3" column="1">
          <widget class="QPushButton" name="btnBind">
@@ -122,7 +98,14 @@
           </property>
          </widget>
         </item>
-        <item row="4" column="1">
+        <item row="2" column="2" rowspan="4">
+         <widget class="QListView" name="lstTickersUnallocated">
+          <property name="editTriggers">
+           <set>QAbstractItemView::AnyKeyPressed|QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed</set>
+          </property>
+         </widget>
+        </item>
+        <item row="5" column="1">
          <spacer name="verticalSpacer_5">
           <property name="orientation">
            <enum>Qt::Vertical</enum>
@@ -134,6 +117,36 @@
            </size>
           </property>
          </spacer>
+        </item>
+        <item row="1" column="2">
+         <widget class="QComboBox" name="cmbMarketsUnallocated"/>
+        </item>
+        <item row="0" column="0">
+         <widget class="QPushButton" name="btnCheck">
+          <property name="text">
+           <string>Scan pipes</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0" rowspan="4">
+         <widget class="QListView" name="lstTickersNew">
+          <property name="editTriggers">
+           <set>QAbstractItemView::DoubleClicked</set>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="1">
+         <widget class="QPushButton" name="btnBindAll">
+          <property name="maximumSize">
+           <size>
+            <width>40</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>All</string>
+          </property>
+         </widget>
         </item>
        </layout>
       </item>

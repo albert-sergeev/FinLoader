@@ -38,48 +38,58 @@ void workerLoader::workerDataBaseWork(BlockFreeQueue<dataFinLoadTask> & queueTas
 //    while (!WorkerThreadCounter.compare_exchange_weak(iID,iID + 1)) {;}
 //    WorkerThreadID = iID;
 
-    bool bSuccess{false};
-    auto pdata = queueTasks.Pop(bSuccess);
-    while(bSuccess){
+    try{
+        bool bSuccess{false};
+        auto pdata = queueTasks.Pop(bSuccess);
+        while(bSuccess){
 
-        dataFinLoadTask data(*pdata.get());
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        /// one task start
+            dataFinLoadTask data(*pdata.get());
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            /// one task start
 
-        switch (data.taskType) {
-        case dataFinLoadTask::TaskType::finQuotesImport:
-            workerFinQuotesLoad(queueTasks,queueTrdAnswers,stStore,data);
-            break;
-        case dataFinLoadTask::TaskType::finQuotesCheck:
-            workerFinQuotesCheck(queueTasks,queueTrdAnswers,stStore,data);
-            break;
-        case dataFinLoadTask::TaskType::finQuotesLoadFromStorage:
-            workerLoadFromStorage(queueTasks,queueTrdAnswers,stStore,data);
-            break;
-        case dataFinLoadTask::TaskType::LoadIntoGraph:
-            workerLoadIntoGraph(queueTasks,queueTrdAnswers,stStore,data);
-            break;
-        case dataFinLoadTask::TaskType::storageOptimisation:
-            workerOptimizeStorage(queueTasks,queueTrdAnswers,stStore,data);
-            break;
+            switch (data.taskType) {
+            case dataFinLoadTask::TaskType::finQuotesImport:
+                workerFinQuotesLoad(queueTasks,queueTrdAnswers,stStore,data);
+                break;
+            case dataFinLoadTask::TaskType::finQuotesCheck:
+                workerFinQuotesCheck(queueTasks,queueTrdAnswers,stStore,data);
+                break;
+            case dataFinLoadTask::TaskType::finQuotesLoadFromStorage:
+                workerLoadFromStorage(queueTasks,queueTrdAnswers,stStore,data);
+                break;
+            case dataFinLoadTask::TaskType::LoadIntoGraph:
+                workerLoadIntoGraph(queueTasks,queueTrdAnswers,stStore,data);
+                break;
+            case dataFinLoadTask::TaskType::storageOptimisation:
+                workerOptimizeStorage(queueTasks,queueTrdAnswers,stStore,data);
+                break;
 
-        default:
-            break;
+            default:
+                break;
+            }
+            /// one task end
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            if (!this_thread_flagInterrup.isSet()){
+                pdata = queueTasks.Pop(bSuccess);
+            }
+            else{
+                bSuccess = false; // to exit while
+            }
+            //----------------------------------
         }
-        /// one task end
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        if (!this_thread_flagInterrup.isSet()){
-            pdata = queueTasks.Pop(bSuccess);
-        }
-        else{
-            bSuccess = false; // to exit while
-        }
-        //----------------------------------
     }
+    catch (std::exception &ex) {
+        ThreadFreeCout pcout;
+        pcout <<"crash ecxeption" <<ex.what()<<"\n";
+
+    }
+
+
+
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------

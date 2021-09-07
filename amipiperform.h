@@ -73,6 +73,8 @@ protected slots:
 
     void slotDoubleClickedActive(const  QModelIndex&);
     void slotDoubleClickedOff(const  QModelIndex&);
+    void slotDoubleClickedUnallocated(const  QModelIndex&);
+    void slotDoubleClickedNew(const  QModelIndex&);
 
     void slotActiveContextMenuRequested(const QPoint &);
     void slotOffContextMenuRequested(const QPoint &);

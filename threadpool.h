@@ -173,6 +173,15 @@ public:
         }
     }
     //---------------------------------------------------------------------------------------------------
+    void Halt(){
+        bQuit = true;
+        Interrupt();
+        {
+            ThreadFreeCout pcout;
+            pcout <<"ThreadPool::Halt()\n";
+        }
+    }
+    //---------------------------------------------------------------------------------------------------
     template<typename T>
     std::future<typename std::result_of<T()>::type> AddTask(T f)
     {
@@ -252,7 +261,9 @@ private:
     void DeleteFinishedTreads(){
         std::unique_lock lkT(mut_treads);
         for(int i = 0; i < (int)threadsDeleted.size(); ++i){
-            threadsDeleted[i].join();
+            if (threadsDeleted[i].joinable()){
+                threadsDeleted[i].join();
+            }
         }
         threadsDeleted.clear();
     }

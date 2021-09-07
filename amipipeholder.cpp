@@ -67,9 +67,13 @@ AmiPipeHolder::pipes_type AmiPipeHolder::ScanActivePipes()
 }
 
 //-------------------------------------------------------------------------------------------------
-void AmiPipeHolder::CheckPipes(std::vector<Ticker> &vT,AmiPipeHolder::pipes_type & mBindedPipes, AmiPipeHolder::pipes_type &mFreePipes)
+void AmiPipeHolder::CheckPipes(std::vector<Ticker> &vT,
+                               AmiPipeHolder::pipes_type & mBindedPipesActive,
+                               AmiPipeHolder::pipes_type & mBindedPipesOff,
+                               AmiPipeHolder::pipes_type &mFreePipes)
 {
-    mBindedPipes.clear();
+    mBindedPipesActive.clear();
+    mBindedPipesOff.clear();
     mFreePipes.clear();
     //
     AmiPipeHolder::pipes_type mPipes = AmiPipeHolder::ScanActivePipes();
@@ -78,13 +82,22 @@ void AmiPipeHolder::CheckPipes(std::vector<Ticker> &vT,AmiPipeHolder::pipes_type
     for(const auto &t:vT){
         sTmp = trim(t.TickerSignQuik());
         if(sTmp.size() > 0 && mPipes.find(sTmp) != mPipes.end()){
-            mPipes[sTmp].first = 1;
+            if (t.AutoLoad()){
+                mPipes[sTmp].first = 1;
+            }
+            else{
+                mPipes[sTmp].first = 2;
+            }
+
         }
     }
     ///
     for(const auto &p:mPipes){
-        if (p.second.first != 0){
-            mBindedPipes[p.first] = p.second;
+        if (p.second.first == 1){
+            mBindedPipesActive[p.first] = p.second;
+        }
+        else if (p.second.first == 2){
+            mBindedPipesOff[p.first] = p.second;
         }
         else{
             mFreePipes[p.first] = p.second;

@@ -102,6 +102,7 @@ MainWindow::~MainWindow()
         ThreadFreeCout pcout;
         pcout <<"~MainWindow()\n";
     }
+    thrdPoolLoadFinQuotes.Halt();
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 bool MainWindow::event(QEvent *event)
@@ -1069,7 +1070,7 @@ void MainWindow::InitAction()
     {
         ConfigWindow *pdoc=new ConfigWindow(&m_MarketLstModel,iDefaultTickerMarket,
                                             &m_TickerLstModel,bConfigTickerShowByName,bConfigTickerSortByName,
-                                            bDefaultStoragePath,qsStorageDirPath
+                                            bDefaultStoragePath,qsStorageDirPath,stStore
                                             );
         pdoc->setAttribute(Qt::WA_DeleteOnClose);
         pdoc->setWindowTitle(tr("Config"));

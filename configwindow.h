@@ -27,6 +27,7 @@ public:
     explicit ConfigWindow(modelMarketsList *modelM,int iDefaultTickerMarket,
                           modelTickersList *modelT, bool ShowByName,bool SortByName,
                           bool DefStoragePath, QString StoragePath,
+                          Storage &stStore,
                           QWidget *parent = nullptr);
     ~ConfigWindow();
 private:
@@ -38,7 +39,7 @@ private:
 
 
 
-    Storage stStore;
+    Storage &stStore;
     bool bDataMarketChanged;
     bool bAddingMarketRow;
     bool bIsAboutMarkerChanged;
