@@ -52,7 +52,7 @@ void Storage::Initialize(std::string sPath)
     if (bInitialized) return;
 
     /// for speed optimisation
-    std::ios::sync_with_stdio(false);
+    //std::ios::sync_with_stdio(false);
 
 
     std::unique_lock lk1(mutexMarketConfigFile);

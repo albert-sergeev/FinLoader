@@ -9,10 +9,12 @@
 #include<chrono>
 #include<sstream>
 #include "trimutils.h"
+#include "storage.h"
 
 //-------------------------------------------------------------------------------------------------
 AmiPipeHolder::AmiPipeHolder()
 {
+    std::call_once(AmiPipeHolder_call_once_flag,&AmiPipeHolder::initStartConst,this);
 
 }
 
@@ -48,7 +50,10 @@ AmiPipeHolder::pipes_type AmiPipeHolder::ScanActivePipes()
 
     for (const std::filesystem::directory_entry &fl:std::filesystem::directory_iterator{pathTickerDir}){
 
-        if ( fl.exists() && fl.is_regular_file()){
+        if ( fl.exists()
+             && fl.is_regular_file()
+             //&& fl.is_fifo()
+             ){
             std::string ss(fl.path().filename().string());
             const auto ItPipe = std::sregex_token_iterator(ss.begin(),ss.end(),reAmiPipe);
             if ( ItPipe != std::sregex_token_iterator()){
@@ -141,14 +146,26 @@ void AmiPipeHolder::RefreshActiveSockets(pipes_type& pActive,
         if ( ItHalted == mPipesHalted.end()){
             auto ItConnected (mPipesConnected.find(p.first));
             if ( ItConnected == mPipesConnected.end()){
-
+                {
+                    ThreadFreeCout pcout;
+                    pcout <<"pipename: "<<std::get<2>(p.second.second)<<"\n";
+                    if(std::filesystem::is_fifo(std::get<2>(p.second.second))){
+                        pcout <<"is fifo\n";
+                    }
+                    else{
+                        pcout <<"is regular file\n";
+                    }
+                }
                 bool bOpend{false};
                 try{
-                    std::ifstream file{std::get<2>(p.second.second)};
+                    std::ifstream file(std::get<2>(p.second.second),std::ios::in);
                     if (file.good()){
                         mPipesConnected[p.first].first  = 1;
                         mPipesConnected[p.first].second = {std::get<3>(p.second.second),
                                                             std::move(file)};
+                        mBuffer[p.first].resize(iBlockMaxSize);
+                        mPointerToWrite[p.first] = 0;
+                        mPointerToRead[p.first] = 0;
                         //
                         dataAmiPipeAnswer answ;
                         answ.Type = dataAmiPipeAnswer::PipeConnected;
@@ -194,6 +211,19 @@ void AmiPipeHolder::RefreshActiveSockets(pipes_type& pActive,
             answ.iTickerID = ItConnected->second.second.first;
             queuePipeAnswers.Push(answ);
             //
+            auto ItBuff = mBuffer.find(ItConnected->first);
+            if (ItBuff != mBuffer.end()){
+                mBuffer.erase(ItBuff);
+            }
+            auto ItPW = mPointerToWrite.find(ItConnected->first);
+            if (ItPW != mPointerToWrite.end()){
+                mPointerToWrite.erase(ItPW);
+            }
+            auto ItPR = mPointerToRead.find(ItConnected->first);
+            if (ItPR != mPointerToRead.end()){
+                mPointerToRead.erase(ItPR);
+            }
+            //
             auto ItNext = std::next(ItConnected);
             mPipesConnected.erase(ItConnected);
             ItConnected = ItNext;
@@ -217,6 +247,194 @@ void AmiPipeHolder::RefreshActiveSockets(pipes_type& pActive,
     }
 }
 //-------------------------------------------------------------------------------------------------
+void AmiPipeHolder::ReadConnectedPipes(std::map<int,std::vector<BarTick>> & /*mV*/,
+                        BlockFreeQueue<dataAmiPipeAnswer>&queuePipeAnswers)
+{
+    int iTicketID{0};
+
+    int iBytesToRead{0};
+    int iWriteStart{0};
+
+    //std::time_t tSec;
+    bool bInStream{false};
+
+
+//    std::ofstream fileWD ("testoutpipe.txt",std::ios_base::binary);
+//    fileWD.close();
+
+    std::ofstream fileW ("testoutpipe.txt",std::ios_base::app | std::ios_base::binary);
+
+    BarTick b(0,0,0);
+    BarTickMemcopier bM(b);
+    //Storage::data_type iState;
+
+
+    auto ItConnected = mPipesConnected.begin();
+    while (ItConnected != mPipesConnected.end()){
+        iTicketID = ItConnected->second.second.first;
+        //auto &vV (mV[iTicketID]);
+        if (ItConnected->second.second.second.good()){
+
+            ItConnected->second.second.second.seekg(0,std::ios::end);
+            int filesize = ItConnected->second.second.second.tellg();
+            ItConnected->second.second.second.seekg(0, std::ios::cur);
+
+//            int filesize = 1;
+
+            if (filesize > 0){
+                iWriteStart = mPointerToWrite[ItConnected->first];
+                iBytesToRead = iWriteStart + filesize < iBlockMaxSize ?
+                            filesize : iBlockMaxSize - iWriteStart;
+                //
+                char *buff = mBuffer[ItConnected->first].data();
+
+                if(ItConnected->second.second.second.read(buff + iWriteStart,iBytesToRead)){
+                    mPointerToWrite[ItConnected->first] +=  iBytesToRead;
+                    ////-------
+//                    if (iTicketID == 1)
+                    {
+                        if(!fileW.write(buff,iBytesToRead)){
+                            ThreadFreeCout pcout;
+                            pcout <<"Unsuccessful write operation\n";
+                        }
+                        else{
+                            ThreadFreeCout pcout;
+                            pcout <<"Writing buff {"<<iBytesToRead<<"}\n";
+                        }
+                    }
+                    ////-------
+                    bInStream = false;
+                    int iReadStart = mPointerToRead[ItConnected->first];
+                    int iBlockStart = 0;
+                    int i = iReadStart;
+                    unsigned long long longDate{0};
+                    double volume{0};
+
+                    double vO{0};
+                    double vH{0};
+                    double vL{0};
+                    double vC{0};
+
+                    bool bFirst{true};
+
+                    while(i < mPointerToWrite[ItConnected->first]){
+                        if(i >= 2 && !bInStream){
+                            if(buff[i - 2] == 8 && buff[i - 1] == 0){
+                                bInStream = true;
+                                iBlockStart = 0;
+                            }
+                        }
+                        if (bInStream && iBlockStart >= 48){
+                            bInStream = false;
+                            iReadStart = i - iBlockStart;
+                            if (bFirst && iReadStart != 2){
+                                ThreadFreeCout pcout;
+                                pcout <<"reading not from start: {"<<iReadStart<<"}\n";
+                            }
+                            bFirst = false;
+
+                            memcpy(&longDate,buff + iReadStart, 8);          iReadStart += 8;
+                            memcpy(&vO,buff  + iReadStart, 8);       iReadStart += 8;
+                            memcpy(&vH,buff  + iReadStart, 8);       iReadStart += 8;
+                            memcpy(&vL,buff  + iReadStart, 8);       iReadStart += 8;
+                            memcpy(&vC,buff  + iReadStart, 8);       iReadStart += 8;
+                            memcpy(&volume,buff + iReadStart, 8);       iReadStart += 8;
+
+                                                                                   // 13275568800 179 000 1
+                            bM.Period() = t1970_01_01_04_00_00 + (longDate/10000000 - 11644488000);
+                            //bM.Period() = longDate/10000000;
+                            bM.Close() = vC;
+                            bM.Volume() = (long)volume;
+
+                            if(b.Period() > t1971_01_01_00_00_00 &&
+                               b.Period() < t2100_01_01_00_00_00
+                                    ){
+                                if (iTicketID == 1){
+                                    ThreadFreeCout pcout;
+                                    pcout <<"{"<<threadfree_gmtime_to_str(&bM.Period())<<"} ";
+                                    pcout <<"{"<<b.Close()<<"} ";
+                                    pcout <<"{"<<volume<<"}\n";
+                                }
+                            }
+                            else
+                            {
+                                ThreadFreeCout pcout;
+                                pcout <<"error in time during import from pipe: "<<iTicketID<<"\n";
+                            }
+
+                        }
+                        iBlockStart++;
+                        i++;
+                    }
+
+                    if (iReadStart > 0){
+
+                        int iDelta = mPointerToWrite[ItConnected->first] - iReadStart;
+
+//                        {
+//                            ThreadFreeCout pcout;
+//                            pcout <<"iDelta: "<<iDelta<<"\n";
+//                        }
+
+                        memcpy(buff,buff + iReadStart, iDelta);
+
+                        mPointerToWrite[ItConnected->first] -= iReadStart;
+                        mPointerToRead[ItConnected->first] = 0;
+
+//                        {
+//                            ThreadFreeCout pcout;
+//                            pcout <<"mems: {"<<iTicketID<<"} write_pointer: {"<<mPointerToWrite[ItConnected->first]<<"}\n";
+//                        }
+                    }
+                }
+            }
+            ++ItConnected;
+        }
+        else{
+
+            if (!(ItConnected->second.second.second.rdstate() & std::ios_base::eofbit)){
+                ThreadFreeCout pcout;
+                pcout << "not good\n";
+
+                if (ItConnected->second.second.second.rdstate() & std::ios_base::goodbit) { pcout << "stream state is goodbit\n";}
+                if (ItConnected->second.second.second.rdstate() & std::ios_base::badbit) { pcout << "stream state is badbit\n";}
+                if (ItConnected->second.second.second.rdstate() & std::ios_base::failbit) { pcout << "stream state is failbit\n";}
+
+                try{
+                    ItConnected->second.second.second.close();
+                }
+                catch (...) {;}
+                //
+                dataAmiPipeAnswer answ;
+                answ.Type = dataAmiPipeAnswer::PipeDisconnected;
+                answ.iTickerID = ItConnected->second.second.first;
+                queuePipeAnswers.Push(answ);
+                //
+                auto ItBuff = mBuffer.find(ItConnected->first);
+                if (ItBuff != mBuffer.end()){
+                    mBuffer.erase(ItBuff);
+                }
+                auto ItPW = mPointerToWrite.find(ItConnected->first);
+                if (ItPW != mPointerToWrite.end()){
+                    mPointerToWrite.erase(ItPW);
+                }
+                auto ItPR = mPointerToRead.find(ItConnected->first);
+                if (ItPR != mPointerToRead.end()){
+                    mPointerToRead.erase(ItPR);
+                }
+                //
+                auto ItNext = std::next(ItConnected);
+                mPipesConnected.erase(ItConnected);
+                ItConnected = ItNext;
+            }
+            else{
+                ++ItConnected;
+            }
+        }
+    }
+
+}
+
 //-------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------

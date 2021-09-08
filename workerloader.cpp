@@ -1419,12 +1419,9 @@ void workerLoader::workerAmiClient(BlockFreeQueue<dataFinLoadTask> & /*queueFinQ
                 ///////////////////////////////////////////////////////////////////////////////
                 // socket work block
 
+                std::map<int,std::vector<BarTick>> mV;
 
-
-
-
-
-
+                pipesHolder.ReadConnectedPipes(mV,queuePipeAnswers);
 
 
                 ///////////////////////////////////////////////////////////////////////////////
