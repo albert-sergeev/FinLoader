@@ -76,7 +76,8 @@ void AmiPipeHolder::CheckPipes(std::vector<Ticker> &vT,
                                AmiPipeHolder::pipes_type & mBindedPipesActive,
                                AmiPipeHolder::pipes_type & mBindedPipesOff,
                                AmiPipeHolder::pipes_type &mFreePipes,
-                               std::vector<int> &mUnconnectedPipes
+                               std::vector<int> &vUnconnectedPipes,
+                               std::vector<int> &vInformantsPipes
                                )
 {
     mBindedPipesActive.clear();
@@ -107,7 +108,10 @@ void AmiPipeHolder::CheckPipes(std::vector<Ticker> &vT,
         }
         else{
             if (t.AutoLoad()){
-                mUnconnectedPipes.push_back(t.TickerID());
+                vUnconnectedPipes.push_back(t.TickerID());
+            }
+            else{
+                vInformantsPipes.push_back(t.TickerID());
             }
         }
     }

@@ -88,6 +88,10 @@ protected slots:
 
 private:
     Ui::AmiPiperForm *ui;
+
+    // QWidget interface
+protected:
+    void showEvent(QShowEvent *event);
 };
 
 #endif // AMIPIPERFORM_H

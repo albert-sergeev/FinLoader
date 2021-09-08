@@ -122,13 +122,16 @@ void modelTickersList::setTickerState(int TickerID, eTickerState st)
     auto It = std::find_if(vTickersLst->begin(),vTickersLst->end(),[&](const Ticker &t){
                         return t.TickerID() == TickerID;});
     if (It != vTickersLst->end()){
-        mTickerState[TickerID] = st;
+        auto ItState = mTickerState.find(TickerID);
+        if (!(ItState != mTickerState.end() && ItState->second == st)){
+            mTickerState[TickerID] = st;
 
-        QVector<int> vV {Qt::BackgroundColorRole};
-        QModelIndex indexBeg = this->index(std::distance(vTickersLst->begin(),It),0);
-        QModelIndex indexEnd = this->index(std::distance(vTickersLst->begin(),It),4);
+            QVector<int> vV {Qt::BackgroundColorRole};
+            QModelIndex indexBeg = this->index(std::distance(vTickersLst->begin(),It),0);
+            QModelIndex indexEnd = this->index(std::distance(vTickersLst->begin(),It),4);
 
-        emit dataChanged(indexBeg,indexEnd,vV);
+            emit dataChanged(indexBeg,indexEnd,vV);
+        }
     }
 }
 ////--------------------------------------------------------------------------------------------------------

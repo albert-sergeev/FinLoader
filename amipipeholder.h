@@ -30,7 +30,8 @@ public:
                            pipes_type & mBindedPipes,
                            AmiPipeHolder::pipes_type & mBindedPipesOff,
                            pipes_type &mFreePipes,
-                           std::vector<int> &mUnconnectedPipes);
+                           std::vector<int> &vUnconnectedPipes,
+                           std::vector<int> &vInformantsPipes);
 
     void RefreshActiveSockets(pipes_type& pipesBindedActive,
                               pipes_type& pipesBindedOff,

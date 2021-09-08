@@ -169,8 +169,11 @@ public:
     }
     //---------------------------------------------------------------------------------------------------
     void Interrupt(){
-        for(auto &tt:vInterruptFlags){
-            tt->set();
+        std::unique_lock lkT(mut_treads);
+        for(int i = 0; i < vInterruptFlags.size(); ++i){
+            if (threads[i].joinable()){
+                vInterruptFlags[i]->set();
+            }
         }
         vInterruptFlags.clear();
     }

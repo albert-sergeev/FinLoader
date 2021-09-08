@@ -72,9 +72,10 @@ void AmiPiperForm::slotBtnCheckClicked()
     AmiPipeHolder::pipes_type mBindedPipes;
     AmiPipeHolder::pipes_type mBindedPipesOff;
     mFreePipes.clear();
-    std::vector<int> mUnconnected;
+    std::vector<int> vUnconnected;
+    std::vector<int> vInformants;
 
-    pipes.CheckPipes(vTickersLst,mBindedPipes,mBindedPipesOff,mFreePipes,mUnconnected);
+    pipes.CheckPipes(vTickersLst,mBindedPipes,mBindedPipesOff,mFreePipes,vUnconnected,vInformants);
 
     modelNew->removeRows(0,modelNew->rowCount());
 
@@ -519,12 +520,36 @@ void AmiPiperForm::slotOffContextMenuRequested(const QPoint & pos)
     }
 }
 //--------------------------------------------------------------------------------------------------------------------
-void AmiPiperForm::slotUnallocatedContextMenuRequested(const QPoint & /*pos*/)
+void AmiPiperForm::slotUnallocatedContextMenuRequested(const QPoint & pos)
 {
-//    {
-//        ThreadFreeCout pcout;
-//        pcout<<"mnu expectad unallocated\n";
-//    }
+    auto qml(ui->lstTickersUnallocated->selectionModel());
+    auto lst (qml->selectedIndexes());
+
+    if (lst.size()>0){
+        const Ticker  &t =proxyTickerModelUnallocated.getTicker(lst[0]);
+        QPoint item = ui->lstTickersUnallocated->mapToGlobal(pos);
+        QAction *pOn{nullptr};
+        QAction *pOff{nullptr};
+        QMenu submenu(this);
+        if (t.AutoLoad()){
+            pOff = submenu.addAction(tr("Off"));
+        }
+        else{
+            pOn = submenu.addAction(tr("On"));
+        }
+
+        QAction* rightClickItem = submenu.exec(item);
+        if (rightClickItem && pOn && rightClickItem == pOn){
+            Ticker t = proxyTickerModelUnallocated.getTicker(lst[0]);
+            t.SetAutoLoad(true);
+            proxyTickerModelUnallocated.setData(lst[0],t,Qt::EditRole);
+        }
+        if (rightClickItem && pOff && rightClickItem == pOff){
+            Ticker t = proxyTickerModelUnallocated.getTicker(lst[0]);
+            t.SetAutoLoad(false);
+            proxyTickerModelUnallocated.setData(lst[0],t,Qt::EditRole);
+        }
+    }
 }
 //--------------------------------------------------------------------------------------------------------------------
 void AmiPiperForm::slotSelectNewTicker(const  QModelIndex& indx)
@@ -673,4 +698,8 @@ void AmiPiperForm::slotDoubleClickedNew(const  QModelIndex& indx)
     }
 }
 //--------------------------------------------------------------------------------------------------------------------
+void AmiPiperForm::showEvent(QShowEvent */*event*/)
+{
+    slotBtnCheckClicked();
+}
 //--------------------------------------------------------------------------------------------------------------------

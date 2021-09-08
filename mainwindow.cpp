@@ -260,7 +260,7 @@ void MainWindow::timerEvent(QTimerEvent * event)
                         emit SendToErrorLog(QString::fromStdString(ss.str()));
                     }
                     else{
-                        emit slotSendSignalToInvalidateGraph(data.TickerID(), data.BeginDate(), data.EndDate());
+                        slotSendSignalToInvalidateGraph(data.TickerID(), data.BeginDate(), data.EndDate());
 
                         if (data.TickerID() == 9){ // TODO:delete. for test
                             auto hl =  Holders[data.TickerID()];
@@ -281,7 +281,7 @@ void MainWindow::timerEvent(QTimerEvent * event)
                 }
                 break;
             case dataBuckgroundThreadAnswer::eAnswerType::logText:
-                SendToLog(QString::fromStdString(trim(data.GetTextInfo())));
+                emit SendToLog(QString::fromStdString(trim(data.GetTextInfo())));
                 break;
             case dataBuckgroundThreadAnswer::eAnswerType::logCriticalError:
                 emit SendToLog(QString::fromStdString(trim(data.GetErrString())));
@@ -312,7 +312,7 @@ void MainWindow::timerEvent(QTimerEvent * event)
                     ss << "Data optimization ends [" << data.TickerID()<<"]";
                     if(!data.Successfull()){
                         ss <<"\n"<<data.GetErrString();
-                        SendToErrorLog(QString::fromStdString(ss.str()));
+                        emit SendToErrorLog(QString::fromStdString(ss.str()));
                     }
                     emit SendToLog(QString::fromStdString(ss.str()));
                 }
@@ -341,11 +341,15 @@ void MainWindow::CheckActivePipes()
         //
         dataAmiPipeTask taskAmi(dataAmiPipeTask::eTask_type::RefreshPipeList);
         AmiPipeHolder::pipes_type FreePipes;
-        std::vector<int> mUnconnected;
-        pipesHolder.CheckPipes(vTickersLst,taskAmi.pipesBindedActive,taskAmi.pipesBindedOff,FreePipes,mUnconnected);
+        std::vector<int> vUnconnected;
+        std::vector<int> vInformants;
+        pipesHolder.CheckPipes(vTickersLst,taskAmi.pipesBindedActive,taskAmi.pipesBindedOff,FreePipes,vUnconnected,vInformants);
         //
-        for(const auto &TickerID:mUnconnected){
+        for(const auto &TickerID:vUnconnected){
             m_TickerLstModel.setTickerState(TickerID,modelTickersList::eTickerState::NeededPipe);
+        }
+        for(const auto &TickerID:vInformants){
+            m_TickerLstModel.setTickerState(TickerID,modelTickersList::eTickerState::Informant);
         }
         //
         queuePipeTasks.Push(taskAmi);
