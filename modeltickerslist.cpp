@@ -77,7 +77,27 @@ QVariant modelTickersList::data(const QModelIndex &index, int nRole) const
             //return QVariant(QColor(Qt::green));
         }
         else{
-            return  QVariant();
+            auto ItM = mTickerState.find(t.TickerID());
+            if (ItM != mTickerState.end()){
+                switch (ItM->second) {
+                case eTickerState::Informant:
+                    return QVariant(QColor(Qt::lightGray));
+                    break;
+                case eTickerState::Connected:
+                    return  QVariant();
+                    break;
+                case eTickerState::NeededPipe:
+                    return QVariant(QColor(Qt::magenta));
+                    break;
+                case eTickerState::Halted:
+                    return QVariant(QColor(Qt::red));
+                    break;
+                }
+            }
+            else{
+                return QVariant(QColor(Qt::lightGray));
+                //return  QVariant();
+            }
         }
 
     }
@@ -95,6 +115,21 @@ void modelTickersList::blinkTicker(int TickerID){
         emit dataChanged(indexBeg,indexEnd,vV);
     }
 
+}
+////--------------------------------------------------------------------------------------------------------
+void modelTickersList::setTickerState(int TickerID, eTickerState st)
+{
+    auto It = std::find_if(vTickersLst->begin(),vTickersLst->end(),[&](const Ticker &t){
+                        return t.TickerID() == TickerID;});
+    if (It != vTickersLst->end()){
+        mTickerState[TickerID] = st;
+
+        QVector<int> vV {Qt::BackgroundColorRole};
+        QModelIndex indexBeg = this->index(std::distance(vTickersLst->begin(),It),0);
+        QModelIndex indexEnd = this->index(std::distance(vTickersLst->begin(),It),4);
+
+        emit dataChanged(indexBeg,indexEnd,vV);
+    }
 }
 ////--------------------------------------------------------------------------------------------------------
 QString modelTickersList::getMarketNameByID(const int ID) const

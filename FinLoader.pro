@@ -26,6 +26,8 @@ SOURCES += \
     blockfreequeue.cpp \
     bulbululator.cpp \
     configwindow.cpp \
+    dataamipipeanswer.cpp \
+    dataamipipetask.cpp \
     databuckgroundthreadanswer.cpp \
     datafinloadtask.cpp \
     datafinquotesparse.cpp \
@@ -57,6 +59,8 @@ HEADERS += \
     blockfreequeue.h \
     bulbululator.h \
     configwindow.h \
+    dataamipipeanswer.h \
+    dataamipipetask.h \
     databuckgroundthreadanswer.h \
     datafinloadtask.h \
     datafinquotesparse.h \

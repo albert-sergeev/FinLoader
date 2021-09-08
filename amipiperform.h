@@ -4,6 +4,9 @@
 #include <QWidget>
 #include <QMenu>
 #include <QStringListModel>
+
+#include<fstream>
+
 #include "modelmarketslist.h"
 #include "modeltickerslist.h"
 #include "amipipeholder.h"

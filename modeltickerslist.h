@@ -12,6 +12,7 @@ class modelTickersList : public QAbstractTableModel
     Q_OBJECT
 
 public:
+    enum eTickerState:int {Informant,Connected,NeededPipe,Halted};
 
     explicit modelTickersList(std::vector<Ticker> &v,std::vector<Market> &m,
                               std::map<int,std::pair<bool,std::chrono::time_point<std::chrono::steady_clock>>> &mS,
@@ -23,6 +24,7 @@ private:
     std::vector<Ticker> * vTickersLst; //init in const by ref
     std::vector<Market> * vMarketsLst; //init in const by ref
     std::map<int,std::pair<bool,std::chrono::time_point<std::chrono::steady_clock>>> *mBlinkedState; //init in const by ref
+    std::map<int,int> mTickerState;
 
 private:
     QString getMarketNameByID(const int i) const ;
@@ -54,6 +56,7 @@ public:
     bool searchTickerByTickerID(const int TickerID, QModelIndex & indx);
 
     void blinkTicker(int iTickerID);
+    void setTickerState(int TickerID, eTickerState st);
 
 
 signals:

@@ -63,6 +63,7 @@ AmiPiperForm::AmiPiperForm(modelMarketsList *modelM, int DefaultTickerMarket,
 //--------------------------------------------------------------------------------------------------------------------
 AmiPiperForm::~AmiPiperForm()
 {
+    disconnect(ui->btnBind,SIGNAL(clicked()),this,SLOT(slotBindClicked()));
     delete ui;
 }
 //--------------------------------------------------------------------------------------------------------------------
@@ -71,8 +72,9 @@ void AmiPiperForm::slotBtnCheckClicked()
     AmiPipeHolder::pipes_type mBindedPipes;
     AmiPipeHolder::pipes_type mBindedPipesOff;
     mFreePipes.clear();
+    std::vector<int> mUnconnected;
 
-    pipes.CheckPipes(vTickersLst,mBindedPipes,mBindedPipesOff,mFreePipes);
+    pipes.CheckPipes(vTickersLst,mBindedPipes,mBindedPipesOff,mFreePipes,mUnconnected);
 
     modelNew->removeRows(0,modelNew->rowCount());
 
@@ -393,10 +395,10 @@ void AmiPiperForm::slotActiveContextMenuRequested(const QPoint & pos)
     int i = 0;
     int iLastIndx{-1};
     while (i < lst.size()){
-        {
-            ThreadFreeCout pcout;
-            pcout <<"lst[i].row() = "<<lst[i].row()<<"\n";
-        }
+//        {
+//            ThreadFreeCout pcout;
+//            pcout <<"lst[i].row() = "<<lst[i].row()<<"\n";
+//        }
         if (lst[i].row() == iLastIndx) {
             i++;
             continue;
@@ -458,10 +460,10 @@ void AmiPiperForm::slotOffContextMenuRequested(const QPoint & pos)
     int i = 0;
     int iLastIndx{-1};
     while (i < lst.size()){
-        {
-            ThreadFreeCout pcout;
-            pcout <<"lst[i].row() = "<<lst[i].row()<<"\n";
-        }
+//        {
+//            ThreadFreeCout pcout;
+//            pcout <<"lst[i].row() = "<<lst[i].row()<<"\n";
+//        }
         if (lst[i].row() == iLastIndx) {
             i++;
             continue;

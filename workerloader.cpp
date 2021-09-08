@@ -85,11 +85,7 @@ void workerLoader::workerDataBaseWork(BlockFreeQueue<dataFinLoadTask> & queueTas
     catch (std::exception &ex) {
         ThreadFreeCout pcout;
         pcout <<"crash ecxeption" <<ex.what()<<"\n";
-
     }
-
-
-
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -472,6 +468,15 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
             dataFinLoadTask optTask(data);// copying data range and tickerID
             optTask.taskType = dataFinLoadTask::TaskType::storageOptimisation;
             queueTasks.Push(optTask);
+            //
+            {
+                dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::cloneThread,data.GetParentWnd());
+                queueTrdAnswers.Push(dt);
+            }
+            {
+                dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::cloneThread,data.GetParentWnd());
+                queueTrdAnswers.Push(dt);
+            }
         }
     }
 
@@ -612,8 +617,10 @@ void workerLoader::workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & queue
         optTask.taskType = dataFinLoadTask::TaskType::LoadIntoGraph;
         optTask.pvBars =pvBars;
         queueTasks.Push(optTask);
-
-
+        {
+            dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::cloneThread,data.GetParentWnd());
+            queueTrdAnswers.Push(dt);
+        }
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     if (bSuccessfull){
@@ -1361,6 +1368,88 @@ bool workerLoader::compareBarsT(GraphHolder &hl, dataFinLoadTask & data,std::vec
     return bSuccess;
 }
 //------------------------------------------------------------------------------------------------------------------------------------------
+//////********************************************************************************************************************************//////
+//------------------------------------------------------------------------------------------------------------------------------------------
+void workerLoader::workerAmiClient(BlockFreeQueue<dataFinLoadTask> & /*queueFinQuotesLoad*/,
+                            BlockFreeQueue<dataBuckgroundThreadAnswer> &/*queueTrdAnswers*/,
+                            BlockFreeQueue<dataAmiPipeTask> &queuePipeTasks,
+                            BlockFreeQueue<dataAmiPipeAnswer> &queuePipeAnswers,
+                            AmiPipeHolder& pipesHolder)
+{
+    //    int iID = WorkerThreadCounter.load();
+    //    while (!WorkerThreadCounter.compare_exchange_weak(iID,iID + 1)) {;}
+    //    WorkerThreadID = iID;
+    {
+        ThreadFreeCout pcout;
+        pcout <<"workerAmiClient in\n";
+    }
+
+        try{
+            bool bSuccess{false};
+            bool bLoop{true};
+            while(bLoop){
+                ///////////////////////////////////////////////////////////////////////////////
+                /// pipe task check block
+                ///
+                auto pdata =queuePipeTasks.Pop(bSuccess);
+                bool bWasRefresh{false};
+                while(bSuccess){
+                    dataAmiPipeTask data(*pdata.get());
+
+                    switch (data.Type()) {
+                    case dataAmiPipeTask::eTask_type::Nop:
+                        break;
+                    case dataAmiPipeTask::eTask_type::RefreshPipeList:
+                        if (!bWasRefresh){
+
+                            pipesHolder.RefreshActiveSockets(data.pipesBindedActive,data.pipesBindedOff,queuePipeAnswers);
+                        }
+                        bWasRefresh = true;
+                        break;
+
+                    }
+                    ///
+                    if (!this_thread_flagInterrup.isSet()){
+                        pdata =queuePipeTasks.Pop(bSuccess);
+                    }
+                    else{
+                        bSuccess = false; // to exit while
+                    }
+                }
+                ///////////////////////////////////////////////////////////////////////////////
+                // socket work block
+
+
+
+
+
+
+
+
+
+                ///////////////////////////////////////////////////////////////////////////////
+                //----------------------------------
+                if (this_thread_flagInterrup.isSet()){
+                    bLoop = false; // to exit while
+                }
+                else
+                {
+                    std::this_thread::sleep_for(std::chrono::microseconds(100));
+                    if (this_thread_flagInterrup.isSet()){
+                        bLoop = false; // to exit while
+                    }
+                }
+            }
+        }
+        catch (std::exception &ex) {
+            ThreadFreeCout pcout;
+            pcout <<"crash ecxeption" <<ex.what()<<"\n";
+        }
+    {
+        ThreadFreeCout pcout;
+        pcout <<"workerAmiClient out\n";
+    }
+}
 //------------------------------------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------------------------------------
 

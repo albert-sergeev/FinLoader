@@ -79,6 +79,15 @@ MainWindow::MainWindow(QWidget *parent)
     iTimerID = startTimer(100); // timer to process GUID events
 
     InitHolders();
+    CheckActivePipes();
+    ///
+    thrdPoolAmiClient.AddTask([&](){
+        workerLoader::workerAmiClient(queueFinQuotesLoad,queueTrdAnswers,
+                                      queuePipeTasks,queuePipeAnswers,
+                                      pipesHolder);
+        });
+
+    dtCheckPipesActivity = std::chrono::steady_clock::now();
 
 }
 //--------------------------------------------------------------------------------------------------------------------------------
@@ -102,7 +111,13 @@ MainWindow::~MainWindow()
         ThreadFreeCout pcout;
         pcout <<"~MainWindow()\n";
     }
+    bWasClose = true;
     thrdPoolLoadFinQuotes.Halt();
+    thrdPoolAmiClient.Halt();
+    queueFinQuotesLoad.clear();
+    queueTrdAnswers.clear();
+    queuePipeTasks.clear();
+    queuePipeAnswers.clear();
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 bool MainWindow::event(QEvent *event)
@@ -129,53 +144,149 @@ bool MainWindow::event(QEvent *event)
 void MainWindow::timerEvent(QTimerEvent * event)
 {
     bool bSuccess{false};
+    bool bSuccessAmi{false};
     auto pdata (queueTrdAnswers.Pop(bSuccess));
+    auto pdataAmiPipe (queuePipeAnswers.Pop(bSuccessAmi));
     ImportFinQuotesForm * wnd{nullptr};
-    while(bSuccess){
-        auto data(*pdata.get());
-        QList<QMdiSubWindow*> lst = ui->mdiArea->subWindowList();
-        for(int i = 0; i < lst.size(); ++i){
-            if(lst.at(i)->widget() == data.GetParentWnd()) {
-                wnd = qobject_cast<ImportFinQuotesForm *>(lst[i]->widget());
-                if(wnd){
-                    break;
+    while((bSuccess || bSuccessAmi) && !bWasClose){
+
+        if (bSuccessAmi){
+            auto data(*pdataAmiPipe.get());
+            switch (data.Type) {
+            case dataAmiPipeAnswer::eAnswer_type::Nop:
+                break;
+            case dataAmiPipeAnswer::eAnswer_type::PipeConnected:
+                m_TickerLstModel.setTickerState(data.iTickerID,modelTickersList::eTickerState::Connected);
+                break;
+            case dataAmiPipeAnswer::eAnswer_type::PipeDisconnected:
+                m_TickerLstModel.setTickerState(data.iTickerID,modelTickersList::eTickerState::NeededPipe);
+                break;
+            case dataAmiPipeAnswer::eAnswer_type::PipeHalted:
+                m_TickerLstModel.setTickerState(data.iTickerID,modelTickersList::eTickerState::Halted);
+                break;
+            case dataAmiPipeAnswer::eAnswer_type::PipeOff:
+                m_TickerLstModel.setTickerState(data.iTickerID,modelTickersList::eTickerState::Informant);
+                break;
+            case dataAmiPipeAnswer::eAnswer_type::ProcessNewComplite:
+                break;
+            }
+            //////////////////////////////////////////////
+            pdataAmiPipe = queuePipeAnswers.Pop(bSuccessAmi);
+        }
+        //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //**************************************************************************************************************************************//
+        //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        if (bSuccess){
+            auto data(*pdata.get());
+            QList<QMdiSubWindow*> lst = ui->mdiArea->subWindowList();
+            for(int i = 0; i < lst.size(); ++i){
+                if(lst.at(i)->widget() == data.GetParentWnd()) {
+                    wnd = qobject_cast<ImportFinQuotesForm *>(lst[i]->widget());
+                    if(wnd){
+                        break;
+                    }
                 }
             }
-        }
-        ////////////////
-        switch(data.AnswerType()){
-        case dataBuckgroundThreadAnswer::eAnswerType::famImportCurrent:
-            if(wnd) wnd->SetProgressBarValue(data.Percent());
-            break;
-        case dataBuckgroundThreadAnswer::eAnswerType::famImportBegin:
-            if(wnd) wnd->slotLoadingHasBegun();
-            BulbululatorAddActive(data.TickerID());
-            break;
-        case dataBuckgroundThreadAnswer::eAnswerType::famImportEnd:
-            if(wnd) wnd->slotLoadingHasFinished(data.Successfull(),QString::fromStdString(data.GetErrString()));
-            BulbululatorRemoveActive(data.TickerID());
-            break;
-        case dataBuckgroundThreadAnswer::eAnswerType::LoadActivity:
-            BulbululatorShowActivity(data.TickerID());
-            break;
-        case dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage:
-            if(wnd) wnd->slotTextInfo(QString::fromStdString(data.GetTextInfo()));
-            break;
-        case dataBuckgroundThreadAnswer::eAnswerType::storagLoadFromStorageGraphBegin:
-            {
-                std::stringstream ss;
-                ss << "Load from storage begins [" << data.TickerID()<<"]";
-                SendToLog(QString::fromStdString(ss.str()));
-            }
-            break;
-        case dataBuckgroundThreadAnswer::eAnswerType::storagLoadFromStorageGraphEnd:
-            {
-                std::stringstream ss;
-                ss << "Load from storage ends [" << data.TickerID()<<"] success: ["<<data.Successfull()<<"]";
-                if(!data.Successfull()){
-                    ss <<"TickerID["<< data.TickerID()<<"]\n";
-                    ss <<data.GetErrString();
-                    SendToErrorLog(QString::fromStdString(ss.str()));
+            ////////////////
+            switch(data.AnswerType()){
+            case dataBuckgroundThreadAnswer::eAnswerType::cloneThread:
+                if (thrdPoolLoadFinQuotes.ActiveThreads() < thrdPoolLoadFinQuotes.MaxThreads()){
+                    thrdPoolLoadFinQuotes.AddTask([&](){
+                        workerLoader::workerDataBaseWork(queueFinQuotesLoad,queueTrdAnswers,stStore);
+                        });
+                }
+                break;
+            case dataBuckgroundThreadAnswer::eAnswerType::famImportCurrent:
+                if(wnd) wnd->SetProgressBarValue(data.Percent());
+                break;
+            case dataBuckgroundThreadAnswer::eAnswerType::famImportBegin:
+                if(wnd) wnd->slotLoadingHasBegun();
+                BulbululatorAddActive(data.TickerID());
+                break;
+            case dataBuckgroundThreadAnswer::eAnswerType::famImportEnd:
+                if(wnd) wnd->slotLoadingHasFinished(data.Successfull(),QString::fromStdString(data.GetErrString()));
+                BulbululatorRemoveActive(data.TickerID());
+                break;
+            case dataBuckgroundThreadAnswer::eAnswerType::LoadActivity:
+                BulbululatorShowActivity(data.TickerID());
+                break;
+            case dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage:
+                if(wnd) wnd->slotTextInfo(QString::fromStdString(data.GetTextInfo()));
+                break;
+            case dataBuckgroundThreadAnswer::eAnswerType::storagLoadFromStorageGraphBegin:
+                {
+                    std::stringstream ss;
+                    ss << "Load from storage begins [" << data.TickerID()<<"]";
+                    emit SendToLog(QString::fromStdString(ss.str()));
+                }
+                break;
+            case dataBuckgroundThreadAnswer::eAnswerType::storagLoadFromStorageGraphEnd:
+                {
+                    std::stringstream ss;
+                    ss << "Load from storage ends [" << data.TickerID()<<"] success: ["<<data.Successfull()<<"]";
+                    if(!data.Successfull()){
+                        ss <<"TickerID["<< data.TickerID()<<"]\n";
+                        ss <<data.GetErrString();
+                        emit SendToErrorLog(QString::fromStdString(ss.str()));
+                        int n=QMessageBox::critical(0,tr("Critical error"),
+                                           QString::fromStdString(data.GetErrString()),
+                                           QMessageBox::Ok
+                                           );
+                        if (n==QMessageBox::Ok){
+                            ;
+                        }
+
+                    }
+                    emit SendToLog(QString::fromStdString(ss.str()));
+    //                {
+    //                    ThreadFreeCout pcout;
+    //                    pcout<<ss.str();
+    //                }
+                }
+                break;
+            case dataBuckgroundThreadAnswer::eAnswerType::storagLoadToGraphBegin:
+                {
+                    std::stringstream ss;
+                    ss << "Load to Graph begins [" << data.TickerID()<<"]";
+                    emit SendToLog(QString::fromStdString(ss.str()));
+                }
+                break;
+            case dataBuckgroundThreadAnswer::eAnswerType::storagLoadToGraphEnd:
+                {
+                    std::stringstream ss;
+                    ss << "Load to Graph ends [" << data.TickerID()<<"]";
+                    if(!data.Successfull()){
+                        ss <<"\n"<<data.GetErrString();
+                        emit SendToErrorLog(QString::fromStdString(ss.str()));
+                    }
+                    else{
+                        emit slotSendSignalToInvalidateGraph(data.TickerID(), data.BeginDate(), data.EndDate());
+
+                        if (data.TickerID() == 9){ // TODO:delete. for test
+                            auto hl =  Holders[data.TickerID()];
+                            size_t tSz = hl->getViewGraphSize(Bar::eInterval::pTick);
+                            ThreadFreeCout pcout;
+                            pcout << "!!!!!!! total graph["<<data.TickerID()<<"] size = {"<<tSz<<"}   !!!!!!!";
+
+                            unsigned long iV{0};
+                            for (size_t i = 0; i < hl->getViewGraphSize(Bar::eInterval::pMonth); ++i){
+                                iV += hl->getByIndex<Bar>(Bar::eInterval::pMonth,i).Volume();
+                            }
+                            pcout << "    total volume = {"<<iV<<"}   !!!!!!!\n";
+
+
+                        }
+                    }
+                    emit SendToLog(QString::fromStdString(ss.str()));
+                }
+                break;
+            case dataBuckgroundThreadAnswer::eAnswerType::logText:
+                SendToLog(QString::fromStdString(trim(data.GetTextInfo())));
+                break;
+            case dataBuckgroundThreadAnswer::eAnswerType::logCriticalError:
+                emit SendToLog(QString::fromStdString(trim(data.GetErrString())));
+                {
+                    emit SendToErrorLog(QString::fromStdString(data.GetErrString()));
                     int n=QMessageBox::critical(0,tr("Critical error"),
                                        QString::fromStdString(data.GetErrString()),
                                        QMessageBox::Ok
@@ -183,98 +294,62 @@ void MainWindow::timerEvent(QTimerEvent * event)
                     if (n==QMessageBox::Ok){
                         ;
                     }
-
                 }
-                SendToLog(QString::fromStdString(ss.str()));
-//                {
-//                    ThreadFreeCout pcout;
-//                    pcout<<ss.str();
-//                }
-            }
-            break;
-        case dataBuckgroundThreadAnswer::eAnswerType::storagLoadToGraphBegin:
-            {
-                std::stringstream ss;
-                ss << "Load to Graph begins [" << data.TickerID()<<"]";
-                SendToLog(QString::fromStdString(ss.str()));
-            }
-            break;
-        case dataBuckgroundThreadAnswer::eAnswerType::storagLoadToGraphEnd:
-            {
-                std::stringstream ss;
-                ss << "Load to Graph ends [" << data.TickerID()<<"]";
-                if(!data.Successfull()){
-                    ss <<"\n"<<data.GetErrString();
-                    SendToErrorLog(QString::fromStdString(ss.str()));
+                break;
+            case dataBuckgroundThreadAnswer::testPvBars: // for tests
+                //slotTestPvBars(data.pvBars);
+                break;
+            case dataBuckgroundThreadAnswer::storageOptimisationBegin:
+                {
+                    std::stringstream ss;
+                    ss << "Data optimization begins [" << data.TickerID()<<"]";
+                    emit SendToLog(QString::fromStdString(ss.str()));
                 }
-                else{
-                    slotSendSignalToInvalidateGraph(data.TickerID(), data.BeginDate(), data.EndDate());
-
-                    if (data.TickerID() == 9){ // TODO:delete. for test
-                        auto hl =  Holders[data.TickerID()];
-                        size_t tSz = hl->getViewGraphSize(Bar::eInterval::pTick);
-                        ThreadFreeCout pcout;
-                        pcout << "!!!!!!! total graph["<<data.TickerID()<<"] size = {"<<tSz<<"}   !!!!!!!";
-
-                        unsigned long iV{0};
-                        for (size_t i = 0; i < hl->getViewGraphSize(Bar::eInterval::pMonth); ++i){
-                            iV += hl->getByIndex<Bar>(Bar::eInterval::pMonth,i).Volume();
-                        }
-                        pcout << "    total volume = {"<<iV<<"}   !!!!!!!\n";
-
-
+                break;
+            case dataBuckgroundThreadAnswer::storageOptimisationEnd:
+                {
+                    std::stringstream ss;
+                    ss << "Data optimization ends [" << data.TickerID()<<"]";
+                    if(!data.Successfull()){
+                        ss <<"\n"<<data.GetErrString();
+                        SendToErrorLog(QString::fromStdString(ss.str()));
                     }
+                    emit SendToLog(QString::fromStdString(ss.str()));
                 }
-                SendToLog(QString::fromStdString(ss.str()));
+                break;
+            default:
+                break;
             }
-            break;
-        case dataBuckgroundThreadAnswer::eAnswerType::logText:
-            SendToLog(QString::fromStdString(trim(data.GetTextInfo())));
-            break;
-        case dataBuckgroundThreadAnswer::eAnswerType::logCriticalError:
-            SendToLog(QString::fromStdString(trim(data.GetErrString())));
-            {
-                SendToErrorLog(QString::fromStdString(data.GetErrString()));
-                int n=QMessageBox::critical(0,tr("Critical error"),
-                                   QString::fromStdString(data.GetErrString()),
-                                   QMessageBox::Ok
-                                   );
-                if (n==QMessageBox::Ok){
-                    ;
-                }
-            }
-            break;
-        case dataBuckgroundThreadAnswer::testPvBars: // for tests
-            //slotTestPvBars(data.pvBars);
-            break;
-        case dataBuckgroundThreadAnswer::storageOptimisationBegin:
-            {
-                std::stringstream ss;
-                ss << "Data optimization begins [" << data.TickerID()<<"]";
-                SendToLog(QString::fromStdString(ss.str()));
-            }
-            break;
-        case dataBuckgroundThreadAnswer::storageOptimisationEnd:
-            {
-                std::stringstream ss;
-                ss << "Data optimization ends [" << data.TickerID()<<"]";
-                if(!data.Successfull()){
-                    ss <<"\n"<<data.GetErrString();
-                    SendToErrorLog(QString::fromStdString(ss.str()));
-                }
-                SendToLog(QString::fromStdString(ss.str()));
-            }
-            break;
-        default:
-            break;
+            //////////////////////////////////////////////
+            CheckActivePipes();
+            //////////////////////////////////////////////
+            pdata = queueTrdAnswers.Pop(bSuccess);
         }
-        //////////////////////////////////////////////
-        pdata = queueTrdAnswers.Pop(bSuccess);
     }
     //////////////////
+    CheckActivePipes();
     ListViewActivityTermination();
     //
     QWidget::timerEvent(event);
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::CheckActivePipes()
+{
+    milliseconds tActivityCount  = std::chrono::steady_clock::now() - dtCheckPipesActivity;
+    if (tActivityCount > 5000ms){
+        dtCheckPipesActivity = std::chrono::steady_clock::now();
+        //
+        dataAmiPipeTask taskAmi(dataAmiPipeTask::eTask_type::RefreshPipeList);
+        AmiPipeHolder::pipes_type FreePipes;
+        std::vector<int> mUnconnected;
+        pipesHolder.CheckPipes(vTickersLst,taskAmi.pipesBindedActive,taskAmi.pipesBindedOff,FreePipes,mUnconnected);
+        //
+        for(const auto &TickerID:mUnconnected){
+            m_TickerLstModel.setTickerState(TickerID,modelTickersList::eTickerState::NeededPipe);
+        }
+        //
+        queuePipeTasks.Push(taskAmi);
+    }
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::slotSendSignalToInvalidateGraph(int TickerID, std::time_t dtDegin, std::time_t dtEnd)

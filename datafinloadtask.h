@@ -19,7 +19,7 @@ private:
 
 public:
 
-    enum TaskType:int { finQuotesImport = 1, finQuotesLoadFromStorage = 2, storageOptimisation = 3, LoadIntoGraph = 4, finQuotesCheck = 5 };
+    enum TaskType:int { finQuotesImport = 1, finQuotesLoadFromStorage = 2, storageOptimisation = 3, LoadIntoGraph = 4, finQuotesCheck = 5};
 
     int             TickerID;
     std::string     sSign;

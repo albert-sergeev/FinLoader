@@ -9,6 +9,9 @@
 #include "datafinloadtask.h"
 #include "databuckgroundthreadanswer.h"
 #include "datafinquotesparse.h"
+#include "amipipeholder.h"
+#include "dataamipipetask.h"
+#include "dataamipipeanswer.h"
 
 
 
@@ -21,6 +24,13 @@ public:
     static void workerDataBaseWork(BlockFreeQueue<dataFinLoadTask> & queueFinQuotesLoad,
                        BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
                        Storage &stStore);
+
+
+    static void workerAmiClient(BlockFreeQueue<dataFinLoadTask> & queueFinQuotesLoad,
+                                BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
+                                BlockFreeQueue<dataAmiPipeTask> &queuePipeTasks,
+                                BlockFreeQueue<dataAmiPipeAnswer> &queuePipeAnswers,
+                                AmiPipeHolder& pipesHolder);
 
 private:
     static void workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueFinQuotesLoad,

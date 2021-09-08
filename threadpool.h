@@ -134,6 +134,7 @@ private:
 public:
     inline size_t ActiveThreads()   const {return threads.size();};
     inline size_t TasksToDo()       const {return work_queue.size();};
+    inline size_t MaxThreads()      const {return threadMaxCount;}
 
 public:
     //---------------------------------------------------------------------------------------------------
@@ -171,6 +172,7 @@ public:
         for(auto &tt:vInterruptFlags){
             tt->set();
         }
+        vInterruptFlags.clear();
     }
     //---------------------------------------------------------------------------------------------------
     void Halt(){
@@ -180,16 +182,29 @@ public:
             ThreadFreeCout pcout;
             pcout <<"ThreadPool::Halt()\n";
         }
+        for(int i = 0 ; i < (int)threads.size(); ++i){
+            if(threads[i].joinable())
+                threads[i].join();
+        }
+        for(int i = 0 ; i < (int)threadsDeleted.size(); ++i){
+            if(threadsDeleted[i].joinable())
+                threadsDeleted[i].join();
+        }
     }
     //---------------------------------------------------------------------------------------------------
     template<typename T>
     std::future<typename std::result_of<T()>::type> AddTask(T f)
     {
 
+
         ShrinkFinishedTreads();
 
         std::packaged_task<typename std::result_of<T()>::type()> task(std::move(f));
         std::future<typename std::result_of<T()>::type> res(task.get_future());
+
+        if (bQuit){
+            return res;
+        }
 
         {
         std::unique_lock lk(mut_qeue);
@@ -230,6 +245,7 @@ private:
     //---------------------------------------------------------------------------------------------------
     void ShrinkFinishedTreads()
     {
+        if (!bQuit)
         {
         std::unique_lock lkT(mut_treads);
 

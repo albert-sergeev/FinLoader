@@ -17,7 +17,8 @@ public:
                           famImportBegin,famImportEnd,famImportCurrent,LoadActivity,TextInfoMessage
                           ,storagLoadFromStorageGraphBegin,storagLoadFromStorageGraphEnd, logText
                           ,storagLoadToGraphBegin,storagLoadToGraphEnd, logCriticalError, testPvBars
-                          ,storageOptimisationBegin, storageOptimisationEnd
+                          ,storageOptimisationBegin, storageOptimisationEnd,
+                          cloneThread
                          };
 
     //-------------------------------------------------------------------------------

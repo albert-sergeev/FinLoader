@@ -39,6 +39,8 @@
 #include "graphholder.h"
 #include "amipiperform.h"
 #include "amipipeholder.h"
+#include "dataamipipeanswer.h"
+#include "dataamipipetask.h"
 
 
 
@@ -129,6 +131,7 @@ private:
 
     // for AmiPipes
     AmiPipeHolder pipesHolder;
+    std::chrono::time_point<std::chrono::steady_clock> dtCheckPipesActivity;
 
     // for docked bar
     StyledSwitcher * swtShowByName;
@@ -140,14 +143,20 @@ private:
     std::vector<Bulbululator *> vBulbululators;
 
     // thread manipulation
+    bool bWasClose{false};
     BlockFreeQueue<dataFinLoadTask> queueFinQuotesLoad;
     BlockFreeQueue<dataBuckgroundThreadAnswer> queueTrdAnswers;
+    BlockFreeQueue<dataAmiPipeTask> queuePipeTasks;
+    BlockFreeQueue<dataAmiPipeAnswer> queuePipeAnswers;
     workerLoader wrkrLoadFinQuotes;
+
+
 
     ///////////////////////////////////
     Storage stStore;
     ///////////////////////////////////
     ThreadPool thrdPoolLoadFinQuotes;
+    ThreadPool thrdPoolAmiClient;
     ///////////////////////////////////
 public:
     MainWindow(QWidget *parent = nullptr);
@@ -231,6 +240,8 @@ protected slots: // for main window
     //void slotTestPvBars(std::shared_ptr<std::vector<std::vector<BarTick>>> pvBars); // TODO: delete. for tests
 
     void slotGVFramesVisibilityStateChanged();
+
+    void CheckActivePipes();
 
 
 private:
