@@ -30,11 +30,19 @@ class Bulbululator : public QWidget
 {
     Q_OBJECT
 
+public:
+    enum eTickerState:int {Informant,Connected,NeededPipe,Halted};
+protected:
+
     QLabel *lblMain;
     int iTickerID;
     bool bBlink;
     QPalette defPallete;
     std::chrono::time_point<std::chrono::steady_clock> dtStartBlink;
+
+    int iProcessCount;
+
+    eTickerState stState;
 
     //--------------------
 //    Buble bubleB;
@@ -47,12 +55,21 @@ public:
     ~Bulbululator();
     //---------------------------
 
-    void SetText(QString sTxt){lblMain->setText(sTxt);}
+    inline void SetText(QString sTxt)   {lblMain->setText(sTxt);}
+    inline QString Text()      const    {  return lblMain->text();}
 
     inline void SetTickerID(const int TickerID)     {iTickerID = TickerID;}
     inline int  TickerID()      const               {return iTickerID;}
 
+    inline int AddInstance()                    {return  ++iProcessCount;};
+    inline int RemoveInstance()                 {return  iProcessCount > 0 ? --iProcessCount : 0;};
+
+    void setState(Bulbululator::eTickerState State);
+
     void Bubble();
+
+    bool operator<(const Bulbululator &o){ return QString::localeAwareCompare(lblMain->text(),o.lblMain->text())<0;}
+
 
 signals:
 

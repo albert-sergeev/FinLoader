@@ -24,6 +24,9 @@ Bulbululator::Bulbululator(QWidget *parent) : QWidget(parent)
     this->setLayout(lt);
     lblMain->setFrameShape(QFrame::StyledPanel);
 
+    iProcessCount = 1;
+    stState = eTickerState::Connected;
+
     /////////////////////////////////
     dtStartBlink = std::chrono::time_point<std::chrono::steady_clock>{};
     bBlink = false;
@@ -49,8 +52,57 @@ void Bulbululator::timerEvent(QTimerEvent * /*event*/)
 
         if (tCount.count()>100){
             bBlink = false;
-            lblMain->setPalette(defPallete);
+           // lblMain->setPalette(defPallete);
+            QPalette p = defPallete;
+            switch (stState) {
+            case eTickerState::Informant:
+                p.setColor(QPalette::Window,QColor(Qt::lightGray));
+                lblMain->setAutoFillBackground(true);
+                lblMain->setPalette(p);
+                break;
+            case eTickerState::Connected:
+                lblMain->setPalette(defPallete);
+                break;
+            case eTickerState::NeededPipe:
+                p.setColor(QPalette::Window,QColor(Qt::magenta));
+                lblMain->setAutoFillBackground(true);
+                lblMain->setPalette(p);
+                break;
+            case eTickerState::Halted:
+                p.setColor(QPalette::Window,QColor(Qt::red));
+                lblMain->setAutoFillBackground(true);
+                lblMain->setPalette(p);
+                break;
+            }
             dtStartBlink = std::chrono::steady_clock::now();
+        }
+    }
+}
+//-----------------------------------------------------------------------------------------
+void Bulbululator::setState(eTickerState State)
+{
+    stState = State;
+    if (!bBlink){
+        QPalette p = defPallete;
+        switch (stState) {
+        case eTickerState::Informant:
+            p.setColor(QPalette::Window,QColor(Qt::lightGray));
+            lblMain->setAutoFillBackground(true);
+            lblMain->setPalette(p);
+            break;
+        case eTickerState::Connected:
+            lblMain->setPalette(defPallete);
+            break;
+        case eTickerState::NeededPipe:
+            p.setColor(QPalette::Window,QColor(Qt::magenta));
+            lblMain->setAutoFillBackground(true);
+            lblMain->setPalette(p);
+            break;
+        case eTickerState::Halted:
+            p.setColor(QPalette::Window,QColor(Qt::red));
+            lblMain->setAutoFillBackground(true);
+            lblMain->setPalette(p);
+            break;
         }
     }
 }

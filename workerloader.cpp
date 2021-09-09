@@ -1370,8 +1370,8 @@ bool workerLoader::compareBarsT(GraphHolder &hl, dataFinLoadTask & data,std::vec
 //------------------------------------------------------------------------------------------------------------------------------------------
 //////********************************************************************************************************************************//////
 //------------------------------------------------------------------------------------------------------------------------------------------
-void workerLoader::workerAmiClient(BlockFreeQueue<dataFinLoadTask> & /*queueFinQuotesLoad*/,
-                            BlockFreeQueue<dataBuckgroundThreadAnswer> &/*queueTrdAnswers*/,
+void workerLoader::workerAmiClient(BlockFreeQueue<dataFinLoadTask> & queueFinQuotesLoad,
+                            BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
                             BlockFreeQueue<dataAmiPipeTask> &queuePipeTasks,
                             BlockFreeQueue<dataAmiPipeAnswer> &queuePipeAnswers,
                             AmiPipeHolder& pipesHolder)
@@ -1383,6 +1383,15 @@ void workerLoader::workerAmiClient(BlockFreeQueue<dataFinLoadTask> & /*queueFinQ
         ThreadFreeCout pcout;
         pcout <<"workerAmiClient in\n";
     }
+
+//    std::string sPath = "\\\\.\\pipe\\AmiBroker2QUIK_TQBR.SBER_TICKS";
+//    pipesHolder.testPipe.setPipePath(sPath);
+//    pipesHolder.testPipe.open();
+//    char testbuffer[1024];
+//    int iBytesRead{0};
+
+//    std::this_thread::sleep_for(std::chrono::microseconds(10));
+//    pipesHolder.testPipe.read(testbuffer,1024,iBytesRead);
 
         try{
             bool bSuccess{false};
@@ -1421,8 +1430,7 @@ void workerLoader::workerAmiClient(BlockFreeQueue<dataFinLoadTask> & /*queueFinQ
 
                 std::map<int,std::vector<BarTick>> mV;
 
-                pipesHolder.ReadConnectedPipes(mV,queuePipeAnswers);
-
+                pipesHolder.ReadConnectedPipes(mV,queuePipeAnswers,queueFinQuotesLoad,queueTrdAnswers);
 
                 ///////////////////////////////////////////////////////////////////////////////
                 //----------------------------------

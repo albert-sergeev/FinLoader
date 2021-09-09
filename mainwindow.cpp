@@ -80,7 +80,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     InitHolders();
     CheckActivePipes();
-    ///
+    ////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////
     thrdPoolAmiClient.AddTask([&](){
         workerLoader::workerAmiClient(queueFinQuotesLoad,queueTrdAnswers,
                                       queuePipeTasks,queuePipeAnswers,
@@ -157,15 +158,22 @@ void MainWindow::timerEvent(QTimerEvent * event)
                 break;
             case dataAmiPipeAnswer::eAnswer_type::PipeConnected:
                 m_TickerLstModel.setTickerState(data.iTickerID,modelTickersList::eTickerState::Connected);
+                BulbululatorAddActive(data.iTickerID);
+                BulbululatorSetState(data.iTickerID,Bulbululator::eTickerState::Connected);
                 break;
             case dataAmiPipeAnswer::eAnswer_type::PipeDisconnected:
                 m_TickerLstModel.setTickerState(data.iTickerID,modelTickersList::eTickerState::NeededPipe);
+                BulbululatorRemoveActive(data.iTickerID);
+                BulbululatorSetState(data.iTickerID,Bulbululator::eTickerState::NeededPipe);
                 break;
             case dataAmiPipeAnswer::eAnswer_type::PipeHalted:
                 m_TickerLstModel.setTickerState(data.iTickerID,modelTickersList::eTickerState::Halted);
+                BulbululatorSetState(data.iTickerID,Bulbululator::eTickerState::Halted);
                 break;
             case dataAmiPipeAnswer::eAnswer_type::PipeOff:
                 m_TickerLstModel.setTickerState(data.iTickerID,modelTickersList::eTickerState::Informant);
+                BulbululatorRemoveActive(data.iTickerID);
+                BulbululatorSetState(data.iTickerID,Bulbululator::eTickerState::Informant);
                 break;
             case dataAmiPipeAnswer::eAnswer_type::ProcessNewComplite:
                 break;
@@ -340,14 +348,41 @@ void MainWindow::CheckActivePipes()
         dtCheckPipesActivity = std::chrono::steady_clock::now();
         //
         dataAmiPipeTask taskAmi(dataAmiPipeTask::eTask_type::RefreshPipeList);
-        AmiPipeHolder::pipes_type FreePipes;
+        dataAmiPipeTask::pipes_type FreePipes;
         std::vector<int> vUnconnected;
         std::vector<int> vInformants;
         pipesHolder.CheckPipes(vTickersLst,taskAmi.pipesBindedActive,taskAmi.pipesBindedOff,FreePipes,vUnconnected,vInformants);
-        //
+        ////////////////////////////
+        for (auto &m:mStoredUnconnected) m.second = 0;
         for(const auto &TickerID:vUnconnected){
             m_TickerLstModel.setTickerState(TickerID,modelTickersList::eTickerState::NeededPipe);
+            const auto It = mStoredUnconnected.find(TickerID);
+            if (It != mStoredUnconnected.end()){
+                It->second = 1;
+            }
+            else{
+                mStoredUnconnected[TickerID] = 2;
+            }
+        }        
+        auto It = mStoredUnconnected.begin();
+        while ( It != mStoredUnconnected.end()){
+            if (It->second == 0){
+                BulbululatorSetState(It->first,Bulbululator::eTickerState::Connected);
+                BulbululatorRemoveActive(It->first);
+                auto ItNext = std::next(It);
+                mStoredUnconnected.erase(It);
+                It = ItNext;
+            }
+            else if (It->second == 2){
+                BulbululatorAddActive(It->first);
+                BulbululatorSetState(It->first,Bulbululator::eTickerState::NeededPipe);
+                It++;
+            }
+            else{
+                It++;
+            }
         }
+        ////////////////////////////
         for(const auto &TickerID:vInformants){
             m_TickerLstModel.setTickerState(TickerID,modelTickersList::eTickerState::Informant);
         }
@@ -378,9 +413,6 @@ void MainWindow::slotNotImpl(){};
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::LoadSettings()
 {
-
-    QString sMark;
-
     m_settings.beginGroup("Settings");
         m_Language   = m_settings.value("Language","English").toString();
 
@@ -561,7 +593,7 @@ void MainWindow::SaveDataStorage()
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::slotSendTestText()
 {
-    SendToLog("Test text");
+    emit SendToLog("Test text");
     //qDebug()<<style()->objectName();
     //qDebug()<<style();
 }
@@ -779,342 +811,268 @@ void MainWindow::InitAction()
             ui->widgetTickerButtonBar->hide();
 
         //------------------------------------------------
-        connect(ui->lstView,SIGNAL(doubleClicked(const QModelIndex&)),this,SLOT(slotSetSelectedTicker(const  QModelIndex&)));
-    }
-
-    //--------------------------------------------------------------------------------------------------------------------------------
-    void MainWindow::BulbululatorShowActivity   (int TickerID)
-    {
-        bool bFound = false;
-        size_t i = 0;
-        while (i < vBulbululators.size()) {
-            if (vBulbululators[i] == nullptr){
-                vBulbululators.erase(std::next(vBulbululators.begin(),i));
-                continue;
-            }
-            if(vBulbululators[i]->TickerID() == TickerID){
-                bFound = true;
-                break;
-            }
-            i++;
-        }
-        if (bFound){
-            vBulbululators[i]->Bubble();
-        }
-        //----------------------
-        ListViewShowActivity(TickerID);
-    }
-    //--------------------------------------------------------------------------------------------------------------------------------
-    void MainWindow::BulbululatorRemoveActive   (int TickerID)
-    {
-        bool bFound = false;
-        size_t i = 0;
-        while (i < vBulbululators.size()) {
-            if (vBulbululators[i] == nullptr){
-                vBulbululators.erase(std::next(vBulbululators.begin(),i));
-                continue;
-            }
-            if(vBulbululators[i]->TickerID() == TickerID){
-                bFound = true;
-                break;
-            }
-            i++;
-        }
-        if (bFound){
-            vBulbululators[i]->close();
-            disconnect(vBulbululators[i],SIGNAL(DoubleClicked(const int)),this,SLOT(slotSetSelectedTicker(const  int)));
-            ui->statusbar->removeWidget(vBulbululators[i]);
+        connect(ui->lstView,SIGNAL(doubleClicked(const QModelIndex&)),this,SLOT(slotSetSelectedTicker(const  QModelIndex&)));    
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::BulbululatorShowActivity   (int TickerID)
+{
+    bool bFound = false;
+    size_t i = 0;
+    while (i < vBulbululators.size()) {
+        if (vBulbululators[i] == nullptr){
             vBulbululators.erase(std::next(vBulbululators.begin(),i));
+            continue;
         }
-
+        if(vBulbululators[i]->TickerID() == TickerID){
+            bFound = true;
+            break;
+        }
+        i++;
     }
-    //--------------------------------------------------------------------------------------------------------------------------------
-    void MainWindow::BulbululatorAddActive      (int TickerID)
-    {
-        bool bFound{false};
-        QString str;
-        bool bBulbulator{false};
-
-        for(const auto& t:vTickersLst){
-            if(t.TickerID() == TickerID){
-                str = QString::fromStdString(t.TickerSign());
-                bFound = true;
-                bBulbulator = t.Bulbululator();
-                break;
-            }
-        }
-        if (!bFound || !bBulbulator) return;
-
-        bFound = false;
-        size_t i = 0;
-        while (i < vBulbululators.size()) {
-            if (vBulbululators[i] == nullptr){
-                vBulbululators.erase(std::next(vBulbululators.begin(),i));
-                continue;
-            }
-            if(vBulbululators[i]->TickerID() == TickerID){
-                bFound = true;
-                break;
-            }
-            i++;
-        }
-        if (!bFound){
-            Bulbululator * blbl = new Bulbululator();
-            connect(blbl,SIGNAL(DoubleClicked(const int)),this,SLOT(slotSetSelectedTicker(const  int)));
-
-            if(blbl){
-                blbl->SetText(str);
-                blbl->SetTickerID(TickerID);
-                vBulbululators.push_back(blbl);
-                ui->statusbar->addWidget(blbl);
-                vBulbululators.back()->Bubble();
-            }
-        }
+    if (bFound){
+        vBulbululators[i]->Bubble();
     }
-    //--------------------------------------------------------------------------------------------------------------------------------
-    ///
-    /// \brief create NewDoc Window (for test purpouse)
-    ///
-    void MainWindow::slotNewDoc()
-    {
-    //    QWidget *pdoc=new QWidget;
-    //    pdoc->setAttribute(Qt::WA_DeleteOnClose);
-    //    pdoc->setWindowTitle(tr("Unnamed document"));
-    //    pdoc->setWindowIcon(QPixmap(":/store/images/sc_newdoc"));
-
-
-    //    QGridLayout *lt=new QGridLayout();
-    //    QLabel *lbl=new QLabel(tr("Document"));
-    //    QPushButton * btn1=new QPushButton(tr("Push it"));
-    //    QPushButton * btn2=new QPushButton(tr("Doun't"));
-    //    QComboBox * cbx=new QComboBox();
-
-    //    connect(btn1,SIGNAL(clicked()),this,SLOT(slotSendTestText()));
-
-    //    cbx->addItem(tr("First elem"));
-    //    cbx->addItem(tr("Second elem"));
-    //    lt->addWidget(lbl);
-    //    lt->addWidget(btn1);
-    //    lt->addWidget(btn2);
-    //    lt->addWidget(cbx);
-    //    pdoc->setLayout(lt);
-
-
-    //    QListView *lw8=new QListView();
-    //    lw8->setModel(&m_MarketLstModel);
-    //    lt->addWidget(lw8);
-
-    //    ui->mdiArea->addSubWindow(pdoc);
-    //    pdoc->show();
+    //----------------------
+    ListViewShowActivity(TickerID);
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::BulbululatorSetState(int TickerID,Bulbululator::eTickerState State)
+{
+    size_t i = 0;
+    while (i < vBulbululators.size()) {
+        if (vBulbululators[i] == nullptr){
+            vBulbululators.erase(std::next(vBulbululators.begin(),i));
+            continue;
+        }
+        if(vBulbululators[i]->TickerID() == TickerID){
+            vBulbululators[i]->setState(State);
+            break;
+        }
+        i++;
+    }
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::BulbululatorRemoveActive   (int TickerID)
+{
+    bool bFound = false;
+    size_t i = 0;
+    int iCurrInstanses{0};
+    while (i < vBulbululators.size()) {
+        if (vBulbululators[i] == nullptr){
+            vBulbululators.erase(std::next(vBulbululators.begin(),i));
+            continue;
+        }
+        if(vBulbululators[i]->TickerID() == TickerID){
+            bFound = true;
+            iCurrInstanses = vBulbululators[i]->RemoveInstance();
+            break;
+        }
+        i++;
+    }
+    if (bFound && iCurrInstanses == 0){
+        vBulbululators[i]->close();
+        disconnect(vBulbululators[i],SIGNAL(DoubleClicked(const int)),this,SLOT(slotSetSelectedTicker(const  int)));
+        ui->statusbar->removeWidget(vBulbululators[i]);
+        vBulbululators.erase(std::next(vBulbululators.begin(),i));
     }
 
-    //--------------------------------------------------------------------------------------------------------------------------------
-    ///
-    /// \brief Making menu for teg "Windows"
-    ///
-    void MainWindow::slotWindows ()
-    {
-        m_mnuWindows->clear();
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::BulbululatorAddActive      (int TickerID)
+{
+    bool bFound{false};
+    QString str;
+    bool bBulbulator{false};
+
+    for(const auto& t:vTickersLst){
+        if(t.TickerID() == TickerID){
+            str = QString::fromStdString(t.TickerSign());
+            bFound = true;
+            bBulbulator = t.Bulbululator();
+            break;
+        }
+    }
+    if (!bFound || !bBulbulator) return;
+
+    bFound = false;
+    size_t i = 0;
+    while (i < vBulbululators.size()) {
+        if (vBulbululators[i] == nullptr){
+            vBulbululators.erase(std::next(vBulbululators.begin(),i));
+            continue;
+        }
+        if(vBulbululators[i]->TickerID() == TickerID){
+            bFound = true;
+            vBulbululators[i]->AddInstance();
+            break;
+        }
+        i++;
+    }
+    if (!bFound){
+        Bulbululator * blbl = new Bulbululator();
+        connect(blbl,SIGNAL(DoubleClicked(const int)),this,SLOT(slotSetSelectedTicker(const  int)));
+
+        if(blbl){
+
+            for(auto const & b:vBulbululators){
+                ui->statusbar->removeWidget(b);
+            }
+
+            blbl->SetText(str);
+            blbl->SetTickerID(TickerID);
+            vBulbululators.push_back(blbl);
+
+            std::sort(vBulbululators.begin(),vBulbululators.end(),[]( Bulbululator * const l,Bulbululator * const r){
+                return (QString::localeAwareCompare(l->Text(),r->Text()) < 0);
+                });
+
+            for(auto & b:vBulbululators){
+                ui->statusbar->addWidget(b);
+                b->show();
+            }
+            //ui->statusbar->addWidget(blbl);
+            vBulbululators.back()->Bubble();
+        }
+    }
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+///
+/// \brief create NewDoc Window (for test purpouse)
+///
+void MainWindow::slotNewDoc()
+{
+//    QWidget *pdoc=new QWidget;
+//    pdoc->setAttribute(Qt::WA_DeleteOnClose);
+//    pdoc->setWindowTitle(tr("Unnamed document"));
+//    pdoc->setWindowIcon(QPixmap(":/store/images/sc_newdoc"));
+
+
+//    QGridLayout *lt=new QGridLayout();
+//    QLabel *lbl=new QLabel(tr("Document"));
+//    QPushButton * btn1=new QPushButton(tr("Push it"));
+//    QPushButton * btn2=new QPushButton(tr("Doun't"));
+//    QComboBox * cbx=new QComboBox();
+
+//    connect(btn1,SIGNAL(clicked()),this,SLOT(slotSendTestText()));
+
+//    cbx->addItem(tr("First elem"));
+//    cbx->addItem(tr("Second elem"));
+//    lt->addWidget(lbl);
+//    lt->addWidget(btn1);
+//    lt->addWidget(btn2);
+//    lt->addWidget(cbx);
+//    pdoc->setLayout(lt);
+
+
+//    QListView *lw8=new QListView();
+//    lw8->setModel(&m_MarketLstModel);
+//    lt->addWidget(lw8);
+
+//    ui->mdiArea->addSubWindow(pdoc);
+//    pdoc->show();
+}
+
+//--------------------------------------------------------------------------------------------------------------------------------
+///
+/// \brief Making menu for teg "Windows"
+///
+void MainWindow::slotWindows ()
+{
+    m_mnuWindows->clear();
+    //
+    QAction *pac;
+    //
+    pac = m_mnuWindows->addAction(tr("&Cascade"),ui->mdiArea,SLOT(cascadeSubWindows()));
+    pac->setEnabled(!ui->mdiArea->subWindowList().isEmpty());
+    //
+    pac = m_mnuWindows->addAction(tr("&Tile"),ui->mdiArea,SLOT(tileSubWindows()));
+    pac->setEnabled(!ui->mdiArea->subWindowList().isEmpty());
+    //
+    m_mnuWindows->addSeparator();
+    //////////////
+    QList<QMdiSubWindow*> lst = ui->mdiArea->subWindowList();
+
+    for(int i = 0; i < lst.size(); ++i){
+         pac = m_mnuWindows->addAction(lst.at(i)->windowTitle());
+         pac->setCheckable(true);
+         pac->setChecked(ui->mdiArea->activeSubWindow() == lst.at(i));
         //
-        QAction *pac;
-        //
-        pac = m_mnuWindows->addAction(tr("&Cascade"),ui->mdiArea,SLOT(cascadeSubWindows()));
-        pac->setEnabled(!ui->mdiArea->subWindowList().isEmpty());
-        //
-        pac = m_mnuWindows->addAction(tr("&Tile"),ui->mdiArea,SLOT(tileSubWindows()));
-        pac->setEnabled(!ui->mdiArea->subWindowList().isEmpty());
-        //
-        m_mnuWindows->addSeparator();
-        //////////////
-        QList<QMdiSubWindow*> lst = ui->mdiArea->subWindowList();
-
-        for(int i = 0; i < lst.size(); ++i){
-             pac = m_mnuWindows->addAction(lst.at(i)->windowTitle());
-             pac->setCheckable(true);
-             pac->setChecked(ui->mdiArea->activeSubWindow() == lst.at(i));
-            //
-             connect(pac,SIGNAL(triggered()),m_psigmapper,SLOT(map()));
-             m_psigmapper->setMapping(pac,lst.at(i));
-        }
-    };
-
-    //--------------------------------------------------------------------------------------------------------------------------------
-    ////
-    /// \brief process changing active sub window (through menu)
-    /// \param pwg
-    ///
-    void MainWindow::slotSetActiveSubWindow (QWidget* pwg)
-    {
-        if(pwg){
-            ui->mdiArea->setActiveSubWindow(qobject_cast<QMdiSubWindow*>(pwg));
-        }
-    };
-
-    //--------------------------------------------------------------------------------------------------------------------------------
-    /// \brief About Window
-    ///
-    void MainWindow::slotAbout   ()
-    {
-        QMessageBox::about(0,tr("About"),"FinLoader v.0.0.1");
-
-    };
-    //--------------------------------------------------------------------------------------------------------------------------------
-    ///
-    /// \brief fill menu with styles
-    ///
-    void MainWindow::slotStyles     ()
-    {
-        QAction * pac;
-        m_mnuStyles->clear();
-        lstStyles.clear();
-        foreach(QString str,QStyleFactory::keys()){
-            lstStyles.append(str);
-        }
-        lstStyles.append("BlackStyle");
-
-        for(auto s:lstStyles){
-            pac = m_mnuStyles->addAction(s);
-            connect(pac,SIGNAL(triggered()),m_psigmapperStyle,SLOT(map()));
-            m_psigmapperStyle->setMapping(pac,s);
-        }
-
-    };
-    //--------------------------------------------------------------------------------------------------------------------------------
-    ////
-    /// \brief process style changing
-    /// \param styleName
-    ///
-
-    void MainWindow::slotSetActiveStyle     (QString s)
-    {
-        QString sOldStyle = m_sStyleName;
-        m_sStyleName = s;
-        if(s == "BlackStyle"){
-            QFile fl(":/store/blackstyle.css");
-            fl.open(QFile::ReadOnly);
-            QString strCSS=QLatin1String(fl.readAll());
-            qApp->setStyleSheet(strCSS);
-        }
-        else{
-            QStyle * st=QStyleFactory::create(s);
-            //qApp->setStyle(st);
-            QApplication::setStyle(st);
-            //
-            // becouse stylesheet cannot be redone, reload
-            if (sOldStyle == "BlackStyle"){
-                QMessageBox *msg = new QMessageBox(QMessageBox::Question,
-                                                   tr("style change"),
-                                                   tr("For style change app needed to be reloaded. Do it?"),
-                                                   QMessageBox::Yes|QMessageBox::No
-                            );
-                int n = msg->exec();
-                delete msg;
-                if(n == QMessageBox::Yes){
-                    //qDebug()<<"reboot!!!";
-                    SaveSettings();
-                    qApp->quit();
-                    QProcess::startDetached(qApp->arguments()[0], qApp->arguments());
-                }
-            }
-        }
+         connect(pac,SIGNAL(triggered()),m_psigmapper,SLOT(map()));
+         m_psigmapper->setMapping(pac,lst.at(i));
     }
-    //--------------------------------------------------------------------------------------------------------------------------------
-    ////
-    /// \brief create new log window
-    ///
-    void MainWindow::slotNewLogWnd()
-    {
-        QWidget *pdoc=new QWidget;
-        pdoc->setAttribute(Qt::WA_DeleteOnClose);
-        pdoc->setWindowTitle(tr("Log window"));
-        pdoc->setWindowIcon(QPixmap(":/store/images/sc_move"));
+};
 
-
-        QGridLayout *lt=new QGridLayout();
-        QTextEdit * ed=new QTextEdit();
-
-        lt->addWidget(ed);
-        lt->setMargin(1);
-        pdoc->setLayout(lt);
-
-        connect(this,SIGNAL(SendToLog(QString)),ed,SLOT(append(QString)));
-
-        ui->mdiArea->addSubWindow(pdoc);
-        pdoc->show();
-
+//--------------------------------------------------------------------------------------------------------------------------------
+////
+/// \brief process changing active sub window (through menu)
+/// \param pwg
+///
+void MainWindow::slotSetActiveSubWindow (QWidget* pwg)
+{
+    if(pwg){
+        ui->mdiArea->setActiveSubWindow(qobject_cast<QMdiSubWindow*>(pwg));
     }
-    //--------------------------------------------------------------------------------------------------------------------------------
-    void MainWindow::slotNewErrLogWnd()
-    {
-        QWidget *pdoc=new QWidget;
-        pdoc->setAttribute(Qt::WA_DeleteOnClose);
-        pdoc->setWindowTitle(tr("Error log window"));
-        pdoc->setWindowIcon(QPixmap(":/store/images/sc_err_log"));
+};
 
+//--------------------------------------------------------------------------------------------------------------------------------
+/// \brief About Window
+///
+void MainWindow::slotAbout   ()
+{
+    QMessageBox::about(0,tr("About"),"FinLoader v.0.0.1");
 
-        QGridLayout *lt=new QGridLayout();
-        QTextEdit * ed=new QTextEdit();
-
-        lt->addWidget(ed);
-        lt->setMargin(1);
-        pdoc->setLayout(lt);
-
-        connect(this,SIGNAL(SendToErrorLog(QString)),ed,SLOT(append(QString)));
-
-        ui->mdiArea->addSubWindow(pdoc);
-        pdoc->show();
+};
+//--------------------------------------------------------------------------------------------------------------------------------
+///
+/// \brief fill menu with styles
+///
+void MainWindow::slotStyles     ()
+{
+    QAction * pac;
+    m_mnuStyles->clear();
+    lstStyles.clear();
+    foreach(QString str,QStyleFactory::keys()){
+        lstStyles.append(str);
     }
-    //--------------------------------------------------------------------------------------------------------------------------------
-    void MainWindow::slotLanguages  ()
-    {
-        QAction * pac;
-        QString sL;
-        m_mnuLangs->clear();
+    lstStyles.append("BlackStyle");
 
-        {
-            sL = "English";
-            pac = m_mnuLangs->addAction(sL);
-            connect(pac,SIGNAL(triggered()),m_psigmapperLang,SLOT(map()));
-            m_psigmapperLang->setMapping(pac,sL);
-            //
-            sL = "Русский";
-            pac = m_mnuLangs->addAction(sL);
-            connect(pac,SIGNAL(triggered()),m_psigmapperLang,SLOT(map()));
-            m_psigmapperLang->setMapping(pac,sL);
-        }
+    for(auto& s:lstStyles){
+        pac = m_mnuStyles->addAction(s);
+        connect(pac,SIGNAL(triggered()),m_psigmapperStyle,SLOT(map()));
+        m_psigmapperStyle->setMapping(pac,s);
+    }
 
-    };
-    //--------------------------------------------------------------------------------------------------------------------------------
-    void MainWindow::slotSetActiveLang      (QString sL)
-    {
-        //////////////////////////////////////////////////////////////////////////////////////////
-        /// \brief do it first, becouse need old translation (befour load new language to QTranslator)
-        ///
-        QMessageBox *msg = new QMessageBox(QMessageBox::Question,
-                                       tr("Language change"),
-                                       tr("For language change app needed to be reloaded. Do it?"),
-                                       QMessageBox::Yes|QMessageBox::No
-                );
-        //////////////////////////////////////////////////////////////////////////////////////////
-        /// \brief do lang exchange, anyway has it set befour or not, for usage purpouse.
-        ///
-        QString sOldLang = m_Language;
-        if(sL == "Русский"){
-            m_Language = sL;
-            m_translator.load(":/store/FinLoader_ru_RU.qm");
-            qApp->installTranslator(&m_translator);
-        }
-        else{
-            m_Language = "English";
-            m_translator.load(":/store/FinLoader_en_US.qm");
-            qApp->installTranslator(&m_translator);
-        }
+};
+//--------------------------------------------------------------------------------------------------------------------------------
+////
+/// \brief process style changing
+/// \param styleName
+///
 
-        // do reload, if needed
-        if (sOldLang.size()>0 && sOldLang != sL){
+void MainWindow::slotSetActiveStyle     (QString s)
+{
+    QString sOldStyle = m_sStyleName;
+    m_sStyleName = s;
+    if(s == "BlackStyle"){
+        QFile fl(":/store/blackstyle.css");
+        fl.open(QFile::ReadOnly);
+        QString strCSS=QLatin1String(fl.readAll());
+        qApp->setStyleSheet(strCSS);
+    }
+    else{
+        QStyle * st=QStyleFactory::create(s);
+        //qApp->setStyle(st);
+        QApplication::setStyle(st);
+        //
+        // becouse stylesheet cannot be redone, reload
+        if (sOldStyle == "BlackStyle"){
+            QMessageBox *msg = new QMessageBox(QMessageBox::Question,
+                                               tr("style change"),
+                                               tr("For style change app needed to be reloaded. Do it?"),
+                                               QMessageBox::Yes|QMessageBox::No
+                        );
             int n = msg->exec();
             delete msg;
-
             if(n == QMessageBox::Yes){
                 //qDebug()<<"reboot!!!";
                 SaveSettings();
@@ -1123,306 +1081,415 @@ void MainWindow::InitAction()
             }
         }
     }
-    //--------------------------------------------------------------------------------------------------------------------------------
-    void MainWindow::slotGraphViewWindow()
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+////
+/// \brief create new log window
+///
+void MainWindow::slotNewLogWnd()
+{
+    QWidget *pdoc=new QWidget;
+    pdoc->setAttribute(Qt::WA_DeleteOnClose);
+    pdoc->setWindowTitle(tr("Log window"));
+    pdoc->setWindowIcon(QPixmap(":/store/images/sc_move"));
+
+
+    QGridLayout *lt=new QGridLayout();
+    QTextEdit * ed=new QTextEdit();
+
+    lt->addWidget(ed);
+    lt->setMargin(1);
+    pdoc->setLayout(lt);
+
+    connect(this,SIGNAL(SendToLog(QString)),ed,SLOT(append(QString)));
+
+    ui->mdiArea->addSubWindow(pdoc);
+    pdoc->show();
+
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotNewErrLogWnd()
+{
+    QWidget *pdoc=new QWidget;
+    pdoc->setAttribute(Qt::WA_DeleteOnClose);
+    pdoc->setWindowTitle(tr("Error log window"));
+    pdoc->setWindowIcon(QPixmap(":/store/images/sc_err_log"));
+
+
+    QGridLayout *lt=new QGridLayout();
+    QTextEdit * ed=new QTextEdit();
+
+    lt->addWidget(ed);
+    lt->setMargin(1);
+    pdoc->setLayout(lt);
+
+    connect(this,SIGNAL(SendToErrorLog(QString)),ed,SLOT(append(QString)));
+
+    ui->mdiArea->addSubWindow(pdoc);
+    pdoc->show();
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotLanguages  ()
+{
+    QAction * pac;
+    QString sL;
+    m_mnuLangs->clear();
+
     {
-        auto qml(ui->lstView->selectionModel());
-        auto lst (qml->selectedIndexes());
-        //if(lst.count() > 0 && lst[0].isValid()){
-
-        bool bWas{false};
-        for (auto item:lst){
-            const Ticker &t = proxyTickerModel.getTicker(item);
-            slotSetSelectedTicker(t.TickerID());
-            bWas = true;
-        }
-        if (!bWas){
-            //TODO: do non blocking floating warning
-            QMessageBox::warning(0,tr("Warning"),
-                                       tr("Please, select a ticker in the box at the bottom left to continue!\n"),
-                                       QMessageBox::Ok
-                                       );
-        }
-    }
-    //--------------------------------------------------------------------------------------------------------------------------------
-    void MainWindow::slotConfigWndow()
-    {
-        ConfigWindow *pdoc=new ConfigWindow(&m_MarketLstModel,iDefaultTickerMarket,
-                                            &m_TickerLstModel,bConfigTickerShowByName,bConfigTickerSortByName,
-                                            bDefaultStoragePath,qsStorageDirPath,stStore
-                                            );
-        pdoc->setAttribute(Qt::WA_DeleteOnClose);
-        pdoc->setWindowTitle(tr("Config"));
-        pdoc->setWindowIcon(QPixmap(":/store/images/sc_config"));
-
-       ui->mdiArea->addSubWindow(pdoc);
-
-        connect(pdoc,SIGNAL(SendToMainLog(QString)),this,SIGNAL(SendToLog(QString)));
-        connect(pdoc,SIGNAL(NeedSaveMarketsChanges()),this,SLOT(slotSaveMarketDataStorage()));
-
-        connect(pdoc,SIGNAL(NeedSaveDefaultTickerMarket(int)),this,SLOT(slotStoreDefaultTickerMarket(int)));
-        connect(pdoc,SIGNAL(NeedSaveShowByNames(bool)),this,SLOT(slotStoreConfigTickerShowByName(bool)));
-        connect(pdoc,SIGNAL(NeedSaveSortByNames(bool)),this,SLOT(slotStoreConfigTickerSortByName(bool)));
-
-
-        connect(this,SIGNAL(SaveUnsavedConfigs()),pdoc,SLOT(slotBtnSaveMarketClicked()));
-        connect(this,SIGNAL(SaveUnsavedConfigs()),pdoc,SLOT(slotBtnSaveTickerClicked()));
-
-        connect(pdoc,SIGNAL(NeedChangeDefaultPath(bool,QString)),this,SLOT(slotSaveNewDefaultPath(bool,QString)));
-
-
-        pdoc->show();
-    }
-    //--------------------------------------------------------------------------------------------------------------------------------
-    void MainWindow::slotImportFinQuotesWndow ()
-    {
-
-        ImportFinQuotesForm *pdoc=new ImportFinQuotesForm (&m_MarketLstModel,iDefaultTickerMarket,&m_TickerLstModel/*,bConfigTickerShowByName,bConfigTickerSortByName*/);
-        pdoc->setAttribute(Qt::WA_DeleteOnClose);
-        pdoc->setWindowTitle(tr("Import"));
-        pdoc->setWindowIcon(QPixmap(":/store/images/sc_open"));
-        pdoc->SetDefaultOpenDir(qsDefaultOpenDir);
-        pdoc->SetDelimiter(cImportDelimiter);
-
-
-        ui->mdiArea->addSubWindow(pdoc);
+        sL = "English";
+        pac = m_mnuLangs->addAction(sL);
+        connect(pac,SIGNAL(triggered()),m_psigmapperLang,SLOT(map()));
+        m_psigmapperLang->setMapping(pac,sL);
         //
-        connect(pdoc,SIGNAL(OpenImportFilePathChanged(QString &)),this,SLOT(slotDefaultOpenDirChanged(QString &)));
-        connect(pdoc,SIGNAL(DelimiterHasChanged(char)),this,SLOT(slotImportDelimiterChanged(char)));
-        connect(pdoc,SIGNAL(NeedSaveDefaultTickerMarket(int)),this,SLOT(slotStoreDefaultTickerMarket(int)));
-
-        connect(pdoc,SIGNAL(NeedParseImportFinQuotesFile(dataFinLoadTask &)),this,SLOT(slotParseImportFinQuotesFile(dataFinLoadTask &)));
-        connect(pdoc,SIGNAL(NeedToStopLoadings()),this,SLOT(slotStopFinQuotesLoadings()));
-
-        //
-        pdoc->show();
+        sL = "Русский";
+        pac = m_mnuLangs->addAction(sL);
+        connect(pac,SIGNAL(triggered()),m_psigmapperLang,SLOT(map()));
+        m_psigmapperLang->setMapping(pac,sL);
     }
 
-    //--------------------------------------------------------------------------------------------------------------------------------
-    void MainWindow::slotParseImportFinQuotesFile(dataFinLoadTask & dtTask)
-    {
-        if (Holders.find(dtTask.TickerID) == Holders.end()){
-            Holders[dtTask.TickerID] = std::make_shared<GraphHolder>(GraphHolder{dtTask.TickerID});
-        }
+};
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotSetActiveLang      (QString sL)
+{
+    //////////////////////////////////////////////////////////////////////////////////////////
+    /// \brief do it first, becouse need old translation (befour load new language to QTranslator)
+    ///
+    QMessageBox *msg = new QMessageBox(QMessageBox::Question,
+                                   tr("Language change"),
+                                   tr("For language change app needed to be reloaded. Do it?"),
+                                   QMessageBox::Yes|QMessageBox::No
+            );
+    //////////////////////////////////////////////////////////////////////////////////////////
+    /// \brief do lang exchange, anyway has it set befour or not, for usage purpouse.
+    ///
+    QString sOldLang = m_Language;
+    if(sL == "Русский"){
+        m_Language = sL;
+        m_translator.load(":/store/FinLoader_ru_RU.qm");
+        qApp->installTranslator(&m_translator);
+    }
+    else{
+        m_Language = "English";
+        m_translator.load(":/store/FinLoader_en_US.qm");
+        qApp->installTranslator(&m_translator);
+    }
 
-        dtTask.SetStore(&stStore);
-        dtTask.holder = Holders[dtTask.TickerID];
+    // do reload, if needed
+    if (sOldLang.size()>0 && sOldLang != sL){
+        int n = msg->exec();
+        delete msg;
 
-        queueFinQuotesLoad.Push(dataFinLoadTask(dtTask));
+        if(n == QMessageBox::Yes){
+            //qDebug()<<"reboot!!!";
+            SaveSettings();
+            qApp->quit();
+            QProcess::startDetached(qApp->arguments()[0], qApp->arguments());
+        }
+    }
+    else{
+        delete msg;
+    }
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotGraphViewWindow()
+{
+    auto qml(ui->lstView->selectionModel());
+    auto lst (qml->selectedIndexes());
+    //if(lst.count() > 0 && lst[0].isValid()){
 
-        thrdPoolLoadFinQuotes.AddTask([&](){
-            workerLoader::workerDataBaseWork(queueFinQuotesLoad,queueTrdAnswers,stStore);
-            });
-        ///
-    }
-    //--------------------------------------------------------------------------------------------------------------------------------
-    void MainWindow::slotStopFinQuotesLoadings()
-    {
-        queueFinQuotesLoad.clear();
-        thrdPoolLoadFinQuotes.Interrupt();
-    }
-    //--------------------------------------------------------------------------------------------------------------------------------
-    void MainWindow::slotDocbarShowAllChanged   (int /*iChange*/)
-    {
-        if (swtShowAll)
-            proxyTickerModel.setFilterByActive(!swtShowAll->isChecked());
-    }
-    //--------------------------------------------------------------------------------------------------------------------------------
-    void MainWindow::slotDocbarShowMarketChanged   (int)
-    {
-        if (!swtShowMarkets || !swtShowByName){
-            return;
-        }
-
-        if (!swtShowMarkets->isChecked()){
-            if (swtShowByName->isChecked())
-                ui->lstView->setModelColumn(0);
-            else
-                ui->lstView->setModelColumn(2);
-        }
-        else{
-            if (swtShowByName->isChecked())
-                ui->lstView->setModelColumn(3);
-            else
-                ui->lstView->setModelColumn(4);
-        }
-        proxyTickerModel.invalidate();
-
-    }
-    //--------------------------------------------------------------------------------------------------------------------------------
-    void MainWindow::slotDocbarShowNyNameChanged(int i)
-    {
-        slotDocbarShowMarketChanged(i);
-    }
-    //--------------------------------------------------------------------------------------------------------------------------------
-    void MainWindow::InitDockBar()
-    {
-        if (swtShowAll){
-            proxyTickerModel.setFilterByActive(!swtShowAll->isChecked());
-        }
-
-        proxyTickerModel.setSourceModel(&m_TickerLstModel);
-        proxyTickerModel.sort(2);
-        ui->lstView->setModel(&proxyTickerModel);
-
-        slotDocbarShowMarketChanged(0);
-
-    }
-    //--------------------------------------------------------------------------------------------------------------------------------
-    void MainWindow::slotToolBarStateChanged()
-    {
-        if(pacToolBar && pacToolBar->isChecked())
-            tbrToolBar->show();
-        else
-            tbrToolBar->hide();
-    }
-    //--------------------------------------------------------------------------------------------------------------------------------
-    void MainWindow::slotStatusBarStateChanged()
-    {
-        if(pacStatusBar && pacStatusBar->isChecked()){
-            ui->statusbar->show();
-        }
-        else{
-            ui->statusbar->hide();
-        }
-    }
-    //--------------------------------------------------------------------------------------------------------------------------------
-    void MainWindow::slotTickersBarStateChanged()
-    {
-        if(pacTickersBar && pacTickersBar->isChecked()){
-            ui->dkActiveTickers->show();
-        }
-        else{
-            ui->dkActiveTickers->hide();
-        }
-    }
-    //--------------------------------------------------------------------------------------------------------------------------------
-    void MainWindow::slotTickersBarButtonsStateChanged()
-    {
-        if(pacTickersBarButtonsHide && pacTickersBarButtonsHide->isChecked()){
-            ui->widgetTickerButtonBar->show();
-        }
-        else{
-            ui->widgetTickerButtonBar->hide();
-        }
-    }
-    //--------------------------------------------------------------------------------------------------------------------------------
-    void MainWindow::ListViewShowActivity(int TickerID){
-        std::chrono::time_point<std::chrono::steady_clock> tNow = std::chrono::steady_clock::now();
-
-        auto It (mBlinkedState.find(TickerID));
-        if (It  == mBlinkedState.end() ||
-                (milliseconds(tNow - It->second.second)).count() > 200
-                ){
-            mBlinkedState[TickerID] = std::make_pair(true, tNow);
-            m_TickerLstModel.blinkTicker(TickerID);
-            qActivityQueue.push(std::make_pair(TickerID,tNow));
-        }
-    }
-    //--------------------------------------------------------------------------------------------------------------------------------
-    void MainWindow::ListViewActivityTermination()
-    {
-        if (!qActivityQueue.empty()){
-            std::chrono::time_point dtNow(std::chrono::steady_clock::now());
-
-            if (milliseconds (dtNow - qActivityQueue.front().second).count() >100 ){
-                //
-                mBlinkedState[qActivityQueue.front().first].first = false;
-                m_TickerLstModel.blinkTicker(qActivityQueue.front().first);
-                /////
-                qActivityQueue.pop();
-            }
-        }
-    }
-    //--------------------------------------------------------------------------------------------------------------------------------
-    void MainWindow::slotSetSelectedTicker(const  QModelIndex& indx)
-    {
-        const Ticker &t = proxyTickerModel.getTicker(indx);
+    bool bWas{false};
+    for (auto item:lst){
+        const Ticker &t = proxyTickerModel.getTicker(item);
         slotSetSelectedTicker(t.TickerID());
+        bWas = true;
     }
-    //--------------------------------------------------------------------------------------------------------------------------------
-    void MainWindow::slotSetSelectedTicker(const  int iTickerID)
-    {
-        GraphViewForm * wnd;
-        bool bFound{false};
-        QList<QMdiSubWindow*> lst = ui->mdiArea->subWindowList();
-        for(int i = 0; i < lst.size(); ++i){
-            if(lst.at(i)->widget()->objectName() == "GraphViewForm")
-            {
-                wnd = qobject_cast<GraphViewForm *>(lst[i]->widget());
-                if(wnd && wnd->TickerID() == iTickerID){
-                    bFound = true;
-                    break;
-                }
+    if (!bWas){
+        //TODO: do non blocking floating warning
+        QMessageBox::warning(0,tr("Warning"),
+                                   tr("Please, select a ticker in the box at the bottom left to continue!\n"),
+                                   QMessageBox::Ok
+                                   );
+    }
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotConfigWndow()
+{
+    ConfigWindow *pdoc=new ConfigWindow(&m_MarketLstModel,iDefaultTickerMarket,
+                                        &m_TickerLstModel,bConfigTickerShowByName,bConfigTickerSortByName,
+                                        bDefaultStoragePath,qsStorageDirPath,stStore
+                                        );
+    pdoc->setAttribute(Qt::WA_DeleteOnClose);
+    pdoc->setWindowTitle(tr("Config"));
+    pdoc->setWindowIcon(QPixmap(":/store/images/sc_config"));
+
+   ui->mdiArea->addSubWindow(pdoc);
+
+    connect(pdoc,SIGNAL(SendToMainLog(QString)),this,SIGNAL(SendToLog(QString)));
+    connect(pdoc,SIGNAL(NeedSaveMarketsChanges()),this,SLOT(slotSaveMarketDataStorage()));
+
+    connect(pdoc,SIGNAL(NeedSaveDefaultTickerMarket(int)),this,SLOT(slotStoreDefaultTickerMarket(int)));
+    connect(pdoc,SIGNAL(NeedSaveShowByNames(bool)),this,SLOT(slotStoreConfigTickerShowByName(bool)));
+    connect(pdoc,SIGNAL(NeedSaveSortByNames(bool)),this,SLOT(slotStoreConfigTickerSortByName(bool)));
+
+
+    connect(this,SIGNAL(SaveUnsavedConfigs()),pdoc,SLOT(slotBtnSaveMarketClicked()));
+    connect(this,SIGNAL(SaveUnsavedConfigs()),pdoc,SLOT(slotBtnSaveTickerClicked()));
+
+    connect(pdoc,SIGNAL(NeedChangeDefaultPath(bool,QString)),this,SLOT(slotSaveNewDefaultPath(bool,QString)));
+
+
+    pdoc->show();
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotImportFinQuotesWndow ()
+{
+
+    ImportFinQuotesForm *pdoc=new ImportFinQuotesForm (&m_MarketLstModel,iDefaultTickerMarket,&m_TickerLstModel/*,bConfigTickerShowByName,bConfigTickerSortByName*/);
+    pdoc->setAttribute(Qt::WA_DeleteOnClose);
+    pdoc->setWindowTitle(tr("Import"));
+    pdoc->setWindowIcon(QPixmap(":/store/images/sc_open"));
+    pdoc->SetDefaultOpenDir(qsDefaultOpenDir);
+    pdoc->SetDelimiter(cImportDelimiter);
+
+
+    ui->mdiArea->addSubWindow(pdoc);
+    //
+    connect(pdoc,SIGNAL(OpenImportFilePathChanged(QString &)),this,SLOT(slotDefaultOpenDirChanged(QString &)));
+    connect(pdoc,SIGNAL(DelimiterHasChanged(char)),this,SLOT(slotImportDelimiterChanged(char)));
+    connect(pdoc,SIGNAL(NeedSaveDefaultTickerMarket(int)),this,SLOT(slotStoreDefaultTickerMarket(int)));
+
+    connect(pdoc,SIGNAL(NeedParseImportFinQuotesFile(dataFinLoadTask &)),this,SLOT(slotParseImportFinQuotesFile(dataFinLoadTask &)));
+    connect(pdoc,SIGNAL(NeedToStopLoadings()),this,SLOT(slotStopFinQuotesLoadings()));
+
+    //
+    pdoc->show();
+}
+
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotParseImportFinQuotesFile(dataFinLoadTask & dtTask)
+{
+    if (Holders.find(dtTask.TickerID) == Holders.end()){
+        Holders[dtTask.TickerID] = std::make_shared<GraphHolder>(GraphHolder{dtTask.TickerID});
+    }
+
+    dtTask.SetStore(&stStore);
+    dtTask.holder = Holders[dtTask.TickerID];
+
+    queueFinQuotesLoad.Push(dataFinLoadTask(dtTask));
+
+    thrdPoolLoadFinQuotes.AddTask([&](){
+        workerLoader::workerDataBaseWork(queueFinQuotesLoad,queueTrdAnswers,stStore);
+        });
+    ///
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotStopFinQuotesLoadings()
+{
+    queueFinQuotesLoad.clear();
+    thrdPoolLoadFinQuotes.Interrupt();
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotDocbarShowAllChanged   (int /*iChange*/)
+{
+    if (swtShowAll)
+        proxyTickerModel.setFilterByActive(!swtShowAll->isChecked());
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotDocbarShowMarketChanged   (int)
+{
+    if (!swtShowMarkets || !swtShowByName){
+        return;
+    }
+
+    if (!swtShowMarkets->isChecked()){
+        if (swtShowByName->isChecked())
+            ui->lstView->setModelColumn(0);
+        else
+            ui->lstView->setModelColumn(2);
+    }
+    else{
+        if (swtShowByName->isChecked())
+            ui->lstView->setModelColumn(3);
+        else
+            ui->lstView->setModelColumn(4);
+    }
+    proxyTickerModel.invalidate();
+
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotDocbarShowNyNameChanged(int i)
+{
+    slotDocbarShowMarketChanged(i);
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::InitDockBar()
+{
+    if (swtShowAll){
+        proxyTickerModel.setFilterByActive(!swtShowAll->isChecked());
+    }
+
+    proxyTickerModel.setSourceModel(&m_TickerLstModel);
+    proxyTickerModel.sort(2);
+    ui->lstView->setModel(&proxyTickerModel);
+
+    slotDocbarShowMarketChanged(0);
+
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotToolBarStateChanged()
+{
+    if(pacToolBar && pacToolBar->isChecked())
+        tbrToolBar->show();
+    else
+        tbrToolBar->hide();
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotStatusBarStateChanged()
+{
+    if(pacStatusBar && pacStatusBar->isChecked()){
+        ui->statusbar->show();
+    }
+    else{
+        ui->statusbar->hide();
+    }
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotTickersBarStateChanged()
+{
+    if(pacTickersBar && pacTickersBar->isChecked()){
+        ui->dkActiveTickers->show();
+    }
+    else{
+        ui->dkActiveTickers->hide();
+    }
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotTickersBarButtonsStateChanged()
+{
+    if(pacTickersBarButtonsHide && pacTickersBarButtonsHide->isChecked()){
+        ui->widgetTickerButtonBar->show();
+    }
+    else{
+        ui->widgetTickerButtonBar->hide();
+    }
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::ListViewShowActivity(int TickerID){
+    std::chrono::time_point<std::chrono::steady_clock> tNow = std::chrono::steady_clock::now();
+
+    auto It (mBlinkedState.find(TickerID));
+    if (It  == mBlinkedState.end() ||
+            (milliseconds(tNow - It->second.second)).count() > 200
+            ){
+        mBlinkedState[TickerID] = std::make_pair(true, tNow);
+        m_TickerLstModel.blinkTicker(TickerID);
+        qActivityQueue.push(std::make_pair(TickerID,tNow));
+    }
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::ListViewActivityTermination()
+{
+    if (!qActivityQueue.empty()){
+        std::chrono::time_point dtNow(std::chrono::steady_clock::now());
+
+        if (milliseconds (dtNow - qActivityQueue.front().second).count() >100 ){
+            //
+            mBlinkedState[qActivityQueue.front().first].first = false;
+            m_TickerLstModel.blinkTicker(qActivityQueue.front().first);
+            /////
+            qActivityQueue.pop();
+        }
+    }
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotSetSelectedTicker(const  QModelIndex& indx)
+{
+    const Ticker &t = proxyTickerModel.getTicker(indx);
+    slotSetSelectedTicker(t.TickerID());
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotSetSelectedTicker(const  int iTickerID)
+{
+    GraphViewForm * wnd;
+    bool bFound{false};
+    QList<QMdiSubWindow*> lst = ui->mdiArea->subWindowList();
+    for(int i = 0; i < lst.size(); ++i){
+        if(lst.at(i)->widget()->objectName() == "GraphViewForm")
+        {
+            wnd = qobject_cast<GraphViewForm *>(lst[i]->widget());
+            if(wnd && wnd->TickerID() == iTickerID){
+                bFound = true;
+                break;
             }
         }
-        if (!bFound){
-            std::tuple<bool,bool,bool,bool,bool> tp{
-                        pacGVLeftSc->isChecked(),
-                        pacGVRightSc->isChecked(),
-                        pacGVUpperSc->isChecked(),
-                        pacGVLowerSc->isChecked(),
-                        pacGVVolumeSc->isChecked()};
-
-            if (Holders.find(iTickerID) == Holders.end()){
-                Holders[iTickerID] = std::make_shared<GraphHolder>(GraphHolder{iTickerID});
-            }
-
-            GraphViewForm *pdoc=new GraphViewForm(iTickerID,vTickersLst,Holders[iTickerID]);
-            pdoc->setAttribute(Qt::WA_DeleteOnClose);
-            pdoc->setWindowIcon(QPixmap(":/store/images/sc_newdoc"));
-
-            ui->mdiArea->addSubWindow(pdoc);
-
-            connect(pdoc,SIGNAL(NeedLoadGraph(const  int,const std::time_t,const std::time_t)),
-                      this,SLOT(slotLoadGraph(const  int,const std::time_t,const std::time_t)));
-
-            connect(pdoc,SIGNAL(SendToLog(QString)),this,SIGNAL(SendToLog(QString)));
-
-            pdoc->setFramesVisibility(tp);
-            pdoc->show();
-        }
-        else{
-            wnd->setFocus();
-        }
     }
-    //--------------------------------------------------------------------------------------------------------------------------------
-    void MainWindow::slotLoadGraph(const  int iTickerID, const std::time_t tBegin, const std::time_t tEnd)
-    {
+    if (!bFound){
+        std::tuple<bool,bool,bool,bool,bool> tp{
+                    pacGVLeftSc->isChecked(),
+                    pacGVRightSc->isChecked(),
+                    pacGVUpperSc->isChecked(),
+                    pacGVLowerSc->isChecked(),
+                    pacGVVolumeSc->isChecked()};
+
         if (Holders.find(iTickerID) == Holders.end()){
             Holders[iTickerID] = std::make_shared<GraphHolder>(GraphHolder{iTickerID});
         }
 
-        dataFinLoadTask dataTask;
-        dataTask.taskType       = dataFinLoadTask::TaskType::finQuotesLoadFromStorage;
-        dataTask.TickerID       = iTickerID;
-        dataTask.dtBegin        = tBegin;
-        dataTask.dtEnd          = tEnd;
-        dataTask.holder         = Holders[iTickerID];
+        GraphViewForm *pdoc=new GraphViewForm(iTickerID,vTickersLst,Holders[iTickerID]);
+        pdoc->setAttribute(Qt::WA_DeleteOnClose);
+        pdoc->setWindowIcon(QPixmap(":/store/images/sc_newdoc"));
 
+        ui->mdiArea->addSubWindow(pdoc);
 
-        auto ItT (std::find_if(vTickersLst.begin(),vTickersLst.end(),[&](const Ticker &t){
-            return t.TickerID() == iTickerID;
-            }));
-        if (ItT != vTickersLst.end()){
-            auto ItM (std::find_if(vMarketsLst.begin(),vMarketsLst.end(),[&](const Market &m){
-                return m.MarketID() == ItT->MarketID();
-                }));
-            if (ItM != vMarketsLst.end()){
-                dataTask.vSessionTable  = ItM->SessionTable();
-                dataTask.vRepoTable     = ItM->RepoTable();
-            }
-        }
+        connect(pdoc,SIGNAL(NeedLoadGraph(const  int,const std::time_t,const std::time_t)),
+                  this,SLOT(slotLoadGraph(const  int,const std::time_t,const std::time_t)));
 
-        queueFinQuotesLoad.Push(dataFinLoadTask(dataTask));
+        connect(pdoc,SIGNAL(SendToLog(QString)),this,SIGNAL(SendToLog(QString)));
 
-        thrdPoolLoadFinQuotes.AddTask([&](){
-            workerLoader::workerDataBaseWork(queueFinQuotesLoad,queueTrdAnswers,stStore);
-            });
-
+        pdoc->setFramesVisibility(tp);
+        pdoc->show();
+    }
+    else{
+        wnd->setFocus();
+    }
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotLoadGraph(const  int iTickerID, const std::time_t tBegin, const std::time_t tEnd)
+{
+    if (Holders.find(iTickerID) == Holders.end()){
+        Holders[iTickerID] = std::make_shared<GraphHolder>(GraphHolder{iTickerID});
     }
 
-    //--------------------------------------------------------------------------------------------------------------------------------
+    dataFinLoadTask dataTask;
+    dataTask.taskType       = dataFinLoadTask::TaskType::finQuotesLoadFromStorage;
+    dataTask.TickerID       = iTickerID;
+    dataTask.dtBegin        = tBegin;
+    dataTask.dtEnd          = tEnd;
+    dataTask.holder         = Holders[iTickerID];
+
+
+    auto ItT (std::find_if(vTickersLst.begin(),vTickersLst.end(),[&](const Ticker &t){
+        return t.TickerID() == iTickerID;
+        }));
+    if (ItT != vTickersLst.end()){
+        auto ItM (std::find_if(vMarketsLst.begin(),vMarketsLst.end(),[&](const Market &m){
+            return m.MarketID() == ItT->MarketID();
+            }));
+        if (ItM != vMarketsLst.end()){
+            dataTask.vSessionTable  = ItM->SessionTable();
+            dataTask.vRepoTable     = ItM->RepoTable();
+        }
+    }
+
+    queueFinQuotesLoad.Push(dataFinLoadTask(dataTask));
+
+    thrdPoolLoadFinQuotes.AddTask([&](){
+        workerLoader::workerDataBaseWork(queueFinQuotesLoad,queueTrdAnswers,stStore);
+        });
+
+}
+
+//--------------------------------------------------------------------------------------------------------------------------------
 //    void MainWindow::slotTestPvBars(std::shared_ptr<std::vector<std::vector<BarTick>>> pvBars)
 //    {
 ////        {
@@ -1502,88 +1569,91 @@ void MainWindow::InitAction()
 //            }
 //        }
 //    }
-    //--------------------------------------------------------------------------------------------------------------------------------
-    void MainWindow::InitHolders()
-    {
-        std::time_t tNow =std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-        std::time_t tBegin = Storage::dateAddMonth(tNow,-6);
-        //
-        for(const Ticker &t:vTickersLst){
-            if (t.AutoLoad()){
-                if (Holders.find(t.TickerID()) == Holders.end()){
-                    Holders[t.TickerID()] = std::make_shared<GraphHolder>(GraphHolder{t.TickerID()});
-                }
-                //
-                dataFinLoadTask dataTask;
-                dataTask.taskType       = dataFinLoadTask::TaskType::finQuotesLoadFromStorage;
-                dataTask.TickerID       = t.TickerID();
-                dataTask.dtBegin        = tBegin;
-                dataTask.dtEnd          = tNow;
-                dataTask.holder         = Holders[t.TickerID()];
-
-                auto ItM (std::find_if(vMarketsLst.begin(),vMarketsLst.end(),[&](const Market &m){
-                    return m.MarketID() == t.MarketID();
-                    }));
-                if (ItM != vMarketsLst.end()){
-                    dataTask.vSessionTable  = ItM->SessionTable();
-                    dataTask.vRepoTable     = ItM->RepoTable();
-                }
-
-                queueFinQuotesLoad.Push(dataFinLoadTask(dataTask));
-
-                thrdPoolLoadFinQuotes.AddTask([&](){
-                    workerLoader::workerDataBaseWork(queueFinQuotesLoad,queueTrdAnswers,stStore);
-                    });
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::InitHolders()
+{
+    std::time_t tNow =std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    std::time_t tBegin = Storage::dateAddMonth(tNow,-6);
+    //
+    for(const Ticker &t:vTickersLst){
+        if (t.AutoLoad()){
+            if (Holders.find(t.TickerID()) == Holders.end()){
+                Holders[t.TickerID()] = std::make_shared<GraphHolder>(GraphHolder{t.TickerID()});
             }
+            //
+            dataFinLoadTask dataTask;
+            dataTask.taskType       = dataFinLoadTask::TaskType::finQuotesLoadFromStorage;
+            dataTask.TickerID       = t.TickerID();
+            dataTask.dtBegin        = tBegin;
+            dataTask.dtEnd          = tNow;
+            dataTask.holder         = Holders[t.TickerID()];
+
+            auto ItM (std::find_if(vMarketsLst.begin(),vMarketsLst.end(),[&](const Market &m){
+                return m.MarketID() == t.MarketID();
+                }));
+            if (ItM != vMarketsLst.end()){
+                dataTask.vSessionTable  = ItM->SessionTable();
+                dataTask.vRepoTable     = ItM->RepoTable();
+            }
+
+            queueFinQuotesLoad.Push(dataFinLoadTask(dataTask));
+
+            thrdPoolLoadFinQuotes.AddTask([&](){
+                workerLoader::workerDataBaseWork(queueFinQuotesLoad,queueTrdAnswers,stStore);
+                });
         }
     }
-    //--------------------------------------------------------------------------------------------------------------------------------
-    void MainWindow::slotGVFramesVisibilityStateChanged()
-    {
-        std::tuple<bool,bool,bool,bool,bool> tp{
-                    pacGVLeftSc->isChecked(),
-                    pacGVRightSc->isChecked(),
-                    pacGVUpperSc->isChecked(),
-                    pacGVLowerSc->isChecked(),
-                    pacGVVolumeSc->isChecked()};
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotGVFramesVisibilityStateChanged()
+{
+    std::tuple<bool,bool,bool,bool,bool> tp{
+                pacGVLeftSc->isChecked(),
+                pacGVRightSc->isChecked(),
+                pacGVUpperSc->isChecked(),
+                pacGVLowerSc->isChecked(),
+                pacGVVolumeSc->isChecked()};
 
-        GraphViewForm * wnd{nullptr};
-        QList<QMdiSubWindow*> lst = ui->mdiArea->subWindowList();
-        for(int i = 0; i < lst.size(); ++i){
-            wnd = qobject_cast<GraphViewForm *>(lst[i]->widget());
-            if(wnd ){
-                wnd->setFramesVisibility(tp);
-            }
+    GraphViewForm * wnd{nullptr};
+    QList<QMdiSubWindow*> lst = ui->mdiArea->subWindowList();
+    for(int i = 0; i < lst.size(); ++i){
+        wnd = qobject_cast<GraphViewForm *>(lst[i]->widget());
+        if(wnd ){
+            wnd->setFramesVisibility(tp);
         }
     }
-    //--------------------------------------------------------------------------------------------------------------------------------
-    void MainWindow::slotSaveNewDefaultPath(bool bDef,QString qsPath)
-    {
-        qsStorageDirPath    = qsPath;
-        bDefaultStoragePath = bDef;
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotSaveNewDefaultPath(bool bDef,QString qsPath)
+{
+    qsStorageDirPath    = qsPath;
+    bDefaultStoragePath = bDef;
 
-        SaveSettings();
-        qApp->quit();
-        QProcess::startDetached(qApp->arguments()[0], qApp->arguments());
-    }
-    //--------------------------------------------------------------------------------------------------------------------------------
-    void MainWindow::slotAmiPipeWndow()
-    {
+    SaveSettings();
+    qApp->quit();
+    QProcess::startDetached(qApp->arguments()[0], qApp->arguments());
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotAmiPipeWndow()
+{
 
-        AmiPiperForm  *pdoc=new AmiPiperForm (&m_MarketLstModel,iDefaultTickerMarket,&m_TickerLstModel,pipesHolder,vTickersLst);
-        pdoc->setAttribute(Qt::WA_DeleteOnClose);
-        pdoc->setWindowTitle(tr("Import from trade sistems"));
-        pdoc->setWindowIcon(QPixmap(":/store/images/sc_cut"));
-        connect(pdoc,SIGNAL(NeedSaveDefaultTickerMarket(int)),this,SLOT(slotStoreDefaultTickerMarket(int)));
+    AmiPiperForm  *pdoc=new AmiPiperForm (&m_MarketLstModel,iDefaultTickerMarket,&m_TickerLstModel,pipesHolder,vTickersLst);
+    pdoc->setAttribute(Qt::WA_DeleteOnClose);
+    pdoc->setWindowTitle(tr("Import from trade sistems"));
+    pdoc->setWindowIcon(QPixmap(":/store/images/sc_cut"));
+    connect(pdoc,SIGNAL(NeedSaveDefaultTickerMarket(int)),this,SLOT(slotStoreDefaultTickerMarket(int)));
 
-        ui->mdiArea->addSubWindow(pdoc);
+    ui->mdiArea->addSubWindow(pdoc);
 
-        connect(pdoc,SIGNAL(SendToMainLog(QString)),this,SIGNAL(SendToLog(QString)));
+    connect(pdoc,SIGNAL(SendToMainLog(QString)),this,SIGNAL(SendToLog(QString)));
 
-        pdoc->show();
+    pdoc->show();
 
-    }
-    //--------------------------------------------------------------------------------------------------------------------------------
-    //--------------------------------------------------------------------------------------------------------------------------------
-    //--------------------------------------------------------------------------------------------------------------------------------
-    //--------------------------------------------------------------------------------------------------------------------------------
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------------------
+
+
+

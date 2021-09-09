@@ -11,6 +11,13 @@
 #include "trimutils.h"
 #include "storage.h"
 
+using namespace std::chrono_literals;
+using seconds=std::chrono::duration<double>;
+using milliseconds=std::chrono::duration<double,
+    std::ratio_multiply<seconds::period,std::milli>
+    >;
+
+
 //-------------------------------------------------------------------------------------------------
 AmiPipeHolder::AmiPipeHolder()
 {
@@ -19,9 +26,9 @@ AmiPipeHolder::AmiPipeHolder()
 }
 
 //-------------------------------------------------------------------------------------------------
-AmiPipeHolder::pipes_type AmiPipeHolder::ScanActivePipes()
+dataAmiPipeTask::pipes_type AmiPipeHolder::ScanActivePipes()
 {
-    AmiPipeHolder::pipes_type mRet;
+    dataAmiPipeTask::pipes_type mRet;
 
     std::string sPipeDir = "\\\\.\\pipe\\";
     std::stringstream ssFilePath("");
@@ -68,6 +75,9 @@ AmiPipeHolder::pipes_type AmiPipeHolder::ScanActivePipes()
                     ssFilePath.str("");
                     ssFilePath.clear();
                     ssFilePath <<sPipeDir<<(*ItPipe);
+                    //ssFilePath <<fl.path().filename().string();
+
+
                     mRet[sBind] = {0,{*ItPipe,sSign,ssFilePath.str(),0,0}};
                 }
             }
@@ -78,9 +88,9 @@ AmiPipeHolder::pipes_type AmiPipeHolder::ScanActivePipes()
 
 //-------------------------------------------------------------------------------------------------
 void AmiPipeHolder::CheckPipes(std::vector<Ticker> &vT,
-                               AmiPipeHolder::pipes_type & mBindedPipesActive,
-                               AmiPipeHolder::pipes_type & mBindedPipesOff,
-                               AmiPipeHolder::pipes_type &mFreePipes,
+                               dataAmiPipeTask::pipes_type & mBindedPipesActive,
+                               dataAmiPipeTask::pipes_type & mBindedPipesOff,
+                               dataAmiPipeTask::pipes_type &mFreePipes,
                                std::vector<int> &vUnconnectedPipes,
                                std::vector<int> &vInformantsPipes
                                )
@@ -89,7 +99,7 @@ void AmiPipeHolder::CheckPipes(std::vector<Ticker> &vT,
     mBindedPipesOff.clear();
     mFreePipes.clear();
     //
-    AmiPipeHolder::pipes_type mPipes = AmiPipeHolder::ScanActivePipes();
+    dataAmiPipeTask::pipes_type mPipes = AmiPipeHolder::ScanActivePipes();
     //
     std::string sTmp;
     for(const auto &t:vT){
@@ -134,8 +144,8 @@ void AmiPipeHolder::CheckPipes(std::vector<Ticker> &vT,
     }
 }
 //-------------------------------------------------------------------------------------------------
-void AmiPipeHolder::RefreshActiveSockets(pipes_type& pActive,
-                          pipes_type& pOff,
+void AmiPipeHolder::RefreshActiveSockets(dataAmiPipeTask::pipes_type& pActive,
+                          dataAmiPipeTask::pipes_type& pOff,
                           BlockFreeQueue<dataAmiPipeAnswer>&queuePipeAnswers)
 {
     for (auto &m:mPipesHalted){m.second.first =0;}
@@ -158,14 +168,26 @@ void AmiPipeHolder::RefreshActiveSockets(pipes_type& pActive,
                 }
                 bool bOpend{false};
                 try{
+#ifdef _WIN32
+                    mPipesConnected[p.first].first  = 1;
+                    mPipesConnected[p.first].second = {std::get<3>(p.second.second),{}};
+                    mPipesConnected[p.first].second.second.setPipePath(std::get<2>(p.second.second));
+
+                    mPipesConnected[p.first].second.second.open();
+
+                    if (mPipesConnected[p.first].second.second.good()){
+#else
                     std::ifstream file(std::get<2>(p.second.second),std::ios::in);
                     if (file.good()){
-                        mPipesConnected[p.first].first  = 1;
                         mPipesConnected[p.first].second = {std::get<3>(p.second.second),
                                                             std::move(file)};
+#endif
                         mBuffer[p.first].resize(iBlockMaxSize);
                         mPointerToWrite[p.first] = 0;
                         mPointerToRead[p.first] = 0;
+
+                        mDtActivity[std::get<3>(p.second.second)] = std::chrono::steady_clock::now();
+                        mCurrentSecond[std::get<3>(p.second.second)] = 0;
                         //
                         dataAmiPipeAnswer answ;
                         answ.Type = dataAmiPipeAnswer::PipeConnected;
@@ -173,15 +195,28 @@ void AmiPipeHolder::RefreshActiveSockets(pipes_type& pActive,
                         queuePipeAnswers.Push(answ);
                         bOpend = true;
                     }
+#ifdef _WIN32
+                    else{
+                        auto ItD (mPipesConnected.find(p.first));
+                        if (ItD != mPipesConnected.end()){
+                            mPipesConnected.erase(ItD);
+                        }
+                    }
+#endif
                 }
                 catch(std::exception &){
                     ;
                 }
                 if (!bOpend){
                     mPipesHalted[p.first].first  = 1;
+#ifdef _WIN32
+                    Win32NamedPipe file("");
+                    mPipesHalted[p.first].second = {std::get<3>(p.second.second),file};
+#else
                     mPipesHalted[p.first].second = {std::get<3>(p.second.second),
                                                     std::ifstream{}
                                                    };
+#endif
                     //
                     dataAmiPipeAnswer answ;
                     answ.Type = dataAmiPipeAnswer::PipeHalted;
@@ -223,6 +258,14 @@ void AmiPipeHolder::RefreshActiveSockets(pipes_type& pActive,
             if (ItPR != mPointerToRead.end()){
                 mPointerToRead.erase(ItPR);
             }
+            auto ItAct = mDtActivity.find(ItConnected->second.second.first);
+            if (ItAct != mDtActivity.end()){
+                mDtActivity.erase(ItAct);
+            }
+            auto ItSec = mCurrentSecond.find(ItConnected->second.second.first);
+            if (ItSec != mCurrentSecond.end()){
+                mCurrentSecond.erase(ItSec);
+            }
             //
             auto ItNext = std::next(ItConnected);
             mPipesConnected.erase(ItConnected);
@@ -247,61 +290,69 @@ void AmiPipeHolder::RefreshActiveSockets(pipes_type& pActive,
     }
 }
 //-------------------------------------------------------------------------------------------------
-void AmiPipeHolder::ReadConnectedPipes(std::map<int,std::vector<BarTick>> & /*mV*/,
-                        BlockFreeQueue<dataAmiPipeAnswer>&queuePipeAnswers)
+void AmiPipeHolder::ReadConnectedPipes(std::map<int,std::vector<BarTick>> & mV,
+                        BlockFreeQueue<dataAmiPipeAnswer>&queuePipeAnswers,
+                        BlockFreeQueue<dataFinLoadTask> & queueFinQuotesLoad,
+                        BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers)
 {
-    int iTicketID{0};
+    milliseconds tActivityCount;
+
+    int iTickerID{0};
 
     int iBytesToRead{0};
     int iWriteStart{0};
 
-    //std::time_t tSec;
     bool bInStream{false};
 
 
-//    std::ofstream fileWD ("testoutpipe.txt",std::ios_base::binary);
-//    fileWD.close();
-
-    std::ofstream fileW ("testoutpipe.txt",std::ios_base::app | std::ios_base::binary);
-
     BarTick b(0,0,0);
     BarTickMemcopier bM(b);
-    //Storage::data_type iState;
+
 
 
     auto ItConnected = mPipesConnected.begin();
     while (ItConnected != mPipesConnected.end()){
-        iTicketID = ItConnected->second.second.first;
-        //auto &vV (mV[iTicketID]);
+        iTickerID = ItConnected->second.second.first;
+        auto &vV (mV[iTickerID]);
         if (ItConnected->second.second.second.good()){
 
+#ifdef _WIN32
+            int filesize = iBlockMaxSize;
+#elif
             ItConnected->second.second.second.seekg(0,std::ios::end);
             int filesize = ItConnected->second.second.second.tellg();
             ItConnected->second.second.second.seekg(0, std::ios::cur);
+#endif
 
 //            int filesize = 1;
 
             if (filesize > 0){
                 iWriteStart = mPointerToWrite[ItConnected->first];
-                iBytesToRead = iWriteStart + filesize < iBlockMaxSize ?
+                iBytesToRead = iWriteStart + (int)filesize < iBlockMaxSize ?
                             filesize : iBlockMaxSize - iWriteStart;
                 //
                 char *buff = mBuffer[ItConnected->first].data();
-
+#ifdef _WIN32
+                //Read(char * buff, size_t buffsize, size_t &bytesRead);
+                if(ItConnected->second.second.second.read (buff + iWriteStart,iBytesToRead,filesize)){
+                    mPointerToWrite[ItConnected->first] +=  filesize;
+#else
                 if(ItConnected->second.second.second.read(buff + iWriteStart,iBytesToRead)){
                     mPointerToWrite[ItConnected->first] +=  iBytesToRead;
+#endif
+
                     ////-------
 //                    if (iTicketID == 1)
-                    {
-                        if(!fileW.write(buff,iBytesToRead)){
-                            ThreadFreeCout pcout;
-                            pcout <<"Unsuccessful write operation\n";
-                        }
-                        else{
-                            ThreadFreeCout pcout;
-                            pcout <<"Writing buff {"<<iBytesToRead<<"}\n";
-                        }
-                    }
+//                    {
+//                        if(!fileW.write(buff,iBytesToRead)){
+//                            ThreadFreeCout pcout;
+//                            pcout <<"Unsuccessful write operation\n";
+//                        }
+//                        else{
+//                            ThreadFreeCout pcout;
+//                            pcout <<"Writing buff {"<<iBytesToRead<<"}\n";
+//                        }
+//                    }
                     ////-------
                     bInStream = false;
                     int iReadStart = mPointerToRead[ItConnected->first];
@@ -327,10 +378,10 @@ void AmiPipeHolder::ReadConnectedPipes(std::map<int,std::vector<BarTick>> & /*mV
                         if (bInStream && iBlockStart >= 48){
                             bInStream = false;
                             iReadStart = i - iBlockStart;
-                            if (bFirst && iReadStart != 2){
-                                ThreadFreeCout pcout;
-                                pcout <<"reading not from start: {"<<iReadStart<<"}\n";
-                            }
+//                            if (bFirst && iReadStart != 2){
+//                                ThreadFreeCout pcout;
+//                                pcout <<"reading not from start: {"<<iReadStart<<"}\n";
+//                            }
                             bFirst = false;
 
                             memcpy(&longDate,buff + iReadStart, 8);          iReadStart += 8;
@@ -342,24 +393,33 @@ void AmiPipeHolder::ReadConnectedPipes(std::map<int,std::vector<BarTick>> & /*mV
 
                                                                                    // 13275568800 179 000 1
                             bM.Period() = t1970_01_01_04_00_00 + (longDate/10000000 - 11644488000);
-                            //bM.Period() = longDate/10000000;
                             bM.Close() = vC;
                             bM.Volume() = (long)volume;
 
                             if(b.Period() > t1971_01_01_00_00_00 &&
                                b.Period() < t2100_01_01_00_00_00
                                     ){
-                                if (iTicketID == 1){
-                                    ThreadFreeCout pcout;
-                                    pcout <<"{"<<threadfree_gmtime_to_str(&bM.Period())<<"} ";
-                                    pcout <<"{"<<b.Close()<<"} ";
-                                    pcout <<"{"<<volume<<"}\n";
-                                }
+
+//                                if(tSec != bM.Period()){
+//                                    tSec = bM.Period();
+//                                    iState = Storage::data_type::new_sec;
+//                                }
+//                                else{
+//                                    iState = Storage::data_type::usual;
+//                                }
+                                //vV.push_back(b);
+
+//                                if (iTickerID == 1){
+//                                    ThreadFreeCout pcout;
+//                                    pcout <<"{"<<threadfree_gmtime_to_str(&bM.Period())<<"} ";
+//                                    pcout <<"{"<<b.Close()<<"} ";
+//                                    pcout <<"{"<<volume<<"}\n";
+//                                }
                             }
                             else
                             {
                                 ThreadFreeCout pcout;
-                                pcout <<"error in time during import from pipe: "<<iTicketID<<"\n";
+                                pcout <<"error in time during import from pipe: "<<iTickerID<<"\n";
                             }
 
                         }
@@ -377,7 +437,6 @@ void AmiPipeHolder::ReadConnectedPipes(std::map<int,std::vector<BarTick>> & /*mV
 //                        }
 
                         memcpy(buff,buff + iReadStart, iDelta);
-
                         mPointerToWrite[ItConnected->first] -= iReadStart;
                         mPointerToRead[ItConnected->first] = 0;
 
@@ -385,6 +444,13 @@ void AmiPipeHolder::ReadConnectedPipes(std::map<int,std::vector<BarTick>> & /*mV
 //                            ThreadFreeCout pcout;
 //                            pcout <<"mems: {"<<iTicketID<<"} write_pointer: {"<<mPointerToWrite[ItConnected->first]<<"}\n";
 //                        }
+
+                        tActivityCount = std::chrono::steady_clock::now() - mDtActivity[iTickerID];
+                        if (tActivityCount > 1800ms){
+                            mDtActivity[iTickerID] = std::chrono::steady_clock::now();
+                            dataBuckgroundThreadAnswer dt(iTickerID,dataBuckgroundThreadAnswer::eAnswerType::LoadActivity,nullptr);
+                            queueTrdAnswers.Push(dt);
+                        }
                     }
                 }
             }
@@ -392,6 +458,9 @@ void AmiPipeHolder::ReadConnectedPipes(std::map<int,std::vector<BarTick>> & /*mV
         }
         else{
 
+#ifdef _WIN32
+            if (!ItConnected->second.second.second.good()){
+#else
             if (!(ItConnected->second.second.second.rdstate() & std::ios_base::eofbit)){
                 ThreadFreeCout pcout;
                 pcout << "not good\n";
@@ -400,6 +469,7 @@ void AmiPipeHolder::ReadConnectedPipes(std::map<int,std::vector<BarTick>> & /*mV
                 if (ItConnected->second.second.second.rdstate() & std::ios_base::badbit) { pcout << "stream state is badbit\n";}
                 if (ItConnected->second.second.second.rdstate() & std::ios_base::failbit) { pcout << "stream state is failbit\n";}
 
+#endif
                 try{
                     ItConnected->second.second.second.close();
                 }
@@ -421,6 +491,14 @@ void AmiPipeHolder::ReadConnectedPipes(std::map<int,std::vector<BarTick>> & /*mV
                 auto ItPR = mPointerToRead.find(ItConnected->first);
                 if (ItPR != mPointerToRead.end()){
                     mPointerToRead.erase(ItPR);
+                }
+                auto ItAct = mDtActivity.find(ItConnected->second.second.first);
+                if (ItAct != mDtActivity.end()){
+                    mDtActivity.erase(ItAct);
+                }
+                auto ItSec = mCurrentSecond.find(ItConnected->second.second.first);
+                if (ItSec != mCurrentSecond.end()){
+                    mCurrentSecond.erase(ItSec);
                 }
                 //
                 auto ItNext = std::next(ItConnected);

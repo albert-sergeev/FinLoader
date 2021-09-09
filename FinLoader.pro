@@ -48,6 +48,7 @@ SOURCES += \
     threadpool.cpp \
     ticker.cpp \
     trimutils.cpp \
+    win32namedpipe.cpp \
     workerloader.cpp
 
 HEADERS += \
@@ -80,6 +81,7 @@ HEADERS += \
     threadpool.h \
     ticker.h \
     trimutils.h \
+    win32namedpipe.h \
     workerloader.h
 
 FORMS += \

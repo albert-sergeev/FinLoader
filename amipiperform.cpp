@@ -69,8 +69,8 @@ AmiPiperForm::~AmiPiperForm()
 //--------------------------------------------------------------------------------------------------------------------
 void AmiPiperForm::slotBtnCheckClicked()
 {
-    AmiPipeHolder::pipes_type mBindedPipes;
-    AmiPipeHolder::pipes_type mBindedPipesOff;
+    dataAmiPipeTask::pipes_type mBindedPipes;
+    dataAmiPipeTask::pipes_type mBindedPipesOff;
     mFreePipes.clear();
     std::vector<int> vUnconnected;
     std::vector<int> vInformants;

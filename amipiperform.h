@@ -30,7 +30,7 @@ protected:
     TickerProxyListModel proxyTickerModelOff;
 
     QStringListModel    *modelNew;
-    AmiPipeHolder::pipes_type mFreePipes;
+    dataAmiPipeTask::pipes_type mFreePipes;
 
     AmiPipeHolder &pipes;
 

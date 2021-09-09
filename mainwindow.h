@@ -132,6 +132,7 @@ private:
     // for AmiPipes
     AmiPipeHolder pipesHolder;
     std::chrono::time_point<std::chrono::steady_clock> dtCheckPipesActivity;
+    std::map<int,int> mStoredUnconnected;
 
     // for docked bar
     StyledSwitcher * swtShowByName;
@@ -219,6 +220,7 @@ protected slots: // for main window
     void BulbululatorAddActive      (int TickerID);
     void BulbululatorRemoveActive   (int TickerID);
     void BulbululatorShowActivity   (int TickerID);
+    void BulbululatorSetState(int TickerID,Bulbululator::eTickerState State);
 
     void slotDocbarShowNyNameChanged(int);
     void slotDocbarShowAllChanged   (int);

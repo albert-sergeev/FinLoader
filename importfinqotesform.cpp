@@ -134,6 +134,12 @@ void ImportFinQuotesForm::slotBtnOpenClicked()
 //        if (lst.size() == 1){
 //            QString str = lst.first();
 
+//    QFileDialog *dlg = new QFileDialog(0,"Open file to import",
+//                                       QString::fromStdString(pathDir.string()),
+//                                       "*.txt");
+//    (void)dlg->exec();
+//    QString str = dlg->windowFilePath();
+
     QString str=QFileDialog::getOpenFileName(0,"Open file to import",
                                                  QString::fromStdString(pathDir.string()),
                                                  "*.txt");
@@ -144,7 +150,7 @@ void ImportFinQuotesForm::slotBtnOpenClicked()
                 //
                 pathDir=pathFile.parent_path();
                 QString qsDir=QString::fromStdString(pathDir.string());;
-                OpenImportFilePathChanged(qsDir);
+                emit OpenImportFilePathChanged(qsDir);
                 //
                 QString strFileToShow = QString::fromStdString(pathFile.filename().string());
                 ui->edFileName->setText(strFileToShow);
@@ -154,7 +160,7 @@ void ImportFinQuotesForm::slotBtnOpenClicked()
         }
     }
 //    dlg.deleteLater();
-
+    //delete dlg;
 }
 
 //--------------------------------------------------------------------------------------------------------
