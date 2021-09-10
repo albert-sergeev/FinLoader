@@ -13,6 +13,7 @@
 #include "dataamipipetask.h"
 #include "dataamipipeanswer.h"
 #include "datafastloadtask.h"
+#include "fasttasksholder.h"
 
 
 
@@ -38,8 +39,9 @@ public:
     static void workerFastDataWork( BlockFreeQueue<dataFastLoadTask>            &queueFastTasks,
                                     BlockFreeQueue<dataBuckgroundThreadAnswer>  &queueTrdAnswers,
                                     BlockFreeQueue<dataAmiPipeAnswer>           &queuePipeAnswers,
-                                    AmiPipeHolder& pipesHolder,
-                                    Storage &stStore);
+                                    FastTasksHolder &fastHolder,
+                                    Storage &stStore,
+                                    std::map<int,std::shared_ptr<GraphHolder>>& Holders);
 
 
 

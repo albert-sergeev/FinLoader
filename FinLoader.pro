@@ -32,6 +32,7 @@ SOURCES += \
     datafastloadtask.cpp \
     datafinloadtask.cpp \
     datafinquotesparse.cpp \
+    fasttasksholder.cpp \
     graph.cpp \
     graphholder.cpp \
     graphviewform.cpp \
@@ -67,6 +68,7 @@ HEADERS += \
     datafastloadtask.h \
     datafinloadtask.h \
     datafinquotesparse.h \
+    fasttasksholder.h \
     graph.h \
     graphholder.h \
     graphviewform.h \

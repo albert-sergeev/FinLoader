@@ -69,8 +69,8 @@ dataAmiPipeTask::pipes_type AmiPipeHolder::ScanActivePipes()
     std::stringstream ssFilePath("");
 
 
-    std::filesystem::path pathTickerDir = sPipeDir;
-    //std::filesystem::path pathTickerDir = std::filesystem::absolute(sPipeDir);
+    //std::filesystem::path pathTickerDir = sPipeDir;
+    std::filesystem::path pathTickerDir = std::filesystem::absolute(sPipeDir);
 //    if(!std::filesystem::is_directory(pathTickerDir)){
 //        ssOut <<" ./data/[TickerID] - is not directory";
 //        return false;
@@ -91,7 +91,11 @@ dataAmiPipeTask::pipes_type AmiPipeHolder::ScanActivePipes()
     std::string sSign;
     std::string sBind;
 
-    if (std::filesystem::exists(pathTickerDir)){
+#ifdef _WIN32
+#elif
+    if (std::filesystem::exists(pathTickerDir))
+#endif
+    {
         for (const std::filesystem::directory_entry &fl:std::filesystem::directory_iterator{pathTickerDir}){
 
             if ( fl.exists()
@@ -194,16 +198,16 @@ void AmiPipeHolder::RefreshActiveSockets(dataAmiPipeTask::pipes_type& pActive,
         if ( ItHalted == mPipesHalted.end()){
             auto ItConnected (mPipesConnected.find(p.first));
             if ( ItConnected == mPipesConnected.end()){
-                {
-                    ThreadFreeCout pcout;
-                    pcout <<"pipename: "<<std::get<2>(p.second.second)<<"\n";
-                    if(std::filesystem::is_fifo(std::get<2>(p.second.second))){
-                        pcout <<"is fifo\n";
-                    }
-                    else{
-                        pcout <<"is regular file\n";
-                    }
-                }
+//                {
+//                    ThreadFreeCout pcout;
+//                    pcout <<"pipename: "<<std::get<2>(p.second.second)<<"\n";
+//                    if(std::filesystem::is_fifo(std::get<2>(p.second.second))){
+//                        pcout <<"is fifo\n";
+//                    }
+//                    else{
+//                        pcout <<"is regular file\n";
+//                    }
+//                }
                 bool bOpend{false};
                 try{
 #ifdef _WIN32

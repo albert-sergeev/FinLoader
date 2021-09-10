@@ -106,8 +106,9 @@ MainWindow::MainWindow(QWidget *parent)
                         workerLoader::workerFastDataWork (  queueFastTasks,
                                                             queueTrdAnswers,
                                                             queuePipeAnswers,
-                                                            pipesHolder,
-                                                            stStore);
+                                                            fastHolder,
+                                                            stStore,
+                                                            Holders);
                         });
         ++i;
     }
@@ -153,7 +154,10 @@ MainWindow::~MainWindow()
     queuePipeTasks.clear();
     queuePipeAnswers.clear();
 
-    for(auto &h:Holders) h.second->clear();
+    {
+        std::shared_lock lk(mutexMainHolder);
+        for(auto &h:Holders) h.second->clear();
+    }
 
     std::this_thread::yield();
     std::this_thread::sleep_for(milliseconds(100));
@@ -310,7 +314,8 @@ void MainWindow::timerEvent(QTimerEvent * event)
                         slotSendSignalToInvalidateGraph(data.TickerID(), data.BeginDate(), data.EndDate());
 
                         if (data.TickerID() == 9){ // TODO:delete. for test
-                            auto hl =  Holders[data.TickerID()];
+                            std::shared_lock lk(mutexMainHolder);
+                            auto hl =  Holders.at(data.TickerID());
                             size_t tSz = hl->getViewGraphSize(Bar::eInterval::pTick);
                             ThreadFreeCout pcout;
                             pcout << "!!!!!!! total graph["<<data.TickerID()<<"] size = {"<<tSz<<"}   !!!!!!!";
@@ -320,8 +325,6 @@ void MainWindow::timerEvent(QTimerEvent * event)
                                 iV += hl->getByIndex<Bar>(Bar::eInterval::pMonth,i).Volume();
                             }
                             pcout << "    total volume = {"<<iV<<"}   !!!!!!!\n";
-
-
                         }
                     }
                     emit SendToLog(QString::fromStdString(ss.str()));
@@ -1307,12 +1310,18 @@ void MainWindow::slotImportFinQuotesWndow ()
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::slotParseImportFinQuotesFile(dataFinLoadTask & dtTask)
 {
+    std::shared_lock lk(mutexMainHolder);
     if (Holders.find(dtTask.TickerID) == Holders.end()){
+        lk.unlock();
+        std::unique_lock lk2(mutexMainHolder);
         Holders[dtTask.TickerID] = std::make_shared<GraphHolder>(GraphHolder{dtTask.TickerID});
+        lk2.unlock();
+        lk.lock();
     }
 
     dtTask.SetStore(&stStore);
     dtTask.holder = Holders[dtTask.TickerID];
+    lk.unlock();
 
     queueFinQuotesLoad.Push(dataFinLoadTask(dtTask));
 
@@ -1470,11 +1479,17 @@ void MainWindow::slotSetSelectedTicker(const  int iTickerID)
                     pacGVLowerSc->isChecked(),
                     pacGVVolumeSc->isChecked()};
 
+        std::shared_lock lk(mutexMainHolder);
         if (Holders.find(iTickerID) == Holders.end()){
+            lk.unlock();
+            std::unique_lock lk2(mutexMainHolder);
             Holders[iTickerID] = std::make_shared<GraphHolder>(GraphHolder{iTickerID});
+            lk2.unlock();
+            lk.lock();
         }
 
         GraphViewForm *pdoc=new GraphViewForm(iTickerID,vTickersLst,Holders[iTickerID]);
+        lk.unlock();
         pdoc->setAttribute(Qt::WA_DeleteOnClose);
         pdoc->setWindowIcon(QPixmap(":/store/images/sc_newdoc"));
 
@@ -1495,8 +1510,13 @@ void MainWindow::slotSetSelectedTicker(const  int iTickerID)
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::slotLoadGraph(const  int iTickerID, const std::time_t tBegin, const std::time_t tEnd)
 {
+    std::shared_lock lk(mutexMainHolder);
     if (Holders.find(iTickerID) == Holders.end()){
+        lk.unlock();
+        std::unique_lock lk2(mutexMainHolder);
         Holders[iTickerID] = std::make_shared<GraphHolder>(GraphHolder{iTickerID});
+        lk2.unlock();
+        lk.lock();
     }
 
     dataFinLoadTask dataTask;
@@ -1505,6 +1525,7 @@ void MainWindow::slotLoadGraph(const  int iTickerID, const std::time_t tBegin, c
     dataTask.dtBegin        = tBegin;
     dataTask.dtEnd          = tEnd;
     dataTask.holder         = Holders[iTickerID];
+    lk.unlock();
 
 
     auto ItT (std::find_if(vTickersLst.begin(),vTickersLst.end(),[&](const Ticker &t){
@@ -1616,8 +1637,13 @@ void MainWindow::InitHolders()
     //
     for(const Ticker &t:vTickersLst){
         if (t.AutoLoad()){
+            std::shared_lock lk(mutexMainHolder);
             if (Holders.find(t.TickerID()) == Holders.end()){
+                lk.unlock();
+                std::shared_lock lk2(mutexMainHolder);
                 Holders[t.TickerID()] = std::make_shared<GraphHolder>(GraphHolder{t.TickerID()});
+                lk2.unlock();
+                lk.lock();
             }
             //
             dataFinLoadTask dataTask;
@@ -1626,6 +1652,7 @@ void MainWindow::InitHolders()
             dataTask.dtBegin        = tBegin;
             dataTask.dtEnd          = tNow;
             dataTask.holder         = Holders[t.TickerID()];
+            lk.unlock();
 
             auto ItM (std::find_if(vMarketsLst.begin(),vMarketsLst.end(),[&](const Market &m){
                 return m.MarketID() == t.MarketID();

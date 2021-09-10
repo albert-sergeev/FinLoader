@@ -55,6 +55,7 @@ using milliseconds=std::chrono::duration<double,
     >;
 
 
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -133,6 +134,7 @@ private:
     AmiPipeHolder pipesHolder;
     std::chrono::time_point<std::chrono::steady_clock> dtCheckPipesActivity;
     std::map<int,int> mStoredUnconnected;
+    FastTasksHolder fastHolder;
 
     // for docked bar
     StyledSwitcher * swtShowByName;

@@ -18,13 +18,13 @@
 
 inline std::once_flag AmiPipeHolder_call_once_flag;
 
+inline std::mutex                  mutexConditionFastData;
+inline std::condition_variable     conditionFastData;
+
 class AmiPipeHolder
 {
 public:
-    //typedef std::map<std::string,std::pair<int,std::tuple<std::string,std::string,std::string,int,int>>> pipes_type;
-    std::mutex                  mutexConditionFastData;
-    std::condition_variable     conditionFastData;
-
+    //typedef std::map<std::string,std::pair<int,std::tuple<std::string,std::string,std::string,int,int>>> pipes_type;    
 protected:
 
     std::time_t t1971_01_01_00_00_00;

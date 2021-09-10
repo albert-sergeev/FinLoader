@@ -637,6 +637,9 @@
                    <height>28</height>
                   </size>
                  </property>
+                 <property name="displayFormat">
+                  <string>dd.MM.yyyy H:mm:ss</string>
+                 </property>
                  <property name="calendarPopup">
                   <bool>true</bool>
                  </property>
@@ -668,6 +671,9 @@
                    <width>0</width>
                    <height>28</height>
                   </size>
+                 </property>
+                 <property name="displayFormat">
+                  <string>dd.MM.yyyy H:mm:ss</string>
                  </property>
                  <property name="calendarPopup">
                   <bool>true</bool>

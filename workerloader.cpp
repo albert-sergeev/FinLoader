@@ -1458,8 +1458,9 @@ void workerLoader::workerAmiClient(BlockFreeQueue<dataFinLoadTask> & queueFinQuo
 void workerLoader::workerFastDataWork( BlockFreeQueue<dataFastLoadTask>     &queueFastTasks,
                                 BlockFreeQueue<dataBuckgroundThreadAnswer>  &queueTrdAnswers,
                                 BlockFreeQueue<dataAmiPipeAnswer>           &queuePipeAnswers,
-                                AmiPipeHolder& pipesHolder,
-                                Storage &stStore)
+                                FastTasksHolder &fastHolder,
+                                Storage &stStore,
+                                std::map<int,std::shared_ptr<GraphHolder>> &Holders)
 {
 
     {
@@ -1470,9 +1471,14 @@ void workerLoader::workerFastDataWork( BlockFreeQueue<dataFastLoadTask>     &que
     try{
         while(true){
             ///////////////////////////////////////////////////////////////////////////////
-            std::unique_lock lk(pipesHolder.mutexConditionFastData);
-            pipesHolder.conditionFastData.wait_for (lk,milliseconds(1000),[&]{
+            if (this_thread_flagInterrup.isSet()){
+                break;// to exit while
+            }
+            ///////////////////////////////////////////////////////////////////////////////
+            std::unique_lock lk(mutexConditionFastData);
+            conditionFastData.wait_for (lk,milliseconds(1000),[&]{
                         return !queueFastTasks.empty();});
+            lk.unlock();
             ///////////////////////////////////////////////////////////////////////////////
             if (this_thread_flagInterrup.isSet()){
                 break;// to exit while
@@ -1483,14 +1489,13 @@ void workerLoader::workerFastDataWork( BlockFreeQueue<dataFastLoadTask>     &que
                 while(bSuccess){
                     dataFastLoadTask &data(*pdata.get());
                     ////////////////////////////////////////
-                    if (data.iTickerID == 1){
-                        ThreadFreeCout pcout;
-                        pcout <<"data <"<<data.iTickerID <<"> <"<<data.lTask<<"> {"<<data.llPackesCounter<<"}\n";
+                    switch (data.TaskType()) {
+                    case dataFastLoadTask::eTaskType::NewTicks:
+                        fastHolder.PacketReceived(data,stStore,Holders);
+                        break;
+                    case dataFastLoadTask::eTaskType::Nop:
+                        break;
                     }
-
-
-
-
                     ////////////////////////////////////////
                     pdata =queueFastTasks.Pop(bSuccess);
                 }
