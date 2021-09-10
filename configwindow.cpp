@@ -202,6 +202,16 @@ ConfigWindow::ConfigWindow(modelMarketsList *modelM,int DefaultTickerMarket,
 //--------------------------------------------------------------------------------------------------------
 ConfigWindow::~ConfigWindow()
 {
+    if(swtAutoLoadTicker)       {   delete swtAutoLoadTicker;       swtAutoLoadTicker = nullptr;}
+    if(swtUpToSysTicker)        {   delete swtUpToSysTicker;        swtUpToSysTicker = nullptr;}
+    if(swtBulbululatorTicker)   {   delete swtBulbululatorTicker;   swtBulbululatorTicker = nullptr;}
+    if(swtShowByNameTicker)     {   delete swtShowByNameTicker;     swtShowByNameTicker = nullptr;}
+    if(swtSortByNameTicker)     {   delete swtSortByNameTicker;     swtSortByNameTicker = nullptr;}
+    if(swtAutoLoadWholeMarket)  {   delete swtAutoLoadWholeMarket;  swtAutoLoadWholeMarket = nullptr;}
+    if(swtUpToSysWholeMarket)   {   delete swtUpToSysWholeMarket;   swtUpToSysWholeMarket = nullptr;}
+    if(swtDefPath)              {   delete swtDefPath;              swtDefPath = nullptr;}
+
+    //----------------------------------
     delete ui;
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

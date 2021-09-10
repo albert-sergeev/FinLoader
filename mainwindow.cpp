@@ -8,6 +8,11 @@
 #include<QProcess>
 
 
+using seconds=std::chrono::duration<double>;
+using milliseconds=std::chrono::duration<double,
+    std::ratio_multiply<seconds::period,std::milli>
+    >;
+
 
 
 
@@ -106,6 +111,10 @@ MainWindow::~MainWindow()
 //    delete pmnuSettings;
 //    delete pmnuHelp;
 
+    if(swtShowByName)   {delete swtShowByName;  swtShowByName = nullptr;}
+    if(swtShowAll)      {delete swtShowAll;     swtShowAll = nullptr;}
+    if(swtShowMarkets)  {delete swtShowMarkets; swtShowMarkets = nullptr;}
+
     delete ui;
     //
     {
@@ -115,10 +124,21 @@ MainWindow::~MainWindow()
     bWasClose = true;
     thrdPoolLoadFinQuotes.Halt();
     thrdPoolAmiClient.Halt();
+
+    std::this_thread::yield();
+    std::this_thread::sleep_for(milliseconds(100));
+    std::this_thread::yield();
+
     queueFinQuotesLoad.clear();
     queueTrdAnswers.clear();
     queuePipeTasks.clear();
     queuePipeAnswers.clear();
+
+    for(auto &h:Holders) h.second->clear();
+
+    std::this_thread::yield();
+    std::this_thread::sleep_for(milliseconds(100));
+    std::this_thread::yield();
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 bool MainWindow::event(QEvent *event)

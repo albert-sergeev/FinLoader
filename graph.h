@@ -49,6 +49,8 @@ public:
     Graph(Graph&) = delete;
     Graph& operator=(Graph&) = delete;
     //--------------------------------------------------------------------------------------------------------
+    void clear()            {mDictionary.clear(); vContainer.clear();};
+    //--------------------------------------------------------------------------------------------------------
     explicit Graph(int TickerID, Bar::eInterval Interval):iInterval{Interval},iTickerID{TickerID}{;}
     explicit Graph(Graph&& o):
         vContainer{std::move(o.vContainer)}

@@ -202,6 +202,8 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
 //---------------------------------------------------------------------------------------------------------------
 GraphViewForm::~GraphViewForm()
 {
+    if(swtCandle)   {delete swtCandle;  swtCandle = nullptr;}
+
     delete ui;
 }
 //---------------------------------------------------------------------------------------------------------------

@@ -100,6 +100,8 @@ ImportFinQuotesForm::~ImportFinQuotesForm()
     delete pacCheck;
     delete pacImport;
 
+    if(swtShowByName)   {delete swtShowByName;  swtShowByName = nullptr;}
+
     delete ui;
 }
 //--------------------------------------------------------------------------------------------------------

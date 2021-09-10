@@ -173,6 +173,21 @@ public:
 
 
     //------------------------------------------------------------
+    void clear()    {
+                    graphMonth.clear();
+                    graphWeek.clear();
+                    graphDay.clear();
+                    graph180.clear();
+                    graph120.clear();
+                    graph60.clear();
+                    graph30.clear();
+                    graph15.clear();
+                    graph10.clear();
+                    graph5.clear();
+                    graph1.clear();
+                    graphTick.clear();
+                    };
+    //------------------------------------------------------------
     inline const BarTick & grTick(size_t i)   {return graphTick[i];};
     inline const Bar & gr1(size_t i)          {return graph1[i];};
     inline const Bar & gr5(size_t i)          {return graph5[i];};
