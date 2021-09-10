@@ -1374,6 +1374,7 @@ void workerLoader::workerAmiClient(BlockFreeQueue<dataFinLoadTask> & queueFinQuo
                             BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
                             BlockFreeQueue<dataAmiPipeTask> &queuePipeTasks,
                             BlockFreeQueue<dataAmiPipeAnswer> &queuePipeAnswers,
+                            BlockFreeQueue<dataFastLoadTask> &queueFastTasks,
                             AmiPipeHolder& pipesHolder)
 {
     //    int iID = WorkerThreadCounter.load();
@@ -1428,9 +1429,7 @@ void workerLoader::workerAmiClient(BlockFreeQueue<dataFinLoadTask> & queueFinQuo
                 ///////////////////////////////////////////////////////////////////////////////
                 // socket work block
 
-                std::map<int,std::vector<BarTick>> mV;
-
-                pipesHolder.ReadConnectedPipes(mV,queuePipeAnswers,queueFinQuotesLoad,queueTrdAnswers);
+                pipesHolder.ReadConnectedPipes(queueFastTasks,queuePipeAnswers,queueTrdAnswers);
 
                 ///////////////////////////////////////////////////////////////////////////////
                 //----------------------------------
@@ -1456,5 +1455,65 @@ void workerLoader::workerAmiClient(BlockFreeQueue<dataFinLoadTask> & queueFinQuo
     }
 }
 //------------------------------------------------------------------------------------------------------------------------------------------
-//------------------------------------------------------------------------------------------------------------------------------------------
+void workerLoader::workerFastDataWork( BlockFreeQueue<dataFastLoadTask>     &queueFastTasks,
+                                BlockFreeQueue<dataBuckgroundThreadAnswer>  &queueTrdAnswers,
+                                BlockFreeQueue<dataAmiPipeAnswer>           &queuePipeAnswers,
+                                AmiPipeHolder& pipesHolder,
+                                Storage &stStore)
+{
 
+    {
+        ThreadFreeCout pcout;
+        pcout <<"workerFastDataWork in\n";
+    }
+    bool bSuccess{false};
+    try{
+        while(true){
+            ///////////////////////////////////////////////////////////////////////////////
+            std::unique_lock lk(pipesHolder.mutexConditionFastData);
+            pipesHolder.conditionFastData.wait_for (lk,milliseconds(1000),[&]{
+                        return !queueFastTasks.empty();});
+            ///////////////////////////////////////////////////////////////////////////////
+            if (this_thread_flagInterrup.isSet()){
+                break;// to exit while
+            }
+            ///////////////////////////////////////////////////////////////////////////////
+            if(!queueFastTasks.empty()){
+                auto pdata =queueFastTasks.Pop(bSuccess);
+                while(bSuccess){
+                    dataFastLoadTask &data(*pdata.get());
+                    ////////////////////////////////////////
+                    if (data.iTickerID == 1){
+                        ThreadFreeCout pcout;
+                        pcout <<"data <"<<data.iTickerID <<"> <"<<data.lTask<<"> {"<<data.llPackesCounter<<"}\n";
+                    }
+
+
+
+
+                    ////////////////////////////////////////
+                    pdata =queueFastTasks.Pop(bSuccess);
+                }
+            }
+        }
+    }
+    catch (std::exception &ex) {
+        ThreadFreeCout pcout;
+        pcout <<"crash ecxeption" <<ex.what()<<"\n";
+    }
+
+    {
+        ThreadFreeCout pcout;
+        pcout <<"workerFastDataWork out\n";
+    }
+}
+//------------------------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------------------------------------------------------------

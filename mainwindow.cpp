@@ -25,6 +25,8 @@ MainWindow::MainWindow(QWidget *parent)
     , vTickersLst{}
     , m_TickerLstModel{vTickersLst,vMarketsLst,mBlinkedState,this}
     , thrdPoolLoadFinQuotes{(int)std::thread::hardware_concurrency()/2}
+    , thrdPoolAmiClient{1}
+    , thrdPoolFastDataWork{(int)std::thread::hardware_concurrency()/2}
     , ui(new Ui::MainWindow)
 {
 
@@ -80,21 +82,36 @@ MainWindow::MainWindow(QWidget *parent)
     connect(swtShowMarkets,SIGNAL(stateChanged(int)),this,SLOT(slotDocbarShowMarketChanged(int)));
 
 
-    ///
+    ////////////////////////////////////////////////////////////////////
     iTimerID = startTimer(100); // timer to process GUID events
-
+    //
     InitHolders();
+    //
+    dtCheckPipesActivity = std::chrono::steady_clock::now();
     CheckActivePipes();
     ////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////
     thrdPoolAmiClient.AddTask([&](){
         workerLoader::workerAmiClient(queueFinQuotesLoad,queueTrdAnswers,
                                       queuePipeTasks,queuePipeAnswers,
+                                      queueFastTasks,
                                       pipesHolder);
         });
 
-    dtCheckPipesActivity = std::chrono::steady_clock::now();
 
+    ////////////////////////////////////////////////////////////////////////////////////////////
+    int i = 0;
+    while(i < thrdPoolFastDataWork.MaxThreads()){
+            thrdPoolFastDataWork.AddTask([&](){
+                        workerLoader::workerFastDataWork (  queueFastTasks,
+                                                            queueTrdAnswers,
+                                                            queuePipeAnswers,
+                                                            pipesHolder,
+                                                            stStore);
+                        });
+        ++i;
+    }
+    ////////////////////////////////////////////////////////////////////////////////////////////
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 MainWindow::~MainWindow()
@@ -124,11 +141,13 @@ MainWindow::~MainWindow()
     bWasClose = true;
     thrdPoolLoadFinQuotes.Halt();
     thrdPoolAmiClient.Halt();
+    thrdPoolFastDataWork.Halt();
 
     std::this_thread::yield();
     std::this_thread::sleep_for(milliseconds(100));
     std::this_thread::yield();
 
+    queueFastTasks.clear();
     queueFinQuotesLoad.clear();
     queueTrdAnswers.clear();
     queuePipeTasks.clear();

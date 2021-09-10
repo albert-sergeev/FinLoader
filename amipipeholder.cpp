@@ -11,6 +11,8 @@
 #include "trimutils.h"
 #include "storage.h"
 
+
+
 using namespace std::chrono_literals;
 using seconds=std::chrono::duration<double>;
 using milliseconds=std::chrono::duration<double,
@@ -19,12 +21,45 @@ using milliseconds=std::chrono::duration<double,
 
 
 //-------------------------------------------------------------------------------------------------
-AmiPipeHolder::AmiPipeHolder()
+AmiPipeHolder::AmiPipeHolder():
+    aiTaskCounter{1}
 {
     std::call_once(AmiPipeHolder_call_once_flag,&AmiPipeHolder::initStartConst,this);
 
 }
+//-------------------------------------------------------------------------------------------------
+void AmiPipeHolder::initStartConst(){
+    std::tm t_tm;
+    t_tm.tm_year   = 1971 - 1900;
+    t_tm.tm_mon    = 01 - 1;
+    t_tm.tm_mday   = 0;
+    t_tm.tm_hour   = 0;
+    t_tm.tm_min    = 0;
+    t_tm.tm_sec    = 0;
+    t_tm.tm_isdst  = 0;
 
+    t1971_01_01_00_00_00 = mktime_gm(&t_tm);
+
+    t_tm.tm_year   = 2100 - 1900;
+    t_tm.tm_mon    = 01 - 1;
+    t_tm.tm_mday   = 0;
+    t_tm.tm_hour   = 0;
+    t_tm.tm_min    = 0;
+    t_tm.tm_sec    = 0;
+    t_tm.tm_isdst  = 0;
+
+    t2100_01_01_00_00_00 = mktime_gm(&t_tm);
+
+    t_tm.tm_year   = 1970 - 1900;
+    t_tm.tm_mon    = 01 - 1;
+    t_tm.tm_mday   = 1;
+    t_tm.tm_hour   = 4;
+    t_tm.tm_min    = 0;
+    t_tm.tm_sec    = 0;
+    t_tm.tm_isdst  = 0;
+
+    t1970_01_01_04_00_00 = mktime_gm(&t_tm);
+};
 //-------------------------------------------------------------------------------------------------
 dataAmiPipeTask::pipes_type AmiPipeHolder::ScanActivePipes()
 {
@@ -182,12 +217,7 @@ void AmiPipeHolder::RefreshActiveSockets(dataAmiPipeTask::pipes_type& pActive,
                         mPipesConnected[p.first].second = {std::get<3>(p.second.second),
                                                             std::move(file)};
 #endif
-                        mBuffer[p.first].resize(iBlockMaxSize);
-                        mPointerToWrite[p.first] = 0;
-                        mPointerToRead[p.first] = 0;
-
-                        mDtActivity[std::get<3>(p.second.second)] = std::chrono::steady_clock::now();
-                        mCurrentSecond[std::get<3>(p.second.second)] = 0;
+                        AddUtilityMapEntry(std::get<3>(p.second.second), p.first);
                         //
                         dataAmiPipeAnswer answ;
                         answ.Type = dataAmiPipeAnswer::PipeConnected;
@@ -246,26 +276,7 @@ void AmiPipeHolder::RefreshActiveSockets(dataAmiPipeTask::pipes_type& pActive,
             answ.iTickerID = ItConnected->second.second.first;
             queuePipeAnswers.Push(answ);
             //
-            auto ItBuff = mBuffer.find(ItConnected->first);
-            if (ItBuff != mBuffer.end()){
-                mBuffer.erase(ItBuff);
-            }
-            auto ItPW = mPointerToWrite.find(ItConnected->first);
-            if (ItPW != mPointerToWrite.end()){
-                mPointerToWrite.erase(ItPW);
-            }
-            auto ItPR = mPointerToRead.find(ItConnected->first);
-            if (ItPR != mPointerToRead.end()){
-                mPointerToRead.erase(ItPR);
-            }
-            auto ItAct = mDtActivity.find(ItConnected->second.second.first);
-            if (ItAct != mDtActivity.end()){
-                mDtActivity.erase(ItAct);
-            }
-            auto ItSec = mCurrentSecond.find(ItConnected->second.second.first);
-            if (ItSec != mCurrentSecond.end()){
-                mCurrentSecond.erase(ItSec);
-            }
+            RemoveUtilityMapEntry(ItConnected->second.second.first, ItConnected->first);
             //
             auto ItNext = std::next(ItConnected);
             mPipesConnected.erase(ItConnected);
@@ -290,10 +301,9 @@ void AmiPipeHolder::RefreshActiveSockets(dataAmiPipeTask::pipes_type& pActive,
     }
 }
 //-------------------------------------------------------------------------------------------------
-void AmiPipeHolder::ReadConnectedPipes(std::map<int,std::vector<BarTick>> & mV,
-                        BlockFreeQueue<dataAmiPipeAnswer>&queuePipeAnswers,
-                        BlockFreeQueue<dataFinLoadTask> & queueFinQuotesLoad,
-                        BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers)
+void AmiPipeHolder::ReadConnectedPipes(BlockFreeQueue<dataFastLoadTask>                    &queueFastTasks,
+                                       BlockFreeQueue<dataAmiPipeAnswer>                   &queuePipeAnswers,
+                                       BlockFreeQueue<dataBuckgroundThreadAnswer>          &queueTrdAnswers)
 {
     milliseconds tActivityCount;
 
@@ -312,8 +322,10 @@ void AmiPipeHolder::ReadConnectedPipes(std::map<int,std::vector<BarTick>> & mV,
 
     auto ItConnected = mPipesConnected.begin();
     while (ItConnected != mPipesConnected.end()){
+
         iTickerID = ItConnected->second.second.first;
-        auto &vV (mV[iTickerID]);
+        dataFastLoadTask task(dataFastLoadTask::NewTicks);
+
         if (ItConnected->second.second.second.good()){
 
 #ifdef _WIN32
@@ -366,7 +378,7 @@ void AmiPipeHolder::ReadConnectedPipes(std::map<int,std::vector<BarTick>> & mV,
                     double vL{0};
                     double vC{0};
 
-                    bool bFirst{true};
+                    task.vV.reserve(sizeof (b) * (1 + ((mPointerToWrite[ItConnected->first] - iReadStart)/48)));
 
                     while(i < mPointerToWrite[ItConnected->first]){
                         if(i >= 2 && !bInStream){
@@ -382,7 +394,6 @@ void AmiPipeHolder::ReadConnectedPipes(std::map<int,std::vector<BarTick>> & mV,
 //                                ThreadFreeCout pcout;
 //                                pcout <<"reading not from start: {"<<iReadStart<<"}\n";
 //                            }
-                            bFirst = false;
 
                             memcpy(&longDate,buff + iReadStart, 8);          iReadStart += 8;
                             memcpy(&vO,buff  + iReadStart, 8);       iReadStart += 8;
@@ -400,14 +411,7 @@ void AmiPipeHolder::ReadConnectedPipes(std::map<int,std::vector<BarTick>> & mV,
                                b.Period() < t2100_01_01_00_00_00
                                     ){
 
-//                                if(tSec != bM.Period()){
-//                                    tSec = bM.Period();
-//                                    iState = Storage::data_type::new_sec;
-//                                }
-//                                else{
-//                                    iState = Storage::data_type::usual;
-//                                }
-                                //vV.push_back(b);
+                                task.vV.push_back(b);
 
 //                                if (iTickerID == 1){
 //                                    ThreadFreeCout pcout;
@@ -418,6 +422,7 @@ void AmiPipeHolder::ReadConnectedPipes(std::map<int,std::vector<BarTick>> & mV,
                             }
                             else
                             {
+                                //TODO: dump!!!
                                 ThreadFreeCout pcout;
                                 pcout <<"error in time during import from pipe: "<<iTickerID<<"\n";
                             }
@@ -439,6 +444,13 @@ void AmiPipeHolder::ReadConnectedPipes(std::map<int,std::vector<BarTick>> & mV,
                         memcpy(buff,buff + iReadStart, iDelta);
                         mPointerToWrite[ItConnected->first] -= iReadStart;
                         mPointerToRead[ItConnected->first] = 0;
+
+                        task.iTickerID       = iTickerID;
+                        task.lTask           = mTask[iTickerID];
+                        task.llPackesCounter = mPacketsCounter[iTickerID]++;
+                        queueFastTasks.Push(task);
+                        conditionFastData.notify_one();
+
 
 //                        {
 //                            ThreadFreeCout pcout;
@@ -480,26 +492,7 @@ void AmiPipeHolder::ReadConnectedPipes(std::map<int,std::vector<BarTick>> & mV,
                 answ.iTickerID = ItConnected->second.second.first;
                 queuePipeAnswers.Push(answ);
                 //
-                auto ItBuff = mBuffer.find(ItConnected->first);
-                if (ItBuff != mBuffer.end()){
-                    mBuffer.erase(ItBuff);
-                }
-                auto ItPW = mPointerToWrite.find(ItConnected->first);
-                if (ItPW != mPointerToWrite.end()){
-                    mPointerToWrite.erase(ItPW);
-                }
-                auto ItPR = mPointerToRead.find(ItConnected->first);
-                if (ItPR != mPointerToRead.end()){
-                    mPointerToRead.erase(ItPR);
-                }
-                auto ItAct = mDtActivity.find(ItConnected->second.second.first);
-                if (ItAct != mDtActivity.end()){
-                    mDtActivity.erase(ItAct);
-                }
-                auto ItSec = mCurrentSecond.find(ItConnected->second.second.first);
-                if (ItSec != mCurrentSecond.end()){
-                    mCurrentSecond.erase(ItSec);
-                }
+                RemoveUtilityMapEntry(ItConnected->second.second.first, ItConnected->first);
                 //
                 auto ItNext = std::next(ItConnected);
                 mPipesConnected.erase(ItConnected);
@@ -512,8 +505,70 @@ void AmiPipeHolder::ReadConnectedPipes(std::map<int,std::vector<BarTick>> & mV,
     }
 
 }
-
 //-------------------------------------------------------------------------------------------------
+//std::map<std::string,std::vector<char>> mBuffer;
+
+//std::map<std::string,int> mPointerToWrite;
+//std::map<std::string,int> mPointerToRead;
+
+//std::map<int,std::chrono::time_point<std::chrono::steady_clock>> mDtActivity;
+//std::map<int,std::time_t> mCurrentSecond;
+//-------------------------------------------------------------------------------------------------
+void AmiPipeHolder::AddUtilityMapEntry(int iTickerID, std::string sBind)
+{
+    std::unique_lock lk(mutUtility);
+
+    long lTask = aiTaskCounter.load();
+    while(!aiTaskCounter.compare_exchange_weak(lTask,lTask + 1)){;}
+
+
+    mBuffer[sBind].resize(iBlockMaxSize);
+    mPointerToWrite[sBind] = 0;
+    mPointerToRead[sBind] = 0;
+
+    mDtActivity[iTickerID] = std::chrono::steady_clock::now();
+    mCurrentSecond[iTickerID] = 0;
+
+    mTask[iTickerID] = lTask;
+    mPacketsCounter[iTickerID] = 1;
+
+}
+//-------------------------------------------------------------------------------------------------
+void AmiPipeHolder::RemoveUtilityMapEntry(int iTickerID, std::string sBind)
+{
+    std::unique_lock lk(mutUtility);
+
+    auto ItBuff = mBuffer.find(sBind);
+    if (ItBuff != mBuffer.end()){
+        mBuffer.erase(ItBuff);
+    }
+    auto ItPW = mPointerToWrite.find(sBind);
+    if (ItPW != mPointerToWrite.end()){
+        mPointerToWrite.erase(ItPW);
+    }
+    auto ItPR = mPointerToRead.find(sBind);
+    if (ItPR != mPointerToRead.end()){
+        mPointerToRead.erase(ItPR);
+    }
+    auto ItAct = mDtActivity.find(iTickerID);
+    if (ItAct != mDtActivity.end()){
+        mDtActivity.erase(ItAct);
+    }
+    auto ItSec = mCurrentSecond.find(iTickerID);
+    if (ItSec != mCurrentSecond.end()){
+        mCurrentSecond.erase(ItSec);
+    }
+
+    auto ItTask = mTask.find(iTickerID);
+    if (ItTask != mTask.end()){
+        mTask.erase(ItTask);
+    }
+
+    auto ItPackets = mPacketsCounter.find(iTickerID);
+    if (ItPackets != mPacketsCounter.end()){
+        mPacketsCounter.erase(ItPackets);
+    }
+}
 //-------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------

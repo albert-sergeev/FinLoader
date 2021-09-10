@@ -12,6 +12,7 @@
 #include "amipipeholder.h"
 #include "dataamipipetask.h"
 #include "dataamipipeanswer.h"
+#include "datafastloadtask.h"
 
 
 
@@ -21,55 +22,70 @@ public:
     workerLoader();
 
 
-    static void workerDataBaseWork(BlockFreeQueue<dataFinLoadTask> & queueFinQuotesLoad,
-                       BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
+    static void workerDataBaseWork(BlockFreeQueue<dataFinLoadTask>              & queueFinQuotesLoad,
+                       BlockFreeQueue<dataBuckgroundThreadAnswer>               &queueTrdAnswers,
                        Storage &stStore);
 
 
-    static void workerAmiClient(BlockFreeQueue<dataFinLoadTask> & queueFinQuotesLoad,
-                                BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
-                                BlockFreeQueue<dataAmiPipeTask> &queuePipeTasks,
-                                BlockFreeQueue<dataAmiPipeAnswer> &queuePipeAnswers,
+    static void workerAmiClient(BlockFreeQueue<dataFinLoadTask>                 &queueFinQuotesLoad,
+                                BlockFreeQueue<dataBuckgroundThreadAnswer>      &queueTrdAnswers,
+                                BlockFreeQueue<dataAmiPipeTask>                 &queuePipeTasks,
+                                BlockFreeQueue<dataAmiPipeAnswer>               &queuePipeAnswers,
+                                BlockFreeQueue<dataFastLoadTask>                &queueFastTasks,
                                 AmiPipeHolder& pipesHolder);
 
+
+    static void workerFastDataWork( BlockFreeQueue<dataFastLoadTask>            &queueFastTasks,
+                                    BlockFreeQueue<dataBuckgroundThreadAnswer>  &queueTrdAnswers,
+                                    BlockFreeQueue<dataAmiPipeAnswer>           &queuePipeAnswers,
+                                    AmiPipeHolder& pipesHolder,
+                                    Storage &stStore);
+
+
+
+
 private:
-    static void workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueFinQuotesLoad,
-                       BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
+    static void workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask>             &queueFinQuotesLoad,
+                       BlockFreeQueue<dataBuckgroundThreadAnswer>               &queueTrdAnswers,
                        Storage &stStore,
                        dataFinLoadTask & data);
 
-    static void workerFinQuotesCheck(BlockFreeQueue<dataFinLoadTask> & queueFinQuotesLoad,
-                       BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
+    static void workerFinQuotesCheck(BlockFreeQueue<dataFinLoadTask>            &queueFinQuotesLoad,
+                       BlockFreeQueue<dataBuckgroundThreadAnswer>               &queueTrdAnswers,
                        Storage &stStore,
                        dataFinLoadTask & data);
 
-    static void workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & queueTasks,
-                                    BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
+    static void workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask>           &queueTasks,
+                                    BlockFreeQueue<dataBuckgroundThreadAnswer>  &queueTrdAnswers,
                                     Storage & stStore,
                                     dataFinLoadTask & data);
 
-    static void workerLoadIntoGraph(BlockFreeQueue<dataFinLoadTask> & queueTasks,
-                                    BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
+    static void workerLoadIntoGraph(BlockFreeQueue<dataFinLoadTask>             &queueTasks,
+                                    BlockFreeQueue<dataBuckgroundThreadAnswer>  &queueTrdAnswers,
                                     Storage & stStore,
                                     dataFinLoadTask & data);
 
-    static void workerOptimizeStorage(BlockFreeQueue<dataFinLoadTask> & queueTasks,
-                                    BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
+    static void workerOptimizeStorage(BlockFreeQueue<dataFinLoadTask>           &queueTasks,
+                                    BlockFreeQueue<dataBuckgroundThreadAnswer>  &queueTrdAnswers,
                                     Storage & stStore,
                                     dataFinLoadTask & data);
 
 
-    static bool compareBars(GraphHolder &hl,dataFinLoadTask & data,std::vector<Bar> &vBars,BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
+    static bool compareBars(GraphHolder &hl,dataFinLoadTask & data,
+                            std::vector<Bar> &vBars,
+                            BlockFreeQueue<dataBuckgroundThreadAnswer>          &queueTrdAnswers,
                             std::chrono::time_point<std::chrono::steady_clock> dtActivity);
     template<typename T>
-    static bool compareBarsT(GraphHolder &hl,dataFinLoadTask & data,std::vector<Bar> &vBars,BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
+    static bool compareBarsT(GraphHolder &hl,dataFinLoadTask & data,
+                             std::vector<Bar> &vBars,
+                             BlockFreeQueue<dataBuckgroundThreadAnswer>         &queueTrdAnswers,
                              std::chrono::time_point<std::chrono::steady_clock> dtActivity);
 
 
     static int createCleanUpHeader(std::time_t tMonth, char* cBuff,std::time_t tBegin, std::time_t tEnd);
 
-    static void workerEtalon(BlockFreeQueue<dataFinLoadTask> & queueFinQuotesLoad,
-                       BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers);
+    static void workerEtalon(BlockFreeQueue<dataFinLoadTask>                    &queueFinQuotesLoad,
+                       BlockFreeQueue<dataBuckgroundThreadAnswer>               &queueTrdAnswers);
 
 };
 

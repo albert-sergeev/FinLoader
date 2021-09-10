@@ -149,6 +149,7 @@ private:
     BlockFreeQueue<dataBuckgroundThreadAnswer> queueTrdAnswers;
     BlockFreeQueue<dataAmiPipeTask> queuePipeTasks;
     BlockFreeQueue<dataAmiPipeAnswer> queuePipeAnswers;
+    BlockFreeQueue<dataFastLoadTask>  queueFastTasks;
     workerLoader wrkrLoadFinQuotes;
 
 
@@ -158,6 +159,7 @@ private:
     ///////////////////////////////////
     ThreadPool thrdPoolLoadFinQuotes;
     ThreadPool thrdPoolAmiClient;
+    ThreadPool thrdPoolFastDataWork;
     ///////////////////////////////////
 public:
     MainWindow(QWidget *parent = nullptr);

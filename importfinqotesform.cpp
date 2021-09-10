@@ -174,7 +174,7 @@ void ImportFinQuotesForm::slotBtnCreateClicked(){
 
     pathDir=pathFile.parent_path();
     QString qsDir=QString::fromStdString(pathDir.string());;
-    OpenImportFilePathChanged(qsDir);
+    emit OpenImportFilePathChanged(qsDir);
     //
     QString strFileToShow = QString::fromStdString(pathFile.filename().string());
     ui->edFileName->setText(strFileToShow);
@@ -938,7 +938,6 @@ void ImportFinQuotesForm::slotLoadingHasBegun(){
     else{
         ui->edText->append(tr("Data verification started..."));
     }
-
 }
 //--------------------------------------------------------------------------------------------------------
 void ImportFinQuotesForm::slotLoadingActivity(){;}

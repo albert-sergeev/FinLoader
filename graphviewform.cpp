@@ -1299,7 +1299,7 @@ void GraphViewForm::slotPeriodButtonChanged()
      QPen blackSolidPen(Qt::black,0.5,Qt::SolidLine);
      QPen blackDashPen(Qt::gray,1,Qt::DashLine);
      QPen blackDotPen(Qt::gray,1,Qt::DotLine);
-     QPen simpleDashPen(Qt::gray,1,Qt::DashLine);
+    // QPen simpleDashPen(Qt::gray,1,Qt::DashLine);
 
 
      QFont fontTime;
@@ -1633,9 +1633,9 @@ void GraphViewForm::slotPeriodButtonChanged()
 
      QPen blackSolidPen(Qt::black,0.5,Qt::SolidLine);
      QPen blackGrayPen(Qt::black,0.5,Qt::SolidLine);
-     QPen blackDashPen(Qt::gray,1,Qt::DashLine);
-     QPen blackDotPen(Qt::gray,1,Qt::DotLine);
-     QPen simpleDashPen(Qt::gray,1,Qt::DashLine);
+//     QPen blackDashPen(Qt::gray,1,Qt::DashLine);
+//     QPen blackDotPen(Qt::gray,1,Qt::DotLine);
+//     QPen simpleDashPen(Qt::gray,1,Qt::DashLine);
 
      int iLineH = ui->grViewScaleUpper->scene()->sceneRect().height()/2;
 

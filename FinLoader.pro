@@ -29,6 +29,7 @@ SOURCES += \
     dataamipipeanswer.cpp \
     dataamipipetask.cpp \
     databuckgroundthreadanswer.cpp \
+    datafastloadtask.cpp \
     datafinloadtask.cpp \
     datafinquotesparse.cpp \
     graph.cpp \
@@ -63,6 +64,7 @@ HEADERS += \
     dataamipipeanswer.h \
     dataamipipetask.h \
     databuckgroundthreadanswer.h \
+    datafastloadtask.h \
     datafinloadtask.h \
     datafinquotesparse.h \
     graph.h \
