@@ -928,10 +928,16 @@ void ImportFinQuotesForm::SetProgressBarValue(int iVal)
 }
 //--------------------------------------------------------------------------------------------------------
 void ImportFinQuotesForm::slotLoadingHasBegun(){
-    if(!bInChecking)
+    if(!bInChecking){
         ui->edText->append(tr("Import started..."));
-    else
+        ui->edText->append(tr("Do not interrupt the import - at startup, the import range is cleared, and if you do so, unloaded data will be lost!"));
+        ui->edText->append(tr(" "));
+
+        //Не прерывайте импорт - при запуске диапазон импорта очищается, и если вы это сделаете, незагруженные данные будут потеряны!
+    }
+    else{
         ui->edText->append(tr("Data verification started..."));
+    }
 
 }
 //--------------------------------------------------------------------------------------------------------
