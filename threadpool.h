@@ -170,7 +170,7 @@ public:
     //---------------------------------------------------------------------------------------------------
     void Interrupt(){
         std::unique_lock lkT(mut_treads);
-        for(int i = 0; i < vInterruptFlags.size(); ++i){
+        for(size_t i = 0; i < vInterruptFlags.size(); ++i){
             if (threads[i].joinable()){
                 if(vFutures[i].wait_for(std::chrono::microseconds(1)) != std::future_status::ready){
                     vInterruptFlags[i]->set();

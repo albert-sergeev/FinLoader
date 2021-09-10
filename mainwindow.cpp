@@ -100,7 +100,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 
     ////////////////////////////////////////////////////////////////////////////////////////////
-    int i = 0;
+    size_t i = 0;
     while(i < thrdPoolFastDataWork.MaxThreads()){
             thrdPoolFastDataWork.AddTask([&](){
                         workerLoader::workerFastDataWork (  queueFastTasks,

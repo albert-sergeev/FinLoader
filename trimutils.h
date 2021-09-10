@@ -1,6 +1,7 @@
 #ifndef TRIMUTILS_H
 #define TRIMUTILS_H
 
+#include <algorithm>
 #include <string>
 
 //--------------------------------------------------------------------------------------------------------

@@ -69,7 +69,8 @@ dataAmiPipeTask::pipes_type AmiPipeHolder::ScanActivePipes()
     std::stringstream ssFilePath("");
 
 
-    std::filesystem::path pathTickerDir = std::filesystem::absolute(sPipeDir);
+    std::filesystem::path pathTickerDir = sPipeDir;
+    //std::filesystem::path pathTickerDir = std::filesystem::absolute(sPipeDir);
 //    if(!std::filesystem::is_directory(pathTickerDir)){
 //        ssOut <<" ./data/[TickerID] - is not directory";
 //        return false;
@@ -90,30 +91,32 @@ dataAmiPipeTask::pipes_type AmiPipeHolder::ScanActivePipes()
     std::string sSign;
     std::string sBind;
 
-    for (const std::filesystem::directory_entry &fl:std::filesystem::directory_iterator{pathTickerDir}){
+    if (std::filesystem::exists(pathTickerDir)){
+        for (const std::filesystem::directory_entry &fl:std::filesystem::directory_iterator{pathTickerDir}){
 
-        if ( fl.exists()
-             && fl.is_regular_file()
-             //&& fl.is_fifo()
-             ){
-            std::string ss(fl.path().filename().string());
-            const auto ItPipe = std::sregex_token_iterator(ss.begin(),ss.end(),reAmiPipe);
-            if ( ItPipe != std::sregex_token_iterator()){
-                const auto ItQuik = std::sregex_token_iterator(ss.begin(),ss.end(),reAmiPipe,1);
-                sBind = *ItQuik;
-                if (ItQuik != std::sregex_token_iterator()){
-                    const auto ItSign = std::sregex_token_iterator(sBind.begin(),sBind.end(),reAmiSign);
-                    sSign = "";
-                    if (ItSign != std::sregex_token_iterator()){
-                        sSign = *ItSign;
+            if ( fl.exists()
+                 && fl.is_regular_file()
+                 //&& fl.is_fifo()
+                 ){
+                std::string ss(fl.path().filename().string());
+                const auto ItPipe = std::sregex_token_iterator(ss.begin(),ss.end(),reAmiPipe);
+                if ( ItPipe != std::sregex_token_iterator()){
+                    const auto ItQuik = std::sregex_token_iterator(ss.begin(),ss.end(),reAmiPipe,1);
+                    sBind = *ItQuik;
+                    if (ItQuik != std::sregex_token_iterator()){
+                        const auto ItSign = std::sregex_token_iterator(sBind.begin(),sBind.end(),reAmiSign);
+                        sSign = "";
+                        if (ItSign != std::sregex_token_iterator()){
+                            sSign = *ItSign;
+                        }
+                        ssFilePath.str("");
+                        ssFilePath.clear();
+                        ssFilePath <<sPipeDir<<(*ItPipe);
+                        //ssFilePath <<fl.path().filename().string();
+
+
+                        mRet[sBind] = {0,{*ItPipe,sSign,ssFilePath.str(),0,0}};
                     }
-                    ssFilePath.str("");
-                    ssFilePath.clear();
-                    ssFilePath <<sPipeDir<<(*ItPipe);
-                    //ssFilePath <<fl.path().filename().string();
-
-
-                    mRet[sBind] = {0,{*ItPipe,sSign,ssFilePath.str(),0,0}};
                 }
             }
         }
@@ -330,7 +333,7 @@ void AmiPipeHolder::ReadConnectedPipes(BlockFreeQueue<dataFastLoadTask>         
 
 #ifdef _WIN32
             int filesize = iBlockMaxSize;
-#elif
+#else
             ItConnected->second.second.second.seekg(0,std::ios::end);
             int filesize = ItConnected->second.second.second.tellg();
             ItConnected->second.second.second.seekg(0, std::ios::cur);
