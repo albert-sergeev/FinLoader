@@ -7,7 +7,12 @@ FastTasksHolder::FastTasksHolder()
 }
 
 //--------------------------------------------------------------------------------------------------------
-void FastTasksHolder::PacketReceived(dataFastLoadTask &data,Storage &stStore,std::map<int,std::shared_ptr<GraphHolder>>& Holders)
+void FastTasksHolder::PacketReceived(dataFastLoadTask &data,
+                                     Storage &stStore,
+                                     std::map<int,std::shared_ptr<GraphHolder>>& Holders,
+                                     BlockFreeQueue<dataFastLoadTask> &queueFastTasks,
+                                     BlockFreeQueue<dataBuckgroundThreadAnswer>  &queueTrdAnswers
+                                     )
 {
     ////////////////////////////////////////////////////////////////////////////
     const int iTickerID = data.iTickerID;
@@ -49,6 +54,13 @@ void FastTasksHolder::PacketReceived(dataFastLoadTask &data,Storage &stStore,std
     if (mTask.find(iTickerID) == mTask.end()){
         mTask[iTickerID] = data.lTask;
         mPacketsCounter[iTickerID] = 1;
+        mDtActivity[iTickerID] = std::chrono::steady_clock::now();
+        if(data.vV.size()>0){
+            mLastTime[iTickerID] = data.vV.back().Period();
+        }
+        else{
+            mLastTime[iTickerID] = 0;
+        }
     }
     else{
         if (mTask[iTickerID] > data.lTask){
@@ -58,25 +70,60 @@ void FastTasksHolder::PacketReceived(dataFastLoadTask &data,Storage &stStore,std
             // new task. reinit
             mTask[iTickerID] = data.lTask;
             mPacketsCounter[iTickerID] = 1;
+            mDtActivity[iTickerID] = std::chrono::steady_clock::now();
+            if(data.vV.size()>0){
+                mLastTime[iTickerID] = data.vV.front().Period();
+            }
+            else{
+                mLastTime[iTickerID] = 0;
+            }
         }
     }
     /// 2. PacketNamberCheck
-    if (mPacketsCounter[iTickerID] != data.llPackesCounter){
+    if (mPacketsCounter[iTickerID] > data.llPackesCounter){
+        // drop
+    }
+    else if (mPacketsCounter[iTickerID] < data.llPackesCounter &&
+             /*data.RepushCount()<1000000 &&*/ data.TimeTilCreate() < 2000ms
+             ){
         /// 3.2 push again if wrong number
+        data.IncrementRepush();
+        queueFastTasks.Push(data);
+        conditionFastData.notify_one();
     }
     else{
-        mPacketsCounter[iTickerID]++;
+        mPacketsCounter[iTickerID] = data.llPackesCounter + 1;
         /// 3.1 Adding
-//        if (iTickerID == 1){
-//            ThreadFreeCout pcout;
-//            pcout <<"TickerID<"<<iTickerID<<"> task<"<<data.lTask<<"> packet {"<<data.llPackesCounter<<"}\n";
-//        }
-
+        if(data.vV.size()>0){
+            // calculate range
+            std::time_t tBegin{0};
+            if (mLastTime[iTickerID] != 0){
+                tBegin = (mLastTime[iTickerID] + 1 ) < data.vV.front().Period() ?
+                            (mLastTime[iTickerID] + 1 ) : data.vV.front().Period();
+            }
+            else{
+                tBegin = data.vV.front().Period();
+            }
+            std::time_t tEnd = data.vV.back().Period();
+            //////////////////////////////////////////////////////
+            std::vector<std::vector<BarTick>> vvV;
+            vvV.emplace_back(std::move(data.vV));
+            holder->AddBarsLists(vvV,tBegin,tEnd);
+            //
+            milliseconds tActivityCount = std::chrono::steady_clock::now() - mDtActivity[iTickerID];
+            if (tActivityCount > 100ms){
+                mDtActivity[iTickerID] = std::chrono::steady_clock::now();
+                //
+//                dataBuckgroundThreadAnswer dt(iTickerID,dataBuckgroundThreadAnswer::eAnswerType::storagLoadToGraphEnd,nullptr);
+//                dt.SetBeginDate(tBegin);
+//                dt.SetEndDate(tEnd);
+//                dt.SetSuccessfull(true);
+//                queueTrdAnswers.Push(dt);
+            }
+            //////////////////////////////////////////////////////
+            mLastTime[iTickerID] = tEnd;
+        }
     }
-
-
-    //std::map<int,std::time_t>   mLastTime;
-
 }
 //--------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------

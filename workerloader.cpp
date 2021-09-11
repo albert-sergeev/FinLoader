@@ -1370,7 +1370,7 @@ bool workerLoader::compareBarsT(GraphHolder &hl, dataFinLoadTask & data,std::vec
 //------------------------------------------------------------------------------------------------------------------------------------------
 //////********************************************************************************************************************************//////
 //------------------------------------------------------------------------------------------------------------------------------------------
-void workerLoader::workerAmiClient(BlockFreeQueue<dataFinLoadTask> & queueFinQuotesLoad,
+void workerLoader::workerAmiClient(BlockFreeQueue<dataFinLoadTask> & /*queueFinQuotesLoad*/,
                             BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
                             BlockFreeQueue<dataAmiPipeTask> &queuePipeTasks,
                             BlockFreeQueue<dataAmiPipeAnswer> &queuePipeAnswers,
@@ -1397,6 +1397,7 @@ void workerLoader::workerAmiClient(BlockFreeQueue<dataFinLoadTask> & queueFinQuo
         try{
             bool bSuccess{false};
             bool bLoop{true};
+            size_t iBytesRead{0};
             while(bLoop){
                 ///////////////////////////////////////////////////////////////////////////////
                 /// pipe task check block
@@ -1405,6 +1406,8 @@ void workerLoader::workerAmiClient(BlockFreeQueue<dataFinLoadTask> & queueFinQuo
                 bool bWasRefresh{false};
                 while(bSuccess){
                     dataAmiPipeTask data(*pdata.get());
+
+                    iBytesRead = 0;
 
                     switch (data.Type()) {
                     case dataAmiPipeTask::eTask_type::Nop:
@@ -1429,7 +1432,7 @@ void workerLoader::workerAmiClient(BlockFreeQueue<dataFinLoadTask> & queueFinQuo
                 ///////////////////////////////////////////////////////////////////////////////
                 // socket work block
 
-                pipesHolder.ReadConnectedPipes(queueFastTasks,queuePipeAnswers,queueTrdAnswers);
+                pipesHolder.ReadConnectedPipes(queueFastTasks,queuePipeAnswers,queueTrdAnswers,iBytesRead);
 
                 ///////////////////////////////////////////////////////////////////////////////
                 //----------------------------------
@@ -1438,7 +1441,14 @@ void workerLoader::workerAmiClient(BlockFreeQueue<dataFinLoadTask> & queueFinQuo
                 }
                 else
                 {
-                    std::this_thread::sleep_for(std::chrono::microseconds(100));
+                    // TODO: to fast read. if uncomment there will be one tick packets.
+                    // Do some buffering maybe?
+                    // or read incoming message whole at once?
+                   // if (iBytesRead == 0)
+                    {
+                        std::this_thread::sleep_for(std::chrono::microseconds(100));
+                    }
+
                     if (this_thread_flagInterrup.isSet()){
                         bLoop = false; // to exit while
                     }
@@ -1457,7 +1467,7 @@ void workerLoader::workerAmiClient(BlockFreeQueue<dataFinLoadTask> & queueFinQuo
 //------------------------------------------------------------------------------------------------------------------------------------------
 void workerLoader::workerFastDataWork( BlockFreeQueue<dataFastLoadTask>     &queueFastTasks,
                                 BlockFreeQueue<dataBuckgroundThreadAnswer>  &queueTrdAnswers,
-                                BlockFreeQueue<dataAmiPipeAnswer>           &queuePipeAnswers,
+                                BlockFreeQueue<dataAmiPipeAnswer>           &/*queuePipeAnswers*/,
                                 FastTasksHolder &fastHolder,
                                 Storage &stStore,
                                 std::map<int,std::shared_ptr<GraphHolder>> &Holders)
@@ -1491,10 +1501,14 @@ void workerLoader::workerFastDataWork( BlockFreeQueue<dataFastLoadTask>     &que
                     ////////////////////////////////////////
                     switch (data.TaskType()) {
                     case dataFastLoadTask::eTaskType::NewTicks:
-                        fastHolder.PacketReceived(data,stStore,Holders);
+                        fastHolder.PacketReceived(data,stStore,Holders,queueFastTasks,queueTrdAnswers);
                         break;
                     case dataFastLoadTask::eTaskType::Nop:
                         break;
+                    }
+                    ////////////////////////////////////////
+                    if (this_thread_flagInterrup.isSet()){
+                        break;// to exit while
                     }
                     ////////////////////////////////////////
                     pdata =queueFastTasks.Pop(bSuccess);

@@ -310,9 +310,12 @@ void AmiPipeHolder::RefreshActiveSockets(dataAmiPipeTask::pipes_type& pActive,
 //-------------------------------------------------------------------------------------------------
 void AmiPipeHolder::ReadConnectedPipes(BlockFreeQueue<dataFastLoadTask>                    &queueFastTasks,
                                        BlockFreeQueue<dataAmiPipeAnswer>                   &queuePipeAnswers,
-                                       BlockFreeQueue<dataBuckgroundThreadAnswer>          &queueTrdAnswers)
+                                       BlockFreeQueue<dataBuckgroundThreadAnswer>          &queueTrdAnswers,
+                                       size_t &BytesRead)
 {
     milliseconds tActivityCount;
+
+    BytesRead = 0;
 
     int iTickerID{0};
 
@@ -343,8 +346,6 @@ void AmiPipeHolder::ReadConnectedPipes(BlockFreeQueue<dataFastLoadTask>         
             ItConnected->second.second.second.seekg(0, std::ios::cur);
 #endif
 
-//            int filesize = 1;
-
             if (filesize > 0){
                 iWriteStart = mPointerToWrite[ItConnected->first];
                 iBytesToRead = iWriteStart + (int)filesize < iBlockMaxSize ?
@@ -355,34 +356,25 @@ void AmiPipeHolder::ReadConnectedPipes(BlockFreeQueue<dataFastLoadTask>         
                 //Read(char * buff, size_t buffsize, size_t &bytesRead);
                 if(ItConnected->second.second.second.read (buff + iWriteStart,iBytesToRead,filesize)){
                     mPointerToWrite[ItConnected->first] +=  filesize;
+                    BytesRead += filesize;
 #else
                 if(ItConnected->second.second.second.read(buff + iWriteStart,iBytesToRead)){
                     mPointerToWrite[ItConnected->first] +=  iBytesToRead;
+                    BytesRead += iBytesToRead;
 #endif
 
-                    ////-------
-//                    if (iTicketID == 1)
-//                    {
-//                        if(!fileW.write(buff,iBytesToRead)){
-//                            ThreadFreeCout pcout;
-//                            pcout <<"Unsuccessful write operation\n";
-//                        }
-//                        else{
-//                            ThreadFreeCout pcout;
-//                            pcout <<"Writing buff {"<<iBytesToRead<<"}\n";
-//                        }
-//                    }
                     ////-------
                     bInStream = false;
                     int iReadStart = mPointerToRead[ItConnected->first];
                     int iBlockStart = 0;
                     int i = iReadStart;
+                    int iPacketStart = iReadStart;
                     unsigned long long longDate{0};
                     double volume{0};
 
-                    double vO{0};
-                    double vH{0};
-                    double vL{0};
+//                    double vO{0};
+//                    double vH{0};
+//                    double vL{0};
                     double vC{0};
 
                     task.vV.reserve(sizeof (b) * (1 + ((mPointerToWrite[ItConnected->first] - iReadStart)/48)));
@@ -403,9 +395,9 @@ void AmiPipeHolder::ReadConnectedPipes(BlockFreeQueue<dataFastLoadTask>         
 //                            }
 
                             memcpy(&longDate,buff + iReadStart, 8);          iReadStart += 8;
-                            memcpy(&vO,buff  + iReadStart, 8);       iReadStart += 8;
-                            memcpy(&vH,buff  + iReadStart, 8);       iReadStart += 8;
-                            memcpy(&vL,buff  + iReadStart, 8);       iReadStart += 8;
+                            /*memcpy(&vO,buff  + iReadStart, 8);*/       iReadStart += 8;
+                            /*memcpy(&vH,buff  + iReadStart, 8);*/       iReadStart += 8;
+                            /*memcpy(&vL,buff  + iReadStart, 8);*/       iReadStart += 8;
                             memcpy(&vC,buff  + iReadStart, 8);       iReadStart += 8;
                             memcpy(&volume,buff + iReadStart, 8);       iReadStart += 8;
 
@@ -415,25 +407,38 @@ void AmiPipeHolder::ReadConnectedPipes(BlockFreeQueue<dataFastLoadTask>         
                             bM.Volume() = (long)volume;
 
                             if(b.Period() > t1971_01_01_00_00_00 &&
-                               b.Period() < t2100_01_01_00_00_00
-                                    ){
-
+                               b.Period() < t2100_01_01_00_00_00){
+                                // writing tick to vector
                                 task.vV.push_back(b);
-
-//                                if (iTickerID == 1){
-//                                    ThreadFreeCout pcout;
-//                                    pcout <<"{"<<threadfree_gmtime_to_str(&bM.Period())<<"} ";
-//                                    pcout <<"{"<<b.Close()<<"} ";
-//                                    pcout <<"{"<<volume<<"}\n";
-//                                }
                             }
                             else
                             {
-                                //TODO: dump!!!
+                                //TODO: this is dump!!! delete on release
                                 ThreadFreeCout pcout;
                                 pcout <<"error in time during import from pipe: "<<iTickerID<<"\n";
-                            }
 
+                                ////-----
+                                std::stringstream ss;
+                                ss <<"errdump_" << iTickerID <<".txt";
+                                std::ofstream fileW(ss.str(),std::ios_base::app);
+                                if (fileW.good()){
+                                    fileW <<"====================================================================\n";
+                                    fileW.close();
+                                    //
+                                    std::ofstream fileW(ss.str(),std::ios_base::app | std::ios_base::binary);
+                                    if (fileW.good()){
+                                        if(!fileW.write(buff + iPacketStart,i - iPacketStart)){
+                                            ThreadFreeCout pcout;
+                                            pcout <<"Unsuccessful write buff dump operation\n";
+                                        }
+                                        else{
+                                            ThreadFreeCout pcout;
+                                            pcout <<"Writing buff dump {"<<iBytesToRead<<"}\n";
+                                        }
+                                    }
+                                }
+                                //TODO: end
+                            }
                         }
                         iBlockStart++;
                         i++;

@@ -7,6 +7,8 @@
 #include "datafastloadtask.h"
 #include "storage.h"
 #include "graphholder.h"
+#include "blockfreequeue.h"
+#include "databuckgroundthreadanswer.h"
 
 inline std::shared_mutex mutexMainHolder;
 
@@ -20,11 +22,16 @@ class FastTasksHolder
     std::map<int,long long>   mPacketsCounter;
     std::map<int,std::time_t>   mLastTime;
 
+    std::map<int,std::chrono::time_point<std::chrono::steady_clock>> mDtActivity;
 
 public:
     FastTasksHolder();
 
-    void PacketReceived(dataFastLoadTask &data,Storage &stStore,std::map<int,std::shared_ptr<GraphHolder>>& Holders);
+    void PacketReceived(dataFastLoadTask &data,
+                        Storage &stStore,
+                        std::map<int,std::shared_ptr<GraphHolder>>& Holders,
+                        BlockFreeQueue<dataFastLoadTask> &queueFastTasks,
+                        BlockFreeQueue<dataBuckgroundThreadAnswer>  &queueTrdAnswers);
 };
 
 #endif // FASTTASKSHOLDER_H

@@ -18,8 +18,6 @@
 
 inline std::once_flag AmiPipeHolder_call_once_flag;
 
-inline std::mutex                  mutexConditionFastData;
-inline std::condition_variable     conditionFastData;
 
 class AmiPipeHolder
 {
@@ -78,7 +76,9 @@ public:
 
     void ReadConnectedPipes(BlockFreeQueue<dataFastLoadTask>                    &queueFastTasks,
                             BlockFreeQueue<dataAmiPipeAnswer>                   &queuePipeAnswers,
-                            BlockFreeQueue<dataBuckgroundThreadAnswer>          &queueTrdAnswers);
+                            BlockFreeQueue<dataBuckgroundThreadAnswer>          &queueTrdAnswers,
+                            size_t &BytesRead
+                            );
 
 protected:
 
