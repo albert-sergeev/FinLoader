@@ -239,7 +239,7 @@ public:
 
 
     //------------------------------------------------------------
-    bool AddBarsLists(std::vector<std::vector<BarTick>> &v, std::time_t dtStart,std::time_t dtEnd);
+    bool AddBarsLists(std::vector<std::vector<BarTick>> &v, std::time_t dtStart,std::time_t dtEnd,bool bFastInsert = false);
     bool CheckMap();
 
 protected:

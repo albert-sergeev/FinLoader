@@ -63,11 +63,11 @@ GraphHolder::GraphHolder(GraphHolder && o):
 }
 
 //------------------------------------------------------------------------------------------------------
-bool GraphHolder::AddBarsLists(std::vector<std::vector<BarTick>> &v, std::time_t dtStart,std::time_t dtEnd)
+bool GraphHolder::AddBarsLists(std::vector<std::vector<BarTick>> &v, std::time_t dtStart,std::time_t dtEnd,bool bFastInsert)
 {
     std::unique_lock lk(mutexHolder);
     //
-    bool bRet = graphTick.AddBarsList(v,dtStart,dtEnd);
+    bool bRet = graphTick.AddBarsList(v,dtStart,dtEnd,bFastInsert);
     if (bRet){
         bRet = BuildUpperList(dtStart,dtEnd);
     }

@@ -1444,7 +1444,7 @@ void workerLoader::workerAmiClient(BlockFreeQueue<dataFinLoadTask> & /*queueFinQ
                     // TODO: to fast read. if uncomment there will be one tick packets.
                     // Do some buffering maybe?
                     // or read incoming message whole at once?
-                   // if (iBytesRead == 0)
+                    //if (iBytesRead == 0)
                     {
                         std::this_thread::sleep_for(std::chrono::microseconds(100));
                     }
@@ -1466,8 +1466,8 @@ void workerLoader::workerAmiClient(BlockFreeQueue<dataFinLoadTask> & /*queueFinQ
 }
 //------------------------------------------------------------------------------------------------------------------------------------------
 void workerLoader::workerFastDataWork( BlockFreeQueue<dataFastLoadTask>     &queueFastTasks,
-                                BlockFreeQueue<dataBuckgroundThreadAnswer>  &queueTrdAnswers,
-                                BlockFreeQueue<dataAmiPipeAnswer>           &/*queuePipeAnswers*/,
+                                //BlockFreeQueue<dataBuckgroundThreadAnswer>  &queueTrdAnswers,
+                                BlockFreeQueue<dataAmiPipeAnswer>           &queuePipeAnswers,
                                 FastTasksHolder &fastHolder,
                                 Storage &stStore,
                                 std::map<int,std::shared_ptr<GraphHolder>> &Holders)
@@ -1501,7 +1501,7 @@ void workerLoader::workerFastDataWork( BlockFreeQueue<dataFastLoadTask>     &que
                     ////////////////////////////////////////
                     switch (data.TaskType()) {
                     case dataFastLoadTask::eTaskType::NewTicks:
-                        fastHolder.PacketReceived(data,stStore,Holders,queueFastTasks,queueTrdAnswers);
+                        fastHolder.PacketReceived(data,stStore,Holders,queueFastTasks,queuePipeAnswers);
                         break;
                     case dataFastLoadTask::eTaskType::Nop:
                         break;

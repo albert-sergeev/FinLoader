@@ -37,7 +37,7 @@ public:
 
 
     static void workerFastDataWork( BlockFreeQueue<dataFastLoadTask>            &queueFastTasks,
-                                    BlockFreeQueue<dataBuckgroundThreadAnswer>  &queueTrdAnswers,
+                                    //BlockFreeQueue<dataBuckgroundThreadAnswer>  &queueTrdAnswers,
                                     BlockFreeQueue<dataAmiPipeAnswer>           &queuePipeAnswers,
                                     FastTasksHolder &fastHolder,
                                     Storage &stStore,

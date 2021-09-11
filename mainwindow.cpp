@@ -104,7 +104,6 @@ MainWindow::MainWindow(QWidget *parent)
     while(i < thrdPoolFastDataWork.MaxThreads()){
             thrdPoolFastDataWork.AddTask([&](){
                         workerLoader::workerFastDataWork (  queueFastTasks,
-                                                            queueTrdAnswers,
                                                             queuePipeAnswers,
                                                             fastHolder,
                                                             stStore,
@@ -196,29 +195,35 @@ void MainWindow::timerEvent(QTimerEvent * event)
 
         if (bSuccessAmi){
             auto data(*pdataAmiPipe.get());
-            switch (data.Type) {
-            case dataAmiPipeAnswer::eAnswer_type::Nop:
+            switch (data.AnswerType()) {
+            case dataAmiPipeAnswer::eAnswerType::Nop:
                 break;
-            case dataAmiPipeAnswer::eAnswer_type::PipeConnected:
-                m_TickerLstModel.setTickerState(data.iTickerID,modelTickersList::eTickerState::Connected);
-                BulbululatorAddActive(data.iTickerID);
-                BulbululatorSetState(data.iTickerID,Bulbululator::eTickerState::Connected);
+            case dataAmiPipeAnswer::eAnswerType::PipeConnected:
+                m_TickerLstModel.setTickerState(data.TickerID(),modelTickersList::eTickerState::Connected);
+                BulbululatorAddActive(data.TickerID());
+                BulbululatorSetState(data.TickerID(),Bulbululator::eTickerState::Connected);
                 break;
-            case dataAmiPipeAnswer::eAnswer_type::PipeDisconnected:
-                m_TickerLstModel.setTickerState(data.iTickerID,modelTickersList::eTickerState::NeededPipe);
-                BulbululatorRemoveActive(data.iTickerID);
-                BulbululatorSetState(data.iTickerID,Bulbululator::eTickerState::NeededPipe);
+            case dataAmiPipeAnswer::eAnswerType::PipeDisconnected:
+                m_TickerLstModel.setTickerState(data.TickerID(),modelTickersList::eTickerState::NeededPipe);
+                BulbululatorRemoveActive(data.TickerID());
+                BulbululatorSetState(data.TickerID(),Bulbululator::eTickerState::NeededPipe);
                 break;
-            case dataAmiPipeAnswer::eAnswer_type::PipeHalted:
-                m_TickerLstModel.setTickerState(data.iTickerID,modelTickersList::eTickerState::Halted);
-                BulbululatorSetState(data.iTickerID,Bulbululator::eTickerState::Halted);
+            case dataAmiPipeAnswer::eAnswerType::PipeHalted:
+                m_TickerLstModel.setTickerState(data.TickerID(),modelTickersList::eTickerState::Halted);
+                BulbululatorSetState(data.TickerID(),Bulbululator::eTickerState::Halted);
                 break;
-            case dataAmiPipeAnswer::eAnswer_type::PipeOff:
-                m_TickerLstModel.setTickerState(data.iTickerID,modelTickersList::eTickerState::Informant);
-                BulbululatorRemoveActive(data.iTickerID);
-                BulbululatorSetState(data.iTickerID,Bulbululator::eTickerState::Informant);
+            case dataAmiPipeAnswer::eAnswerType::PipeOff:
+                m_TickerLstModel.setTickerState(data.TickerID(),modelTickersList::eTickerState::Informant);
+                BulbululatorRemoveActive(data.TickerID());
+                BulbululatorSetState(data.TickerID(),Bulbululator::eTickerState::Informant);
                 break;
-            case dataAmiPipeAnswer::eAnswer_type::ProcessNewComplite:
+            case dataAmiPipeAnswer::eAnswerType::ProcessNewComplite:
+                break;
+            case dataAmiPipeAnswer::eAnswerType::TextMessage:
+                emit SendToLog(QString::fromStdString(data.GetTextInfo()));
+                break;
+            case dataAmiPipeAnswer::eAnswerType::ErrMessage:
+                emit SendToErrorLog(QString::fromStdString(data.GetErrString()));
                 break;
             }
             //////////////////////////////////////////////

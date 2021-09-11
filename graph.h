@@ -63,7 +63,7 @@ public:
 //    void Add (Bar &b, bool bReplaceIfExists = true);
 //    void AddTick (Bar &b, bool bNewSec);
 //    void Add (std::list<Bar> &lst);
-    bool AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,std::time_t dtEnd);
+    bool AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,std::time_t dtEnd,bool bFastInsert);
 
     template<typename T_SRC>
     bool BuildFromLowerList(Graph<T_SRC> &grSrc, std::time_t dtStart,std::time_t dtEnd);
@@ -97,7 +97,7 @@ private:
 //------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------
 template<typename T>
-bool Graph<T>::AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,std::time_t dtEnd)
+bool Graph<T>::AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,std::time_t dtEnd,bool bFastInsert)
 {
 
     ///
@@ -111,7 +111,8 @@ bool Graph<T>::AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,s
                 ss<< "AddBarsList. graph interval [" <<this->iInterval<<"] != ["<<lst.front().Interval()<<"]";
                 throw std::invalid_argument(ss.str());
             }
-            if(lst.front().Period() < dtStart){
+            if( (!bFastInsert && lst.front().Period() < dtStart) ||
+                 (bFastInsert && lst.front().Period() + 1 < dtStart)){
                 std::stringstream ss;
                 ss<< "AddBarsList. the period of incoming data  [" <<lst.front().Period()<<"] is less than the beginning of the range ["<<dtStart<<"]";
                 throw std::invalid_argument(ss.str());
@@ -122,7 +123,11 @@ bool Graph<T>::AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,s
                 throw std::invalid_argument(ss.str());
             }
             //
-            if(!vContainer.empty() && lst.front().Period() <= vContainer.back().Period()){
+            if(!vContainer.empty() &&  (
+                    (!bFastInsert && lst.front().Period() <= vContainer.back().Period()) ||
+                    (bFastInsert  && dtStart <= vContainer.back().Period())
+
+                      )){
                 bInRange = false;
             }
         }
@@ -447,7 +452,7 @@ bool Graph<T>::BuildFromLowerList(Graph<T_SRC> &grSrc, std::time_t dtStart,std::
 
     }
     /////
-    bool bRes = AddBarsList(v,dtAccStart,dtAccEndLower);
+    bool bRes = AddBarsList(v,dtAccStart,dtAccEndLower,false);
     return bRes;
 }
 //------------------------------------------------------------------------------------------------------------

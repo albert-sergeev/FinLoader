@@ -8,6 +8,7 @@
 #include "storage.h"
 #include "graphholder.h"
 #include "blockfreequeue.h"
+#include "dataamipipeanswer.h"
 #include "databuckgroundthreadanswer.h"
 
 inline std::shared_mutex mutexMainHolder;
@@ -24,6 +25,8 @@ class FastTasksHolder
 
     std::map<int,std::chrono::time_point<std::chrono::steady_clock>> mDtActivity;
 
+    std::map<int,std::string> mBuff;
+
 public:
     FastTasksHolder();
 
@@ -31,7 +34,14 @@ public:
                         Storage &stStore,
                         std::map<int,std::shared_ptr<GraphHolder>>& Holders,
                         BlockFreeQueue<dataFastLoadTask> &queueFastTasks,
-                        BlockFreeQueue<dataBuckgroundThreadAnswer>  &queueTrdAnswers);
+                        BlockFreeQueue<dataAmiPipeAnswer>  &queuePipeAnswers);
+
+private:
+    void WriteVectorToStorage(int iTickerID,
+                              std::time_t tLastTime,
+                              Storage &stStore,
+                              std::vector<BarTick> v,
+                              BlockFreeQueue<dataAmiPipeAnswer>  &queuePipeAnswers);
 };
 
 #endif // FASTTASKSHOLDER_H
