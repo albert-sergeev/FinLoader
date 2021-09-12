@@ -297,7 +297,7 @@ bool Graph<T>::AddBarsListsFast(std::vector<T> &vV, std::set<std::time_t>   & st
             while(ItSrc != ItSrcEnd){
 //                {
 //                    ThreadFreeCout pcout;
-//                    pcout <<"{"<<ItSrc->first<<"}";
+//                    pcout <<"{"<<ItSrc->first<<":0}";
 //                }
                 mNew[ItSrc->first];
                 ++ItSrc;
@@ -329,6 +329,15 @@ bool Graph<T>::AddBarsListsFast(std::vector<T> &vV, std::set<std::time_t>   & st
                     /////////
                     mAppendMap[It->first].reserve(std::distance(ItCpB,ItCpE));
                     std::copy(ItCpB,ItCpE,std::back_inserter(mAppendMap[It->first]));
+
+//                    {
+//                        ThreadFreeCout pcout;
+//                        pcout <<It->first<<" ";
+//                        for(const auto & e:mAppendMap[It->first]){
+//                            pcout <<"{"<<e.Period()<<"}";
+//                        }
+//                        pcout <<"\n";
+//                    }
                 }
             }
         }
@@ -367,6 +376,7 @@ bool Graph<T>::AddBarsListsFast(std::vector<T> &vV, std::set<std::time_t>   & st
 
 //    {
 //        ThreadFreeCout pcout;
+//        pcout <<"iNewLength: "<<iNewLength<<"\n";
 //        pcout <<"iRangeBegin: "<<iRangeBegin<<"\n";
 //        pcout <<"iOldRange: "<<iOldRange<<"\n";
 //        pcout <<"iRangeEnd: "<<iRangeEnd<<"\n";
@@ -421,29 +431,38 @@ bool Graph<T>::AddBarsListsFast(std::vector<T> &vV, std::set<std::time_t>   & st
         //        auto ItSrc    ( mDictionary.lower_bound(mNew.begin()->second.front().Period()));
         //        auto ItSrcEnd ( mDictionary.upper_bound(mNew.rbegin()->second.back().Period()));
 
+//        {
+//            ThreadFreeCout pcout;
+//            pcout << "iDelta = " << iDelta<<"\n";
+//        }
+
         if (ItSrcEnd != mDictionary.end()){
 
             auto ItBeg (std::next(vContainer.begin(),ItSrcEnd->second));
             auto ItEnd (vContainer.end());
             // copy tail data
             std::copy(ItBeg,ItEnd,std::next(vContainer.begin(),ItSrcEnd->second + iDelta));
-            vContainer.resize(vContainer.size() + iDelta);
+        }
+        vContainer.resize(vContainer.size() + iDelta);
+//        {
+//            ThreadFreeCout pcout;
+//            pcout << "vContainer.size() = " << vContainer.size()<<"\n";
+//        }
 
-            // shift tail index
-            auto ItMShift (ItSrcEnd);
-            while(ItMShift !=  mDictionary.end()){
-                ItMShift->second = ItMShift->second + iDelta;
-                ++ItMShift;
-            }
+        // shift tail index
+        auto ItMShift (ItSrcEnd);
+        while(ItMShift !=  mDictionary.end()){
+            ItMShift->second = ItMShift->second + iDelta;
+            ++ItMShift;
+        }
 
-            //erase old range index
-            mDictionary.erase(ItSrc,ItSrcEnd);
+        //erase old range index
+        mDictionary.erase(ItSrc,ItSrcEnd);
 
 //            {
 //                ThreadFreeCout pcout;
 //                pcout <<"mDictionary.size_2 = "<< mDictionary.size()<<"\n";
 //            }
-        }
     }
     /////////////////////////
     /// copy new data

@@ -161,7 +161,8 @@ public:
                        std::time_t dtLoadBegin, std::time_t dtLoadEnd,
                        bool bFilterRepo,        Market::SessionTable_type  &vRepoTable,
                        bool bFilterSessionTable,Market::SessionTable_type  &vSessionTable,
-                       std::stringstream & ssOut);
+                       std::stringstream & ssOut,
+                       size_t &iCollisionCount);
 
 
     bool OptimizeStore(int iTickerID, std::time_t tMonth, bool & bToPlanNextShift,
@@ -203,7 +204,8 @@ private:
                        std::string sFileName,
                        bool bFilterRepo,        Market::SessionTable_type  &vRepoTable,
                        bool bFilterSessionTable,Market::SessionTable_type  &vSessionTable,
-                       std::stringstream & ssOut);
+                       std::stringstream & ssOut,
+                       size_t &iCollisionCount);
 
     bool WriteMapToStore(std::string sFilename, std::map<std::time_t,std::vector<BarTick>>& mvHolder, std::stringstream & ssOut);
 

@@ -1377,13 +1377,15 @@ bool Storage::ReadFromStore(int iTickerID, std::time_t tMonth, std::vector<BarTi
                    std::time_t dtLoadBegin, std::time_t dtLoadEnd,
                    bool bFilterRepo,        Market::SessionTable_type  &vRepoTable,
                    bool bFilterSessionTable,Market::SessionTable_type  &vSessionTable,
-                   std::stringstream & ssOut)
+                   std::stringstream & ssOut,
+                   size_t &iCollisionCount)
 {
     char buffer[100];
     std::tm * ptm = threadfree_gmtime(&tMonth);
     std::strftime(buffer, 100, "%Y/%m/%d %H:%M:%S", ptm);
     std::string strM(buffer);
 
+    iCollisionCount = 0;
 
     ////////////////////////////////////////////////
 
@@ -1418,37 +1420,46 @@ bool Storage::ReadFromStore(int iTickerID, std::time_t tMonth, std::vector<BarTi
 
 
         if (vStorageL1[iStage - 1]>0){
+            size_t iLocalCollisions{0};
             std::stringstream ssNamePart;
             ssNamePart << ss.str()<<vStorageL1[iStage-1];
             if (!ReadFromStoreFile(iTickerID, tMonth,mvHolder,dtLoadBegin, dtLoadEnd,ssNamePart.str(),
                                    bFilterRepo,vRepoTable,
                                    bFilterSessionTable,vSessionTable,
-                                   ssOut)){
+                                   ssOut,
+                                   iLocalCollisions)){
                 return false;
             }
+            iCollisionCount += iLocalCollisions;
         }
 
         if (vStorageL2[iStage - 1]>0){
+            size_t iLocalCollisions{0};
             std::stringstream ssNamePart;
             ssNamePart << ss.str()<<vStorageL2[iStage-1];
             if (!ReadFromStoreFile(iTickerID, tMonth,mvHolder,dtLoadBegin, dtLoadEnd,ssNamePart.str(),
                                    bFilterRepo,vRepoTable,
                                    bFilterSessionTable,vSessionTable,
-                                   ssOut)){
+                                   ssOut,
+                                   iLocalCollisions)){
                 return false;
             }
+            iCollisionCount += iLocalCollisions;
         }
         std::shared_lock entryWriteLk (mpWriteMutexes.at(k)); // lock
 
         if (vStorageW[iStage - 1]>0){
+            size_t iLocalCollisions{0};
             std::stringstream ssNamePart;
             ssNamePart << ss.str()<<vStorageW[iStage-1];
             if (!ReadFromStoreFile(iTickerID, tMonth,mvHolder,dtLoadBegin, dtLoadEnd,ssNamePart.str(),
                                    bFilterRepo,vRepoTable,
                                    bFilterSessionTable,vSessionTable,
-                                   ssOut)){
+                                   ssOut,
+                                   iLocalCollisions)){
                 return false;
             }
+            iCollisionCount += iLocalCollisions;
         }
 
         size_t iRecords{0};
@@ -1479,8 +1490,11 @@ bool Storage::ReadFromStoreFile(int iTickerID, std::time_t /*tMonth*/, std::map<
                    std::string strNamePart,
                    bool bFilterRepo,        Market::SessionTable_type  &vRepoTable,
                    bool bFilterSessionTable,Market::SessionTable_type  &vSessionTable,
-                   std::stringstream & ssOut)
+                   std::stringstream & ssOut,
+                   size_t &iCollisionCount)
 {
+    iCollisionCount = 0;
+    //
     std::stringstream ss;
 
     ss.str("");
@@ -1548,8 +1562,10 @@ bool Storage::ReadFromStoreFile(int iTickerID, std::time_t /*tMonth*/, std::map<
                 tmEndDel = b.Period();
 
                 for(auto & e:mvHolder){
-                    if (e.first >= tmStartDel && e.first <= tmEndDel)
+                    if (e.first >= tmStartDel && e.first <= tmEndDel){
+                        iCollisionCount += e.second.size();
                         e.second.clear();
+                    }
                 }
                 bWasRawDelete = false;
             }
@@ -1577,8 +1593,8 @@ bool Storage::ReadFromStoreFile(int iTickerID, std::time_t /*tMonth*/, std::map<
                             )
                     {
                         if (iState == Storage::data_type::new_sec){
+                            iCollisionCount += mvHolder[b.Period()].size();
                             mvHolder[b.Period()].clear();
-
                         }
                         mvHolder[b.Period()].push_back(b);
                     }
@@ -1706,18 +1722,20 @@ bool Storage::OptimizeStore(int iTickerID, std::time_t tMonth, bool & bToPlanNex
                 std::map<std::time_t,std::vector<BarTick>> mvHolder;
 
                 if (vStorageL1[iStage - 1]>0){
+                    size_t localCollisions{0};
                     std::stringstream ssNamePart;
                     ssNamePart << ssControlFileNamePart.str()<<"_"<<vStorageL1[iStage-1];
-                    if (!ReadFromStoreFile(iTickerID, tMonth,mvHolder,dtLoadBegin, dtLoadEnd,ssNamePart.str(),false,vRepoNull,false,vRepoNull,ssOut)){
+                    if (!ReadFromStoreFile(iTickerID, tMonth,mvHolder,dtLoadBegin, dtLoadEnd,ssNamePart.str(),false,vRepoNull,false,vRepoNull,ssOut,localCollisions)){
                         return false;
                     }
                 }
 
 
                 if (vStorageL2[iStage - 1]>0){
+                    size_t localCollisions{0};
                     std::stringstream ssNamePart;
                     ssNamePart << ssControlFileNamePart.str()<<"_"<<vStorageL2[iStage-1];
-                    if (!ReadFromStoreFile(iTickerID, tMonth,mvHolder,dtLoadBegin, dtLoadEnd,ssNamePart.str(),false,vRepoNull,false,vRepoNull,ssOut)){
+                    if (!ReadFromStoreFile(iTickerID, tMonth,mvHolder,dtLoadBegin, dtLoadEnd,ssNamePart.str(),false,vRepoNull,false,vRepoNull,ssOut,localCollisions)){
                         return false;
                     }
                 }

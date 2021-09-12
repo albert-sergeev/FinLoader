@@ -566,6 +566,7 @@ void workerLoader::workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & queue
             dtMonthBegin = Storage::dateAddMonth(dtMonthBegin);
         }
         //
+        size_t iCollisionsCount{0};
         std::stringstream ssOut;
 
         std::shared_ptr<std::vector<std::vector<BarTick>>> pvBars{std::make_shared<std::vector<std::vector<BarTick>>>()};
@@ -573,10 +574,11 @@ void workerLoader::workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & queue
         for (const std::time_t &t:vMonthToLoad){
             ssOut.str("");
             ssOut.clear();
+            iCollisionsCount = 0;
             //
             pvBars->push_back({});
             //
-            if (!stStore.ReadFromStore(data.TickerID, t, pvBars->back(), data.dtBegin,data.dtEnd,true,data.vRepoTable,false,data.vSessionTable,ssOut)){
+            if (!stStore.ReadFromStore(data.TickerID, t, pvBars->back(), data.dtBegin,data.dtEnd,true,data.vRepoTable,false,data.vSessionTable,ssOut,iCollisionsCount)){
                 bSuccessfull = false;
                 dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::storagLoadFromStorageGraphEnd,data.GetParentWnd());
                 dt.SetSuccessfull(false);
@@ -591,6 +593,29 @@ void workerLoader::workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & queue
                     dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::logText,data.GetParentWnd());
                     dt.SetTextInfo(ssOut.str());
                     queueTrdAnswers.Push(dt);
+                }
+                if(iCollisionsCount > 1000){
+
+                    /// if too many collisions - do optimisations
+                    dataFinLoadTask optTask(data);// copying data range and tickerID
+                    optTask.taskType = dataFinLoadTask::TaskType::storageOptimisation;
+                    optTask.dtBegin = t;
+                    optTask.dtEnd = t;
+                    queueTasks.Push(optTask);
+
+                    // send info
+                    dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::logText,data.GetParentWnd());
+                    std::stringstream ss;
+                    ss <<"{"<< data.TickerID<<"} ";
+                    ss << "To many collisions: "<<iCollisionsCount;
+                    ss << " Request optimisation for: "<<threadfree_gmtime_to_str(&t)<<"\n";
+                    dt.SetTextInfo(ss.str());
+                    queueTrdAnswers.Push(dt);
+
+                    {
+                        ThreadFreeCout pcout;
+                        pcout << ss.str();
+                    }
                 }
             }
             if(this_thread_flagInterrup.isSet()){
@@ -1034,6 +1059,7 @@ void workerLoader::workerFinQuotesCheck(BlockFreeQueue<dataFinLoadTask> & /*queu
                     }
                     //
                     std::stringstream ssOut;
+                    size_t iCollisionsCount;
 
                     for (const std::time_t &t:vMonthToLoad){
                         ssOut.str("");
@@ -1045,7 +1071,7 @@ void workerLoader::workerFinQuotesCheck(BlockFreeQueue<dataFinLoadTask> & /*queu
                                 !stStore.ReadFromStore(data.TickerID, t, v_vStoredBars.back(), data.dtBegin,tEnd,
                                                    false,data.vRepoTable,
                                                    false,data.vSessionTable,
-                                                   ssOut)){
+                                                   ssOut,iCollisionsCount)){
                             bWasSuccessfull = false;
                             dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportEnd,data.GetParentWnd());
                             dt.SetSuccessfull(false);
@@ -1059,7 +1085,7 @@ void workerLoader::workerFinQuotesCheck(BlockFreeQueue<dataFinLoadTask> & /*queu
                                  !stStore.ReadFromStore(data.TickerID, t, v_vStoredBars.back(), data.dtBegin,tEnd,
                                                     false,data.vRepoTable,
                                                     true,data.vSessionTable,
-                                                    ssOut)){
+                                                    ssOut,iCollisionsCount)){
                              bWasSuccessfull = false;
                              dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportEnd,data.GetParentWnd());
                              dt.SetSuccessfull(false);
