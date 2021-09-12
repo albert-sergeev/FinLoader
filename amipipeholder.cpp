@@ -227,7 +227,7 @@ void AmiPipeHolder::RefreshActiveSockets(dataAmiPipeTask::pipes_type& pActive,
                         AddUtilityMapEntry(std::get<3>(p.second.second), p.first);
                         //
                         dataAmiPipeAnswer answ;
-                        answ.setType(dataAmiPipeAnswer::PipeConnected);
+                        answ.SetType(dataAmiPipeAnswer::PipeConnected);
                         answ.SetTickerID(std::get<3>(p.second.second));
                         queuePipeAnswers.Push(answ);
                         bOpend = true;
@@ -256,7 +256,7 @@ void AmiPipeHolder::RefreshActiveSockets(dataAmiPipeTask::pipes_type& pActive,
 #endif
                     //
                     dataAmiPipeAnswer answ;
-                    answ.setType(dataAmiPipeAnswer::PipeHalted);
+                    answ.SetType(dataAmiPipeAnswer::PipeHalted);
                     answ.SetTickerID(std::get<3>(p.second.second));
                     queuePipeAnswers.Push(answ);
                 }
@@ -277,8 +277,8 @@ void AmiPipeHolder::RefreshActiveSockets(dataAmiPipeTask::pipes_type& pActive,
             ItConnected->second.second.second.close();
             ///
             dataAmiPipeAnswer answ;
-            if(pOff.find(ItConnected->first)!=pOff.end())    answ.setType(dataAmiPipeAnswer::PipeOff);
-            else                                             answ.setType(dataAmiPipeAnswer::PipeDisconnected);
+            if(pOff.find(ItConnected->first)!=pOff.end())    answ.SetType(dataAmiPipeAnswer::PipeOff);
+            else                                             answ.SetType(dataAmiPipeAnswer::PipeDisconnected);
 
             answ.SetTickerID(ItConnected->second.second.first);
             queuePipeAnswers.Push(answ);
@@ -311,10 +311,12 @@ void AmiPipeHolder::RefreshActiveSockets(dataAmiPipeTask::pipes_type& pActive,
 void AmiPipeHolder::ReadConnectedPipes(BlockFreeQueue<dataFastLoadTask>                    &queueFastTasks,
                                        BlockFreeQueue<dataAmiPipeAnswer>                   &queuePipeAnswers,
                                        BlockFreeQueue<dataBuckgroundThreadAnswer>          &queueTrdAnswers,
-                                       size_t &BytesRead)
+                                       size_t &BytesRead,
+                                       bool & bWasFullBuffers)
 {
     milliseconds tActivityCount;
 
+    bWasFullBuffers = false;
     BytesRead = 0;
 
     int iTickerID{0};
@@ -329,6 +331,7 @@ void AmiPipeHolder::ReadConnectedPipes(BlockFreeQueue<dataFastLoadTask>         
     BarTick b(0,0,0);
     BarTickMemcopier bM(b);
 
+    bool bSuccessfullRead{false};
 
 
     auto ItConnected = mPipesConnected.begin();
@@ -339,6 +342,7 @@ void AmiPipeHolder::ReadConnectedPipes(BlockFreeQueue<dataFastLoadTask>         
 
         dataFastLoadTask task(dataFastLoadTask::NewTicks);
 
+        bSuccessfullRead = false;
         if (ItConnected->second.second.second.good()){
 
 #ifdef _WIN32
@@ -360,10 +364,13 @@ void AmiPipeHolder::ReadConnectedPipes(BlockFreeQueue<dataFastLoadTask>         
                 if(ItConnected->second.second.second.read (buff + iWriteStart,iBytesToRead,filesize)){
                     mPointerToWrite[strBind] +=  filesize;
                     BytesRead += filesize;
+                    if (filesize == iBytesToRead) bWasFullBuffers = true;
 #else
+                int iToRead = iBytesToRead;
                 if(ItConnected->second.second.second.read(buff + iWriteStart,iBytesToRead)){
                     mPointerToWrite[strBind] +=  iBytesToRead;
                     BytesRead += iBytesToRead;
+                    if (iToRead == iBytesToRead) bWasFullBuffers = true;
 #endif
 
                     ////-------
@@ -479,31 +486,28 @@ void AmiPipeHolder::ReadConnectedPipes(BlockFreeQueue<dataFastLoadTask>         
                             queueTrdAnswers.Push(dt);
                         }
                     }
+                    bSuccessfullRead = true;
+                    ++ItConnected;
+                }
+                else{
+                   // ++ItConnected;
+                    ThreadFreeCout pcout;
+                    pcout <<"{"<<iTickerID<<"} disconnected\n";
                 }
             }
-            ++ItConnected;
+            else{
+                ++ItConnected;
+            }
         }
-        else{
-
-#ifdef _WIN32
-            if (!ItConnected->second.second.second.good()){
-#else
-            if (!(ItConnected->second.second.second.rdstate() & std::ios_base::eofbit)){
-                ThreadFreeCout pcout;
-                pcout << "not good\n";
-
-                if (ItConnected->second.second.second.rdstate() & std::ios_base::goodbit) { pcout << "stream state is goodbit\n";}
-                if (ItConnected->second.second.second.rdstate() & std::ios_base::badbit) { pcout << "stream state is badbit\n";}
-                if (ItConnected->second.second.second.rdstate() & std::ios_base::failbit) { pcout << "stream state is failbit\n";}
-
-#endif
+        //else{
+        if (!bSuccessfullRead){
                 try{
                     ItConnected->second.second.second.close();
                 }
                 catch (...) {;}
                 //
                 dataAmiPipeAnswer answ;
-                answ.setType(dataAmiPipeAnswer::PipeDisconnected);
+                answ.SetType(dataAmiPipeAnswer::PipeDisconnected);
                 answ.SetTickerID(ItConnected->second.second.first);
                 queuePipeAnswers.Push(answ);
                 //
@@ -512,13 +516,8 @@ void AmiPipeHolder::ReadConnectedPipes(BlockFreeQueue<dataFastLoadTask>         
                 auto ItNext = std::next(ItConnected);
                 mPipesConnected.erase(ItConnected);
                 ItConnected = ItNext;
-            }
-            else{
-                ++ItConnected;
-            }
         }
     }
-
 }
 //-------------------------------------------------------------------------------------------------
 //std::map<std::string,std::vector<char>> mBuffer;

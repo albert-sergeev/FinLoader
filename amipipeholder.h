@@ -77,7 +77,8 @@ public:
     void ReadConnectedPipes(BlockFreeQueue<dataFastLoadTask>                    &queueFastTasks,
                             BlockFreeQueue<dataAmiPipeAnswer>                   &queuePipeAnswers,
                             BlockFreeQueue<dataBuckgroundThreadAnswer>          &queueTrdAnswers,
-                            size_t &BytesRead
+                            size_t & BytesRead,
+                            bool & bWasFullBuffers
                             );
 
 protected:

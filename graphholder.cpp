@@ -63,16 +63,35 @@ GraphHolder::GraphHolder(GraphHolder && o):
 }
 
 //------------------------------------------------------------------------------------------------------
-bool GraphHolder::AddBarsLists(std::vector<std::vector<BarTick>> &v, std::time_t dtStart,std::time_t dtEnd,bool bFastInsert)
+bool GraphHolder::AddBarsLists(std::vector<std::vector<BarTick>> &v, std::time_t dtStart,std::time_t dtEnd)
 {
     std::unique_lock lk(mutexHolder);
     //
-    bool bRet = graphTick.AddBarsList(v,dtStart,dtEnd,bFastInsert);
+    bool bRet = graphTick.AddBarsList(v,dtStart,dtEnd);
     if (bRet){
         bRet = BuildUpperList(dtStart,dtEnd);
     }
     return bRet;
+}
+//------------------------------------------------------------------------------------------------------
+bool GraphHolder::AddBarsListsFast(std::vector<BarTick> &v, std::set<std::time_t>   & stHolderTimeSet)
+{
+    std::unique_lock lk(mutexHolder,std::defer_lock);
+    while(!lk.try_lock()){
+        if (this_thread_flagInterrup.isSet())   {return false;}
+        std::this_thread::yield();
+        if (this_thread_flagInterrup.isSet())   {return false;}
+    }
+    //////////////////////////////////////
+    bool bRet{true};
+    if (!v.empty()){
+        bRet = graphTick.AddBarsListsFast(v,stHolderTimeSet);
+        if (bRet){
+            //bRet = BuildUpperList(v.front().Period(),v.back().Period());
+        }
+    }
 
+    return bRet;
 }
 //------------------------------------------------------------------------------------------------------
 bool GraphHolder::BuildUpperList(std::time_t dtStart,std::time_t dtEnd)

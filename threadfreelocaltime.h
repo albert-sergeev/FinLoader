@@ -59,6 +59,26 @@ inline static std::string threadfree_gmtime_date_to_str(const T* t)
     return strRet;
 }
 //---------------------------------------------------------------------------------
+template <typename T>
+inline static std::string threadfree_gmtime_time_to_str(const T* t)
+{
+
+    #ifdef _WIN32
+        (void)gmtime_s(&tmTmp,t);
+    #else
+        std::unique_lock lk(mutexLocalTime);
+        tmTmp = *std::gmtime(t);
+    #endif
+
+    char buffer[100];
+    //std::strftime(buffer, 100, "%H:%M:%S", &tmTmp);
+    std::strftime(buffer, 100, "%H:%M", &tmTmp);
+    std::string strRet(buffer);
+
+    return strRet;
+}
+
+//---------------------------------------------------------------------------------
 inline time_t mktime_gm(struct tm * t)
 /* struct tm to seconds since Unix epoch */
 {

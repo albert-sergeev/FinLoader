@@ -8,6 +8,7 @@
 #include<QProcess>
 
 
+
 using seconds=std::chrono::duration<double>;
 using milliseconds=std::chrono::duration<double,
     std::ratio_multiply<seconds::period,std::milli>
@@ -20,6 +21,7 @@ using milliseconds=std::chrono::duration<double,
 //--------------------------------------------------------------------------------------------------------------------------------
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
+    , lcdN{nullptr}
     , vMarketsLst{}
     , m_MarketLstModel{vMarketsLst,this}
     , vTickersLst{}
@@ -184,6 +186,10 @@ bool MainWindow::event(QEvent *event)
     return QWidget::event(event);
 }
 //--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::initTestConst(){
+    dtSpeedCounter = std::chrono::steady_clock::now();
+}
+//--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::timerEvent(QTimerEvent * event)
 {
     bool bSuccess{false};
@@ -224,6 +230,19 @@ void MainWindow::timerEvent(QTimerEvent * event)
                 break;
             case dataAmiPipeAnswer::eAnswerType::ErrMessage:
                 emit SendToErrorLog(QString::fromStdString(data.GetErrString()));
+                break;
+            case dataAmiPipeAnswer::eAnswerType::testTimeEvent:
+                //emit SendToErrorLog(QString::fromStdString(data.GetErrString()));
+                if (lcdN){
+                    std::time_t t = data.Time();
+                    std::string s = threadfree_gmtime_time_to_str(&t);
+                    lcdN->display(QString::fromStdString(s));
+
+//                    std::call_once(mainwindow_test_call_once_flag,&MainWindow::initTestConst,this);
+//                    milliseconds msCount = std::chrono::steady_clock::now() - dtSpeedCounter;
+//                    lcdN->display(QString::number((int)msCount.count()));
+
+                }
                 break;
             }
             //////////////////////////////////////////////
@@ -857,6 +876,19 @@ void MainWindow::InitAction()
         if (bTickerBarButtonsHidden)
             ui->widgetTickerButtonBar->hide();
 
+
+
+        QLayout *lt =  ui->statusbar->layout();
+        //statusBarTickers = new QStatusBar();
+        //lt->addWidget(statusBarTickers);
+        //lt->setAlignment(Qt::AlignmentFlag::AlignLeft);
+        lcdN = new QLCDNumber;
+        lt->addWidget(lcdN);
+        lcdN->display("01:02");
+        lcdN->setDigitCount(8);
+
+
+
         //------------------------------------------------
         connect(ui->lstView,SIGNAL(doubleClicked(const QModelIndex&)),this,SLOT(slotSetSelectedTicker(const  QModelIndex&)));    
 }
@@ -920,6 +952,7 @@ void MainWindow::BulbululatorRemoveActive   (int TickerID)
         vBulbululators[i]->close();
         disconnect(vBulbululators[i],SIGNAL(DoubleClicked(const int)),this,SLOT(slotSetSelectedTicker(const  int)));
         ui->statusbar->removeWidget(vBulbululators[i]);
+        //statusBarTickers->removeWidget(vBulbululators[i]);
         vBulbululators.erase(std::next(vBulbululators.begin(),i));
     }
 
@@ -963,6 +996,7 @@ void MainWindow::BulbululatorAddActive      (int TickerID)
 
             for(auto const & b:vBulbululators){
                 ui->statusbar->removeWidget(b);
+                //statusBarTickers->removeWidget(b);
             }
 
             blbl->SetText(str);
@@ -975,6 +1009,7 @@ void MainWindow::BulbululatorAddActive      (int TickerID)
 
             for(auto & b:vBulbululators){
                 ui->statusbar->addWidget(b);
+                //statusBarTickers->addWidget(b);
                 b->show();
             }
             //ui->statusbar->addWidget(blbl);

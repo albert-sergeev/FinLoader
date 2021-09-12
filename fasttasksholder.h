@@ -3,6 +3,7 @@
 
 #include<shared_mutex>
 #include<map>
+#include<set>
 
 #include "datafastloadtask.h"
 #include "storage.h"
@@ -26,6 +27,12 @@ class FastTasksHolder
     std::map<int,std::chrono::time_point<std::chrono::steady_clock>> mDtActivity;
 
     std::map<int,std::string> mBuff;
+    std::map<int,std::set<std::time_t>> mHolderTimeSet;
+    std::map<int,std::set<std::time_t>> mTimeSet;
+
+
+    static const int iOutBuffMax {8192};
+
 
 public:
     FastTasksHolder();
@@ -39,9 +46,17 @@ public:
 private:
     void WriteVectorToStorage(int iTickerID,
                               std::time_t tLastTime,
+                              std::string &strBuff,
+                              std::set<std::time_t>   & stTimeSet,
                               Storage &stStore,
                               std::vector<BarTick> v,
                               BlockFreeQueue<dataAmiPipeAnswer>  &queuePipeAnswers);
+
+    int createCleanPackets(std::time_t tMonth,
+                           char* cBuff,
+                           int iBuffPointer,
+                           std::time_t tBegin,
+                           std::time_t tEnd);
 };
 
 #endif // FASTTASKSHOLDER_H

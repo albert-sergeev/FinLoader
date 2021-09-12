@@ -17,6 +17,7 @@
 #include <QStyleFactory>
 #include <QFile>
 #include <QTextEdit>
+#include <QLCDNumber>
 
 #include <queue>
 #include <chrono>
@@ -55,6 +56,7 @@ using milliseconds=std::chrono::duration<double,
     >;
 
 
+inline std::once_flag mainwindow_test_call_once_flag;
 
 class MainWindow : public QMainWindow
 {
@@ -86,6 +88,9 @@ private:
     QAction * pacGVUpperSc;
     QAction * pacGVLowerSc;
     QAction * pacGVVolumeSc;
+
+    QLCDNumber * lcdN;
+    QStatusBar * statusBarTickers;
 
     QToolBar * tbrToolBar;
     bool bToolBarOnLoadIsHidden;
@@ -154,7 +159,9 @@ private:
     BlockFreeQueue<dataFastLoadTask>  queueFastTasks;
     workerLoader wrkrLoadFinQuotes;
 
-
+    /// TODO: delete for tests
+    std::chrono::time_point<std::chrono::steady_clock> dtSpeedCounter;
+    void initTestConst();
 
     ///////////////////////////////////
     Storage stStore;
@@ -166,6 +173,8 @@ private:
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+
+
 
 signals:
     void SendToLog(QString);

@@ -4,6 +4,7 @@
 #include<vector>
 #include<list>
 #include<map>
+#include<set>
 #include<stdexcept>
 #include<atomic>
 #include<utility>
@@ -63,7 +64,8 @@ public:
 //    void Add (Bar &b, bool bReplaceIfExists = true);
 //    void AddTick (Bar &b, bool bNewSec);
 //    void Add (std::list<Bar> &lst);
-    bool AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,std::time_t dtEnd,bool bFastInsert);
+    bool AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,std::time_t dtEnd);
+    bool AddBarsListsFast(std::vector<T> &v, std::set<std::time_t>   & stHolderTimeSet);
 
     template<typename T_SRC>
     bool BuildFromLowerList(Graph<T_SRC> &grSrc, std::time_t dtStart,std::time_t dtEnd);
@@ -97,7 +99,7 @@ private:
 //------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------
 template<typename T>
-bool Graph<T>::AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,std::time_t dtEnd,bool bFastInsert)
+bool Graph<T>::AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,std::time_t dtEnd)
 {
 
     ///
@@ -111,8 +113,7 @@ bool Graph<T>::AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,s
                 ss<< "AddBarsList. graph interval [" <<this->iInterval<<"] != ["<<lst.front().Interval()<<"]";
                 throw std::invalid_argument(ss.str());
             }
-            if( (!bFastInsert && lst.front().Period() < dtStart) ||
-                 (bFastInsert && lst.front().Period() + 1 < dtStart)){
+            if( (lst.front().Period() < dtStart)){
                 std::stringstream ss;
                 ss<< "AddBarsList. the period of incoming data  [" <<lst.front().Period()<<"] is less than the beginning of the range ["<<dtStart<<"]";
                 throw std::invalid_argument(ss.str());
@@ -123,11 +124,7 @@ bool Graph<T>::AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,s
                 throw std::invalid_argument(ss.str());
             }
             //
-            if(!vContainer.empty() &&  (
-                    (!bFastInsert && lst.front().Period() <= vContainer.back().Period()) ||
-                    (bFastInsert  && dtStart <= vContainer.back().Period())
-
-                      )){
+            if(!vContainer.empty() && lst.front().Period() <= vContainer.back().Period()){
                 bInRange = false;
             }
         }
@@ -248,8 +245,197 @@ bool Graph<T>::AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,s
     //////////////////////////////////////////////////////////////////////////
     return true;;
 }
+//------------------------------------------------------------------------------------------------------------
+template<typename T>
+bool Graph<T>::AddBarsListsFast(std::vector<T> &vV, std::set<std::time_t>   & stHolderTimeSet)
+{
+
+    if (vV.empty()) return true;
+    /////////////////////////////////////////////////////////////////
+    /// build map for the new range
+    ///
+    std::map<std::time_t,std::vector<BarTick>> mNew;
+    for(const auto &b:vV){
+        if (mNew[b.Period()].empty()){
+            mNew[b.Period()].reserve(vV.size());
+        }
+        mNew[b.Period()].push_back(b);
+    }
+    /////////////////////////////////////////////////////////////////
+    /// build full new map with append and deletion ranges
+
+    std::map<std::time_t,std::vector<BarTick>> mAppendMap;
+
+    auto It (mNew.begin());
+    while (It !=mNew.end()){
+        if (stHolderTimeSet.find(It->first) == stHolderTimeSet.end()){
+            // new tick: no appending but add deletion ranges
+
+            mAppendMap[It->first];// here we are! ;)
+            /////////
+            /// search range to clear
+            std::time_t tB{It->first}; // begin of needed to clean period
+            std::time_t tE{It->first}; // end of needed to clean period
+
+            auto ItB (stHolderTimeSet.lower_bound(It->first));
+            auto ItE (ItB);//(stTimeSet.upper_bound(tSec));
+
+            if (ItB !=stHolderTimeSet.end() && ItB != stHolderTimeSet.begin()){
+                --ItB;
+                tB = (*ItB) + 1;
+            }
+            if (ItE != stHolderTimeSet.end()){
+                tE = (*ItE) - 1;
+            }
+            /////////
+            /// adding instances to future clear
+
+            auto ItSrc    ( mDictionary.lower_bound(tB));
+            auto ItSrcEnd ( mDictionary.upper_bound(tE));
+            while(ItSrc != ItSrcEnd){
+                mNew[ItSrc->first];
+                ++ItSrc;
+            }
+            /////////
+            stHolderTimeSet.emplace(It->first); // mark done
+        }
+        else{
+            if (mAppendMap.find(It->first) == mAppendMap.end()){ //first interence
+                // tick has been in the task: do appending
+
+                mAppendMap[It->first];// here we are! ;)
+                //
+                auto ItDict (mDictionary.find(It->first));
+                if ( ItDict!= mDictionary.end()){ // if there is something
+                    auto ItCpB (std::next(vContainer.begin(),ItDict->second));
+                    auto ItCpE (ItCpB);
+                    ItDict++;
+                    if ( ItDict!= mDictionary.end()){
+                        ItCpE = std::next(vContainer.begin(),ItDict->second);
+                    }
+                    else{
+                        ItCpE = vContainer.end();
+                    }
+                    /////////
+                    mAppendMap[It->first].reserve(std::distance(ItCpB,ItCpE));
+                    std::copy(ItCpB,ItCpE,std::back_inserter(mAppendMap[It->first]));
+                }
+            }
+        }
+        ++It;
+    }
+    /////////////////////////////////////////////////////////////////
+    /// calculate new length
+
+    size_t iNewLength{0};
+    for(const auto &v:mNew){
+        iNewLength += v.second.size();
+    }
+    for(const auto &v:mAppendMap){
+        iNewLength += v.second.size();
+    }
+    /////////////////////////////////////////////////////////////////
+    /// calculate invalid range in olds
+    ///
+    auto ItSrc    ( mDictionary.lower_bound(mNew.begin()->second.front().Period()));
+    auto ItSrcEnd ( mDictionary.upper_bound(mNew.rbegin()->second.back().Period()));
+    size_t iOldRange{0};
+    size_t iRangeBegin {vContainer.size()};
+    if (ItSrc != mDictionary.end()){
+        iRangeBegin = ItSrc->second;
+        if (ItSrcEnd != mDictionary.end()){
+            iOldRange = ItSrcEnd->second - ItSrc->second;
+        }
+        else{
+            iOldRange = vContainer.size() - ItSrc->second;
+        }
+    }
+    //
+    size_t iRangeEnd {iRangeBegin + iNewLength};
+
+    /////////////////////////////////////////////////////////////////
+    /// resize main storage
+    int iDelta ((int)(iNewLength - iOldRange));
+
+    size_t iOldTail = vContainer.size();
+    if(ItSrcEnd != mDictionary.end()){
+        iOldTail = ItSrcEnd->second;
+    }
+    size_t iOldTailLength = vContainer.size() - iOldTail;
+
+    if (iDelta > 0){
+
+//        auto ItSrc    ( mDictionary.lower_bound(mNew.begin()->second.front().Period()));
+//        auto ItSrcEnd ( mDictionary.upper_bound(mNew.rbegin()->second.back().Period()));
+
+        if (vContainer.capacity() < vContainer.size() + iDelta){
+            vContainer.reserve(vContainer.size() + iDelta + 32768);
+        }
+        vContainer.resize(vContainer.size() + iDelta);
+
+        auto rItBeg (std::next(vContainer.rbegin(),iDelta));
+        auto rItEnd (std::next(vContainer.rbegin(),iDelta + iOldTailLength));
+
+        // copy tail data
+        std::copy(rItBeg,rItEnd,vContainer.rbegin());
+
+        // shift tail index
+        auto ItMShift (ItSrcEnd);
+        while(ItMShift !=  mDictionary.end()){
+            ItMShift->second = ItMShift->second + iDelta;
+            ++ItMShift;
+        }
+
+        //erase old range index
+        mDictionary.erase(ItSrc,ItSrcEnd);
+    }
+    else if(iDelta < 0){
+        //        auto ItSrc    ( mDictionary.lower_bound(mNew.begin()->second.front().Period()));
+        //        auto ItSrcEnd ( mDictionary.upper_bound(mNew.rbegin()->second.back().Period()));
+
+        if (ItSrcEnd != mDictionary.end()){
+
+            auto ItBeg (std::next(vContainer.begin(),ItSrcEnd->second));
+            auto ItEnd (vContainer.end());
+            // copy tail data
+            std::copy(ItBeg,ItEnd,std::next(vContainer.begin(),ItSrcEnd->second + iDelta));
+            vContainer.resize(vContainer.size() + iDelta);
+
+            // shift tail index
+            auto ItMShift (ItSrcEnd);
+            while(ItMShift !=  mDictionary.end()){
+                ItMShift->second = ItMShift->second + iDelta;
+                ++ItMShift;
+            }
+
+            //erase old range index
+            mDictionary.erase(ItSrc,ItSrcEnd);
+        }
+    }
+    /////////////////////////
+    /// copy new data
+    auto ItInsert(vContainer.begin());
+    for(const auto &v:mNew){
+        std::vector<T> &vA =  mAppendMap[v.first];
+        if (vA.size()>0){
+            ItInsert = std::next(vContainer.begin(),iRangeBegin);
+            std::copy(vA.begin(),vA.end(),ItInsert);
+            iRangeBegin += vA.size();
+        }
+        ItInsert = std::next(vContainer.begin(),iRangeBegin);
+        std::copy(v.second.begin(),v.second.end(),ItInsert);
+        iRangeBegin += vA.size();
+    }
+    /////
+    if (iRangeEnd != iRangeBegin){
+        ThreadFreeCout pcout;
+        pcout <<"RangeEnd != iRangeBegin {"<<iRangeEnd<<"!="<<iRangeBegin<<"}\n";
+
+    }
 
 
+    return true;
+}
 
 //------------------------------------------------------------------------------------------------------------
 template<typename T>
@@ -452,7 +638,7 @@ bool Graph<T>::BuildFromLowerList(Graph<T_SRC> &grSrc, std::time_t dtStart,std::
 
     }
     /////
-    bool bRes = AddBarsList(v,dtAccStart,dtAccEndLower,false);
+    bool bRes = AddBarsList(v,dtAccStart,dtAccEndLower);
     return bRes;
 }
 //------------------------------------------------------------------------------------------------------------

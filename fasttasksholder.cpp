@@ -31,14 +31,22 @@ void FastTasksHolder::PacketReceived(dataFastLoadTask &data,
     std::shared_ptr<GraphHolder> holder  = Holders[iTickerID];
     lk.unlock();
     ////////////////////////////////////////////////////////////////////////////
-    /// 1. TaskCheck
-    /// 2. PacketNamberCheck
-    /// 3.1 Adding
+    /// 1. Lock global mutex
+    /// 1.1 Getting special mutex (dont lock)
+    /// 2. TaskCheck
+    /// 2.1 Getting ref to variables
+    /// 2.2 Unlock global mutex
+    /// 2.3 lock special mutex
+    /// 3. PacketNamberCheck
+    /// 3.1 drop
     /// 3.2 push again if wrong number
+    /// 3.3 Adding
 
     ////////////////////////////////////////////////////////////////////////////
-    /// get mutex for work with ticker
+    /// 1. Lock global mutex
     std::shared_lock lkMap (mutexUtilityMaps);
+
+    /// get mutex for work with ticker
     if (mUtilityMutexes.find(iTickerID) == mUtilityMutexes.end()){
         lkMap.unlock();
         std::unique_lock lkMap2 (mutexUtilityMaps);
@@ -46,16 +54,16 @@ void FastTasksHolder::PacketReceived(dataFastLoadTask &data,
         lkMap2.unlock();
         lkMap.lock();
     }
-    std::shared_mutex &mutexCurrent = mUtilityMutexes[iTickerID];
-    lkMap.unlock();
-    std::unique_lock lkCurrent (mutexCurrent);
-    ////////////////////////////////////////////////////////////////////////////
-    /// 1. TaskCheck
+
+    /// 2. TaskCheck
     if (mTask.find(iTickerID) == mTask.end()){
         mTask[iTickerID] = data.lTask;
         mPacketsCounter[iTickerID] = 1;
-        mDtActivity[iTickerID] = std::chrono::steady_clock::now();
         mLastTime[iTickerID] = 0;
+        mDtActivity[iTickerID] = std::chrono::steady_clock::now();
+        mBuff[iTickerID].resize(iOutBuffMax);
+        mHolderTimeSet[iTickerID].clear();
+        mTimeSet[iTickerID].clear();
     }
     else{
         if (mTask[iTickerID] > data.lTask){
@@ -65,16 +73,40 @@ void FastTasksHolder::PacketReceived(dataFastLoadTask &data,
             // new task. reinit
             mTask[iTickerID] = data.lTask;
             mPacketsCounter[iTickerID] = 1;
-            mDtActivity[iTickerID] = std::chrono::steady_clock::now();
             mLastTime[iTickerID] = 0;
+            mDtActivity[iTickerID] = std::chrono::steady_clock::now();
+            mBuff[iTickerID].resize(iOutBuffMax);
+            mHolderTimeSet[iTickerID].clear();
+            mTimeSet[iTickerID].clear();
         }
     }
-    /// 2. PacketNamberCheck
-    if (mPacketsCounter[iTickerID] > data.llPackesCounter){
-        // drop
+
+
+    ///////////////////////////////////////////////////////////////////////////
+    /// 2.1 getting references to utility variables for thread safety
+    ///
+    std::shared_mutex       & mutexCurrent                          = mUtilityMutexes[iTickerID];
+    //long                    & lTask                                 = mTask[iTickerID];
+    long long               & llPacketsCounter                      = mPacketsCounter[iTickerID];
+    std::time_t             & tLastTime                             = mLastTime[iTickerID];
+    std::chrono::time_point<std::chrono::steady_clock> & dtActivity = mDtActivity[iTickerID];
+    std::string             & strBuff                               = mBuff[iTickerID];
+    std::set<std::time_t>   & stTimeSet                             = mTimeSet[iTickerID];
+    std::set<std::time_t>   & stHolderTimeSet                       = mHolderTimeSet[iTickerID];
+
+    ////////////////////////////////////////////////////////////////////////////
+    /// 2.2 Unlock global mutex
+    lkMap.unlock();
+    /// 2.3 lock special mutex
+    std::unique_lock lkCurrent (mutexCurrent); // to garanty we are the one ;)
+    ////////////////////////////////////////////////////////////////////////////
+
+    /// 3. PacketNamberCheck
+    if (llPacketsCounter > data.llPackesCounter){
+        /// 3.1 drop
     }
-    else if (mPacketsCounter[iTickerID] < data.llPackesCounter &&
-             /*data.RepushCount()<1000000 &&*/ data.TimeTilCreate() < 2000ms
+    else if (llPacketsCounter < data.llPackesCounter &&
+             data.RepushCount()<1000000000 && data.TimeTilCreate() < 30000ms
              ){
         /// 3.2 push again if wrong number
         data.IncrementRepush();
@@ -82,58 +114,78 @@ void FastTasksHolder::PacketReceived(dataFastLoadTask &data,
         conditionFastData.notify_one();
     }
     else{
-        if (mPacketsCounter[iTickerID] < data.llPackesCounter){
+        if (llPacketsCounter < data.llPackesCounter){
             ThreadFreeCout pcout;
             pcout <<"{"<<iTickerID<<"} fail recovery. drop data\n";
         }
-        mPacketsCounter[iTickerID] = data.llPackesCounter + 1;
-        /// 3.1 Adding
+        llPacketsCounter = data.llPackesCounter + 1;
+        /// 3.3 Adding
         if(data.vV.size()>0){
-            // calculate range
-            std::time_t tBegin{0};
-            if (mLastTime[iTickerID] != 0){
-                tBegin = mLastTime[iTickerID] + 1;
-            }
-            else{
-                tBegin = data.vV.front().Period();
-            }
-            std::time_t tEnd = data.vV.back().Period();
             //////////////////////////////////////////////////////
-            std::vector<std::vector<BarTick>> vvV;
-            vvV.emplace_back(std::move(data.vV));
-            holder->AddBarsLists(vvV,tBegin,tEnd,true);
-            //
-            milliseconds tActivityCount = std::chrono::steady_clock::now() - mDtActivity[iTickerID];
+            /// adding to holder
+            if (!holder->AddBarsListsFast(data.vV,stHolderTimeSet) &&
+                    !this_thread_flagInterrup.isSet()){
+                dataAmiPipeAnswer answ; answ.SetTickerID(iTickerID); answ.SetType(dataAmiPipeAnswer::ErrMessage);
+                std::stringstream ss;
+                ss <<"Error during adding fast ticks to holder {"<<iTickerID<<"}";
+                answ.SetErrString(ss.str());
+                queuePipeAnswers.Push(answ);
+
+            }
+            //////////////////////////////////////////////////////
+            /// show activity
+            milliseconds tActivityCount = std::chrono::steady_clock::now() - dtActivity;
             if (tActivityCount > 100ms){
-                mDtActivity[iTickerID] = std::chrono::steady_clock::now();
+                dtActivity = std::chrono::steady_clock::now();
                 //
-//                dataBuckgroundThreadAnswer dt(iTickerID,dataBuckgroundThreadAnswer::eAnswerType::storagLoadToGraphEnd,nullptr);
-//                dt.SetBeginDate(tBegin);
-//                dt.SetEndDate(tEnd);
-//                dt.SetSuccessfull(true);
-//                queueTrdAnswers.Push(dt);
+                if (iTickerID == 1){ // TODO: delete. for tests
+                    dataAmiPipeAnswer answ;
+                    answ.SetTickerID(iTickerID);
+                    answ.SetType(dataAmiPipeAnswer::testTimeEvent);
+                    answ.SetTime(data.vV.back().Period());
+                    queuePipeAnswers.Push(answ);
+                }
             }
             //////////////////////////////////////////////////////
-            WriteVectorToStorage(iTickerID,mLastTime[iTickerID],stStore,vvV.back(),queuePipeAnswers);
+            /// writing to database
+            WriteVectorToStorage(iTickerID,tLastTime,strBuff,stTimeSet,stStore,data.vV,queuePipeAnswers);
             //////////////////////////////////////////////////////
-            mLastTime[iTickerID] = tEnd;
+            /// set new last time
+            tLastTime = data.vV.back().Period();
+            //////////////////////////////////////////////////////
+            /// cleaning too old sets for 24/7 worktime
+            if(!stTimeSet.empty()){
+                std::time_t tD = Bar::DateAccommodate((*stTimeSet.rbegin()),Bar::pDay);
+                auto It = stTimeSet.lower_bound(tD);
+                if (It != stTimeSet.begin()){
+                    stTimeSet.erase(stTimeSet.begin(),It);
+                }
+            }
+            if(!stHolderTimeSet.empty()){
+                std::time_t tD = Bar::DateAccommodate((*stTimeSet.rbegin()),Bar::pDay);
+                auto It = stHolderTimeSet.lower_bound(tD);
+                if (It != stHolderTimeSet.begin()){
+                    stHolderTimeSet.erase(stHolderTimeSet.begin(),It);
+                }
+            }
+            /////////////////////////////////////////////////////////////
         }
     }
 }
 //--------------------------------------------------------------------------------------------------------
 void FastTasksHolder::WriteVectorToStorage(int iTickerID,
                                            std::time_t tLastTime,
+                                           std::string &strBuff,
+                                           std::set<std::time_t>   & stTimeSet,
                                            Storage &stStore,
                                            std::vector<BarTick> v,
                                            BlockFreeQueue<dataAmiPipeAnswer>  &queuePipeAnswers)
 {
-    const int iOutBuffMax {8192};
 
-    if (mBuff.find(iTickerID) == mBuff.end()){
-        mBuff[iTickerID].resize(iOutBuffMax);
-    }
 
-    char *cOutBuff = mBuff[iTickerID].data();
+
+
+    char *cOutBuff = strBuff.data();
     int iOutBuffPointer {0};
 
     BarTick bb(0,0,0);
@@ -147,7 +199,6 @@ void FastTasksHolder::WriteVectorToStorage(int iTickerID,
     Storage::data_type iState{Storage::data_type::new_sec};
 
     std::time_t tCurrentMonth = Storage::dateCastToMonth(tLastTime);
-    std::time_t tCurrSec = tLastTime;
 
     std::time_t tMonth{0};
     std::time_t tSec{0};
@@ -165,23 +216,48 @@ void FastTasksHolder::WriteVectorToStorage(int iTickerID,
         tSec = b.Period();
         if (tCurrentMonth != tMonth){
             // switch month and write tail
-            if(!stStore.WriteMemblockToStore(defSlk,defUlk,iTickerID, tCurrentMonth, cOutBuff,iOutBuffPointer, ssErr)){
-                dataAmiPipeAnswer answ;
-                answ.SetTickerID(iTickerID);
-                answ.setType(dataAmiPipeAnswer::ErrMessage);
-                queuePipeAnswers.Push(answ);
-                bWasSuccessfull = false;
-                break; //exit
+            std::time_t tB{tSec}; // begin of needed to clean period
+            std::time_t tE{tSec}; // end of needed to clean period
+
+            auto ItB (stTimeSet.lower_bound(tSec));
+            auto ItE (ItB);//(stTimeSet.upper_bound(tSec));
+
+            if (ItB !=stTimeSet.end() && ItB != stTimeSet.begin()){
+                --ItB;
+                tB = (*ItB) + 1;
             }
+            if (ItE != stTimeSet.end()){
+                tE = (*ItE) - 1;
+            }
+
+            std::time_t tTmpMonth = tCurrentMonth;
+
+            while(tTmpMonth < tMonth){
+                iOutBuffPointer = createCleanPackets(tTmpMonth, cOutBuff,iOutBuffPointer,tB, tE);
+
+                if (iOutBuffPointer > 0){
+                    if(!stStore.WriteMemblockToStore(defSlk,defUlk,iTickerID, tCurrentMonth, cOutBuff,iOutBuffPointer, ssErr)){
+                        dataAmiPipeAnswer answ;
+                        answ.SetTickerID(iTickerID);
+                        answ.SetType(dataAmiPipeAnswer::ErrMessage);
+                        queuePipeAnswers.Push(answ);
+                        bWasSuccessfull = false;
+                        break; //exit
+                    }
+                }
+                tTmpMonth   = Storage::dateAddMonth(tTmpMonth);
+                iOutBuffPointer = 0;
+            }
+            iOutBuffPointer = createCleanPackets(tTmpMonth, cOutBuff,iOutBuffPointer,tB, tE);
 
             tCurrentMonth = tMonth;
         }
-        else if( iOutBuffPointer + iBlockSize > iOutBuffMax){ // do write to iSecChangedPointer
+        else if( iOutBuffPointer + iBlockSize * 4 > iOutBuffMax){ // do write if full
 
             if(!stStore.WriteMemblockToStore(defSlk,defUlk,iTickerID, tCurrentMonth, cOutBuff,iOutBuffPointer, ssErr)){
                 dataAmiPipeAnswer answ;
                 answ.SetTickerID(iTickerID);
-                answ.setType(dataAmiPipeAnswer::ErrMessage);
+                answ.SetType(dataAmiPipeAnswer::ErrMessage);
                 queuePipeAnswers.Push(answ);
                 bWasSuccessfull = false;
                 break; //exit
@@ -189,8 +265,26 @@ void FastTasksHolder::WriteVectorToStorage(int iTickerID,
 
             iOutBuffPointer = 0;
         }
-        if(tCurrSec != tSec){
-            tCurrSec = tSec;
+        if (stTimeSet.find(tSec) == stTimeSet.end()){
+
+            std::time_t tB{tSec};
+            std::time_t tE{tSec};
+
+            auto ItB (stTimeSet.lower_bound(tSec));
+            auto ItE (ItB);//(stTimeSet.upper_bound(tSec));
+
+            if (ItB !=stTimeSet.end() && ItB != stTimeSet.begin()){
+                --ItB;
+                tB = (*ItB) + 1;
+            }
+            if (ItE != stTimeSet.end()){
+                tE = (*ItE) - 1;
+            }
+            if (tB < tE || (tB == tE && tB != tSec)){
+                iOutBuffPointer = createCleanPackets(tCurrentMonth, cOutBuff,iOutBuffPointer,tB, tE);
+            }
+
+            stTimeSet.emplace(tSec);
             iState  = Storage::data_type::new_sec;
         }
         else{
@@ -210,9 +304,9 @@ void FastTasksHolder::WriteVectorToStorage(int iTickerID,
         if(!stStore.WriteMemblockToStore(defSlk,defUlk,iTickerID, tCurrentMonth, cOutBuff,iOutBuffPointer, ssErr)){
             dataAmiPipeAnswer answ;
             answ.SetTickerID(iTickerID);
-            answ.setType(dataAmiPipeAnswer::ErrMessage);
+            answ.SetType(dataAmiPipeAnswer::ErrMessage);
             queuePipeAnswers.Push(answ);
-            bWasSuccessfull = false;
+            //bWasSuccessfull = false;
             //exit
         }
         /// ////////////////////////
@@ -220,6 +314,44 @@ void FastTasksHolder::WriteVectorToStorage(int iTickerID,
 
 }
 //--------------------------------------------------------------------------------------------------------
+int FastTasksHolder::createCleanPackets(std::time_t tMonth, char* cBuff,int iBuffPointer,std::time_t tBegin, std::time_t tEnd)
+{
+
+    if (tBegin < tMonth){
+        tBegin = tMonth;
+    }
+    if (tEnd >= Storage::dateAddMonth(tMonth)){
+        tEnd = Storage::dateAddMonth(tMonth)-1;
+    }
+    if (tBegin > tEnd) return iBuffPointer;
+
+
+    Bar bb(0,0,0,0,0,0);
+    BarMemcopier bM(bb);
+
+
+    ;
+    Storage::data_type iState;
+    iState = Storage::data_type::del_from;
+
+    bb.setPeriod(tBegin);
+
+    memcpy(cBuff + iBuffPointer,&iState,   sizeof (Storage::data_type));      iBuffPointer += sizeof (Storage::data_type);
+    memcpy(cBuff + iBuffPointer,&bM.Close(),  sizeof (bM.Close()));           iBuffPointer += sizeof (bM.Close());
+    memcpy(cBuff + iBuffPointer,&bM.Volume(), sizeof (bM.Volume()));          iBuffPointer += sizeof (bM.Volume());
+    memcpy(cBuff + iBuffPointer,&bM.Period(), sizeof (bM.Period()));          iBuffPointer += sizeof (bM.Period());
+
+    iState = Storage::data_type::del_to;
+    bb.setPeriod(tEnd);
+
+    memcpy(cBuff + iBuffPointer,&iState,   sizeof (Storage::data_type));      iBuffPointer += sizeof (Storage::data_type);
+    memcpy(cBuff + iBuffPointer,&bM.Close(),  sizeof (bM.Close()));           iBuffPointer += sizeof (bM.Close());
+    memcpy(cBuff + iBuffPointer,&bM.Volume(), sizeof (bM.Volume()));          iBuffPointer += sizeof (bM.Volume());
+    memcpy(cBuff + iBuffPointer,&bM.Period(), sizeof (bM.Period()));          iBuffPointer += sizeof (bM.Period());
+
+
+    return iBuffPointer;
+}
 //--------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------

@@ -5,6 +5,7 @@
 //#include<vector>
 //#include<list>
 //#include<map>
+#include<set>
 #include<mutex>
 #include<shared_mutex>
 
@@ -239,7 +240,8 @@ public:
 
 
     //------------------------------------------------------------
-    bool AddBarsLists(std::vector<std::vector<BarTick>> &v, std::time_t dtStart,std::time_t dtEnd,bool bFastInsert = false);
+    bool AddBarsLists(std::vector<std::vector<BarTick>> &v, std::time_t dtStart,std::time_t dtEnd);
+    bool AddBarsListsFast(std::vector<BarTick> &v, std::set<std::time_t>   & stHolderTimeSet);
     bool CheckMap();
 
 protected:

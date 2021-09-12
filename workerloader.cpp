@@ -1398,6 +1398,7 @@ void workerLoader::workerAmiClient(BlockFreeQueue<dataFinLoadTask> & /*queueFinQ
             bool bSuccess{false};
             bool bLoop{true};
             size_t iBytesRead{0};
+            bool bWasFullBuffers{false};
             while(bLoop){
                 ///////////////////////////////////////////////////////////////////////////////
                 /// pipe task check block
@@ -1432,7 +1433,7 @@ void workerLoader::workerAmiClient(BlockFreeQueue<dataFinLoadTask> & /*queueFinQ
                 ///////////////////////////////////////////////////////////////////////////////
                 // socket work block
 
-                pipesHolder.ReadConnectedPipes(queueFastTasks,queuePipeAnswers,queueTrdAnswers,iBytesRead);
+                pipesHolder.ReadConnectedPipes(queueFastTasks,queuePipeAnswers,queueTrdAnswers,iBytesRead,bWasFullBuffers);
 
                 ///////////////////////////////////////////////////////////////////////////////
                 //----------------------------------
@@ -1445,6 +1446,7 @@ void workerLoader::workerAmiClient(BlockFreeQueue<dataFinLoadTask> & /*queueFinQ
                     // Do some buffering maybe?
                     // or read incoming message whole at once?
                     //if (iBytesRead == 0)
+                    if (!bWasFullBuffers)
                     {
                         std::this_thread::sleep_for(std::chrono::microseconds(100));
                     }

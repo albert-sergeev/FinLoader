@@ -29,7 +29,7 @@ public:
 
 
     inline eTask_type Type()      const {return tType;};
-    inline void setType(eTask_type t)   {tType = t;};
+    inline void SetType(eTask_type t)   {tType = t;};
 
     dataAmiPipeTask& operator=(dataAmiPipeTask &o) = delete;
 };
