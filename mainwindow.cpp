@@ -244,6 +244,9 @@ void MainWindow::timerEvent(QTimerEvent * event)
 
                 }
                 break;
+            case dataAmiPipeAnswer::eAnswerType::FastShowEvent:
+                slotSendSignalToInvalidateGraph(data.TickerID(), data.tBegin, data.tEnd);
+                break;
             }
             //////////////////////////////////////////////
             pdataAmiPipe = queuePipeAnswers.Pop(bSuccessAmi);

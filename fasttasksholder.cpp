@@ -123,7 +123,8 @@ void FastTasksHolder::PacketReceived(dataFastLoadTask &data,
         if(data.vV.size()>0){
             //////////////////////////////////////////////////////
             /// adding to holder
-            if (!holder->AddBarsListsFast(data.vV,stHolderTimeSet) &&
+            std::pair<std::time_t,std::time_t> pairRange;
+            if (!holder->AddBarsListsFast(data.vV,stHolderTimeSet,pairRange) &&
                     !this_thread_flagInterrup.isSet()){
                 dataAmiPipeAnswer answ; answ.SetTickerID(iTickerID); answ.SetType(dataAmiPipeAnswer::ErrMessage);
                 std::stringstream ss;
@@ -143,6 +144,16 @@ void FastTasksHolder::PacketReceived(dataFastLoadTask &data,
                     answ.SetTickerID(iTickerID);
                     answ.SetType(dataAmiPipeAnswer::testTimeEvent);
                     answ.SetTime(data.vV.back().Period());
+                    queuePipeAnswers.Push(answ);
+                }
+
+                if (pairRange.first !=0 && pairRange.second != 0)
+                {
+                    dataAmiPipeAnswer answ;
+                    answ.SetTickerID(iTickerID);
+                    answ.SetType(dataAmiPipeAnswer::FastShowEvent);
+                    answ.tBegin = pairRange.first;
+                    answ.tEnd = pairRange.second;
                     queuePipeAnswers.Push(answ);
                 }
             }

@@ -8,7 +8,10 @@
 class dataAmiPipeAnswer
 {
 public:
-    enum eAnswerType:int {Nop, ProcessNewComplite, PipeConnected, PipeDisconnected, PipeHalted, PipeOff, TextMessage, ErrMessage, testTimeEvent};
+    enum eAnswerType:int {Nop, ProcessNewComplite, PipeConnected, PipeDisconnected, PipeHalted, PipeOff,
+                          TextMessage, ErrMessage, testTimeEvent,
+                          FastShowEvent
+                         };
 public:
 
 private:
@@ -35,6 +38,9 @@ public:
 
     inline void SetTime(const std::time_t t)        {tTime = t;};
     inline std::time_t   Time()   const             {return tTime;};
+
+    std::time_t tBegin{0};
+    std::time_t tEnd{0};
 
     dataAmiPipeAnswer& operator=(dataAmiPipeAnswer &o) = delete;
 };

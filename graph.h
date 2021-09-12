@@ -65,7 +65,7 @@ public:
 //    void AddTick (Bar &b, bool bNewSec);
 //    void Add (std::list<Bar> &lst);
     bool AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,std::time_t dtEnd);
-    bool AddBarsListsFast(std::vector<T> &v, std::set<std::time_t>   & stHolderTimeSet);
+    bool AddBarsListsFast(std::vector<T> &v, std::set<std::time_t>   & stHolderTimeSet,std::pair<std::time_t,std::time_t> &pairRange);
 
     template<typename T_SRC>
     bool BuildFromLowerList(Graph<T_SRC> &grSrc, std::time_t dtStart,std::time_t dtEnd);
@@ -247,8 +247,10 @@ bool Graph<T>::AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,s
 }
 //------------------------------------------------------------------------------------------------------------
 template<typename T>
-bool Graph<T>::AddBarsListsFast(std::vector<T> &vV, std::set<std::time_t>   & stHolderTimeSet)
+bool Graph<T>::AddBarsListsFast(std::vector<T> &vV, std::set<std::time_t>   & stHolderTimeSet,
+                                std::pair<std::time_t,std::time_t> &pairRange)
 {
+    pairRange = {0,0};
 
     if (vV.empty()) return true;
     /////////////////////////////////////////////////////////////////
@@ -280,7 +282,7 @@ bool Graph<T>::AddBarsListsFast(std::vector<T> &vV, std::set<std::time_t>   & st
             auto ItB (stHolderTimeSet.lower_bound(It->first));
             auto ItE (ItB);//(stTimeSet.upper_bound(tSec));
 
-            if (ItB !=stHolderTimeSet.end() && ItB != stHolderTimeSet.begin()){
+            if (/*ItB !=stHolderTimeSet.end() &&*/ ItB != stHolderTimeSet.begin()){
                 --ItB;
                 tB = (*ItB) + 1;
             }
@@ -293,9 +295,17 @@ bool Graph<T>::AddBarsListsFast(std::vector<T> &vV, std::set<std::time_t>   & st
             auto ItSrc    ( mDictionary.lower_bound(tB));
             auto ItSrcEnd ( mDictionary.upper_bound(tE));
             while(ItSrc != ItSrcEnd){
+//                {
+//                    ThreadFreeCout pcout;
+//                    pcout <<"{"<<ItSrc->first<<"}";
+//                }
                 mNew[ItSrc->first];
                 ++ItSrc;
             }
+//            {
+//                ThreadFreeCout pcout;
+//                pcout <<"\n";
+//            }
             /////////
             stHolderTimeSet.emplace(It->first); // mark done
         }
@@ -337,8 +347,10 @@ bool Graph<T>::AddBarsListsFast(std::vector<T> &vV, std::set<std::time_t>   & st
     /////////////////////////////////////////////////////////////////
     /// calculate invalid range in olds
     ///
-    auto ItSrc    ( mDictionary.lower_bound(mNew.begin()->second.front().Period()));
-    auto ItSrcEnd ( mDictionary.upper_bound(mNew.rbegin()->second.back().Period()));
+
+    auto ItSrc    ( mDictionary.lower_bound(mNew.begin()->first));
+    auto ItSrcEnd ( mDictionary.upper_bound(mNew.rbegin()->first));
+
     size_t iOldRange{0};
     size_t iRangeBegin {vContainer.size()};
     if (ItSrc != mDictionary.end()){
@@ -352,6 +364,16 @@ bool Graph<T>::AddBarsListsFast(std::vector<T> &vV, std::set<std::time_t>   & st
     }
     //
     size_t iRangeEnd {iRangeBegin + iNewLength};
+
+//    {
+//        ThreadFreeCout pcout;
+//        pcout <<"iRangeBegin: "<<iRangeBegin<<"\n";
+//        pcout <<"iOldRange: "<<iOldRange<<"\n";
+//        pcout <<"iRangeEnd: "<<iRangeEnd<<"\n";
+//        pcout <<"ItSrc: "<<std::distance(mDictionary.begin(),ItSrc)<<"\n";
+//        pcout <<"ItSrcEnd: "<<std::distance(mDictionary.begin(),ItSrcEnd)<<"\n";
+
+//    }
 
     /////////////////////////////////////////////////////////////////
     /// resize main storage
@@ -388,6 +410,12 @@ bool Graph<T>::AddBarsListsFast(std::vector<T> &vV, std::set<std::time_t>   & st
 
         //erase old range index
         mDictionary.erase(ItSrc,ItSrcEnd);
+
+//        {
+//            ThreadFreeCout pcout;
+//            pcout <<"mDictionary.size_1 = "<< mDictionary.size()<<"\n";
+//        }
+
     }
     else if(iDelta < 0){
         //        auto ItSrc    ( mDictionary.lower_bound(mNew.begin()->second.front().Period()));
@@ -410,22 +438,34 @@ bool Graph<T>::AddBarsListsFast(std::vector<T> &vV, std::set<std::time_t>   & st
 
             //erase old range index
             mDictionary.erase(ItSrc,ItSrcEnd);
+
+//            {
+//                ThreadFreeCout pcout;
+//                pcout <<"mDictionary.size_2 = "<< mDictionary.size()<<"\n";
+//            }
         }
     }
     /////////////////////////
     /// copy new data
+    {
+        //ThreadFreeCout pcout;
+       // pcout <<"mNew.size = "<< mNew.size()<<"\n";
+    }
     auto ItInsert(vContainer.begin());
     for(const auto &v:mNew){
         std::vector<T> &vA =  mAppendMap[v.first];
+        if (v.second.size()>0) mDictionary[v.first] = iRangeBegin;
         if (vA.size()>0){
             ItInsert = std::next(vContainer.begin(),iRangeBegin);
             std::copy(vA.begin(),vA.end(),ItInsert);
+            mDictionary[v.first] = iRangeBegin;
             iRangeBegin += vA.size();
         }
         ItInsert = std::next(vContainer.begin(),iRangeBegin);
         std::copy(v.second.begin(),v.second.end(),ItInsert);
-        iRangeBegin += vA.size();
+        iRangeBegin += v.second.size();
     }
+
     /////
     if (iRangeEnd != iRangeBegin){
         ThreadFreeCout pcout;
@@ -433,6 +473,7 @@ bool Graph<T>::AddBarsListsFast(std::vector<T> &vV, std::set<std::time_t>   & st
 
     }
 
+    pairRange = {mNew.begin()->first,mNew.rbegin()->first};
 
     return true;
 }
@@ -450,6 +491,9 @@ bool Graph<T>::CheckMap()
         if (vContainer[e.second].Period() != e.first){
             ThreadFreeCout pcout;
             pcout<<"vContainer[map[index]].period != map->index\n";
+            pcout<<"vContainer[e.second].Period(): "<<vContainer[e.second].Period()<<"\n";
+            pcout<<"e.first: "<<e.first<<"\n";
+            pcout<<"e.second: "<<e.second<<"\n";
             return false;
         }
         if (e.second >0 && vContainer[e.second].Period() == vContainer[e.second-1].Period()){
@@ -699,3 +743,5 @@ std::tuple<double,double,unsigned long,unsigned long>  Graph<T>::getMinMax(std::
 };
 
 #endif // GRAPH_H
+
+

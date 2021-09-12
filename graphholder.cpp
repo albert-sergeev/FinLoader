@@ -74,8 +74,10 @@ bool GraphHolder::AddBarsLists(std::vector<std::vector<BarTick>> &v, std::time_t
     return bRet;
 }
 //------------------------------------------------------------------------------------------------------
-bool GraphHolder::AddBarsListsFast(std::vector<BarTick> &v, std::set<std::time_t>   & stHolderTimeSet)
+bool GraphHolder::AddBarsListsFast(std::vector<BarTick> &v, std::set<std::time_t>   & stHolderTimeSet,std::pair<std::time_t,std::time_t> &pairRange)
 {
+    pairRange = {0,0};
+
     std::unique_lock lk(mutexHolder,std::defer_lock);
     while(!lk.try_lock()){
         if (this_thread_flagInterrup.isSet())   {return false;}
@@ -85,9 +87,9 @@ bool GraphHolder::AddBarsListsFast(std::vector<BarTick> &v, std::set<std::time_t
     //////////////////////////////////////
     bool bRet{true};
     if (!v.empty()){
-        bRet = graphTick.AddBarsListsFast(v,stHolderTimeSet);
+        bRet = graphTick.AddBarsListsFast(v,stHolderTimeSet,pairRange);
         if (bRet){
-            //bRet = BuildUpperList(v.front().Period(),v.back().Period());
+            bRet = BuildUpperList(v.front().Period(),v.back().Period());
         }
     }
 
