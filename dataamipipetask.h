@@ -3,8 +3,10 @@
 
 //#include "amipipeholder.h"
 
+//#include<atomic>
 #include<map>
 #include<string>
+
 
 class dataAmiPipeTask
 {

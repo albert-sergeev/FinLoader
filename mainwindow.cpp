@@ -40,25 +40,14 @@ MainWindow::MainWindow(QWidget *parent)
                                         thrdPoolFastDataWork.MaxThreads())
                                         );
     ui->statusbar->addWidget(wtCombIndicator);
+
+    lcdN = new QLCDNumber;
+    lcdN->setDigitCount(8);
+    lcdN->setMaximumHeight(16);
+    lcdN->display(QString("00:00:00"));
+    lcdN->setToolTip(tr("server time of the last packet"));
+    ui->statusbar->addWidget(lcdN);
     //-------------------------------------------------------------
-//    QHBoxLayout * ltDD = new QHBoxLayout();
-//    ltDD->setMargin(0);
-//    ui->dkWtDownContents->setLayout(ltDD);
-//    ui->dkDownDock->setTitleBarWidget(new QWidget());
-//    ui->dkDownDock->setMaximumHeight(20);
-    //ui->dkDownDock->hide();
-
-//    statusBarTickers = new QStatusBar();
-
-//    ltDD->addWidget(statusBarTickers);
-
-//    lcdN = new QLCDNumber;
-//    lcdN->display("00:00");
-//    lcdN->setDigitCount(8);
-//    ltDD->addWidget(lcdN);
-
-//    QLabel * wt =new QLabel("Mamba");
-//    ltDD->addWidget(wt);
 
     //-------------------------------------------------------------
     QColor colorDarkGreen(0, 100, 52,50);
@@ -260,9 +249,9 @@ void MainWindow::timerEvent(QTimerEvent * event)
             case dataAmiPipeAnswer::eAnswerType::testTimeEvent:
                 //emit SendToErrorLog(QString::fromStdString(data.GetErrString()));
                 if (lcdN){
-                    std::time_t t = data.Time();
-                    std::string s = threadfree_gmtime_time_to_str(&t);
-                    lcdN->display(QString::fromStdString(s));
+//                    std::time_t t = data.Time();
+//                    std::string s = threadfree_gmtime_time_to_str(&t);
+//                    lcdN->display(QString::fromStdString(s));
 
 //                    std::call_once(mainwindow_test_call_once_flag,&MainWindow::initTestConst,this);
 //                    milliseconds msCount = std::chrono::steady_clock::now() - dtSpeedCounter;
@@ -431,10 +420,21 @@ void MainWindow::timerEvent(QTimerEvent * event)
     }
     //////////////////
     CheckActiveProcesses();
+    CheckLastPacketTime();
     CheckActivePipes();
     ListViewActivityTermination();
     //
     QWidget::timerEvent(event);
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::CheckLastPacketTime()
+{
+    std::time_t tLast = lastTimePacketReceived.load();
+    if (tLast > tLocalStoredPacketActivity){
+        tLocalStoredPacketActivity = tLast;
+        auto str = threadfree_gmtime_time_to_str(&tLocalStoredPacketActivity);
+        lcdN->display(QString::fromStdString(str));
+    }
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::CheckActiveProcesses()

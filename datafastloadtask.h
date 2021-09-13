@@ -11,8 +11,10 @@ using milliseconds=std::chrono::duration<double,
     >;
 
 
-inline std::mutex                  mutexConditionFastData;
-inline std::condition_variable     conditionFastData;
+inline std::mutex                   mutexConditionFastData;
+inline std::condition_variable      conditionFastData;
+
+inline std::atomic<std::time_t>     lastTimePacketReceived{0};
 
 class dataFastLoadTask
 {

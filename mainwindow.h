@@ -91,10 +91,12 @@ private:
     QAction * pacGVLowerSc;
     QAction * pacGVVolumeSc;
 
-    QLCDNumber * lcdN;
-    QStatusBar * statusBarTickers;
+
+    //QStatusBar * statusBarTickers;
 
     CombIndicator * wtCombIndicator;
+    QLCDNumber * lcdN;
+    std::time_t tLocalStoredPacketActivity{0};
 
     QToolBar * tbrToolBar;
     bool bToolBarOnLoadIsHidden;
@@ -263,6 +265,7 @@ protected slots: // for main window
 
     void CheckActivePipes();
     void CheckActiveProcesses();
+    void CheckLastPacketTime();
 
 
 private:

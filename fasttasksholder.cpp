@@ -89,7 +89,7 @@ void FastTasksHolder::PacketReceived(dataFastLoadTask &data,
     //long                    & lTask                                 = mTask[iTickerID];
     long long               & llPacketsCounter                      = mPacketsCounter[iTickerID];
     std::time_t             & tLastTime                             = mLastTime[iTickerID];
-    std::chrono::time_point<std::chrono::steady_clock> & dtActivity = mDtActivity[iTickerID];
+    //std::chrono::time_point<std::chrono::steady_clock> & dtActivity = mDtActivity[iTickerID];
     std::string             & strBuff                               = mBuff[iTickerID];
     std::set<std::time_t>   & stTimeSet                             = mTimeSet[iTickerID];
     std::set<std::time_t>   & stHolderTimeSet                       = mHolderTimeSet[iTickerID];
@@ -148,18 +148,28 @@ void FastTasksHolder::PacketReceived(dataFastLoadTask &data,
             }
             //////////////////////////////////////////////////////
             /// show activity
-            milliseconds tActivityCount = std::chrono::steady_clock::now() - dtActivity;
-            if (tActivityCount > 100ms){
-                dtActivity = std::chrono::steady_clock::now();
-                //
-                if (iTickerID == 1){ // TODO: delete. for tests
-                    dataAmiPipeAnswer answ;
-                    answ.SetTickerID(iTickerID);
-                    answ.SetType(dataAmiPipeAnswer::testTimeEvent);
-                    answ.SetTime(data.vV.back().Period());
-                    queuePipeAnswers.Push(answ);
+
+            std::time_t tLast = lastTimePacketReceived.load();
+            if (tLast < data.vV.back().Period()){
+                while(!lastTimePacketReceived.compare_exchange_weak(tLast,data.vV.back().Period())){
+                    if (tLast < data.vV.back().Period()){
+                        break;
+                    }
                 }
             }
+
+//            milliseconds tActivityCount = std::chrono::steady_clock::now() - dtActivity;
+//            if (tActivityCount > 100ms){
+//                dtActivity = std::chrono::steady_clock::now();
+//                //
+//                if (iTickerID == 1){ // TODO: delete. for tests
+//                    dataAmiPipeAnswer answ;
+//                    answ.SetTickerID(iTickerID);
+//                    answ.SetType(dataAmiPipeAnswer::testTimeEvent);
+//                    answ.SetTime(data.vV.back().Period());
+//                    queuePipeAnswers.Push(answ);
+//                }
+//            }
             //////////////////////////////////////////////////////
             /// writing to database
             WriteVectorToStorage(iTickerID,tLastTime,strBuff,stTimeSet,stStore,data.vV,queuePipeAnswers);

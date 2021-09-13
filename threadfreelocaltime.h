@@ -71,8 +71,8 @@ inline static std::string threadfree_gmtime_time_to_str(const T* t)
     #endif
 
     char buffer[100];
-    //std::strftime(buffer, 100, "%H:%M:%S", &tmTmp);
-    std::strftime(buffer, 100, "%H:%M", &tmTmp);
+    std::strftime(buffer, 100, "%H:%M:%S", &tmTmp);
+    //std::strftime(buffer, 100, "%H:%M", &tmTmp);
     std::string strRet(buffer);
 
     return strRet;
