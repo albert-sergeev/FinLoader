@@ -1715,7 +1715,8 @@ void MainWindow::InitHolders()
     std::time_t tBegin = Storage::dateAddMonth(tNow,-6);
     //
     for(const Ticker &t:vTickersLst){
-        if (t.AutoLoad()){
+        //if (t.AutoLoad())
+        {
             std::shared_lock lk(mutexMainHolder);
             if (Holders.find(t.TickerID()) == Holders.end()){
                 lk.unlock();

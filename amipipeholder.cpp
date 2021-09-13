@@ -92,7 +92,7 @@ dataAmiPipeTask::pipes_type AmiPipeHolder::ScanActivePipes()
     std::string sBind;
 
 #ifdef _WIN32
-#elif
+#else
     if (std::filesystem::exists(pathTickerDir))
 #endif
     {
@@ -375,7 +375,8 @@ void AmiPipeHolder::ReadConnectedPipes(BlockFreeQueue<dataFastLoadTask>         
                     if (filesize == iBytesToRead) bWasFullBuffers = true;
 #else
                 int iToRead = iBytesToRead;
-                if((bSuccessfullRead=ItConnected->second.second.second.read(buff + iWriteStart,iBytesToRead))){
+                if(ItConnected->second.second.second.read(buff + iWriteStart,iBytesToRead)){
+                    bSuccessfullRead = true;
                     mPointerToWrite[strBind] +=  iBytesToRead;
                     BytesRead += iBytesToRead;
                     if (iToRead == iBytesToRead) bWasFullBuffers = true;

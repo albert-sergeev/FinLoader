@@ -2,6 +2,7 @@
 #define DATAFASTLOADTASK_H
 
 #include <vector>
+#include<atomic>
 #include "bartick.h"
 
 using namespace std::chrono_literals;
