@@ -105,10 +105,10 @@ public:
         clear();
         // TODO: if no crashing -- redo
         delete head;
-        {
-            ThreadFreeCout pcout;
-            pcout <<"~BlockFreeQueue()\n";
-        }
+//        {
+//            ThreadFreeCout pcout;
+//            pcout <<"~BlockFreeQueue()\n";
+//        }
     };
     //-------------------------------------------------------------------------------------------
     // to simplify drop copy constructors

@@ -35,6 +35,26 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
 
     //-------------------------------------------------------------
+//    QHBoxLayout * ltDD = new QHBoxLayout();
+//    ltDD->setMargin(0);
+//    ui->dkWtDownContents->setLayout(ltDD);
+//    ui->dkDownDock->setTitleBarWidget(new QWidget());
+//    ui->dkDownDock->setMaximumHeight(20);
+    //ui->dkDownDock->hide();
+
+//    statusBarTickers = new QStatusBar();
+
+//    ltDD->addWidget(statusBarTickers);
+
+//    lcdN = new QLCDNumber;
+//    lcdN->display("00:00");
+//    lcdN->setDigitCount(8);
+//    ltDD->addWidget(lcdN);
+
+//    QLabel * wt =new QLabel("Mamba");
+//    ltDD->addWidget(wt);
+
+    //-------------------------------------------------------------
     QColor colorDarkGreen(0, 100, 52,50);
     QColor colorDarkRed(31, 53, 200,40);
     //-------------------------------------------------------------
@@ -891,16 +911,6 @@ void MainWindow::InitAction()
         if (bTickerBarButtonsHidden)
             ui->widgetTickerButtonBar->hide();
 
-
-
-        QLayout *lt =  ui->statusbar->layout();
-        //statusBarTickers = new QStatusBar();
-        //lt->addWidget(statusBarTickers);
-        //lt->setAlignment(Qt::AlignmentFlag::AlignLeft);
-        lcdN = new QLCDNumber;
-        lt->addWidget(lcdN);
-        lcdN->display("01:02");
-        lcdN->setDigitCount(8);
 
 
 

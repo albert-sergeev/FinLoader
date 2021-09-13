@@ -122,10 +122,10 @@ public:
     //--------------------------------------------------------------------------------------------------------
     Storage();
     ~Storage(){
-        {
-            ThreadFreeCout pcout;
-            pcout <<"~Storage()\n";
-        }
+//        {
+//            ThreadFreeCout pcout;
+//            pcout <<"~Storage()\n";
+//        }
     }
 
 public:

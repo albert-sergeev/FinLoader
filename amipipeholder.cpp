@@ -342,7 +342,7 @@ void AmiPipeHolder::ReadConnectedPipes(BlockFreeQueue<dataFastLoadTask>         
 
         dataFastLoadTask task(dataFastLoadTask::NewTicks);
 
-        bSuccessfullRead = false;
+        bSuccessfullRead = true;
         if (ItConnected->second.second.second.good()){
 
 #ifdef _WIN32
@@ -360,14 +360,22 @@ void AmiPipeHolder::ReadConnectedPipes(BlockFreeQueue<dataFastLoadTask>         
                 //
                 char *buff = mBuffer[strBind].data();
 #ifdef _WIN32
-                //Read(char * buff, size_t buffsize, size_t &bytesRead);
-                if(ItConnected->second.second.second.read (buff + iWriteStart,iBytesToRead,filesize)){
+
+                const int iMaxReadCounts{30};
+                int iReadCount{0};
+                filesize = iBytesToRead; //to do first loop
+
+                while( iBytesToRead == filesize && iReadCount < iMaxReadCounts &&
+                      (bSuccessfullRead = ItConnected->second.second.second.read (buff + iWriteStart,iBytesToRead,filesize))){
+
+                    iReadCount++;
+
                     mPointerToWrite[strBind] +=  filesize;
                     BytesRead += filesize;
                     if (filesize == iBytesToRead) bWasFullBuffers = true;
 #else
                 int iToRead = iBytesToRead;
-                if(ItConnected->second.second.second.read(buff + iWriteStart,iBytesToRead)){
+                if((bSuccessfullRead=ItConnected->second.second.second.read(buff + iWriteStart,iBytesToRead))){
                     mPointerToWrite[strBind] +=  iBytesToRead;
                     BytesRead += iBytesToRead;
                     if (iToRead == iBytesToRead) bWasFullBuffers = true;
@@ -381,10 +389,6 @@ void AmiPipeHolder::ReadConnectedPipes(BlockFreeQueue<dataFastLoadTask>         
                     int iPacketStart = iReadStart;
                     unsigned long long longDate{0};
                     double volume{0};
-
-//                    double vO{0};
-//                    double vH{0};
-//                    double vL{0};
                     double vC{0};
 
                     task.vV.reserve(sizeof (b) * (1 + ((mPointerToWrite[strBind] - iReadStart)/48)));
@@ -399,16 +403,12 @@ void AmiPipeHolder::ReadConnectedPipes(BlockFreeQueue<dataFastLoadTask>         
                         if (bInStream && iBlockStart >= 48){
                             bInStream = false;
                             iReadStart = i - iBlockStart;
-//                            if (bFirst && iReadStart != 2){
-//                                ThreadFreeCout pcout;
-//                                pcout <<"reading not from start: {"<<iReadStart<<"}\n";
-//                            }
 
-                            memcpy(&longDate,buff + iReadStart, 8);          iReadStart += 8;
+                            memcpy(&longDate,buff + iReadStart, 8);     iReadStart += 8;
                             /*memcpy(&vO,buff  + iReadStart, 8);*/       iReadStart += 8;
                             /*memcpy(&vH,buff  + iReadStart, 8);*/       iReadStart += 8;
                             /*memcpy(&vL,buff  + iReadStart, 8);*/       iReadStart += 8;
-                            memcpy(&vC,buff  + iReadStart, 8);       iReadStart += 8;
+                            memcpy(&vC,buff  + iReadStart, 8);          iReadStart += 8;
                             memcpy(&volume,buff + iReadStart, 8);       iReadStart += 8;
 
                                                                                    // 13275568800 179 000 1
@@ -447,7 +447,6 @@ void AmiPipeHolder::ReadConnectedPipes(BlockFreeQueue<dataFastLoadTask>         
                                         }
                                     }
                                 }
-                                //TODO: end
                             }
                         }
                         iBlockStart++;
@@ -458,10 +457,6 @@ void AmiPipeHolder::ReadConnectedPipes(BlockFreeQueue<dataFastLoadTask>         
 
                         int iDelta = mPointerToWrite[strBind] - iReadStart;
 
-//                        {
-//                            ThreadFreeCout pcout;
-//                            pcout <<"iDelta: "<<iDelta<<"\n";
-//                        }
 
                         memcpy(buff,buff + iReadStart, iDelta);
                         mPointerToWrite[strBind] -= iReadStart;
@@ -473,12 +468,6 @@ void AmiPipeHolder::ReadConnectedPipes(BlockFreeQueue<dataFastLoadTask>         
                         queueFastTasks.Push(task);
                         conditionFastData.notify_one();
 
-
-//                        {
-//                            ThreadFreeCout pcout;
-//                            pcout <<"mems: {"<<iTicketID<<"} write_pointer: {"<<mPointerToWrite[strBind]<<"}\n";
-//                        }
-
                         tActivityCount = std::chrono::steady_clock::now() - mDtActivity[iTickerID];
                         if (tActivityCount > 1800ms){
                             mDtActivity[iTickerID] = std::chrono::steady_clock::now();
@@ -486,20 +475,16 @@ void AmiPipeHolder::ReadConnectedPipes(BlockFreeQueue<dataFastLoadTask>         
                             queueTrdAnswers.Push(dt);
                         }
                     }
-                    bSuccessfullRead = true;
-                    ++ItConnected;
                 }
-                else{
-                   // ++ItConnected;
-                    ThreadFreeCout pcout;
-                    pcout <<"{"<<iTickerID<<"} disconnected\n";
-                }
-            }
-            else{
-                ++ItConnected;
+//                else{
+//                   // ++ItConnected;
+//                    bSuccessfullRead = false;
+//                    ThreadFreeCout pcout;
+//                    pcout <<"{"<<iTickerID<<"} disconnected\n";
+//                }
             }
         }
-        //else{
+        //// looper
         if (!bSuccessfullRead){
                 try{
                     ItConnected->second.second.second.close();
@@ -516,6 +501,9 @@ void AmiPipeHolder::ReadConnectedPipes(BlockFreeQueue<dataFastLoadTask>         
                 auto ItNext = std::next(ItConnected);
                 mPipesConnected.erase(ItConnected);
                 ItConnected = ItNext;
+        }
+        else{
+            ++ItConnected;
         }
     }
 }

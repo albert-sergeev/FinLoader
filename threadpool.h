@@ -48,10 +48,10 @@ public:
             if(threads[i].joinable())
                 threads[i].join();
         }
-        {
-            ThreadFreeCout pcout;
-            pcout <<"~join_threads() {"<<(&threads)<<"}\n";
-        }
+//        {
+//            ThreadFreeCout pcout;
+//            pcout <<"~join_threads() {"<<(&threads)<<"}\n";
+//        }
     };
 };
 
@@ -162,10 +162,10 @@ public:
     ~ThreadPool(){
         bQuit = true;
         Interrupt();
-        {
-            ThreadFreeCout pcout;
-            pcout <<"~ThreadPool()\n";
-        }
+//        {
+//            ThreadFreeCout pcout;
+//            pcout <<"~ThreadPool()\n";
+//        }
     }
     //---------------------------------------------------------------------------------------------------
     void Interrupt(){
@@ -183,10 +183,10 @@ public:
     void Halt(){
         bQuit = true;
         Interrupt();
-        {
-            ThreadFreeCout pcout;
-            pcout <<"ThreadPool::Halt()\n";
-        }
+//        {
+//            ThreadFreeCout pcout;
+//            pcout <<"ThreadPool::Halt()\n";
+//        }
         for(int i = 0 ; i < (int)threads.size(); ++i){
             if(threads[i].joinable())
                 threads[i].join();
