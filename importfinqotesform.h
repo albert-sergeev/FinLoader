@@ -29,9 +29,12 @@ private:
 
     StyledSwitcher * swtShowByName;
 
-    QMenu   *pImportContextMenu;
-    QAction * pacCheck;
-    QAction * pacImport;
+//    QMenu   *pImportContextMenu;
+//    QAction * pacCheck;
+//    QAction * pacImport;
+    bool bPacCheckEnabled;
+    bool bPacCheckInMemoryEnabled;
+    bool bPacImport;
 
 
     std::filesystem::path pathFile;
@@ -49,6 +52,7 @@ private:
 
 
     bool bReadyToImport{false};
+    bool bCheckingInMemory{false};
     int iTimePeriod{0};
     int iSelectedTickerId{0};
     int iFoundTickerId{0};
@@ -111,6 +115,7 @@ private slots:
     void slotSetWidgetsInLoadState(bool);
 
     void slotSetToCheck();
+    void slotSetToCheckInMemory();
     void slotSetToImport();
 
 private:

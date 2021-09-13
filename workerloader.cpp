@@ -612,10 +612,10 @@ void workerLoader::workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & queue
                     dt.SetTextInfo(ss.str());
                     queueTrdAnswers.Push(dt);
 
-                    {
-                        ThreadFreeCout pcout;
-                        pcout << ss.str();
-                    }
+//                    {
+//                        ThreadFreeCout pcout;
+//                        pcout << ss.str();
+//                    }
                 }
             }
             if(this_thread_flagInterrup.isSet()){
@@ -762,11 +762,11 @@ void workerLoader::workerOptimizeStorage(BlockFreeQueue<dataFinLoadTask> & queue
                                 Storage & stStore,
                                 dataFinLoadTask & data)
 {
-        {
+//        {
 
-            ThreadFreeCout pcout;
-            pcout << "storage optimization task for TickerID: " << data.TickerID<<"\n";
-        }
+//            ThreadFreeCout pcout;
+//            pcout << "storage optimization task for TickerID: " << data.TickerID<<"\n";
+//        }
         {
             dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::storageOptimisationBegin,data.GetParentWnd());
             queueTrdAnswers.Push(dt);
@@ -1041,66 +1041,113 @@ void workerLoader::workerFinQuotesCheck(BlockFreeQueue<dataFinLoadTask> & /*queu
                     dt.SetTextInfo("loading data from storage...");
                     queueTrdAnswers.Push(dt);
                 }
-                std::vector<std::vector<BarTick>> v_vStoredBars;
+                std::shared_ptr<GraphHolder> ptrHolder = std::make_shared<GraphHolder>(GraphHolder{data.TickerID});
 
-                std::time_t tEnd = Bar::DateAccommodate(data.dtEnd,data.iInterval,true) - 1;
+                if (!data.bCheckInMemory){
+                    /// filling data from store
 
-                if (bWasSuccessfull){
-                    std::vector<std::time_t> vMonthToLoad;
+                    std::vector<std::vector<BarTick>> v_vStoredBars;
+
+                    std::time_t tEnd = Bar::DateAccommodate(data.dtEnd,data.iInterval,true) - 1;
+
+                    if (bWasSuccessfull){
+                        std::vector<std::time_t> vMonthToLoad;
 
 
 
-                    std::time_t dtMonthBegin = Storage::dateCastToMonth(data.dtBegin);
-                    std::time_t dtMonthEnd   = Storage::dateAddMonth(tEnd);
+                        std::time_t dtMonthBegin = Storage::dateCastToMonth(data.dtBegin);
+                        std::time_t dtMonthEnd   = Storage::dateAddMonth(tEnd);
 
-                    while (dtMonthBegin < dtMonthEnd) {
-                        vMonthToLoad.push_back(dtMonthBegin);
-                        dtMonthBegin = Storage::dateAddMonth(dtMonthBegin);
-                    }
-                    //
-                    std::stringstream ssOut;
-                    size_t iCollisionsCount;
-
-                    for (const std::time_t &t:vMonthToLoad){
-                        ssOut.str("");
-                        ssOut.clear();
-                        //
-                        v_vStoredBars.push_back({});
-                        //
-                        if (data.iInterval == Bar::eInterval::pTick &&
-                                !stStore.ReadFromStore(data.TickerID, t, v_vStoredBars.back(), data.dtBegin,tEnd,
-                                                   false,data.vRepoTable,
-                                                   false,data.vSessionTable,
-                                                   ssOut,iCollisionsCount)){
-                            bWasSuccessfull = false;
-                            dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportEnd,data.GetParentWnd());
-                            dt.SetSuccessfull(false);
-                            ssOut<<"\n\rError reading file.\n";
-                            dt.SetErrString(ssOut.str());
-                            queueTrdAnswers.Push(dt);
-
-                            break;
+                        while (dtMonthBegin < dtMonthEnd) {
+                            vMonthToLoad.push_back(dtMonthBegin);
+                            dtMonthBegin = Storage::dateAddMonth(dtMonthBegin);
                         }
-                        else if (data.iInterval != Bar::eInterval::pTick &&
-                                 !stStore.ReadFromStore(data.TickerID, t, v_vStoredBars.back(), data.dtBegin,tEnd,
-                                                    false,data.vRepoTable,
-                                                    true,data.vSessionTable,
-                                                    ssOut,iCollisionsCount)){
-                             bWasSuccessfull = false;
-                             dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportEnd,data.GetParentWnd());
-                             dt.SetSuccessfull(false);
-                             ssOut<<"\n\rError reading file.\n";
-                             dt.SetErrString(ssOut.str());
-                             queueTrdAnswers.Push(dt);
+                        //
+                        std::stringstream ssOut;
+                        size_t iCollisionsCount;
 
-                             break;
-                         }
-                        else{
-                            if (ssOut.str().size()>0){
-                                dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::logText,data.GetParentWnd());
-                                dt.SetTextInfo(ssOut.str());
+                        for (const std::time_t &t:vMonthToLoad){
+                            ssOut.str("");
+                            ssOut.clear();
+                            //
+                            v_vStoredBars.push_back({});
+                            //
+                            if (data.iInterval == Bar::eInterval::pTick &&
+                                    !stStore.ReadFromStore(data.TickerID, t, v_vStoredBars.back(), data.dtBegin,tEnd,
+                                                       false,data.vRepoTable,
+                                                       false,data.vSessionTable,
+                                                       ssOut,iCollisionsCount)){
+                                bWasSuccessfull = false;
+                                dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportEnd,data.GetParentWnd());
+                                dt.SetSuccessfull(false);
+                                ssOut<<"\n\rError reading file.\n";
+                                dt.SetErrString(ssOut.str());
                                 queueTrdAnswers.Push(dt);
+
+                                break;
                             }
+                            else if (data.iInterval != Bar::eInterval::pTick &&
+                                     !stStore.ReadFromStore(data.TickerID, t, v_vStoredBars.back(), data.dtBegin,tEnd,
+                                                        false,data.vRepoTable,
+                                                        true,data.vSessionTable,
+                                                        ssOut,iCollisionsCount)){
+                                 bWasSuccessfull = false;
+                                 dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportEnd,data.GetParentWnd());
+                                 dt.SetSuccessfull(false);
+                                 ssOut<<"\n\rError reading file.\n";
+                                 dt.SetErrString(ssOut.str());
+                                 queueTrdAnswers.Push(dt);
+
+                                 break;
+                             }
+                            else{
+                                if (ssOut.str().size()>0){
+                                    dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::logText,data.GetParentWnd());
+                                    dt.SetTextInfo(ssOut.str());
+                                    queueTrdAnswers.Push(dt);
+                                }
+                            }
+                            if(this_thread_flagInterrup.isSet()){
+                                //fout<<"exit on interrupt\n";
+                                dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportEnd,data.GetParentWnd());
+                                dt.SetSuccessfull(false);
+                                dt.SetErrString("loading process interrupted");
+                                queueTrdAnswers.Push(dt);
+                                bWasSuccessfull = false;
+                                break;
+                            }
+                        }
+                    }
+                    iCurrProgress = 60;
+                    if(iProgressSent < iCurrProgress){
+                        dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportCurrent,data.GetParentWnd());
+                        dt.SetPercent(iCurrProgress);
+                        queueTrdAnswers.Push(dt);
+                        iProgressSent = iCurrProgress + 5;
+                    }
+                    //// send every 0.5 sec activity
+                    ///
+                    tActivityCount = std::chrono::steady_clock::now() - dtActivity;
+                    if (tActivityCount > 500ms){
+                        dtActivity = std::chrono::steady_clock::now();
+                        dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::LoadActivity,data.GetParentWnd());
+                        queueTrdAnswers.Push(dt);
+                    }
+                    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                    /// load data to holder
+    //                {
+    //                    dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage,data.GetParentWnd());
+    //                    dt.SetTextInfo("parsing storage data to memory structures...");
+    //                    queueTrdAnswers.Push(dt);
+    //                }
+                    //GraphHolder &hl = ptrHolder.get();
+
+
+                    if (bWasSuccessfull){
+
+                        if(ptrHolder->AddBarsLists(v_vStoredBars,data.dtBegin,tEnd)){
+                            ;
                         }
                         if(this_thread_flagInterrup.isSet()){
                             //fout<<"exit on interrupt\n";
@@ -1109,55 +1156,19 @@ void workerLoader::workerFinQuotesCheck(BlockFreeQueue<dataFinLoadTask> & /*queu
                             dt.SetErrString("loading process interrupted");
                             queueTrdAnswers.Push(dt);
                             bWasSuccessfull = false;
-                            break;
                         }
                     }
                 }
-                iCurrProgress = 60;
-                if(iProgressSent < iCurrProgress){
-                    dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportCurrent,data.GetParentWnd());
-                    dt.SetPercent(iCurrProgress);
-                    queueTrdAnswers.Push(dt);
-                    iProgressSent = iCurrProgress + 5;
-                }
-                //// send every 0.5 sec activity
-                ///
-                tActivityCount = std::chrono::steady_clock::now() - dtActivity;
-                if (tActivityCount > 500ms){
-                    dtActivity = std::chrono::steady_clock::now();
-                    dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::LoadActivity,data.GetParentWnd());
-                    queueTrdAnswers.Push(dt);
-                }
-                //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                /// load data to holder
-//                {
-//                    dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage,data.GetParentWnd());
-//                    dt.SetTextInfo("parsing storage data to memory structures...");
-//                    queueTrdAnswers.Push(dt);
-//                }
-                GraphHolder hl {data.TickerID};
-
-                if (bWasSuccessfull){
-
-                    if(hl.AddBarsLists(v_vStoredBars,data.dtBegin,tEnd)){
-                        ;
-                    }
-                    if(this_thread_flagInterrup.isSet()){
-                        //fout<<"exit on interrupt\n";
-                        dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportEnd,data.GetParentWnd());
-                        dt.SetSuccessfull(false);
-                        dt.SetErrString("loading process interrupted");
-                        queueTrdAnswers.Push(dt);
-                        bWasSuccessfull = false;
-                    }
+                else{
+                    // using contained in memory data
+                    ptrHolder = data.holder;
                 }
                 iCurrProgress = 80;
                 if(iProgressSent < iCurrProgress){
                     dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportCurrent,data.GetParentWnd());
                     dt.SetPercent(iCurrProgress);
                     queueTrdAnswers.Push(dt);
-                    iProgressSent = iCurrProgress + 5;
+                   // iProgressSent = iCurrProgress + 5;
                 }
                 //// send every 0.5 sec activity
                 ///
@@ -1171,7 +1182,7 @@ void workerLoader::workerFinQuotesCheck(BlockFreeQueue<dataFinLoadTask> & /*queu
                 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                 // compare vectors
                 if (bWasSuccessfull){
-                    bIsEqual = compareBars(hl,data,vBars,queueTrdAnswers,dtActivity);
+                    bIsEqual = compareBars(*ptrHolder,data,vBars,queueTrdAnswers,dtActivity);
                 }
                 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                 if(this_thread_flagInterrup.isSet()){
@@ -1406,10 +1417,10 @@ void workerLoader::workerAmiClient(BlockFreeQueue<dataFinLoadTask> & /*queueFinQ
     //    int iID = WorkerThreadCounter.load();
     //    while (!WorkerThreadCounter.compare_exchange_weak(iID,iID + 1)) {;}
     //    WorkerThreadID = iID;
-    {
-        ThreadFreeCout pcout;
-        pcout <<"workerAmiClient in\n";
-    }
+//    {
+//        ThreadFreeCout pcout;
+//        pcout <<"workerAmiClient in\n";
+//    }
 
 //    std::string sPath = "\\\\.\\pipe\\AmiBroker2QUIK_TQBR.SBER_TICKS";
 //    pipesHolder.testPipe.setPipePath(sPath);
@@ -1487,10 +1498,10 @@ void workerLoader::workerAmiClient(BlockFreeQueue<dataFinLoadTask> & /*queueFinQ
             ThreadFreeCout pcout;
             pcout <<"crash ecxeption" <<ex.what()<<"\n";
         }
-    {
-        ThreadFreeCout pcout;
-        pcout <<"workerAmiClient out\n";
-    }
+//    {
+//        ThreadFreeCout pcout;
+//        pcout <<"workerAmiClient out\n";
+//    }
 }
 //------------------------------------------------------------------------------------------------------------------------------------------
 void workerLoader::workerFastDataWork( BlockFreeQueue<dataFastLoadTask>     &queueFastTasks,
@@ -1501,10 +1512,10 @@ void workerLoader::workerFastDataWork( BlockFreeQueue<dataFastLoadTask>     &que
                                 std::map<int,std::shared_ptr<GraphHolder>> &Holders)
 {
 
-    {
-        ThreadFreeCout pcout;
-        pcout <<"workerFastDataWork in\n";
-    }
+//    {
+//        ThreadFreeCout pcout;
+//        pcout <<"workerFastDataWork in\n";
+//    }
     bool bSuccess{false};
     try{
         while(true){
@@ -1549,10 +1560,10 @@ void workerLoader::workerFastDataWork( BlockFreeQueue<dataFastLoadTask>     &que
         pcout <<"crash ecxeption" <<ex.what()<<"\n";
     }
 
-    {
-        ThreadFreeCout pcout;
-        pcout <<"workerFastDataWork out\n";
-    }
+//    {
+//        ThreadFreeCout pcout;
+//        pcout <<"workerFastDataWork out\n";
+//    }
 }
 //------------------------------------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------------------------------------

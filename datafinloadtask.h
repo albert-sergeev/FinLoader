@@ -39,8 +39,17 @@ public:
     Market::SessionTable_type vSessionTable;
     Market::SessionTable_type  vRepoTable;
 
+    bool bCheckInMemory;
+
     //--------------------------------------------------------------
-    dataFinLoadTask():stStore{nullptr},parentWnd{nullptr},parseData{nullptr,nullptr},taskType{TaskType::finQuotesImport},holder{nullptr}{;};
+    dataFinLoadTask():
+        stStore{nullptr},
+        parentWnd{nullptr},
+        parseData{nullptr,nullptr},
+        taskType{TaskType::finQuotesImport},
+        holder{nullptr},
+        bCheckInMemory{false}
+    {;};
     //--------------------------------------------------------------
     dataFinLoadTask(const dataFinLoadTask & o):parseData{nullptr,nullptr}{
 
@@ -64,6 +73,8 @@ public:
 
         vSessionTable   = o.vSessionTable;
         vRepoTable      = o.vRepoTable;
+
+        bCheckInMemory  = o.bCheckInMemory;
     };
     //--------------------------------------------------------------
     inline void SetStore(Storage * const stSt)      { stStore = stSt;};

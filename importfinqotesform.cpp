@@ -43,16 +43,19 @@ ImportFinQuotesForm::ImportFinQuotesForm(modelMarketsList *modelM, int DefaultTi
     swtShowByName->SetOffColor(QPalette::Window,colorDarkRed);
     /////////////////////////////////
 
-    pImportContextMenu = new QMenu(this);
-    pacCheck =new QAction("Check");
-    pacCheck->setText(tr("&Check"));
-    pacImport =new QAction("Import");
-    pacImport->setText(tr("&Import"));
-    pImportContextMenu->addAction(pacCheck);
-    pImportContextMenu->addAction(pacImport);
+//    pImportContextMenu = new QMenu(this);
+//    pacCheck =new QAction("Check");
+//    pacCheck->setText(tr("&Check"));
+////    pacCheckInMemory =new QAction("Check in memory");
+////    pacCheckInMemory->setText(tr("&Check in memory"));
+//    pacImport =new QAction("Import");
+//    pacImport->setText(tr("&Import"));
+//    pImportContextMenu->addAction(pacCheck);
+//    ///pImportContextMenu->addAction(pacCheckInMemory);
+//    pImportContextMenu->addAction(pacImport);
 
-    connect(pacCheck,SIGNAL(triggered()),SLOT(slotSetToCheck()));
-    connect(pacImport,SIGNAL(triggered()),SLOT(slotSetToImport()));
+//    connect(pacCheck,SIGNAL(triggered()),SLOT(slotSetToCheck()));
+//    connect(pacImport,SIGNAL(triggered()),SLOT(slotSetToImport()));
 
     ui->btnImport->installEventFilter(this);
     /////////////////////////////////
@@ -96,9 +99,9 @@ ImportFinQuotesForm::ImportFinQuotesForm(modelMarketsList *modelM, int DefaultTi
 //--------------------------------------------------------------------------------------------------------
 ImportFinQuotesForm::~ImportFinQuotesForm()
 {
-    delete pImportContextMenu ;
-    delete pacCheck;
-    delete pacImport;
+//    delete pImportContextMenu ;
+//    delete pacCheck;
+//    delete pacImport;
 
     if(swtShowByName)   {delete swtShowByName;  swtShowByName = nullptr;}
 
@@ -114,7 +117,17 @@ void ImportFinQuotesForm::slotSetToCheck()
 {
     if(!bInLoading){
         bInChecking = true;
+        bCheckingInMemory = false;
         ui->btnImport->setText(tr("Check"));
+    }
+}
+//--------------------------------------------------------------------------------------------------------
+void ImportFinQuotesForm::slotSetToCheckInMemory()
+{
+    if(!bInLoading){
+        bInChecking = true;
+        bCheckingInMemory = true;
+        ui->btnImport->setText(tr("Check in memory"));
     }
 }
 //--------------------------------------------------------------------------------------------------------
@@ -122,6 +135,7 @@ void ImportFinQuotesForm::slotSetToImport()
 {
     if(!bInLoading){
         bInChecking = false;
+        bCheckingInMemory = false;
         ui->btnImport->setText(tr("Import"));
     }
 }
@@ -531,21 +545,30 @@ void ImportFinQuotesForm::slotPreparseImportFile()
 
                 parseDataReady              = parseDt;
                 bReadyToImport              = true;
+                bCheckingInMemory           = false;
 
                 if(bb.Interval() == Bar::eInterval::pTick){
                     bInChecking = false;
                     ui->btnImport->setText(tr("Import"));
 
-                    pacCheck->setEnabled(true);
-                    pacImport->setEnabled(true);
+//                    pacCheck->setEnabled(true);
+//                    pacImport->setEnabled(true);
+
+                    bPacCheckEnabled            = true;
+                    bPacCheckInMemoryEnabled    = true;
+                    bPacImport                  = true;
 
                 }
                 else{
                     bInChecking = true;
                     ui->btnImport->setText(tr("Check"));
 
-                    pacCheck->setEnabled(true);
-                    pacImport->setEnabled(false);
+//                    pacCheck->setEnabled(true);
+//                    pacImport->setEnabled(false);
+
+                    bPacCheckEnabled            = true;
+                    bPacCheckInMemoryEnabled    = true;
+                    bPacImport                  = false;
                 }
 
 
@@ -899,6 +922,8 @@ void ImportFinQuotesForm::slotBtnImportClicked()
                 }
             }
 
+            dataTask.bCheckInMemory = bCheckingInMemory;
+
             emit NeedParseImportFinQuotesFile(dataTask);
 
             bInLoading = true;
@@ -994,7 +1019,12 @@ void ImportFinQuotesForm::slotSetWidgetsInLoadState(bool bInLoad)
             ui->btnImport->setText(tr("Import"));
         }
         else{
-            ui->btnImport->setText(tr("Check"));
+            if(bCheckingInMemory){
+                ui->btnImport->setText(tr("Check in memory"));
+            }
+            else{
+                ui->btnImport->setText(tr("Check"));
+            }
         }
     }
 }
@@ -1020,7 +1050,28 @@ bool ImportFinQuotesForm::eventFilter(QObject *watched, QEvent *event)
             //QContextMenuEvent* pe = qobject_cast<QContextMenuEvent*>(event);
             QContextMenuEvent* pe = (QContextMenuEvent*)event;
             if (pe){
-                pImportContextMenu->exec(pe->globalPos());
+                //pImportContextMenu->exec(pe->globalPos());
+
+                //QPoint item = ui->lstTickersActive->mapToGlobal(pos);
+                QMenu submenu(this);
+                QAction *pacCheck           = submenu.addAction(tr("&Check"));
+                QAction *pacCheckInMemory   = submenu.addAction(tr("Check &in memory"));
+                QAction *pacImport          = submenu.addAction(tr("&Import"));
+
+                pacCheck->setEnabled(bPacCheckEnabled);
+                pacCheckInMemory->setEnabled(bPacCheckInMemoryEnabled);
+                pacImport->setEnabled(bPacImport);
+
+                QAction* rightClickItem = submenu.exec(pe->globalPos());
+                if (rightClickItem && rightClickItem == pacCheck){
+                    slotSetToCheck();
+                }
+                else if (rightClickItem && rightClickItem == pacCheckInMemory){
+                    slotSetToCheckInMemory();
+                }
+                else if (rightClickItem && rightClickItem == pacImport){
+                    slotSetToImport();
+                }
             }
         }
     }

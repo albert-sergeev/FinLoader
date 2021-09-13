@@ -105,8 +105,8 @@ void FastTasksHolder::PacketReceived(dataFastLoadTask &data,
     if (llPacketsCounter > data.llPackesCounter){
         /// 3.1 drop
     }
-    else if (llPacketsCounter < data.llPackesCounter &&
-             data.RepushCount()<1000000000 && data.TimeTilCreate() < 30000ms
+    else if (llPacketsCounter < data.llPackesCounter
+             /*&& data.RepushCount()<1000000000*/ && data.TimeTilCreate() < 120000ms
              ){
         /// 3.2 push again if wrong number
         data.IncrementRepush();
@@ -173,7 +173,7 @@ void FastTasksHolder::PacketReceived(dataFastLoadTask &data,
                 }
             }
             if(!stHolderTimeSet.empty()){
-                std::time_t tD = Bar::DateAccommodate((*stTimeSet.rbegin()),Bar::pDay);
+                std::time_t tD = Bar::DateAccommodate((*stHolderTimeSet.rbegin()),Bar::pDay);
                 auto It = stHolderTimeSet.lower_bound(tD);
                 if (It != stHolderTimeSet.begin()){
                     stHolderTimeSet.erase(stHolderTimeSet.begin(),It);

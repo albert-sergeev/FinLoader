@@ -104,7 +104,7 @@ public:
     virtual ~BlockFreeQueue(){
         clear();
         // TODO: if no crashing -- redo
-       // delete head;
+        delete head;
         {
             ThreadFreeCout pcout;
             pcout <<"~BlockFreeQueue()\n";

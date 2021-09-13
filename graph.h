@@ -401,7 +401,7 @@ bool Graph<T>::AddBarsListsFast(std::vector<T> &vV, std::set<std::time_t>   & st
 //        auto ItSrcEnd ( mDictionary.upper_bound(mNew.rbegin()->second.back().Period()));
 
         if (vContainer.capacity() < vContainer.size() + iDelta){
-            vContainer.reserve(vContainer.size() + iDelta + 32768);
+            vContainer.reserve(vContainer.size() + iDelta + 65535);
         }
         vContainer.resize(vContainer.size() + iDelta);
 
