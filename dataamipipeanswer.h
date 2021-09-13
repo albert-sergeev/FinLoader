@@ -4,6 +4,8 @@
 #include <string>
 #include <chrono>
 
+#include "graphholder.h"
+
 
 class dataAmiPipeAnswer
 {
@@ -41,6 +43,7 @@ public:
 
     std::time_t tBegin{0};
     std::time_t tEnd{0};
+    std::shared_ptr<GraphHolder> ptrHolder;
 
     dataAmiPipeAnswer& operator=(dataAmiPipeAnswer &o) = delete;
 };

@@ -245,7 +245,7 @@ void MainWindow::timerEvent(QTimerEvent * event)
                 }
                 break;
             case dataAmiPipeAnswer::eAnswerType::FastShowEvent:
-                slotSendSignalToInvalidateGraph(data.TickerID(), data.tBegin, data.tEnd);
+                slotSendSignalToFastShow(data.TickerID(), data.tBegin, data.tEnd, data.ptrHolder);
                 break;
             }
             //////////////////////////////////////////////
@@ -468,6 +468,18 @@ void MainWindow::slotSendSignalToInvalidateGraph(int TickerID, std::time_t dtDeg
         wnd = qobject_cast<GraphViewForm *>(lst[i]->widget());
         if(wnd && wnd->TickerID() == TickerID){
             wnd->slotInvalidateGraph(dtDegin,dtEnd);
+        }
+    }
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotSendSignalToFastShow(int TickerID, std::time_t tBegin, std::time_t tEnd,std::shared_ptr<GraphHolder> ptrHolder)
+{
+    GraphViewForm * wnd{nullptr};
+    QList<QMdiSubWindow*> lst = ui->mdiArea->subWindowList();
+    for(int i = 0; i < lst.size(); ++i){
+        wnd = qobject_cast<GraphViewForm *>(lst[i]->widget());
+        if(wnd && wnd->TickerID() == TickerID){
+            wnd->slotFastShowEvent(tBegin, tEnd, ptrHolder);
         }
     }
 }

@@ -241,13 +241,14 @@ public:
 
     //------------------------------------------------------------
     bool AddBarsLists(std::vector<std::vector<BarTick>> &v, std::time_t dtStart,std::time_t dtEnd);
-    bool AddBarsListsFast(std::vector<BarTick> &v, std::set<std::time_t>   & stHolderTimeSet,std::pair<std::time_t,std::time_t> &pairRange);
+    bool AddBarsListsFast(std::vector<BarTick> &v, std::set<std::time_t>   & stHolderTimeSet,std::pair<std::time_t,std::time_t> &pairRange,GraphHolder &grDest);
     bool CheckMap();
+
+    std::size_t getShiftIndex(Bar::eInterval it)  const;
 
 protected:
 
-    bool BuildUpperList(std::time_t dtStart,std::time_t dtEnd);
-
+    bool BuildUpperList(std::time_t dtStart,std::time_t dtEnd, bool bCopyToDst,GraphHolder &grDest);
 
 };
 

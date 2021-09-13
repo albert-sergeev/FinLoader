@@ -69,12 +69,17 @@ bool GraphHolder::AddBarsLists(std::vector<std::vector<BarTick>> &v, std::time_t
     //
     bool bRet = graphTick.AddBarsList(v,dtStart,dtEnd);
     if (bRet){
-        bRet = BuildUpperList(dtStart,dtEnd);
+        GraphHolder hlTmp(iTickerID);
+        bRet = BuildUpperList(dtStart,dtEnd,false,hlTmp);
     }
     return bRet;
 }
 //------------------------------------------------------------------------------------------------------
-bool GraphHolder::AddBarsListsFast(std::vector<BarTick> &v, std::set<std::time_t>   & stHolderTimeSet,std::pair<std::time_t,std::time_t> &pairRange)
+bool GraphHolder::AddBarsListsFast(std::vector<BarTick> &v,
+                                   std::set<std::time_t>   & stHolderTimeSet,
+                                   std::pair<std::time_t,
+                                   std::time_t> &pairRange,
+                                   GraphHolder &grDest)
 {
     pairRange = {0,0};
 
@@ -87,28 +92,28 @@ bool GraphHolder::AddBarsListsFast(std::vector<BarTick> &v, std::set<std::time_t
     //////////////////////////////////////
     bool bRet{true};
     if (!v.empty()){
-        bRet = graphTick.AddBarsListsFast(v,stHolderTimeSet,pairRange);
+        bRet = graphTick.AddBarsListsFast(v,stHolderTimeSet,pairRange,grDest.graphTick);
         if (bRet){
-            bRet = BuildUpperList(v.front().Period(),v.back().Period());
+            bRet = BuildUpperList(v.front().Period(),v.back().Period(),true,grDest);
         }
     }
 
     return bRet;
 }
 //------------------------------------------------------------------------------------------------------
-bool GraphHolder::BuildUpperList(std::time_t dtStart,std::time_t dtEnd)
+bool GraphHolder::BuildUpperList(std::time_t dtStart,std::time_t dtEnd, bool bCopyToDst,GraphHolder &grDest)
 {
-    graph1.BuildFromLowerList(graphTick, dtStart,dtEnd);
-    graph5.BuildFromLowerList(graph1, dtStart,dtEnd);
-    graph10.BuildFromLowerList(graph5, dtStart,dtEnd);
-    graph15.BuildFromLowerList(graph5, dtStart,dtEnd);
-    graph30.BuildFromLowerList(graph15, dtStart,dtEnd);
-    graph60.BuildFromLowerList(graph30, dtStart,dtEnd);
-    graph120.BuildFromLowerList(graph60, dtStart,dtEnd);
-    graph180.BuildFromLowerList(graph60, dtStart,dtEnd);
-    graphDay.BuildFromLowerList(graph60, dtStart,dtEnd);
-    graphWeek.BuildFromLowerList(graphDay, dtStart,dtEnd);
-    graphMonth.BuildFromLowerList(graphDay, dtStart,dtEnd);
+    graph1.BuildFromLowerList(graphTick, dtStart,dtEnd,bCopyToDst,grDest.graph1);
+    graph5.BuildFromLowerList(graph1, dtStart,dtEnd,bCopyToDst,grDest.graph5);
+    graph10.BuildFromLowerList(graph5, dtStart,dtEnd,bCopyToDst,grDest.graph10);
+    graph15.BuildFromLowerList(graph5, dtStart,dtEnd,bCopyToDst,grDest.graph15);
+    graph30.BuildFromLowerList(graph15, dtStart,dtEnd,bCopyToDst,grDest.graph30);
+    graph60.BuildFromLowerList(graph30, dtStart,dtEnd,bCopyToDst,grDest.graph60);
+    graph120.BuildFromLowerList(graph60, dtStart,dtEnd,bCopyToDst,grDest.graph120);
+    graph180.BuildFromLowerList(graph60, dtStart,dtEnd,bCopyToDst,grDest.graph180);
+    graphDay.BuildFromLowerList(graph60, dtStart,dtEnd,bCopyToDst,grDest.graphDay);
+    graphWeek.BuildFromLowerList(graphDay, dtStart,dtEnd,bCopyToDst,grDest.graphWeek);
+    graphMonth.BuildFromLowerList(graphDay, dtStart,dtEnd,bCopyToDst,grDest.graphMonth);
 
     return true;
 }
@@ -195,6 +200,15 @@ std::tuple<double,double,unsigned long,unsigned long>  GraphHolder::getMinMax(co
         return  mpGraphs.at(it).getMinMax(dtStart,dtEnd);
     }
 };
+//------------------------------------------------------------------------------------------------------
+std::size_t GraphHolder::getShiftIndex(Bar::eInterval it)  const
+{
+    if(it == Bar::eInterval::pTick)
+        return graphTick.GetShiftIndex();
+    else{
+        return  mpGraphs.at(it).GetShiftIndex();;
+    }
+}
 //------------------------------------------------------------------------------------------------------
 std::time_t GraphHolder::getTimeByIndex(const Bar::eInterval it,const size_t indx)
 {

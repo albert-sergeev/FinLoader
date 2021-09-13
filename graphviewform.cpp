@@ -241,6 +241,31 @@ void GraphViewForm::slotInvalidateGraph(std::time_t dtBegin, std::time_t dtEnd, 
     }
 }
 //---------------------------------------------------------------------------------------------------------------
+void GraphViewForm::slotProcessRepaintQueue()
+{
+    bool bSuccess{false};
+    auto pData (queueRepaint.Pop(bSuccess));
+    while(bSuccess)
+    {
+        auto data(*pData.get());
+        //////
+        if (iSelectedInterval == Bar::eInterval::pTick) {
+            bSuccess = RepainInvalidRange<BarTick>(data);
+        }
+        else{
+            bSuccess = RepainInvalidRange<Bar>(data);
+        }
+        ///////
+        if(!bSuccess){ // if not, postpone for the future
+            queueRepaint.Push({data.dtStart,data.dtEnd,data.bNeedToRescale});
+        }
+        else{   // if success, do next
+            pData = queueRepaint.Pop(bSuccess);
+        }
+    }
+}
+//---------------------------------------------------------------------------------------------------------------
+
 template<typename T>
 bool GraphViewForm::RepainInvalidRange(RepainTask & data)
 {
@@ -1030,24 +1055,9 @@ void GraphViewForm::slotPeriodButtonChanged()
 //---------------------------------------------------------------------------------------------------------------
  void GraphViewForm::PaintViewPort   (bool bFrames ,bool bBars ,bool bVolumes, bool bStoreRightPos)
  {
-     int iBeg = ui->grViewQuotes->horizontalScrollBar()->value();
-     int iEnd = iBeg + ui->grViewQuotes->horizontalScrollBar()->pageStep();
+     auto iRange = getViewPortRangeToHolder();
 
-     if (ui->grViewQuotes->horizontalScrollBar()->maximum() > 0 ) { // if slider range was espanded
-         iBeg = ((iBeg/dHScale)/(double)BarGraphicsItem::BarWidth);
-         iEnd = ((iEnd/dHScale)/(double)BarGraphicsItem::BarWidth);
-
-         iBeg = iBeg - iLeftShift;
-         iEnd = iEnd - iLeftShift;
-     }
-     else{
-         QRectF rS = ui->grViewQuotes->scene()->sceneRect();
-
-         iBeg = -iLeftShift;
-         iEnd = ((rS.width()/dHScale)/(double)BarGraphicsItem::BarWidth) - iLeftShift;
-     }
-
-     PaintViewPort   (iBeg, iEnd, bFrames, bBars, bVolumes,bStoreRightPos);
+     PaintViewPort   (iRange.first/*iBeg*/,iRange.second/* iEnd*/, bFrames, bBars, bVolumes,bStoreRightPos);
  }
  //---------------------------------------------------------------------------------------------------------------
  void GraphViewForm::PaintViewPort   (int iStart, int iEnd,bool bFrames,bool bBars,bool bVolumes, bool bStoreRightPos)
@@ -1283,6 +1293,10 @@ void GraphViewForm::slotPeriodButtonChanged()
      int iBeg {iBegV < 0 ? 0 : iBegV};
      int iLeftBeg = iBeg;
 
+     bool bSuccess{false};
+     auto ItDef (holder->beginIteratorByDate<T>(iSelectedInterval,0,bSuccess));
+     if (!bSuccess) return;
+
      EraseLinesUpper(mVFramesViewQuotes,  iBegV, ui->grViewQuotes->scene());
      EraseLinesUpper(mVFramesScaleUpper,  iBegV, ui->grViewScaleUpper->scene());
      EraseLinesUpper(mVFramesVolume,      iBegV, ui->grViewVolume->scene());
@@ -1362,7 +1376,7 @@ void GraphViewForm::slotPeriodButtonChanged()
      }
 
 
-     bool bSuccess{false};
+     bSuccess = false;
      if (iSelectedInterval == Bar::eInterval::pTick){
          auto It  (holder->beginIteratorByDate<BarTick>(iSelectedInterval,tNextTmp,bSuccess));
          if (bSuccess){
@@ -1699,7 +1713,94 @@ void GraphViewForm::slotPeriodButtonChanged()
      }
  }
  //---------------------------------------------------------------------------------------------------------------
+ std::pair<int,int> GraphViewForm::getViewPortRangeToHolder()
+ {
+     int iBeg = ui->grViewQuotes->horizontalScrollBar()->value();
+     int iEnd = iBeg + ui->grViewQuotes->horizontalScrollBar()->pageStep();
+
+     if (ui->grViewQuotes->horizontalScrollBar()->maximum() > 0 ) { // if slider range was espanded
+         iBeg = ((iBeg/dHScale)/(double)BarGraphicsItem::BarWidth);
+         iEnd = ((iEnd/dHScale)/(double)BarGraphicsItem::BarWidth);
+
+         iBeg = iBeg - iLeftShift;
+         iEnd = iEnd - iLeftShift;
+     }
+     else{
+         QRectF rS = ui->grViewQuotes->scene()->sceneRect();
+
+         iBeg = -iLeftShift;
+         iEnd = ((rS.width()/dHScale)/(double)BarGraphicsItem::BarWidth) - iLeftShift;
+     }
+     return {iBeg,iEnd};
+ }
  //---------------------------------------------------------------------------------------------------------------
+ void GraphViewForm::slotFastShowEvent(std::time_t tBegin, std::time_t tEnd,std::shared_ptr<GraphHolder> ptrHolder)
+ {
+     if (iSelectedInterval == Bar::eInterval::pTick){
+         PaintBarsFastT<BarTick>(tBegin, tEnd, ptrHolder);
+     }
+     else{
+         PaintBarsFastT<Bar>(tBegin, tEnd, ptrHolder);
+     }
+     ////////////////////////////////////////////////////////////////
+     slotProcessRepaintQueue();
+ }
+ //---------------------------------------------------------------------------------------------------------------
+ template<typename T>
+ void GraphViewForm::PaintBarsFastT(std::time_t /*tBegin*/, std::time_t /*tEnd*/,std::shared_ptr<GraphHolder> ptrHolder)
+ {
+     std::pair<int,int> pViewPortRange = getViewPortRangeToHolder();
+
+     const int iShift = (int)ptrHolder->getShiftIndex(iSelectedInterval);
+     int iShBeg = iShift;
+     int iShEnd = iShBeg + (int)ptrHolder->getViewGraphSize(iSelectedInterval);
+
+     if(!(pViewPortRange.first > iShEnd ||
+          pViewPortRange.second < iShBeg
+          )){
+         //
+         if (iShBeg < pViewPortRange.first)  iShBeg = pViewPortRange.first;
+         if (iShEnd > pViewPortRange.second) iShEnd = pViewPortRange.second;
+         //
+         int i = iShBeg;
+
+         while(i < iShEnd){
+             qreal xCur = (i + iLeftShift)     * BarGraphicsItem::BarWidth * dHScale;
+
+             const T &b = ptrHolder->getByIndex<T>(iSelectedInterval, i - iShift);
+
+             auto ItFound = mShowedGraphicsBars.find(i);
+
+             if (ItFound == mShowedGraphicsBars.end())
+             {
+                 BarGraphicsItem *item = new BarGraphicsItem(b,i,3,mVScale[iSelectedInterval]);
+                 mShowedGraphicsBars[i].push_back(item);
+                 ui->grViewQuotes->scene()->addItem(item);
+                 item->setPos(xCur , -realYtoSceneY(b.Close()));
+             }
+             else{
+                 //TODO: do by invalidate, not by removing
+                 for (auto & item:mShowedGraphicsBars[i]){
+                     ui->grViewQuotes->scene()->removeItem(item);
+                     delete item;
+                     item = nullptr;
+                 }
+                 mShowedGraphicsBars.erase(ItFound);
+                 //
+                 BarGraphicsItem *item = new BarGraphicsItem(b,i,3,mVScale[iSelectedInterval]);
+                 mShowedGraphicsBars[i].push_back(item);
+                 ui->grViewQuotes->scene()->addItem(item);
+                 item->setPos(xCur , -realYtoSceneY(b.Close()));
+
+//                 ItFound->second[0]->setBar(b);
+//                 ui->grViewQuotes->invalidateScene(ItFound->second[0]->sceneBoundingRect());
+             }
+             /////////////////////////////////////////////////
+             ++i;
+         }
+     }
+ }
+
  //---------------------------------------------------------------------------------------------------------------
  //---------------------------------------------------------------------------------------------------------------
  //---------------------------------------------------------------------------------------------------------------

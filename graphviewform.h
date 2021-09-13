@@ -120,7 +120,9 @@ signals:
 public slots:
 
     void slotInvalidateGraph(std::time_t dtDegin, std::time_t dtEnd, bool bNeedToRescale = false);
+    void slotProcessRepaintQueue();
     void setFramesVisibility(std::tuple<bool,bool,bool,bool,bool>);
+    void slotFastShowEvent(std::time_t tBegin, std::time_t tEnd,std::shared_ptr<GraphHolder> ptrHolder);
 
 protected slots:
   //  void slotLoadGraphButton(); // for tests
@@ -144,6 +146,8 @@ private:
 
 protected:
 
+    std::pair<int,int> getViewPortRangeToHolder();
+
     void PaintViewPort               (bool bFrames,bool bBars,bool bVolumes, bool bStoreRightPos);
     void PaintViewPort               (int iStart, int iEnd,bool bFrames ,bool bBars,bool bVolumes, bool bStoreRightPos);
     void PaintHorizontalScales       ();
@@ -153,6 +157,9 @@ protected:
 
     template<typename T>
     void PaintBars       (int iStart, int iEnd, bool bPaintBars, bool bPaintVolumes, bool bStoreRightPos);
+
+    template<typename T>
+    void PaintBarsFastT(std::time_t tBegin, std::time_t tEnd,std::shared_ptr<GraphHolder> ptrHolder);
 
     template<typename T>
     void PainVerticalFramesT         (int iStart, int iEnd);

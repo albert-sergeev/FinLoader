@@ -251,6 +251,7 @@ protected slots: // for main window
     void slotSetSelectedTicker(const  int iTickerID);
 
     void slotSendSignalToInvalidateGraph(int TickerID, std::time_t dtDegin, std::time_t dtEnd);
+    void slotSendSignalToFastShow(int TickerID, std::time_t tBegin, std::time_t tEnd,std::shared_ptr<GraphHolder> ptrHolder);
 
     //void slotTestPvBars(std::shared_ptr<std::vector<std::vector<BarTick>>> pvBars); // TODO: delete. for tests
 

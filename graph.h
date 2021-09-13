@@ -37,6 +37,8 @@ private:
     const Bar::eInterval iInterval;
     const int iTickerID;
 
+    size_t iShiftIndex;
+
     friend class Graph<Bar>;
     friend class Graph<BarTick>;
 
@@ -52,12 +54,13 @@ public:
     //--------------------------------------------------------------------------------------------------------
     void clear()            {mDictionary.clear(); vContainer.clear();};
     //--------------------------------------------------------------------------------------------------------
-    explicit Graph(int TickerID, Bar::eInterval Interval):iInterval{Interval},iTickerID{TickerID}{;}
+    explicit Graph(int TickerID, Bar::eInterval Interval):iInterval{Interval},iTickerID{TickerID},iShiftIndex{0}{;}
     explicit Graph(Graph&& o):
         vContainer{std::move(o.vContainer)}
        ,mDictionary{std::move(o.mDictionary)}
        ,iInterval{o.iInterval}
-       ,iTickerID{o.iTickerID}{;}
+       ,iTickerID{o.iTickerID}
+       ,iShiftIndex{o.iShiftIndex}{;}
     //--------------------------------------------------------------------------------------------------------
     T & operator[](const size_t i)  {if (/*i<0 ||*/ i>= vContainer.size()) {throw std::out_of_range("");} return vContainer[i];}
     //--------------------------------------------------------------------------------------------------------
@@ -65,10 +68,10 @@ public:
 //    void AddTick (Bar &b, bool bNewSec);
 //    void Add (std::list<Bar> &lst);
     bool AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,std::time_t dtEnd);
-    bool AddBarsListsFast(std::vector<T> &v, std::set<std::time_t>   & stHolderTimeSet,std::pair<std::time_t,std::time_t> &pairRange);
+    bool AddBarsListsFast(std::vector<T> &v, std::set<std::time_t>   & stHolderTimeSet,std::pair<std::time_t,std::time_t> &pairRange,Graph<T> &grDst);
 
     template<typename T_SRC>
-    bool BuildFromLowerList(Graph<T_SRC> &grSrc, std::time_t dtStart,std::time_t dtEnd);
+    bool BuildFromLowerList(Graph<T_SRC> &grSrc, std::time_t dtStart,std::time_t dtEnd,bool bCopyToDst,Graph<T> &grDst);
 
     inline std::time_t GetDateMin() const  {return  vContainer.size()>0? vContainer.front().Period():0;};
     inline std::time_t GetDateMax() const  {return  vContainer.size()>0? vContainer.back().Period():0;};
@@ -83,6 +86,7 @@ public:
     bool CheckMap();
     std::string ToString();
     std::string ToStringPeriods();
+    std::size_t GetShiftIndex()  const {return iShiftIndex;};
     //
 private:
     static size_t GetMoreThenIndex(std::vector<T> & v, std::time_t tT);
@@ -247,8 +251,11 @@ bool Graph<T>::AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,s
 }
 //------------------------------------------------------------------------------------------------------------
 template<typename T>
-bool Graph<T>::AddBarsListsFast(std::vector<T> &vV, std::set<std::time_t>   & stHolderTimeSet,
-                                std::pair<std::time_t,std::time_t> &pairRange)
+bool Graph<T>::AddBarsListsFast(std::vector<T>                      &vV,
+                                std::set<std::time_t>               & stHolderTimeSet,
+                                std::pair<std::time_t,std::time_t>  & pairRange,
+                                Graph<T>                            & grDst
+                                )
 {
     pairRange = {0,0};
 
@@ -372,7 +379,7 @@ bool Graph<T>::AddBarsListsFast(std::vector<T> &vV, std::set<std::time_t>   & st
         }
     }
     //
-    size_t iRangeEnd {iRangeBegin + iNewLength};
+    //size_t iRangeEnd {iRangeBegin + iNewLength};
 
 //    {
 //        ThreadFreeCout pcout;
@@ -486,14 +493,52 @@ bool Graph<T>::AddBarsListsFast(std::vector<T> &vV, std::set<std::time_t>   & st
     }
 
     /////
-    if (iRangeEnd != iRangeBegin){
-        ThreadFreeCout pcout;
-        pcout <<"RangeEnd != iRangeBegin {"<<iRangeEnd<<"!="<<iRangeBegin<<"}\n";
+//    if (iRangeEnd != iRangeBegin){
+//        ThreadFreeCout pcout;
+//        pcout <<"RangeEnd != iRangeBegin {"<<iRangeEnd<<"!="<<iRangeBegin<<"}\n";
+//    }
 
-    }
-
+    /////////////////////////
+    /// make affected range
     pairRange = {mNew.begin()->first,mNew.rbegin()->first};
 
+    /////////////////////////
+    /// copy data chunk for fast load
+    grDst.clear();
+    auto ItDictRangeBegin (mDictionary.lower_bound(pairRange.first));
+    auto ItDictRangeEnd (mDictionary.upper_bound(pairRange.second));
+
+    if(ItDictRangeBegin != mDictionary.end()){
+        auto ItRangeBegin   (std::next(vContainer.begin(),ItDictRangeBegin->second));
+        auto ItRangeEnd     (ItRangeBegin);
+        if(ItDictRangeEnd != mDictionary.end()){
+            ItRangeEnd = std::next(vContainer.begin(),ItDictRangeEnd->second);
+        }
+        else{
+            ItRangeEnd = vContainer.end();
+        }
+
+        grDst.vContainer.reserve(std::distance(ItRangeBegin,ItRangeEnd));
+
+        std::time_t tOldTime{0};
+        while(ItRangeBegin != ItRangeEnd){
+            grDst.vContainer.push_back(*ItRangeBegin);
+            if (grDst.vContainer.back().Period() !=tOldTime){
+                tOldTime = grDst.vContainer.back().Period();
+                grDst.mDictionary[tOldTime] = grDst.vContainer.size() - 1;
+            }
+            ++ItRangeBegin;
+        }
+
+        grDst.iShiftIndex = ItDictRangeBegin->second;
+
+//        if (!grDst.CheckMap()){
+//            ThreadFreeCout pcout;
+//            pcout <<"grDst.CheckMap() failed!!!\n";
+//        }
+    }
+
+    /////////////////////////
     return true;
 }
 
@@ -621,7 +666,8 @@ size_t Graph<T>::getIndex(const std::time_t t) const
 
 template<typename T> template<typename T_SRC>
 //bool Graph<T>::BuildFromLowerList(Graph<BarTick> &grSrc, std::time_t dtStart,std::time_t dtEnd)
-bool Graph<T>::BuildFromLowerList(Graph<T_SRC> &grSrc, std::time_t dtStart,std::time_t dtEnd)
+bool Graph<T>::BuildFromLowerList(Graph<T_SRC> &grSrc, std::time_t dtStart,std::time_t dtEnd,
+                                  bool bCopyToDst,Graph<T> &grDst)
 {
 
 
@@ -702,6 +748,12 @@ bool Graph<T>::BuildFromLowerList(Graph<T_SRC> &grSrc, std::time_t dtStart,std::
     }
     /////
     bool bRes = AddBarsList(v,dtAccStart,dtAccEndLower);
+
+    if(bCopyToDst){
+        grDst.clear();
+        (void)grDst.AddBarsList(v,dtAccStart,dtAccEndLower);
+        grDst.iShiftIndex = mDictionary.lower_bound(dtAccStart)->second;
+    }
     return bRes;
 }
 //------------------------------------------------------------------------------------------------------------

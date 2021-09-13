@@ -124,7 +124,10 @@ void FastTasksHolder::PacketReceived(dataFastLoadTask &data,
             //////////////////////////////////////////////////////
             /// adding to holder
             std::pair<std::time_t,std::time_t> pairRange;
-            if (!holder->AddBarsListsFast(data.vV,stHolderTimeSet,pairRange) &&
+            dataAmiPipeAnswer answ;
+            answ.ptrHolder = std::make_shared<GraphHolder>(GraphHolder{iTickerID});
+
+            if (!holder->AddBarsListsFast(data.vV,stHolderTimeSet,pairRange,*answ.ptrHolder) &&
                     !this_thread_flagInterrup.isSet()){
                 dataAmiPipeAnswer answ; answ.SetTickerID(iTickerID); answ.SetType(dataAmiPipeAnswer::ErrMessage);
                 std::stringstream ss;
@@ -132,6 +135,16 @@ void FastTasksHolder::PacketReceived(dataFastLoadTask &data,
                 answ.SetErrString(ss.str());
                 queuePipeAnswers.Push(answ);
 
+            }
+            //////////////////////////////////////////////////////
+            /// send fast repaint event
+            if (pairRange.first !=0 && pairRange.second != 0)
+            {
+                answ.SetTickerID(iTickerID);
+                answ.SetType(dataAmiPipeAnswer::FastShowEvent);
+                answ.tBegin = pairRange.first;
+                answ.tEnd = pairRange.second;
+                queuePipeAnswers.Push(answ);
             }
             //////////////////////////////////////////////////////
             /// show activity
@@ -144,16 +157,6 @@ void FastTasksHolder::PacketReceived(dataFastLoadTask &data,
                     answ.SetTickerID(iTickerID);
                     answ.SetType(dataAmiPipeAnswer::testTimeEvent);
                     answ.SetTime(data.vV.back().Period());
-                    queuePipeAnswers.Push(answ);
-                }
-
-                if (pairRange.first !=0 && pairRange.second != 0)
-                {
-                    dataAmiPipeAnswer answ;
-                    answ.SetTickerID(iTickerID);
-                    answ.SetType(dataAmiPipeAnswer::FastShowEvent);
-                    answ.tBegin = pairRange.first;
-                    answ.tEnd = pairRange.second;
                     queuePipeAnswers.Push(answ);
                 }
             }

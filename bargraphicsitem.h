@@ -78,6 +78,9 @@ public:
 
     //virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent *) ;
 
+    void setBar(const Bar &bb)         {b = bb;};
+    void setBar(const BarTick &bb)     {b = bb;};
+
 private:
     bool IsOHLC()   const  {return  bOHLC;}
 
