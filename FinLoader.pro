@@ -43,6 +43,7 @@ SOURCES += \
     market.cpp \
     modelmarketslist.cpp \
     modeltickerslist.cpp \
+    oneofkindprotector.cpp \
     plusbutton.cpp \
     storage.cpp \
     styledswitcher.cpp \
@@ -79,6 +80,7 @@ HEADERS += \
     market.h \
     modelmarketslist.h \
     modeltickerslist.h \
+    oneofkindprotector.h \
     plusbutton.h \
     storage.h \
     styledswitcher.h \
