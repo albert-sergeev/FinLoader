@@ -30,9 +30,14 @@ public:
 };
 
 inline thread_local flagInterrupt this_thread_flagInterrup;
+inline std::atomic<int> aActiveProcCounter{0};
 /////////////////////////////////////////////////////////////////////////////////////////
 //inline thread_local int WorkerThreadID;
 //inline std::atomic<int> WorkerThreadCounter{1};
+
+
+
+class ActiveProcessCounter;
 
 /////////////////////////////////////////////////////////////////////////////////////////
 /// \brief Cover for safe join std::vector<std::thread>
@@ -109,7 +114,6 @@ private:
 
     join_threads<std::thread> joinerDeleted;
     join_threads<std::thread> joiner;
-
 
     //---------------------------------------------------------------------------------------------------
     void worker(std::promise<bool> pr,std::promise<flagInterrupt *> prIt){
@@ -290,6 +294,21 @@ private:
     }
     //---------------------------------------------------------------------------------------------------
 };
+
+class ActiveProcessCounter
+{
+
+public:
+    ActiveProcessCounter(){
+        int iCount = aActiveProcCounter.load();
+        while(!aActiveProcCounter.compare_exchange_weak(iCount,iCount + 1)){;}
+    }
+    ~ActiveProcessCounter(){
+        int iCount = aActiveProcCounter.load();
+        while(!aActiveProcCounter.compare_exchange_weak(iCount,iCount - 1)){;}
+    }
+};
+
 
 
 

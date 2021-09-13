@@ -42,6 +42,8 @@
 #include "amipipeholder.h"
 #include "dataamipipeanswer.h"
 #include "dataamipipetask.h"
+#include "combindicator.h"
+
 
 
 
@@ -91,6 +93,8 @@ private:
 
     QLCDNumber * lcdN;
     QStatusBar * statusBarTickers;
+
+    CombIndicator * wtCombIndicator;
 
     QToolBar * tbrToolBar;
     bool bToolBarOnLoadIsHidden;
@@ -258,6 +262,7 @@ protected slots: // for main window
     void slotGVFramesVisibilityStateChanged();
 
     void CheckActivePipes();
+    void CheckActiveProcesses();
 
 
 private:

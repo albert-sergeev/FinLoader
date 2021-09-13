@@ -35,6 +35,12 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
 
     //-------------------------------------------------------------
+    wtCombIndicator = new CombIndicator(int(thrdPoolLoadFinQuotes.MaxThreads()+
+                                        thrdPoolAmiClient.MaxThreads()+
+                                        thrdPoolFastDataWork.MaxThreads())
+                                        );
+    ui->statusbar->addWidget(wtCombIndicator);
+    //-------------------------------------------------------------
 //    QHBoxLayout * ltDD = new QHBoxLayout();
 //    ltDD->setMargin(0);
 //    ui->dkWtDownContents->setLayout(ltDD);
@@ -424,10 +430,18 @@ void MainWindow::timerEvent(QTimerEvent * event)
         }
     }
     //////////////////
+    CheckActiveProcesses();
     CheckActivePipes();
     ListViewActivityTermination();
     //
     QWidget::timerEvent(event);
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::CheckActiveProcesses()
+{
+    int iCount = aActiveProcCounter.load();
+    wtCombIndicator->setCurrentLevel(iCount);
+
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::CheckActivePipes()

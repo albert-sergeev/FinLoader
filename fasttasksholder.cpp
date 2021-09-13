@@ -162,7 +162,7 @@ void FastTasksHolder::PacketReceived(dataFastLoadTask &data,
             }
             //////////////////////////////////////////////////////
             /// writing to database
-           // WriteVectorToStorage(iTickerID,tLastTime,strBuff,stTimeSet,stStore,data.vV,queuePipeAnswers);
+            WriteVectorToStorage(iTickerID,tLastTime,strBuff,stTimeSet,stStore,data.vV,queuePipeAnswers);
             //////////////////////////////////////////////////////
             /// set new last time
             tLastTime = data.vV.back().Period();

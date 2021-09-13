@@ -42,6 +42,7 @@ void workerLoader::workerDataBaseWork(BlockFreeQueue<dataFinLoadTask> & queueTas
         bool bSuccess{false};
         auto pdata = queueTasks.Pop(bSuccess);
         while(bSuccess){
+            ActiveProcessCounter counter;
 
             dataFinLoadTask data(*pdata.get());
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1443,7 +1444,9 @@ void workerLoader::workerAmiClient(BlockFreeQueue<dataFinLoadTask> & /*queueFinQ
                 auto pdata =queuePipeTasks.Pop(bSuccess);
                 bool bWasRefresh{false};
                 while(bSuccess){
+                    ActiveProcessCounter counter;
                     dataAmiPipeTask data(*pdata.get());
+
 
                     iBytesRead = 0;
 
@@ -1470,7 +1473,10 @@ void workerLoader::workerAmiClient(BlockFreeQueue<dataFinLoadTask> & /*queueFinQ
                 ///////////////////////////////////////////////////////////////////////////////
                 // socket work block
 
-                pipesHolder.ReadConnectedPipes(queueFastTasks,queuePipeAnswers,queueTrdAnswers,iBytesRead,bWasFullBuffers);
+                {
+                    ActiveProcessCounter counter;
+                    pipesHolder.ReadConnectedPipes(queueFastTasks,queuePipeAnswers,queueTrdAnswers,iBytesRead,bWasFullBuffers);
+                }
 
                 ///////////////////////////////////////////////////////////////////////////////
                 //----------------------------------
@@ -1534,6 +1540,7 @@ void workerLoader::workerFastDataWork( BlockFreeQueue<dataFastLoadTask>     &que
             }
             ///////////////////////////////////////////////////////////////////////////////
             if(!queueFastTasks.empty()){
+                ActiveProcessCounter counter;
                 auto pdata =queueFastTasks.Pop(bSuccess);
                 while(bSuccess){
                     dataFastLoadTask &data(*pdata.get());

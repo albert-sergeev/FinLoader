@@ -25,6 +25,7 @@ SOURCES += \
     bartick.cpp \
     blockfreequeue.cpp \
     bulbululator.cpp \
+    combindicator.cpp \
     configwindow.cpp \
     dataamipipeanswer.cpp \
     dataamipipetask.cpp \
@@ -61,6 +62,7 @@ HEADERS += \
     bartick.h \
     blockfreequeue.h \
     bulbululator.h \
+    combindicator.h \
     configwindow.h \
     dataamipipeanswer.h \
     dataamipipetask.h \
