@@ -811,7 +811,7 @@ void ImportFinQuotesForm::slotBtnImportClicked()
                         Ticker t {  sFoundTickerSignFinam,sFoundTickerSignFinam,iDefaultTickerMarket};
                         t.SetTickerSignFinam(sFoundTickerSignFinam);
                         t.SetTickerSignQuik("");
-                        t.SetAutoLoad(true);
+                        t.SetAutoLoad(false);
                         t.SetUpToSys(false);
                         int i = proxyTickerModel.AddRow(t);
 
