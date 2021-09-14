@@ -35,18 +35,23 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
 
     //-------------------------------------------------------------
+    ui->statusbar->setSizeGripEnabled(false);
+    //
+    lcdN = new QLCDNumber;
+    lcdN->setDigitCount(8);
+    lcdN->setMaximumHeight(16);
+    lcdN->setMinimumWidth(120);
+    lcdN->display(QString("00:00:00"));
+    lcdN->setToolTip(tr("server time of the last packet"));
+    ui->statusbar->addWidget(lcdN);
+    //ui->statusbar->addPermanentWidget(lcdN);
+    //
     wtCombIndicator = new CombIndicator(int(thrdPoolLoadFinQuotes.MaxThreads()+
                                         thrdPoolAmiClient.MaxThreads()+
                                         thrdPoolFastDataWork.MaxThreads())
                                         );
-    ui->statusbar->addWidget(wtCombIndicator);
-
-    lcdN = new QLCDNumber;
-    lcdN->setDigitCount(8);
-    lcdN->setMaximumHeight(16);
-    lcdN->display(QString("00:00:00"));
-    lcdN->setToolTip(tr("server time of the last packet"));
-    ui->statusbar->addWidget(lcdN);
+    //ui->statusbar->addWidget(wtCombIndicator);
+    ui->statusbar->addPermanentWidget(wtCombIndicator);
     //-------------------------------------------------------------
 
     //-------------------------------------------------------------
