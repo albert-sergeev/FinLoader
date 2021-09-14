@@ -12,6 +12,8 @@
 #include "amipipeholder.h"
 
 #include "styledswitcher.h"
+#include "transparentbutton.h"
+
 
 namespace Ui {
 class AmiPipesForm;
@@ -45,6 +47,12 @@ protected:
     bool bShowByNameUnallocated;
     bool bShowByNameActive;
     bool bShowByNameOff;
+
+    TransparentButton *trbtnLeft;
+    TransparentButton *trbtnRight;
+
+    int iStoredWidthLeft{0};
+    int iStoredWidthRight{0};
 
 public:
     explicit AmiPipesForm(modelMarketsList *modelM, int DefaultTickerMarket,
@@ -110,6 +118,10 @@ protected slots:
     void slotShowByNamesOffChecked(int Checked);
 
     void slotBtnQuitClicked();
+    void RepositionTransparentButtons();
+
+    void slotTransparentBtnLeftStateChanged(int);
+    void slotTransparentBtnRightStateChanged(int);
 
 private:
     Ui::AmiPipesForm *ui;
@@ -117,9 +129,7 @@ private:
     // QWidget interface
 protected:
     void showEvent(QShowEvent *event);
-
-    // QWidget interface
-protected:
+    void resizeEvent(QResizeEvent *event);
     void closeEvent(QCloseEvent *event);
 };
 

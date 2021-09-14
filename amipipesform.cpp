@@ -25,6 +25,14 @@ AmiPipesForm::AmiPipesForm(modelMarketsList *modelM, int DefaultTickerMarket,
     ui->setupUi(this);
 
     ///////////////////////////////////////////////////////////////////////
+//    trbtnLeft   = new TransparentButton(">","<",true,this);
+//    trbtnRight  = new TransparentButton("<",">",true,this);
+    trbtnLeft   = new TransparentButton(">",this);
+    trbtnRight  = new TransparentButton("<",this);
+
+    connect(trbtnLeft,SIGNAL(stateChanged(int)),this,SLOT(slotTransparentBtnLeftStateChanged(int)));
+    connect(trbtnRight,SIGNAL(stateChanged(int)),this,SLOT(slotTransparentBtnRightStateChanged(int)));
+    ///////////////////////////////////////////////////////////////////////
     //-------------------------------------------------------------
     QColor colorDarkGreen(0, 100, 52,50);
     QColor colorDarkRed(31, 53, 200,40);
@@ -112,6 +120,13 @@ AmiPipesForm::AmiPipesForm(modelMarketsList *modelM, int DefaultTickerMarket,
 //--------------------------------------------------------------------------------------------------------------------
 AmiPipesForm::~AmiPipesForm()
 {
+    if(swtShowByNameUnallocated)    {delete swtShowByNameUnallocated;   swtShowByNameUnallocated = nullptr;}
+    if(swtShowByNameActive)         {delete swtShowByNameActive;        swtShowByNameActive = nullptr;}
+    if(swtShowByNameOff)            {delete swtShowByNameOff;           swtShowByNameOff = nullptr;}
+
+    if(trbtnLeft)   {delete trbtnLeft;  trbtnLeft = nullptr;}
+    if(trbtnRight)  {delete trbtnRight; trbtnRight = nullptr;}
+
     disconnect(ui->btnBind,SIGNAL(clicked()),this,SLOT(slotBindClicked()));
     delete ui;
 }
@@ -751,7 +766,13 @@ void AmiPipesForm::slotDoubleClickedNew(const  QModelIndex& indx)
 //--------------------------------------------------------------------------------------------------------------------
 void AmiPipesForm::showEvent(QShowEvent */*event*/)
 {
+    RepositionTransparentButtons();
     slotBtnCheckClicked();
+}
+//--------------------------------------------------------------------------------------------------------------------
+void AmiPipesForm::resizeEvent(QResizeEvent */*event*/)
+{
+    RepositionTransparentButtons();
 }
 //--------------------------------------------------------------------------------------------------------------------
 void AmiPipesForm::closeEvent(QCloseEvent */*event*/)
@@ -803,7 +824,70 @@ void AmiPipesForm::slotBtnQuitClicked()
     this->close();
 }
 //--------------------------------------------------------------------------------------------------------------------
+void AmiPipesForm::RepositionTransparentButtons()
+{
+    QPoint pPos = ui->lineDivider->pos();
+
+    if (trbtnLeft) trbtnLeft->move     (pPos.x() - trbtnLeft->width(), pPos.y() + 2 );
+    if (trbtnRight) trbtnRight->move   (pPos.x() /*+ trbtnRight->width()*/+8, pPos.y() + 2 );
+}
 //--------------------------------------------------------------------------------------------------------------------
+void AmiPipesForm::slotTransparentBtnLeftStateChanged(int /*iState*/)
+{
+    if(!ui->wtNew->isHidden() && !ui->wtActivities->isHidden()){
+        QPoint pPos = ui->lineDivider->pos();
+        iStoredWidthLeft = this->width() - pPos.x() + ui->lineDivider->width();
+
+        QRect rect = this->geometry();
+
+        rect.setLeft(rect.left() + iStoredWidthLeft);
+        ui->wtNew->hide();
+        this->setGeometry(rect);
+
+        trbtnLeft->hide();
+        RepositionTransparentButtons();
+    }
+
+    if(ui->wtActivities->isHidden()){
+        QRect rect = this->geometry();
+        rect.setWidth(rect.width() + iStoredWidthRight);
+
+        if (ui->wtActivities->isHidden()) ui->wtActivities->show();
+        this->setGeometry(rect);
+
+        trbtnRight->show();
+        RepositionTransparentButtons();
+    }
+}
+//--------------------------------------------------------------------------------------------------------------------
+void AmiPipesForm::slotTransparentBtnRightStateChanged(int /*iState*/)
+{
+    if(!ui->wtNew->isHidden() && !ui->wtActivities->isHidden()){
+        QPoint pPos = ui->lineDivider->pos();
+        iStoredWidthRight = this->width() - pPos.x() - ui->lineDivider->width();
+
+        QRect rect = this->geometry();
+        rect.setWidth(rect.width() - iStoredWidthRight);
+
+        ui->wtActivities->hide();
+        this->setGeometry(rect);
+
+        trbtnRight->hide();
+        RepositionTransparentButtons();
+    }
+
+    if(ui->wtNew->isHidden()){
+        QRect rect = this->geometry();
+        //rect.setWidth(rect.width() + iStoredWidthLeft);
+        rect.setLeft(rect.left() - iStoredWidthLeft);
+
+        if (ui->wtNew->isHidden()) ui->wtNew->show();
+        this->setGeometry(rect);
+
+        trbtnLeft->show();
+        RepositionTransparentButtons();
+    }
+}
 //--------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------

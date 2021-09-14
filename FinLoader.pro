@@ -51,6 +51,7 @@ SOURCES += \
     threadfreelocaltime.cpp \
     threadpool.cpp \
     ticker.cpp \
+    transparentbutton.cpp \
     trimutils.cpp \
     win32namedpipe.cpp \
     workerloader.cpp
@@ -88,6 +89,7 @@ HEADERS += \
     threadfreelocaltime.h \
     threadpool.h \
     ticker.h \
+    transparentbutton.h \
     trimutils.h \
     win32namedpipe.h \
     workerloader.h

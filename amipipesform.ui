@@ -46,38 +46,18 @@
      <layout class="QVBoxLayout" name="verticalLayout_2">
       <item>
        <layout class="QGridLayout" name="gridLayout_2">
+        <item row="2" column="2" rowspan="4">
+         <widget class="QListView" name="lstTickersUnallocated">
+          <property name="editTriggers">
+           <set>QAbstractItemView::AnyKeyPressed|QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed</set>
+          </property>
+         </widget>
+        </item>
+        <item row="7" column="2">
+         <widget class="QWidget" name="wtShowByNameUnallocated" native="true"/>
+        </item>
         <item row="1" column="2">
          <widget class="QComboBox" name="cmbMarketsUnallocated"/>
-        </item>
-        <item row="0" column="0">
-         <widget class="QPushButton" name="btnCheck">
-          <property name="text">
-           <string>Scan pipes</string>
-          </property>
-         </widget>
-        </item>
-        <item row="4" column="1">
-         <widget class="QPushButton" name="btnBindAll">
-          <property name="maximumSize">
-           <size>
-            <width>40</width>
-            <height>16777215</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>All</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="2">
-         <widget class="QLabel" name="label_3">
-          <property name="text">
-           <string>Unallocated</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignCenter</set>
-          </property>
-         </widget>
         </item>
         <item row="3" column="1">
          <widget class="QPushButton" name="btnBind">
@@ -89,19 +69,48 @@
           </property>
           <property name="maximumSize">
            <size>
-            <width>40</width>
+            <width>25</width>
             <height>16777215</height>
            </size>
           </property>
           <property name="text">
-           <string>Bind</string>
+           <string>-&gt;</string>
           </property>
          </widget>
         </item>
-        <item row="2" column="2" rowspan="4">
-         <widget class="QListView" name="lstTickersUnallocated">
+        <item row="2" column="0" rowspan="4">
+         <widget class="QListView" name="lstTickersNew">
           <property name="editTriggers">
-           <set>QAbstractItemView::AnyKeyPressed|QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed</set>
+           <set>QAbstractItemView::DoubleClicked</set>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QPushButton" name="btnCheck">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>0</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>19</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Scan pipes</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="2">
+         <widget class="QLabel" name="label_3">
+          <property name="text">
+           <string>Unallocated</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
           </property>
          </widget>
         </item>
@@ -141,18 +150,27 @@
           </property>
          </spacer>
         </item>
-        <item row="2" column="0" rowspan="4">
-         <widget class="QListView" name="lstTickersNew">
-          <property name="editTriggers">
-           <set>QAbstractItemView::DoubleClicked</set>
+        <item row="6" column="2">
+         <widget class="QPushButton" name="btnBindAll">
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>Bind all</string>
           </property>
          </widget>
         </item>
-        <item row="6" column="2">
-         <widget class="QWidget" name="wtShowByNameUnallocated" native="true"/>
-        </item>
-        <item row="6" column="0">
+        <item row="6" column="0" rowspan="2">
          <widget class="QPushButton" name="btnQuit">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
           <property name="text">
            <string>Close</string>
           </property>
@@ -164,7 +182,7 @@
     </widget>
    </item>
    <item>
-    <widget class="Line" name="line">
+    <widget class="Line" name="lineDivider">
      <property name="orientation">
       <enum>Qt::Vertical</enum>
      </property>
@@ -175,8 +193,8 @@
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>
        <layout class="QGridLayout" name="gridLayout">
-        <item row="6" column="1">
-         <widget class="QPushButton" name="btnOffAll">
+        <item row="7" column="1">
+         <widget class="QPushButton" name="btnOnAll">
           <property name="maximumSize">
            <size>
             <width>30</width>
@@ -184,95 +202,9 @@
            </size>
           </property>
           <property name="text">
-           <string>&gt;&gt;</string>
+           <string>&lt;&lt;</string>
           </property>
          </widget>
-        </item>
-        <item row="0" column="0">
-         <widget class="QLabel" name="label">
-          <property name="text">
-           <string>Active</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignCenter</set>
-          </property>
-         </widget>
-        </item>
-        <item row="8" column="1">
-         <spacer name="verticalSpacer_3">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item row="9" column="2">
-         <widget class="QPushButton" name="btnDissociateOff">
-          <property name="text">
-           <string>Dissociate</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="2">
-         <widget class="QLabel" name="label_2">
-          <property name="text">
-           <string>Off</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignCenter</set>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="0">
-         <widget class="QComboBox" name="cmbMarketsActive"/>
-        </item>
-        <item row="1" column="2">
-         <widget class="QComboBox" name="cmbMarketsOff"/>
-        </item>
-        <item row="2" column="2" rowspan="7">
-         <widget class="QListView" name="lstTickersOff">
-          <property name="selectionMode">
-           <enum>QAbstractItemView::ExtendedSelection</enum>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="0" rowspan="7">
-         <widget class="QListView" name="lstTickersActive">
-          <property name="editTriggers">
-           <set>QAbstractItemView::AnyKeyPressed|QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed</set>
-          </property>
-          <property name="selectionMode">
-           <enum>QAbstractItemView::ExtendedSelection</enum>
-          </property>
-         </widget>
-        </item>
-        <item row="4" column="1">
-         <widget class="QPushButton" name="btnOnOne">
-          <property name="maximumSize">
-           <size>
-            <width>30</width>
-            <height>16777215</height>
-           </size>
-          </property>
-          <property name="text">
-           <string>&lt;</string>
-          </property>
-         </widget>
-        </item>
-        <item row="9" column="0">
-         <widget class="QPushButton" name="btnDissociateActive">
-          <property name="text">
-           <string>Dissociate</string>
-          </property>
-         </widget>
-        </item>
-        <item row="10" column="0">
-         <widget class="QWidget" name="wtShowByNameActive" native="true"/>
         </item>
         <item row="3" column="1">
          <widget class="QPushButton" name="btnOffOne">
@@ -303,6 +235,42 @@
           </property>
          </spacer>
         </item>
+        <item row="4" column="1">
+         <widget class="QPushButton" name="btnOnOne">
+          <property name="maximumSize">
+           <size>
+            <width>30</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>&lt;</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QComboBox" name="cmbMarketsActive"/>
+        </item>
+        <item row="6" column="1">
+         <widget class="QPushButton" name="btnOffAll">
+          <property name="maximumSize">
+           <size>
+            <width>30</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>&gt;&gt;</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="2" rowspan="7">
+         <widget class="QListView" name="lstTickersOff">
+          <property name="selectionMode">
+           <enum>QAbstractItemView::ExtendedSelection</enum>
+          </property>
+         </widget>
+        </item>
         <item row="5" column="1">
          <spacer name="verticalSpacer">
           <property name="orientation">
@@ -319,21 +287,71 @@
           </property>
          </spacer>
         </item>
-        <item row="7" column="1">
-         <widget class="QPushButton" name="btnOnAll">
-          <property name="maximumSize">
-           <size>
-            <width>30</width>
-            <height>16777215</height>
-           </size>
+        <item row="2" column="0" rowspan="7">
+         <widget class="QListView" name="lstTickersActive">
+          <property name="editTriggers">
+           <set>QAbstractItemView::AnyKeyPressed|QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed</set>
           </property>
-          <property name="text">
-           <string>&lt;&lt;</string>
+          <property name="selectionMode">
+           <enum>QAbstractItemView::ExtendedSelection</enum>
           </property>
          </widget>
         </item>
         <item row="10" column="2">
          <widget class="QWidget" name="wtShowByNameOff" native="true"/>
+        </item>
+        <item row="0" column="2">
+         <widget class="QLabel" name="label_2">
+          <property name="text">
+           <string>Off</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="2">
+         <widget class="QComboBox" name="cmbMarketsOff"/>
+        </item>
+        <item row="10" column="0">
+         <widget class="QWidget" name="wtShowByNameActive" native="true"/>
+        </item>
+        <item row="0" column="0">
+         <widget class="QLabel" name="label">
+          <property name="text">
+           <string>Active</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item row="8" column="1">
+         <spacer name="verticalSpacer_3">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item row="9" column="0">
+         <widget class="QPushButton" name="btnDissociateActive">
+          <property name="text">
+           <string>Dissociate</string>
+          </property>
+         </widget>
+        </item>
+        <item row="9" column="2">
+         <widget class="QPushButton" name="btnDissociateOff">
+          <property name="text">
+           <string>Dissociate</string>
+          </property>
+         </widget>
         </item>
        </layout>
       </item>
