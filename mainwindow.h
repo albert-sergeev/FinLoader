@@ -38,7 +38,7 @@
 #include "styledswitcher.h"
 #include "graphviewform.h"
 #include "graphholder.h"
-#include "amipiperform.h"
+#include "amipipesform.h"
 #include "amipipeholder.h"
 #include "dataamipipeanswer.h"
 #include "dataamipipetask.h"
@@ -150,7 +150,10 @@ private:
     std::chrono::time_point<std::chrono::steady_clock> dtCheckPipesActivity;
     std::map<int,int> mStoredUnconnected;
     FastTasksHolder fastHolder;
-    AmiPiperForm  *pAmiPipeWindow;
+    AmiPipesForm  *pAmiPipeWindow;
+    bool bAmiPipeShowByNameUnallocated;
+    bool bAmiPipeShowByNameActive;
+    bool bAmiPipeShowByNameOff;
 
     // for docked bar
     StyledSwitcher * swtShowByName;
@@ -224,6 +227,12 @@ public slots: // for import FinQuotes winow
     void slotSaveNewDefaultPath(bool,QString);
     void slotSaveGeneralOptions(bool,bool,int);
 
+public slots:
+
+    void slotAmiPipeSaveShowByNamesUnallocated(bool);
+    void slotAmiPipeSaveShowByNamesActive(bool);
+    void slotAmiPipeSaveShowByNamesOff(bool);
+
 
 protected slots: // for main window
     void slotNotImpl    ();
@@ -270,7 +279,7 @@ protected slots: // for main window
 
     void slotGVFramesVisibilityStateChanged();
 
-    void slotAmiPipeFromWasClosed();
+    void slotAmiPipeFormWasClosed();
 
     void CheckActivePipes();
     void CheckActiveProcesses();

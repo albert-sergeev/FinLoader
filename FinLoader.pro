@@ -19,7 +19,7 @@ CONFIG += c++1z
 
 SOURCES += \
     amipipeholder.cpp \
-    amipiperform.cpp \
+    amipipesform.cpp \
     bar.cpp \
     bargraphicsitem.cpp \
     bartick.cpp \
@@ -57,7 +57,7 @@ SOURCES += \
 
 HEADERS += \
     amipipeholder.h \
-    amipiperform.h \
+    amipipesform.h \
     bar.h \
     bargraphicsitem.h \
     bartick.h \
@@ -93,7 +93,7 @@ HEADERS += \
     workerloader.h
 
 FORMS += \
-    amipiperform.ui \
+    amipipesform.ui \
     configwindow.ui \
     graphviewform.ui \
     importfinqotesform.ui \

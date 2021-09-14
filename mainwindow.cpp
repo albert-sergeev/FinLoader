@@ -588,6 +588,12 @@ void MainWindow::LoadSettings()
             bGVVolumeScOnLoadIsHidden = !(m_settings.value("GVVolumeSc",true).toBool());
         m_settings.endGroup();
 
+        m_settings.beginGroup("AmiPipeForm");
+            bAmiPipeShowByNameUnallocated   = m_settings.value("AmiPipeShowByNameUnallocated"   ,false).toBool();
+            bAmiPipeShowByNameActive        = m_settings.value("AmiPipeShowByNameActive"        ,false).toBool();
+            bAmiPipeShowByNameOff           = m_settings.value("AmiPipeShowByNameOff"           ,false).toBool();
+        m_settings.endGroup();
+
     m_settings.endGroup();
 }
 //--------------------------------------------------------------------------------------------------------------------------------
@@ -641,9 +647,15 @@ void MainWindow::SaveSettings()
             m_settings.setValue("GVVolumeSc",pacGVVolumeSc->isChecked());
         m_settings.endGroup();
 
+        m_settings.beginGroup("AmiPipeForm");
+            m_settings.setValue("AmiPipeShowByNameUnallocated"  ,bAmiPipeShowByNameUnallocated);
+            m_settings.setValue("AmiPipeShowByNameActive"  ,bAmiPipeShowByNameActive);
+            m_settings.setValue("AmiPipeShowByNameOff"  ,bAmiPipeShowByNameOff);
+        m_settings.endGroup();
+
     m_settings.endGroup();
 
-    m_settings.sync();
+    //m_settings.sync();
 
 }
 //--------------------------------------------------------------------------------------------------------------------------------
@@ -1835,7 +1847,8 @@ void MainWindow::slotAmiPipeWndow()
 {
 
     if(pAmiPipeWindow == nullptr){
-        pAmiPipeWindow=new AmiPiperForm (&m_MarketLstModel,iDefaultTickerMarket,&m_TickerLstModel,pipesHolder,vTickersLst);
+        pAmiPipeWindow=new AmiPipesForm (&m_MarketLstModel,iDefaultTickerMarket,&m_TickerLstModel,pipesHolder,vTickersLst,
+                                          bAmiPipeShowByNameUnallocated, bAmiPipeShowByNameActive,bAmiPipeShowByNameOff);
         pAmiPipeWindow->setAttribute(Qt::WA_DeleteOnClose);
         pAmiPipeWindow->setWindowTitle(tr("Import from trade sistems"));
         pAmiPipeWindow->setWindowIcon(QPixmap(":/store/images/sc_cut"));
@@ -1844,7 +1857,12 @@ void MainWindow::slotAmiPipeWndow()
         //ui->mdiArea->addSubWindow(pdoc);
 
         connect(pAmiPipeWindow,SIGNAL(SendToMainLog(QString)),this,SIGNAL(SendToLog(QString)));
-        connect(pAmiPipeWindow,SIGNAL(WasCloseEvent()),this,SLOT(slotAmiPipeFromWasClosed()));
+        connect(pAmiPipeWindow,SIGNAL(WasCloseEvent()),this,SLOT(slotAmiPipeFormWasClosed()));
+
+        connect(pAmiPipeWindow,SIGNAL(NeedSaveShowByNamesUnallocated(bool)),this,SLOT(slotAmiPipeSaveShowByNamesUnallocated(bool)));
+        connect(pAmiPipeWindow,SIGNAL(NeedSaveShowByNamesActive(bool)),this,SLOT(slotAmiPipeSaveShowByNamesActive(bool)));
+        connect(pAmiPipeWindow,SIGNAL(NeedSaveShowByNamesOff(bool)),this,SLOT(slotAmiPipeSaveShowByNamesOff(bool)));
+
 
         pAmiPipeWindow->show();
     }
@@ -1865,7 +1883,7 @@ void MainWindow::slotSaveGeneralOptions(bool FillNotAutoloaded,bool GrayColor,in
 
 }
 //--------------------------------------------------------------------------------------------------------------------------------
-void MainWindow::slotAmiPipeFromWasClosed()
+void MainWindow::slotAmiPipeFormWasClosed()
 {
     if (pAmiPipeWindow){
         delete pAmiPipeWindow;
@@ -1873,6 +1891,23 @@ void MainWindow::slotAmiPipeFromWasClosed()
     }
 }
 //--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotAmiPipeSaveShowByNamesUnallocated(bool b)
+{
+    bAmiPipeShowByNameUnallocated = b;
+    SaveSettings();
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotAmiPipeSaveShowByNamesActive(bool b)
+{
+    bAmiPipeShowByNameActive = b;
+    SaveSettings();
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotAmiPipeSaveShowByNamesOff(bool b)
+{
+    bAmiPipeShowByNameOff = b;
+    SaveSettings();
+}
 //--------------------------------------------------------------------------------------------------------------------------------
 
 

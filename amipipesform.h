@@ -11,11 +11,13 @@
 #include "modeltickerslist.h"
 #include "amipipeholder.h"
 
+#include "styledswitcher.h"
+
 namespace Ui {
-class AmiPiperForm;
+class AmiPipesForm;
 }
 
-class AmiPiperForm : public QWidget
+class AmiPipesForm : public QWidget
 {
     Q_OBJECT
 
@@ -36,19 +38,35 @@ protected:
 
     std::vector<Ticker> &vTickersLst;
 
+    StyledSwitcher *swtShowByNameUnallocated;
+    StyledSwitcher *swtShowByNameActive;
+    StyledSwitcher *swtShowByNameOff;
+
+    bool bShowByNameUnallocated;
+    bool bShowByNameActive;
+    bool bShowByNameOff;
+
 public:
-    explicit AmiPiperForm(modelMarketsList *modelM, int DefaultTickerMarket,
+    explicit AmiPipesForm(modelMarketsList *modelM, int DefaultTickerMarket,
                           modelTickersList *modelT,
                           AmiPipeHolder & p,
                           std::vector<Ticker> &v,
+                          bool ShowByNameUnallocated,
+                          bool ShowByNameActive,
+                          bool ShowByNameOff,
                           QWidget *parent = nullptr);
-    ~AmiPiperForm();
+    ~AmiPipesForm();
 
 public:
 signals:
     void SendToMainLog(QString);
     void NeedSaveDefaultTickerMarket(int);
     void WasCloseEvent();
+
+    void NeedSaveShowByNamesUnallocated(bool);
+    void NeedSaveShowByNamesActive(bool);
+    void NeedSaveShowByNamesOff(bool);
+
 
 protected:
     void SetMarketModel();
@@ -87,8 +105,14 @@ protected slots:
     void slotSelectNewTicker(const  QModelIndex&);
     void slotBindClicked();
 
+    void slotShowByNamesUnallocatedChecked(int Checked);
+    void slotShowByNamesActiveChecked(int Checked);
+    void slotShowByNamesOffChecked(int Checked);
+
+    void slotBtnQuitClicked();
+
 private:
-    Ui::AmiPiperForm *ui;
+    Ui::AmiPipesForm *ui;
 
     // QWidget interface
 protected:
