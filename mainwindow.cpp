@@ -22,10 +22,11 @@ using milliseconds=std::chrono::duration<double,
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , lcdN{nullptr}
-    , vMarketsLst{}
+    , vMarketsLst{}   
     , m_MarketLstModel{vMarketsLst,this}
     , vTickersLst{}
     , m_TickerLstModel{vTickersLst,vMarketsLst,mBlinkedState,this}
+    , pAmiPipeWindow{nullptr}
     , thrdPoolLoadFinQuotes{(int)std::thread::hardware_concurrency()/2}
     , thrdPoolAmiClient{1}
     , thrdPoolFastDataWork{(int)std::thread::hardware_concurrency()/2}
@@ -194,6 +195,11 @@ bool MainWindow::event(QEvent *event)
             ThreadFreeCout pcout;
             pcout <<"Received close event\n";
         }
+        if(pAmiPipeWindow != nullptr){
+            pAmiPipeWindow->close();
+            delete pAmiPipeWindow;
+            pAmiPipeWindow = nullptr;
+        }
 
         emit SaveUnsavedConfigs();
 
@@ -202,6 +208,7 @@ bool MainWindow::event(QEvent *event)
                 w->close();
             }
         }
+
 
     }
     return QWidget::event(event);
@@ -1827,17 +1834,23 @@ void MainWindow::slotSaveNewDefaultPath(bool bDef,QString qsPath)
 void MainWindow::slotAmiPipeWndow()
 {
 
-    AmiPiperForm  *pdoc=new AmiPiperForm (&m_MarketLstModel,iDefaultTickerMarket,&m_TickerLstModel,pipesHolder,vTickersLst);
-    pdoc->setAttribute(Qt::WA_DeleteOnClose);
-    pdoc->setWindowTitle(tr("Import from trade sistems"));
-    pdoc->setWindowIcon(QPixmap(":/store/images/sc_cut"));
-    connect(pdoc,SIGNAL(NeedSaveDefaultTickerMarket(int)),this,SLOT(slotStoreDefaultTickerMarket(int)));
+    if(pAmiPipeWindow == nullptr){
+        pAmiPipeWindow=new AmiPiperForm (&m_MarketLstModel,iDefaultTickerMarket,&m_TickerLstModel,pipesHolder,vTickersLst);
+        pAmiPipeWindow->setAttribute(Qt::WA_DeleteOnClose);
+        pAmiPipeWindow->setWindowTitle(tr("Import from trade sistems"));
+        pAmiPipeWindow->setWindowIcon(QPixmap(":/store/images/sc_cut"));
+        connect(pAmiPipeWindow,SIGNAL(NeedSaveDefaultTickerMarket(int)),this,SLOT(slotStoreDefaultTickerMarket(int)));
 
-    ui->mdiArea->addSubWindow(pdoc);
+        //ui->mdiArea->addSubWindow(pdoc);
 
-    connect(pdoc,SIGNAL(SendToMainLog(QString)),this,SIGNAL(SendToLog(QString)));
+        connect(pAmiPipeWindow,SIGNAL(SendToMainLog(QString)),this,SIGNAL(SendToLog(QString)));
+        connect(pAmiPipeWindow,SIGNAL(WasCloseEvent()),this,SLOT(slotAmiPipeFromWasClosed()));
 
-    pdoc->show();
+        pAmiPipeWindow->show();
+    }
+    else{
+        pAmiPipeWindow->setFocus();
+    }
 
 }
 //--------------------------------------------------------------------------------------------------------------------------------
@@ -1852,6 +1865,13 @@ void MainWindow::slotSaveGeneralOptions(bool FillNotAutoloaded,bool GrayColor,in
 
 }
 //--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotAmiPipeFromWasClosed()
+{
+    if (pAmiPipeWindow){
+        delete pAmiPipeWindow;
+        pAmiPipeWindow = nullptr;
+    }
+}
 //--------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------
 

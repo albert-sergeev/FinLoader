@@ -150,6 +150,7 @@ private:
     std::chrono::time_point<std::chrono::steady_clock> dtCheckPipesActivity;
     std::map<int,int> mStoredUnconnected;
     FastTasksHolder fastHolder;
+    AmiPiperForm  *pAmiPipeWindow;
 
     // for docked bar
     StyledSwitcher * swtShowByName;
@@ -268,6 +269,8 @@ protected slots: // for main window
     //void slotTestPvBars(std::shared_ptr<std::vector<std::vector<BarTick>>> pvBars); // TODO: delete. for tests
 
     void slotGVFramesVisibilityStateChanged();
+
+    void slotAmiPipeFromWasClosed();
 
     void CheckActivePipes();
     void CheckActiveProcesses();

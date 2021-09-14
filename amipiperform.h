@@ -48,6 +48,7 @@ public:
 signals:
     void SendToMainLog(QString);
     void NeedSaveDefaultTickerMarket(int);
+    void WasCloseEvent();
 
 protected:
     void SetMarketModel();
@@ -92,6 +93,10 @@ private:
     // QWidget interface
 protected:
     void showEvent(QShowEvent *event);
+
+    // QWidget interface
+protected:
+    void closeEvent(QCloseEvent *event);
 };
 
 #endif // AMIPIPERFORM_H

@@ -8,7 +8,7 @@ AmiPiperForm::AmiPiperForm(modelMarketsList *modelM, int DefaultTickerMarket,
                            AmiPipeHolder & p,
                            std::vector<Ticker> &v,
                            QWidget *parent) :
-    QWidget(parent),
+    QWidget(parent,Qt::Window | Qt::WindowStaysOnTopHint),
     iDefaultTickerMarket{DefaultTickerMarket},
     modelMarket{modelM},
     modelTicker{modelT},
@@ -703,3 +703,7 @@ void AmiPiperForm::showEvent(QShowEvent */*event*/)
     slotBtnCheckClicked();
 }
 //--------------------------------------------------------------------------------------------------------------------
+void AmiPiperForm::closeEvent(QCloseEvent */*event*/)
+{
+    emit WasCloseEvent();
+}
