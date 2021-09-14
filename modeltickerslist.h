@@ -17,7 +17,7 @@ public:
     explicit modelTickersList(std::vector<Ticker> &v,std::vector<Market> &m,
                               std::map<int,std::pair<bool,std::chrono::time_point<std::chrono::steady_clock>>> &mS,
                               QObject *parent = nullptr):
-        QAbstractTableModel{parent},vTickersLst{&v},vMarketsLst{&m},mBlinkedState{&mS}{};
+        QAbstractTableModel{parent},vTickersLst{&v},vMarketsLst{&m},mBlinkedState{&mS},bGrayColorForInormants{false}{};
 
 private:
 
@@ -25,6 +25,8 @@ private:
     std::vector<Market> * vMarketsLst; //init in const by ref
     std::map<int,std::pair<bool,std::chrono::time_point<std::chrono::steady_clock>>> *mBlinkedState; //init in const by ref
     std::map<int,int> mTickerState;
+
+    bool bGrayColorForInormants;
 
 private:
     QString getMarketNameByID(const int i) const ;
@@ -57,6 +59,8 @@ public:
 
     void blinkTicker(int iTickerID);
     void setTickerState(int TickerID, eTickerState st);
+
+    void setGrayColorForInformants(bool b);
 
 
 signals:

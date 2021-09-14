@@ -82,6 +82,7 @@ MainWindow::MainWindow(QWidget *parent)
     LoadSettings();
     slotSetActiveLang (m_Language);
     slotSetActiveStyle(m_sStyleName);
+    m_TickerLstModel.setGrayColorForInformants(bGrayColorFroNotAutoloadedTickers);
 
     InitAction();
 
@@ -548,6 +549,10 @@ void MainWindow::LoadSettings()
             qsStorageDirPath            = m_settings.value("StorageDirPath","").toString();
             bDefaultStoragePath         = m_settings.value("DefaultStoragePath",true).toBool();
 
+            bFillNotAutoloadedTickers   = m_settings.value("FillNotAutoloadedTickers",true).toBool();
+            bGrayColorFroNotAutoloadedTickers   = m_settings.value("GrayColorFroNotAutoloadedTickers",false).toBool();
+            iDefaultMonthDepth          = m_settings.value("DefaultMonthDepth",1).toInt();
+
         m_settings.endGroup();
 
         m_settings.beginGroup("Configwindow");
@@ -596,6 +601,10 @@ void MainWindow::SaveSettings()
 
             m_settings.setValue("StorageDirPath", qsStorageDirPath);
             m_settings.setValue("DefaultStoragePath",bDefaultStoragePath);
+
+            m_settings.setValue("FillNotAutoloadedTickers",bFillNotAutoloadedTickers);
+            m_settings.setValue("GrayColorFroNotAutoloadedTickers",bGrayColorFroNotAutoloadedTickers);
+            m_settings.setValue("DefaultMonthDepth",iDefaultMonthDepth);
 
         m_settings.endGroup();
 
@@ -1337,7 +1346,10 @@ void MainWindow::slotConfigWndow()
 {
     ConfigWindow *pdoc=new ConfigWindow(&m_MarketLstModel,iDefaultTickerMarket,
                                         &m_TickerLstModel,bConfigTickerShowByName,bConfigTickerSortByName,
-                                        bDefaultStoragePath,qsStorageDirPath,stStore
+                                        bDefaultStoragePath,qsStorageDirPath,stStore,
+                                        bFillNotAutoloadedTickers,
+                                        bGrayColorFroNotAutoloadedTickers,
+                                        iDefaultMonthDepth
                                         );
     pdoc->setAttribute(Qt::WA_DeleteOnClose);
     pdoc->setWindowTitle(tr("Config"));
@@ -1357,7 +1369,7 @@ void MainWindow::slotConfigWndow()
     connect(this,SIGNAL(SaveUnsavedConfigs()),pdoc,SLOT(slotBtnSaveTickerClicked()));
 
     connect(pdoc,SIGNAL(NeedChangeDefaultPath(bool,QString)),this,SLOT(slotSaveNewDefaultPath(bool,QString)));
-
+    connect(pdoc,SIGNAL(NeedSaveGeneralOptions(bool,bool,int)),this,SLOT(slotSaveGeneralOptions(bool,bool,int)));
 
     pdoc->show();
 }
@@ -1567,6 +1579,8 @@ void MainWindow::slotSetSelectedTicker(const  int iTickerID)
             lk.lock();
         }
 
+        slotLoadGraph(iTickerID);
+
         GraphViewForm *pdoc=new GraphViewForm(iTickerID,vTickersLst,Holders[iTickerID]);
         lk.unlock();
         pdoc->setAttribute(Qt::WA_DeleteOnClose);
@@ -1584,6 +1598,28 @@ void MainWindow::slotSetSelectedTicker(const  int iTickerID)
     }
     else{
         wnd->setFocus();
+    }
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+
+void MainWindow::slotLoadGraph(const  int iTickerID)
+{
+    std::shared_lock lk(mutexMainHolder);
+    if (Holders.find(iTickerID) == Holders.end()){
+        lk.unlock();
+        std::unique_lock lk2(mutexMainHolder);
+        Holders[iTickerID] = std::make_shared<GraphHolder>(GraphHolder{iTickerID});
+        lk2.unlock();
+        lk.lock();
+    }
+    if (Holders[iTickerID]->getViewGraphSize(Bar::eInterval::pTick) == 0){
+        if (iDefaultMonthDepth < 0 ) iDefaultMonthDepth = 0;
+        if (iDefaultMonthDepth > 99 ) iDefaultMonthDepth = 99;
+
+        std::time_t tNow =std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+        std::time_t tBegin = Storage::dateAddMonth(tNow, (-iDefaultMonthDepth));
+
+        slotLoadGraph(iTickerID,tBegin,tNow);
     }
 }
 //--------------------------------------------------------------------------------------------------------------------------------
@@ -1711,11 +1747,14 @@ void MainWindow::slotLoadGraph(const  int iTickerID, const std::time_t tBegin, c
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::InitHolders()
 {
+    if (iDefaultMonthDepth < 0 ) iDefaultMonthDepth = 0;
+    if (iDefaultMonthDepth > 99 ) iDefaultMonthDepth = 99;
+
     std::time_t tNow =std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-    std::time_t tBegin = Storage::dateAddMonth(tNow,-6);
+    std::time_t tBegin = Storage::dateAddMonth(tNow, (-iDefaultMonthDepth));
     //
     for(const Ticker &t:vTickersLst){
-        //if (t.AutoLoad())
+        if (t.AutoLoad() || bFillNotAutoloadedTickers)
         {
             std::shared_lock lk(mutexMainHolder);
             if (Holders.find(t.TickerID()) == Holders.end()){
@@ -1797,6 +1836,16 @@ void MainWindow::slotAmiPipeWndow()
 
 }
 //--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotSaveGeneralOptions(bool FillNotAutoloaded,bool GrayColor,int MonthDepth)
+{
+    bFillNotAutoloadedTickers           = FillNotAutoloaded;
+    bGrayColorFroNotAutoloadedTickers   = GrayColor;
+    iDefaultMonthDepth                  = MonthDepth;
+    SaveSettings();
+
+    m_TickerLstModel.setGrayColorForInformants(bGrayColorFroNotAutoloadedTickers);
+
+}
 //--------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------

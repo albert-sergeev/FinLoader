@@ -28,6 +28,9 @@ public:
                           modelTickersList *modelT, bool ShowByName,bool SortByName,
                           bool DefStoragePath, QString StoragePath,
                           Storage &stStore,
+                          bool bFillNotAutoloadedTickers,
+                          bool bGrayColorFroNotAutoloadedTickers,
+                          int iDefaultMonthDepth,
                           QWidget *parent = nullptr);
     ~ConfigWindow();
 private:
@@ -49,8 +52,13 @@ private:
     bool bIsAboutTickerChanged;
 
     bool bDataGeneralChanged;
+    bool bDataGeneralOptionsChanged;
     bool bDefStoragePath;
     QString qsStoragePath;
+
+    bool bFillNotAutoloadedTickers;
+    bool bGrayColorFroNotAutoloadedTickers;
+    int iDefaultMonthDepth;
 
     StyledSwitcher *swtAutoLoadTicker;
     StyledSwitcher *swtUpToSysTicker;
@@ -63,6 +71,9 @@ private:
     StyledSwitcher *swtUpToSysWholeMarket;
 
     StyledSwitcher *swtDefPath;
+    StyledSwitcher *swtFillNotAutoloadedTickers;
+    StyledSwitcher *swtGrayColorFroNotAutoloadedTickers;
+
 
     int iDefaultTickerMarket;
     modelMarketsList *modelMarket;
@@ -106,7 +117,6 @@ signals:
     void NeedSaveDefaultTickerMarket(int);
     void NeedSaveShowByNames(bool);
     void NeedSaveSortByNames(bool);
-    void NeedChangeDefaultPath(bool,QString);
 
 public slots:
     void slotBtnAddTickerClicked();
@@ -127,6 +137,18 @@ protected slots:
     void ClearTickerWidgetsValues();
     void setEnableTickerWidgets(bool);
 
+//////////////////////////////////////////
+/// General tab work part
+//////////////////////////////////////////
+
+public:
+
+signals:
+    void NeedChangeDefaultPath(bool,QString);
+    void NeedSaveGeneralOptions(bool,bool,int);
+
+protected slots:
+
     void slotDefPathChenged(int);
     void slotStoragePathChanged(const QString &);
     void slotSetPathVisibility();
@@ -134,6 +156,10 @@ protected slots:
     void slotGeneralSaveClicked();
     void slotGeneralCancelClicked();
     void slotGeneralOpenStorageDirClicked();
+
+    void slotFillNotAutoloadedChenged(int);
+    void slotGrayColorChenged(int);
+    void slotMonthDepthChenged(int);
 
 //    void slotAboutQuit();
 

@@ -109,6 +109,10 @@ private:
     bool bGVUpperScOnLoadIsHidden;
     bool bGVLowerScOnLoadIsHidden;
     bool bGVVolumeScOnLoadIsHidden;
+
+    bool bFillNotAutoloadedTickers;
+    bool bGrayColorFroNotAutoloadedTickers;
+    int iDefaultMonthDepth;
     //------------------------------------------------
     std::map<int,std::shared_ptr<GraphHolder>> Holders;
     std::queue<std::pair<int,std::chrono::time_point<std::chrono::steady_clock>>> qActivityQueue;
@@ -213,9 +217,11 @@ public slots: // for import FinQuotes winow
     void slotParseImportFinQuotesFile(dataFinLoadTask &);
     void slotStopFinQuotesLoadings();
 
+    void slotLoadGraph(const  int iTickerID);
     void slotLoadGraph(const  int iTickerID, const std::time_t tBegin, const std::time_t tEnd);
 
     void slotSaveNewDefaultPath(bool,QString);
+    void slotSaveGeneralOptions(bool,bool,int);
 
 
 protected slots: // for main window

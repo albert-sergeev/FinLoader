@@ -81,7 +81,8 @@ QVariant modelTickersList::data(const QModelIndex &index, int nRole) const
             if (ItM != mTickerState.end()){
                 switch (ItM->second) {
                 case eTickerState::Informant:
-                    return QVariant(QColor(Qt::lightGray));
+                    if (bGrayColorForInormants) {return QVariant(QColor(Qt::lightGray));}
+                    else                        {return QVariant();}
                     break;
                 case eTickerState::Connected:
                     return  QVariant();
@@ -95,8 +96,8 @@ QVariant modelTickersList::data(const QModelIndex &index, int nRole) const
                 }
             }
             else{
-                return QVariant(QColor(Qt::lightGray));
-                //return  QVariant();
+                if (bGrayColorForInormants) {return QVariant(QColor(Qt::lightGray));}
+                else                        {return QVariant();}
             }
         }
 
@@ -299,5 +300,18 @@ bool modelTickersList::searchTickerByTickerID(const int TickerID, QModelIndex & 
     indx = this->index(std::distance(vTickersLst->begin(),It),0);
 
     return  true;
+}
+//--------------------------------------------------------------------------------------------------------
+void modelTickersList::setGrayColorForInformants(bool b)
+{
+    if (bGrayColorForInormants != b){
+        bGrayColorForInormants = b;
+
+        QVector<int> vV {Qt::BackgroundColorRole};
+        QModelIndex indexBeg = this->index(0,0);
+        QModelIndex indexEnd = this->index(vTickersLst->size()-1,4);
+
+        emit dataChanged(indexBeg,indexEnd,vV);
+    }
 }
 //--------------------------------------------------------------------------------------------------------

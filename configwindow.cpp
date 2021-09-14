@@ -14,6 +14,9 @@ ConfigWindow::ConfigWindow(modelMarketsList *modelM,int DefaultTickerMarket,
                            modelTickersList *modelT, bool ShowByName,bool SortByName,
                            bool DefStoragePath, QString StoragePath,
                            Storage &st,
+                           bool FillNotAutoloadedTickers,
+                           bool GrayColorFroNotAutoloadedTickers,
+                           int DefaultMonthDepth,
                            QWidget *parent) :
     QWidget(parent)
     , stStore{st}
@@ -24,6 +27,10 @@ ConfigWindow::ConfigWindow(modelMarketsList *modelM,int DefaultTickerMarket,
     , bAddingTickerRow {false}
     , bIsAboutTickerChanged{false}
     , bDataGeneralChanged{false}
+    , bDataGeneralOptionsChanged{false}
+    , bFillNotAutoloadedTickers{FillNotAutoloadedTickers}
+    , bGrayColorFroNotAutoloadedTickers{GrayColorFroNotAutoloadedTickers}
+    , iDefaultMonthDepth{DefaultMonthDepth}
     ,iDefaultTickerMarket{DefaultTickerMarket}
     , modelMarket{modelM}
     , modelTicker{modelT}
@@ -122,8 +129,18 @@ ConfigWindow::ConfigWindow(modelMarketsList *modelM,int DefaultTickerMarket,
     swtDefPath = new StyledSwitcher(tr("On "),tr(" Off"),true,10,this);
     lt8->addWidget(swtDefPath);
     //-------------------------------------------------------------
-
-
+    QHBoxLayout *lt9 = new QHBoxLayout();
+    lt9->setMargin(0);
+    ui->wtLoadLoadedTickers->setLayout(lt9);
+    swtFillNotAutoloadedTickers = new StyledSwitcher(tr("On "),tr(" Off"),true,10,this);
+    lt9->addWidget(swtFillNotAutoloadedTickers);
+    //-------------------------------------------------------------
+    QHBoxLayout *lt10 = new QHBoxLayout();
+    lt10->setMargin(0);
+    ui->wtInformantGrayColor->setLayout(lt10);
+    swtGrayColorFroNotAutoloadedTickers = new StyledSwitcher(tr("On "),tr(" Off"),true,10,this);
+    lt10->addWidget(swtGrayColorFroNotAutoloadedTickers);
+    //-------------------------------------------------------------
 
 
     ///////////////////////////////////////////////////////////////////////
@@ -175,8 +192,7 @@ ConfigWindow::ConfigWindow(modelMarketsList *modelM,int DefaultTickerMarket,
     ///////////////////////////////////////////////////////////////////////
     // general-tab work
 
-    connect(swtDefPath,SIGNAL(stateChanged(int)),this,SLOT(slotDefPathChenged(int)));
-    connect(ui->edStoragePath,SIGNAL(textChanged(const QString &)),this,SLOT(slotStoragePathChanged(const QString &)));
+
 
     connect(ui->btnGeneralSave,SIGNAL(clicked()),  this,SLOT(slotGeneralSaveClicked()));
     connect(ui->btnGeneralCancel,SIGNAL(clicked()),  this,SLOT(slotGeneralCancelClicked()));
@@ -185,7 +201,25 @@ ConfigWindow::ConfigWindow(modelMarketsList *modelM,int DefaultTickerMarket,
 
     bDefStoragePath = DefStoragePath;
     qsStoragePath   = StoragePath;
-    slotGeneralCancelClicked();
+    swtDefPath->setChecked(bDefStoragePath);
+    ui->edStoragePath->setText(qsStoragePath);
+    slotSetPathVisibility();
+
+    swtFillNotAutoloadedTickers->setChecked(bFillNotAutoloadedTickers);
+    swtGrayColorFroNotAutoloadedTickers->setChecked(bGrayColorFroNotAutoloadedTickers);
+    ui->spnbMonthDepth->setValue(iDefaultMonthDepth);
+
+    connect(swtDefPath,SIGNAL(stateChanged(int)),this,SLOT(slotDefPathChenged(int)));
+    connect(ui->edStoragePath,SIGNAL(textChanged(const QString &)),this,SLOT(slotStoragePathChanged(const QString &)));
+
+    connect(swtFillNotAutoloadedTickers,SIGNAL(stateChanged(int)),this,SLOT(slotFillNotAutoloadedChenged(int)));
+    connect(swtGrayColorFroNotAutoloadedTickers,SIGNAL(stateChanged(int)),this,SLOT(slotGrayColorChenged(int)));
+    connect(ui->spnbMonthDepth,SIGNAL(valueChanged(int)),this,SLOT(slotMonthDepthChenged(int)));
+
+    ui->btnGeneralSave ->setEnabled(false);
+    ui->btnGeneralCancel ->setEnabled(false);
+
+
 
     ///////////////////////////////////////////////////////////////////////
     // common
@@ -202,15 +236,16 @@ ConfigWindow::ConfigWindow(modelMarketsList *modelM,int DefaultTickerMarket,
 //--------------------------------------------------------------------------------------------------------
 ConfigWindow::~ConfigWindow()
 {
-    if(swtAutoLoadTicker)       {   delete swtAutoLoadTicker;       swtAutoLoadTicker = nullptr;}
-    if(swtUpToSysTicker)        {   delete swtUpToSysTicker;        swtUpToSysTicker = nullptr;}
-    if(swtBulbululatorTicker)   {   delete swtBulbululatorTicker;   swtBulbululatorTicker = nullptr;}
-    if(swtShowByNameTicker)     {   delete swtShowByNameTicker;     swtShowByNameTicker = nullptr;}
-    if(swtSortByNameTicker)     {   delete swtSortByNameTicker;     swtSortByNameTicker = nullptr;}
-    if(swtAutoLoadWholeMarket)  {   delete swtAutoLoadWholeMarket;  swtAutoLoadWholeMarket = nullptr;}
-    if(swtUpToSysWholeMarket)   {   delete swtUpToSysWholeMarket;   swtUpToSysWholeMarket = nullptr;}
-    if(swtDefPath)              {   delete swtDefPath;              swtDefPath = nullptr;}
-
+    if(swtAutoLoadTicker)                   {   delete swtAutoLoadTicker;                   swtAutoLoadTicker = nullptr;}
+    if(swtUpToSysTicker)                    {   delete swtUpToSysTicker;                    swtUpToSysTicker = nullptr;}
+    if(swtBulbululatorTicker)               {   delete swtBulbululatorTicker;               swtBulbululatorTicker = nullptr;}
+    if(swtShowByNameTicker)                 {   delete swtShowByNameTicker;                 swtShowByNameTicker = nullptr;}
+    if(swtSortByNameTicker)                 {   delete swtSortByNameTicker;                 swtSortByNameTicker = nullptr;}
+    if(swtAutoLoadWholeMarket)              {   delete swtAutoLoadWholeMarket;              swtAutoLoadWholeMarket = nullptr;}
+    if(swtUpToSysWholeMarket)               {   delete swtUpToSysWholeMarket;               swtUpToSysWholeMarket = nullptr;}
+    if(swtDefPath)                          {   delete swtDefPath;                          swtDefPath = nullptr;}
+    if(swtFillNotAutoloadedTickers)         {   delete swtFillNotAutoloadedTickers;         swtFillNotAutoloadedTickers = nullptr;}
+    if(swtGrayColorFroNotAutoloadedTickers) {   delete swtGrayColorFroNotAutoloadedTickers; swtGrayColorFroNotAutoloadedTickers = nullptr;}
     //----------------------------------
     delete ui;
 }
@@ -249,6 +284,9 @@ void ConfigWindow::slotAboutQuit()
         slotBtnSaveTickerClicked();
     }
     if (bDataGeneralChanged){
+        slotGeneralSaveClicked();
+    }
+    else if (bDataGeneralOptionsChanged){
         slotGeneralSaveClicked();
     }
 }
@@ -982,7 +1020,7 @@ void ConfigWindow::ClearTickerWidgetsValues()
 void ConfigWindow::slotDefPathChenged(int /*iDef*/)
 {
     slotSetPathVisibility();
-    if(swtDefPath->isChecked() && bDefStoragePath){
+    if(swtDefPath->isChecked() == bDefStoragePath && !bDataGeneralOptionsChanged){
         slotGeneralCancelClicked();
     }
     else{
@@ -1000,13 +1038,34 @@ void ConfigWindow::slotStoragePathChanged(const QString &)
 //--------------------------------------------------------------------------------------------------------
 void ConfigWindow::slotGeneralCancelClicked()
 {
-    swtDefPath->setChecked(bDefStoragePath);
-    ui->edStoragePath->setText(qsStoragePath);
+
+    if (bDataGeneralChanged){
+
+        disconnect(swtDefPath,SIGNAL(stateChanged(int)),this,SLOT(slotDefPathChenged(int)));
+        disconnect(ui->edStoragePath,SIGNAL(textChanged(const QString &)),this,SLOT(slotStoragePathChanged(const QString &)));
+
+        swtDefPath->setChecked(bDefStoragePath);
+        ui->edStoragePath->setText(qsStoragePath);
+
+        bDataGeneralChanged = false;
+
+        slotSetPathVisibility();
+
+        connect(swtDefPath,SIGNAL(stateChanged(int)),this,SLOT(slotDefPathChenged(int)));
+        connect(ui->edStoragePath,SIGNAL(textChanged(const QString &)),this,SLOT(slotStoragePathChanged(const QString &)));
+    }
+
+    if(bDataGeneralOptionsChanged){
+
+        swtFillNotAutoloadedTickers->setChecked(bFillNotAutoloadedTickers);
+        swtGrayColorFroNotAutoloadedTickers->setChecked(bGrayColorFroNotAutoloadedTickers);
+        ui->spnbMonthDepth->setValue(iDefaultMonthDepth);
+
+        bDataGeneralOptionsChanged = false;
+    }
+
     ui->btnGeneralSave ->setEnabled(false);
     ui->btnGeneralCancel ->setEnabled(false);
-    slotSetPathVisibility();
-
-    bDataGeneralChanged = false;
 }
 //--------------------------------------------------------------------------------------------------------
 void ConfigWindow::slotSetPathVisibility()
@@ -1029,11 +1088,33 @@ void ConfigWindow::slotGeneralSaveClicked()
                                QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel
                                );
         if (n==QMessageBox::Yes){
-            emit NeedChangeDefaultPath(swtDefPath->isChecked(),ui->edStoragePath->text());
+
+//            bDefStoragePath = swtDefPath->isChecked();
+//            qsStoragePath = ui->edStoragePath->text();
+
+            bFillNotAutoloadedTickers = swtFillNotAutoloadedTickers->isChecked();
+            bGrayColorFroNotAutoloadedTickers = swtGrayColorFroNotAutoloadedTickers->isChecked();
+            iDefaultMonthDepth = ui->spnbMonthDepth->value();
+
+            emit NeedSaveGeneralOptions(bFillNotAutoloadedTickers,bGrayColorFroNotAutoloadedTickers,iDefaultMonthDepth);
+
+            emit NeedChangeDefaultPath(swtDefPath->isChecked(),ui->edStoragePath->text());// do restart!!!
+
         }
         else if (n==QMessageBox::Cancel){
             slotGeneralCancelClicked();
         }
+    }
+    else if(bDataGeneralOptionsChanged){
+        bFillNotAutoloadedTickers = swtFillNotAutoloadedTickers->isChecked();
+        bGrayColorFroNotAutoloadedTickers = swtGrayColorFroNotAutoloadedTickers->isChecked();
+        iDefaultMonthDepth = ui->spnbMonthDepth->value();
+
+        emit NeedSaveGeneralOptions(bFillNotAutoloadedTickers,bGrayColorFroNotAutoloadedTickers,iDefaultMonthDepth);
+        bDataGeneralOptionsChanged = false;
+
+        ui->btnGeneralSave ->setEnabled(false);
+        ui->btnGeneralCancel ->setEnabled(false);
     }
 }
 //--------------------------------------------------------------------------------------------------------
@@ -1042,4 +1123,31 @@ void ConfigWindow::slotGeneralOpenStorageDirClicked()
     QString str=QFileDialog::getExistingDirectory(0,"Open dialog","");
     ui->edStoragePath->setText(str);
 }
+//--------------------------------------------------------------------------------------------------------
+
+void ConfigWindow::slotFillNotAutoloadedChenged(int)
+{
+    bDataGeneralOptionsChanged = true;
+    ui->btnGeneralSave ->setEnabled(true);
+    ui->btnGeneralCancel ->setEnabled(true);
+}
+void ConfigWindow::slotGrayColorChenged(int)
+{
+    bDataGeneralOptionsChanged = true;
+    ui->btnGeneralSave ->setEnabled(true);
+    ui->btnGeneralCancel ->setEnabled(true);
+}
+void ConfigWindow::slotMonthDepthChenged(int)
+{
+    bDataGeneralOptionsChanged = true;
+    ui->btnGeneralSave ->setEnabled(true);
+    ui->btnGeneralCancel ->setEnabled(true);
+}
+//--------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------
