@@ -164,7 +164,7 @@ public:
         inline Bar::eInterval Interval() const {return selectedViewInterval;}
         inline size_t realPosition()     const {return iCurrentIndex;}
         inline bool owns_lock()          const {return !bEndIterator? lk.owns_lock():false;}
-        inline void ulock()              { if(!bEndIterator) lk.unlock();}
+        inline void unlock()              { if(!bEndIterator) lk.unlock();}
     };
 
 public:
@@ -246,14 +246,17 @@ public:
 
     std::size_t getShiftIndex(Bar::eInterval it)  const;
 
+    template<typename T>
+    const Graph<T>& getGraph(Bar::eInterval it) const;
+
+    bool CloneHolder(std::shared_ptr<GraphHolder>  &hlNew, const Bar::eInterval it, const size_t iStart,const size_t iEnd, const size_t LetShift);
+
 protected:
 
     bool BuildUpperList(std::time_t dtStart,std::time_t dtEnd, bool bCopyToDst,GraphHolder &grDest);
 
 };
-
-
-
+//-----------------------------------------------------------------------------------------------------------------------------------
 namespace std {
 template <typename T>
 struct iterator_traits<GraphHolder::Iterator<T>> {
@@ -280,8 +283,20 @@ T & GraphHolder::getByIndex(const Bar::eInterval it,const size_t indx)
     }
 }
 //-----------------------------------------------------------------------------------------------------------------------------------
-
-//-----------------------------------------------------------------------------------------------------------------------------------
+template<typename T>
+const Graph<T>& GraphHolder::getGraph(Bar::eInterval it) const
+{
+    if constexpr (std::is_same_v<T, Bar>){
+        return mpGraphs.at(it);
+    }
+    else{
+        if(it == Bar::eInterval::pTick)
+            return graphTick;
+        else{
+            throw std::out_of_range("GraphHolder::getGraph invalid interval for template<BarTick>");
+        }
+    }
+}
 //-----------------------------------------------------------------------------------------------------------------------------------
 
 

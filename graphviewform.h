@@ -14,6 +14,53 @@ class GraphViewForm;
 }
 
 struct RepainTask{
+
+    typedef unsigned int Type_type;
+
+    enum eRepaintType:Type_type {InvalidateRepaint = 1, FastBars = 2, FastVolumes = 4, FastFrames = 8};
+
+    RepainTask(){;}
+    RepainTask(std::time_t Start,std::time_t End,bool NeedToRescale){
+        Type            = eRepaintType::InvalidateRepaint;
+
+        dtStart         = Start;
+        dtEnd           = End;
+        bNeedToRescale  = NeedToRescale;
+    }
+    RepainTask(Type_type tp, int Start,int End,bool NeedToRescale){
+        Type            = tp;
+
+        iStart         = Start;
+        iEnd           = End;
+        bNeedToRescale  = NeedToRescale;
+    }
+    RepainTask(const RepainTask &o) {
+        Type            = o.Type;
+
+        holder          = o.holder;
+        iStart          = o.iStart;
+        iEnd            = o.iEnd;
+        iLetShift       = o.iLetShift;
+        bStoreRightPos  = o.bStoreRightPos;
+        dtStart         = o.dtStart;
+        dtEnd           = o.dtEnd;
+        bNeedToRescale  = o.bNeedToRescale;
+        bOuterMode      = o.bOuterMode;
+        bInvalidate     = o.bInvalidate;
+    }
+
+    Type_type Type{eRepaintType::InvalidateRepaint};
+
+    std::shared_ptr<GraphHolder> holder;
+
+    int         iStart{0};
+    int         iEnd{0};
+    int         iLetShift{0};
+    bool        bOuterMode{true};
+    bool        bInvalidate{false};
+
+    bool bStoreRightPos{false};
+
     std::time_t dtStart {0};
     std::time_t dtEnd   {0};
     bool bNeedToRescale {false};
@@ -148,21 +195,32 @@ protected:
 
     std::pair<int,int> getViewPortRangeToHolder();
 
-    void PaintViewPort               (bool bFrames,bool bBars,bool bVolumes, bool bStoreRightPos);
-    void PaintViewPort               (int iStart, int iEnd,bool bFrames ,bool bBars,bool bVolumes, bool bStoreRightPos);
-    void PaintHorizontalScales       ();
-    void PaintHorizontalFrames       (int iStart, int iEnd);
-    void PaintVerticalSideScales     ();
-    void PaintVerticalFrames         (int iStart, int iEnd);
-
-    template<typename T>
-    void PaintBars       (int iStart, int iEnd, bool bPaintBars, bool bPaintVolumes, bool bStoreRightPos);
 
     template<typename T>
     void PaintBarsFastT(std::time_t tBegin, std::time_t tEnd,std::shared_ptr<GraphHolder> ptrHolder);
 
+    //-----------------------------------------------------------------------------------------------
+    void PaintViewPort               (bool bFrames,bool bBars,bool bVolumes, bool bStoreRightPos);
+    void PaintViewPort               (int iStart, int iEnd,bool bFrames ,bool bBars,bool bVolumes, bool bStoreRightPos);
+
+    bool FastLoadHolder(RepainTask &);
+    bool FastPaintBars(RepainTask &);
+    bool FastPaintFrames(RepainTask &);
+
     template<typename T>
-    void PainVerticalFramesT         (int iStart, int iEnd);
+    bool PaintBars       (std::shared_ptr<GraphHolder> holder, int iStart, int iEnd, bool bPaintBars, bool bPaintVolumes, bool bStoreRightPos);
+
+    bool PaintHorizontalScales       ();
+    bool PaintHorizontalFrames       (int iStart, int iEnd);
+    bool PaintVerticalSideScales     ();
+    bool PaintVerticalFrames         (std::shared_ptr<GraphHolder> local_holder,int iStart, int iEnd,
+                                             int iLeftStock, bool bOuterMode, bool bInvalidate);
+
+    template<typename T>
+    bool PainVerticalFramesT         (std::shared_ptr<GraphHolder> local_holder,int iStart, int iEnd,
+                                            int iLeftStock, bool bOuterMode, bool bInvalidate);
+
+    //-----------------------------------------------------------------------------------------------
 
 
     template<typename T>
@@ -196,8 +254,8 @@ protected:
     void DrawDoubleToScene(const int idx,const  qreal x ,const  qreal y,const double n, Qt::AlignmentFlag alignH, Qt::AlignmentFlag alignV,
                            std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QFont & font);
 
-
     void InvalidateScenes();
+
 
     std::tuple<int,int,int,int> getHPartStep(double realH, double viewportH);
 

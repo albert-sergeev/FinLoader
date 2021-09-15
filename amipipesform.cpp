@@ -11,7 +11,7 @@ AmiPipesForm::AmiPipesForm(modelMarketsList *modelM, int DefaultTickerMarket,
                            bool ShowByNameActive,
                            bool ShowByNameOff,
                            QWidget *parent) :
-    QWidget(parent,Qt::Window | Qt::WindowStaysOnTopHint),
+    QWidget(parent),//,Qt::Window | Qt::WindowStaysOnTopHint
     iDefaultTickerMarket{DefaultTickerMarket},
     modelMarket{modelM},
     modelTicker{modelT},

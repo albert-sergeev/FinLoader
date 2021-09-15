@@ -63,6 +63,7 @@ public:
        ,iShiftIndex{o.iShiftIndex}{;}
     //--------------------------------------------------------------------------------------------------------
     T & operator[](const size_t i)  {if (/*i<0 ||*/ i>= vContainer.size()) {throw std::out_of_range("");} return vContainer[i];}
+    const T & operator[](const size_t i) const  {if (/*i<0 ||*/ i>= vContainer.size()) {throw std::out_of_range("");} return vContainer[i];}
     //--------------------------------------------------------------------------------------------------------
 //    void Add (Bar &b, bool bReplaceIfExists = true);
 //    void AddTick (Bar &b, bool bNewSec);
@@ -87,6 +88,8 @@ public:
     std::string ToString();
     std::string ToStringPeriods();
     std::size_t GetShiftIndex()  const {return iShiftIndex;};
+
+    void CloneGraph(Graph<T> &grNew,const size_t Start, const size_t End, const size_t LetShift);
     //
 private:
     static size_t GetMoreThenIndex(std::vector<T> & v, std::time_t tT);
@@ -611,6 +614,26 @@ size_t Graph<T>::GetMoreThenIndex(std::vector<T> & v, std::time_t tT)
         iCount++;
     }
     return  iR;
+}
+//------------------------------------------------------------------------------------------------------------
+template<typename T>
+void Graph<T>::CloneGraph(Graph<T> &grNew,const size_t Start, const size_t End, const size_t LetShift)
+{
+    grNew.clear();
+    size_t iBeg = Start > LetShift ? Start - LetShift : 0;
+
+    if (iBeg >= vContainer.size()) return;
+
+    auto ItBeg(std::next(vContainer.begin(),iBeg));
+    auto ItEnd(vContainer.end());
+    if(End < vContainer.size()-1){
+        ItEnd = std::next(vContainer.begin(),End + 1);
+    }
+
+    grNew.vContainer.reserve(std::distance(ItBeg,ItEnd));
+
+    std::copy(ItBeg,ItEnd,std::back_inserter(grNew.vContainer));
+    grNew.iShiftIndex = iBeg;
 }
 //------------------------------------------------------------------------------------------------------------
 template<typename T>

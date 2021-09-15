@@ -342,14 +342,15 @@ void AmiPipeHolder::ReadConnectedPipes(BlockFreeQueue<dataFastLoadTask>         
 
         dataFastLoadTask task(dataFastLoadTask::NewTicks);
 
+        int filesize{0};
         bSuccessfullRead = true;
         if (ItConnected->second.second.second.good()){
 
 #ifdef _WIN32
-            int filesize = iBlockMaxSize;
+            filesize = iBlockMaxSize;
 #else
             ItConnected->second.second.second.seekg(0,std::ios::end);
-            int filesize = ItConnected->second.second.second.tellg();
+            filesize = ItConnected->second.second.second.tellg();
             ItConnected->second.second.second.seekg(0, std::ios::cur);
 #endif
 
@@ -487,6 +488,24 @@ void AmiPipeHolder::ReadConnectedPipes(BlockFreeQueue<dataFastLoadTask>         
         }
         //// looper
         if (!bSuccessfullRead){
+            {
+                // (bSuccessfullRead = ItConnected->second.second.second.read (buff + iWriteStart,iBytesToRead,filesize))){
+                ThreadFreeCout pcout;
+                pcout <<"-----------------------------------------------------\n";
+                pcout <<"halt dump:\n";
+                if (mBuffer.find(strBind) != mBuffer.end()){
+                    ;
+                    pcout <<"mBuffer[strBind].size(): "<<mBuffer[strBind].size()<<"\n";
+                }
+                else{
+                    pcout <<"mBuffer[strBind] not found!!!\n";
+                }
+                pcout <<"iWriteStart: "<<iWriteStart<<"\n";
+                pcout <<"iBytesToRead: "<<iBytesToRead<<"\n";
+                pcout <<"filesize: "<<filesize<<"\n";
+                pcout <<"-----------------------------------------------------\n";
+
+            }
                 try{
                     ItConnected->second.second.second.close();
                 }

@@ -117,6 +117,22 @@ bool GraphHolder::BuildUpperList(std::time_t dtStart,std::time_t dtEnd, bool bCo
 
     return true;
 }
+//-----------------------------------------------------------------------------------------------------------------------------------
+bool GraphHolder::CloneHolder(std::shared_ptr<GraphHolder>  &hlNew, const Bar::eInterval it, const size_t iStart,const size_t iEnd, const size_t LetShift)
+{
+    std::shared_lock lk(mutexHolder,std::defer_lock);
+    if(!lk.try_lock()) return false;
+
+    hlNew = std::make_shared<GraphHolder>(GraphHolder{iTickerID});
+
+    if (it == Bar::eInterval::pTick){
+        graphTick.CloneGraph(hlNew->graphTick,iStart, iEnd,LetShift);
+    }
+    else{
+        mpGraphs.at(it).CloneGraph(hlNew->mpGraphs.at(it),iStart, iEnd,LetShift);
+    }
+    return true;
+}
 //------------------------------------------------------------------------------------------------------
 bool GraphHolder::CheckMap()
 {

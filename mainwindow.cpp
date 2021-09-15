@@ -437,6 +437,8 @@ void MainWindow::timerEvent(QTimerEvent * event)
     CheckActivePipes();
     ListViewActivityTermination();
     //
+    emit slotSendSignalToProcessRepaintQueue();
+    //
     QWidget::timerEvent(event);
 }
 //--------------------------------------------------------------------------------------------------------------------------------
@@ -1616,6 +1618,9 @@ void MainWindow::slotSetSelectedTicker(const  int iTickerID)
                   this,SLOT(slotLoadGraph(const  int,const std::time_t,const std::time_t)));
 
         connect(pdoc,SIGNAL(SendToLog(QString)),this,SIGNAL(SendToLog(QString)));
+
+        connect(this,SIGNAL(slotSendSignalToProcessRepaintQueue()),pdoc,SLOT(slotProcessRepaintQueue()));
+
 
         pdoc->setFramesVisibility(tp);
         pdoc->show();
