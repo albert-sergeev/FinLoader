@@ -45,7 +45,7 @@ struct RepainTask{
         dtStart         = o.dtStart;
         dtEnd           = o.dtEnd;
         bNeedToRescale  = o.bNeedToRescale;
-        bOuterMode      = o.bOuterMode;
+        bReplacementMode= o.bReplacementMode;
         bInvalidate     = o.bInvalidate;
     }
 
@@ -56,7 +56,7 @@ struct RepainTask{
     int         iStart{0};
     int         iEnd{0};
     int         iLetShift{0};
-    bool        bOuterMode{true};
+    bool        bReplacementMode{false};
     bool        bInvalidate{false};
 
     bool bStoreRightPos{false};
@@ -169,7 +169,8 @@ public slots:
     void slotInvalidateGraph(std::time_t dtDegin, std::time_t dtEnd, bool bNeedToRescale = false);
     void slotProcessRepaintQueue();
     void setFramesVisibility(std::tuple<bool,bool,bool,bool,bool>);
-    void slotFastShowEvent(std::time_t tBegin, std::time_t tEnd,std::shared_ptr<GraphHolder> ptrHolder);
+    //void slotFastShowEvent(std::time_t tBegin, std::time_t tEnd,std::shared_ptr<GraphHolder> ptrHolder);
+    void slotFastShowEvent(std::shared_ptr<GraphHolder> ptrHolder);
 
 protected slots:
   //  void slotLoadGraphButton(); // for tests
@@ -208,17 +209,19 @@ protected:
     bool FastPaintFrames(RepainTask &);
 
     template<typename T>
-    bool PaintBars       (std::shared_ptr<GraphHolder> holder, int iStart, int iEnd, bool bPaintBars, bool bPaintVolumes, bool bStoreRightPos);
+    bool PaintBars       (std::shared_ptr<GraphHolder> holder, int iStart, int iEnd,
+                                    bool bPaintBars, bool bPaintVolumes,
+                                    bool bStoreRightPos, bool bReplacementMode);
 
     bool PaintHorizontalScales       ();
     bool PaintHorizontalFrames       (int iStart, int iEnd);
     bool PaintVerticalSideScales     ();
     bool PaintVerticalFrames         (std::shared_ptr<GraphHolder> local_holder,int iStart, int iEnd,
-                                             int iLeftStock, bool bOuterMode, bool bInvalidate);
+                                             int iLeftStock, bool bReplacementMode, bool bInvalidate);
 
     template<typename T>
     bool PainVerticalFramesT         (std::shared_ptr<GraphHolder> local_holder,int iStart, int iEnd,
-                                            int iLeftStock, bool bOuterMode, bool bInvalidate);
+                                            int iLeftStock, bool bReplacementMode, bool bInvalidate);
 
     //-----------------------------------------------------------------------------------------------
 

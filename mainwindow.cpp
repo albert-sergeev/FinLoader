@@ -521,14 +521,14 @@ void MainWindow::slotSendSignalToInvalidateGraph(int TickerID, std::time_t dtDeg
     }
 }
 //--------------------------------------------------------------------------------------------------------------------------------
-void MainWindow::slotSendSignalToFastShow(int TickerID, std::time_t tBegin, std::time_t tEnd,std::shared_ptr<GraphHolder> ptrHolder)
+void MainWindow::slotSendSignalToFastShow(int TickerID, std::time_t /*tBegin*/, std::time_t /*tEnd*/,std::shared_ptr<GraphHolder> ptrHolder)
 {
     GraphViewForm * wnd{nullptr};
     QList<QMdiSubWindow*> lst = ui->mdiArea->subWindowList();
     for(int i = 0; i < lst.size(); ++i){
         wnd = qobject_cast<GraphViewForm *>(lst[i]->widget());
         if(wnd && wnd->TickerID() == TickerID){
-            wnd->slotFastShowEvent(tBegin, tEnd, ptrHolder);
+            wnd->slotFastShowEvent(ptrHolder);
         }
     }
 }

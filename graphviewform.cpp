@@ -248,7 +248,7 @@ void GraphViewForm::slotProcessRepaintQueue()
         }
         ///////
         if(!bSuccess){ // if not, postpone for the future
-            queueRepaint.Push({data.dtStart,data.dtEnd,data.bNeedToRescale});
+            queueRepaint.Push(data);
         }
         else{   // if success, do next
             pData = queueRepaint.Pop(bSuccess);
@@ -265,7 +265,8 @@ bool GraphViewForm::RepainInvalidRange(RepainTask & data)
     if (bSuccess){
         auto ItEnd (holder->beginIteratorByDate<T>(iSelectedInterval,Bar::DateAccommodate(data.dtEnd,iSelectedInterval),bSuccess));
         if (bSuccess){
-            {   ThreadFreeCout pcout; pcout <<"do invalidate\n";
+            {   ThreadFreeCout pcout; pcout <<"do invalidate {"<<data.Type<<"}\n";
+
 //                pcout <<"data.dtStart: "<<threadfree_gmtime_to_str(&data.dtStart)<<"\n";
 //                pcout <<"data.dtEnd: "<<threadfree_gmtime_to_str(&data.dtEnd)<<"\n";
             }
@@ -700,11 +701,12 @@ template<typename T>
 void GraphViewForm::EraseLinesMid(T& mM, int iStart,int iEnd, QGraphicsScene *scene)
 //void GraphViewForm::EraseLinesMid(std::map<int,std::vector<QGraphicsItem *>>& mM, int iStart,int iEnd, QGraphicsScene *scene)
 {
+
     auto It     (mM.lower_bound(iStart));
     auto ItCp   (It);
     auto ItEnd  (mM.upper_bound(iEnd));
 
-    while(It != ItEnd){
+    while(It != mM.end() && It != ItEnd){
         for (auto &t:It->second){
             scene->removeItem(t);
             delete t;
@@ -1053,19 +1055,8 @@ void GraphViewForm::slotPeriodButtonChanged()
  //---------------------------------------------------------------------------------------------------------------
  void GraphViewForm::PaintViewPort   (int iStart, int iEnd,bool bFrames,bool bBars,bool bVolumes, bool /*bStoreRightPos*/)
  {
-//     {
-//         ThreadFreeCout pcout;
-//         pcout << "PaintViewPort <"<<iStart<<":"<<iEnd<<">\n";
-//     }
      RepainTask task(0,iStart,iEnd,false);
 
-//     if (bFrames){
-//        ///////PaintHorizontalScales();
-//        ///////PaintHorizontalFrames(iStart,iEnd);
-//        PaintVerticalSideScales();
-//        PaintVerticalFrames(iStart,iEnd);
-//     }
-     //
      {
          if (bFrames){
              task.Type |=  RepainTask::eRepaintType::FastFrames;
@@ -1080,9 +1071,9 @@ void GraphViewForm::slotPeriodButtonChanged()
 
          if (bBars || bVolumes){
 
-            task.iLetShift = 100;
-            queueRepaint.Push(task);
-            slotProcessRepaintQueue();
+             task.iLetShift = 100;
+             queueRepaint.Push(task);
+             slotProcessRepaintQueue();
          }
      }
  }
@@ -1104,7 +1095,7 @@ void GraphViewForm::slotPeriodButtonChanged()
                                                    data.iStart,
                                                    data.iEnd,
                                                    data.iLetShift,
-                                                   data.bOuterMode,
+                                                   data.bReplacementMode,
                                                    data.bInvalidate);}
 
      return bSuccess;
@@ -1122,10 +1113,10 @@ void GraphViewForm::slotPeriodButtonChanged()
      bool bPaintVolumes = data.Type ^ RepainTask::eRepaintType::FastVolumes;
 
      if (iSelectedInterval == Bar::eInterval::pTick){
-         return PaintBars<BarTick>(data.holder, data.iStart, data.iEnd , bPaintBars, bPaintVolumes, data.bStoreRightPos);
+         return PaintBars<BarTick>(data.holder, data.iStart, data.iEnd , bPaintBars, bPaintVolumes, data.bStoreRightPos,data.bReplacementMode);
      }
      else{
-         return PaintBars<Bar>(data.holder, data.iStart, data.iEnd , bPaintBars, bPaintVolumes, data.bStoreRightPos);
+         return PaintBars<Bar>(data.holder, data.iStart, data.iEnd , bPaintBars, bPaintVolumes, data.bStoreRightPos,data.bReplacementMode);
      }
  }
  //---------------------------------------------------------------------------------------------------------------
@@ -1138,7 +1129,9 @@ void GraphViewForm::slotPeriodButtonChanged()
  }
  //---------------------------------------------------------------------------------------------------------------
  template<typename T>
- bool GraphViewForm::PaintBars (std::shared_ptr<GraphHolder> local_holder,int iStartI, int iEndI , bool bPaintBars, bool bPaintVolumes, bool bStoreRightPos)
+ bool GraphViewForm::PaintBars (std::shared_ptr<GraphHolder> local_holder,int iStartI, int iEndI ,
+                                bool bPaintBars, bool bPaintVolumes,
+                                bool bStoreRightPos, bool bReplacementMode)
  {
 //     {
 //         ThreadFreeCout pcout;
@@ -1180,13 +1173,35 @@ void GraphViewForm::slotPeriodButtonChanged()
 
      if (bSuccess && iMaxSize > 0){
 
-         if (bPaintBars){
-             EraseLinesUpper(mShowedGraphicsBars,  iBeg + iShift, ui->grViewQuotes->scene());
-             EraseLinesLower(mShowedGraphicsBars,  iEnd + iShift, ui->grViewQuotes->scene());
+         if (!bReplacementMode)
+         {
+             if (bPaintBars){
+                 EraseLinesUpper(mShowedGraphicsBars,  iBeg + iShift, ui->grViewQuotes->scene());
+                 EraseLinesLower(mShowedGraphicsBars,  iEnd + iShift, ui->grViewQuotes->scene());
+             }
+             if (bPaintVolumes){
+                 EraseLinesUpper(mShowedVolumes,        iBeg + iShift, ui->grViewVolume->scene());
+                 EraseLinesLower(mShowedVolumes,        iEnd + iShift, ui->grViewVolume->scene());
+             }
          }
-         if (bPaintVolumes){
-             EraseLinesUpper(mShowedVolumes,        iBeg + iShift, ui->grViewVolume->scene());
-             EraseLinesLower(mShowedVolumes,        iEnd + iShift, ui->grViewVolume->scene());
+         else{
+             {
+                 ThreadFreeCout pcout;
+                 pcout <<"mid\n";
+                 pcout <<"size:"<<mShowedGraphicsBars.size()<<"\n";
+
+             }
+             if (bPaintBars){
+                 EraseLinesMid(mShowedGraphicsBars,  iBeg + iShift,iEnd + iShift, ui->grViewQuotes->scene());
+             }
+             if (bPaintVolumes){
+                 EraseLinesMid(mShowedVolumes,  iBeg + iShift,iEnd + iShift, ui->grViewVolume->scene());
+             }
+             {
+                 ThreadFreeCout pcout;
+                 pcout <<"mid out\n";
+             }
+
          }
          ///////////////////
          std::stringstream ss;
@@ -1342,21 +1357,21 @@ void GraphViewForm::slotPeriodButtonChanged()
  //---------------------------------------------------------------------------------------------------------------
  bool GraphViewForm::PaintVerticalFrames ( std::shared_ptr<GraphHolder> local_holder, int iStart, int iEnd,
                                            int iLeftStock,
-                                           bool bOuterMode,
+                                           bool bReplacementMode,
                                            bool bInvalidate)
  {
      if (iSelectedInterval == Bar::eInterval::pTick){
-         return PainVerticalFramesT<BarTick>   (local_holder, iStart, iEnd,iLeftStock,bOuterMode,bInvalidate);
+         return PainVerticalFramesT<BarTick>   (local_holder, iStart, iEnd,iLeftStock,bReplacementMode,bInvalidate);
      }
      else{
-         return PainVerticalFramesT<Bar>       (local_holder, iStart, iEnd,iLeftStock,bOuterMode,bInvalidate);
+         return PainVerticalFramesT<Bar>       (local_holder, iStart, iEnd,iLeftStock,bReplacementMode,bInvalidate);
      }
  }
  //---------------------------------------------------------------------------------------------------------------
  template<typename T>
  bool GraphViewForm::PainVerticalFramesT(std::shared_ptr<GraphHolder> local_holder,int iBegSrc, int iEndSrc,
                                          int iLeftStock,
-                                         bool /*bOuterMode*/,
+                                         bool /*bReplacementMode*/,
                                          bool bInvalidate)
  {
 
@@ -1791,17 +1806,55 @@ void GraphViewForm::slotPeriodButtonChanged()
      return {iBeg,iEnd};
  }
  //---------------------------------------------------------------------------------------------------------------
- void GraphViewForm::slotFastShowEvent(std::time_t tBegin, std::time_t tEnd,std::shared_ptr<GraphHolder> ptrHolder)
+ void GraphViewForm::slotFastShowEvent(std::shared_ptr<GraphHolder> ptrHolder)
  {
-     if (iSelectedInterval == Bar::eInterval::pTick){
-         PaintBarsFastT<BarTick>(tBegin, tEnd, ptrHolder);
-     }
-     else{
-         PaintBarsFastT<Bar>(tBegin, tEnd, ptrHolder);
+
+
+
+     const int iShift = (int)ptrHolder->getShiftIndex(iSelectedInterval);
+     int iShBeg = iShift;
+     int iShEnd = iShBeg + (int)ptrHolder->getViewGraphSize(iSelectedInterval);
+
+     std::pair<int,int> pViewPortRange = getViewPortRangeToHolder();
+
+     if(!(pViewPortRange.first > iShEnd || pViewPortRange.second < iShBeg)){
+         if (iShBeg < pViewPortRange.first)  iShBeg = pViewPortRange.first;
+         if (iShEnd > pViewPortRange.second) iShEnd = pViewPortRange.second;
+
+         RepainTask task(0,0,0,false);
+         task.Type |= RepainTask::eRepaintType::FastBars;
+         task.Type |= RepainTask::eRepaintType::FastVolumes;
+         //task.Type |=  RepainTask::eRepaintType::FastFrames;
+         task.bReplacementMode = true;
+
+         task.iStart =  iShBeg - iShift;
+         task.iEnd   =  iShEnd - iShift;
+
+         task.holder = ptrHolder;
+
+     //    queueRepaint.Push(task);
+         //FastPaintBars(task);
+//         if (iSelectedInterval == Bar::eInterval::pTick){
+//             PaintBars<BarTick>(task.holder, task.iStart, task.iEnd , true, false,false,true);
+//         }
+//         else{
+//             PaintBars<Bar>(task.holder, task.iStart, task.iEnd , true, false,false,true);
+//         }
      }
      ////////////////////////////////////////////////////////////////
      slotProcessRepaintQueue();
+          if (iSelectedInterval == Bar::eInterval::pTick){
+              PaintBarsFastT<BarTick>(0, 0, ptrHolder);
+          }
+          else{
+              PaintBarsFastT<Bar>(0, 0, ptrHolder);
+          }
+
+
  }
+
+
+
  //---------------------------------------------------------------------------------------------------------------
  template<typename T>
  void GraphViewForm::PaintBarsFastT(std::time_t /*tBegin*/, std::time_t /*tEnd*/,std::shared_ptr<GraphHolder> ptrHolder)
