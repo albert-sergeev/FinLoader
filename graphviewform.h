@@ -194,13 +194,15 @@ private:
 
 protected:
 
-    std::pair<int,int> getViewPortRangeToHolder();
 
 
-    template<typename T>
-    void PaintBarsFastT(std::time_t tBegin, std::time_t tEnd,std::shared_ptr<GraphHolder> ptrHolder);
+
+//    template<typename T>
+//    void PaintBarsFastT(std::time_t tBegin, std::time_t tEnd,std::shared_ptr<GraphHolder> ptrHolder);
 
     //-----------------------------------------------------------------------------------------------
+    std::pair<int,int> getViewPortRangeToHolder();
+
     void PaintViewPort               (bool bFrames,bool bBars,bool bVolumes, bool bStoreRightPos);
     void PaintViewPort               (int iStart, int iEnd,bool bFrames ,bool bBars,bool bVolumes, bool bStoreRightPos);
 

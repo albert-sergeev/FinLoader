@@ -701,12 +701,13 @@ template<typename T>
 void GraphViewForm::EraseLinesMid(T& mM, int iStart,int iEnd, QGraphicsScene *scene)
 //void GraphViewForm::EraseLinesMid(std::map<int,std::vector<QGraphicsItem *>>& mM, int iStart,int iEnd, QGraphicsScene *scene)
 {
+    if (iStart > iEnd) return;
 
     auto It     (mM.lower_bound(iStart));
     auto ItCp   (It);
     auto ItEnd  (mM.upper_bound(iEnd));
 
-    while(It != mM.end() && It != ItEnd){
+    while( It != ItEnd){
         for (auto &t:It->second){
             scene->removeItem(t);
             delete t;
@@ -724,6 +725,7 @@ void GraphViewForm::EraseLinesLower(T& mM, int iStart, QGraphicsScene * scene)
 //void GraphViewForm::EraseLinesLower(std::map<int,std::vector<QGraphicsItem *>>& mM, int iStart, QGraphicsScene * scene)
 {
     auto It (mM.lower_bound(iStart));
+    if (It == mM.end()) return;
     auto ItCp(It);
     while(It != mM.end()){
         for (auto &t:It->second){
@@ -1151,6 +1153,11 @@ void GraphViewForm::slotPeriodButtonChanged()
      /////////////////////////////////////////////////////////////////////////////////////////
 
 
+//     if (bReplacementMode)
+//     {
+//         ThreadFreeCout pcout;
+//         pcout <<"src {"<<iStartI<<":"<<iEndI<<"}\n";
+//     }
 
      //size_t iViewWidth = ui->grViewQuotes->width()/(dHScale *BarGraphicsItem::BarWidth);
 
@@ -1185,23 +1192,12 @@ void GraphViewForm::slotPeriodButtonChanged()
              }
          }
          else{
-             {
-                 ThreadFreeCout pcout;
-                 pcout <<"mid\n";
-                 pcout <<"size:"<<mShowedGraphicsBars.size()<<"\n";
-
-             }
              if (bPaintBars){
                  EraseLinesMid(mShowedGraphicsBars,  iBeg + iShift,iEnd + iShift, ui->grViewQuotes->scene());
              }
              if (bPaintVolumes){
                  EraseLinesMid(mShowedVolumes,  iBeg + iShift,iEnd + iShift, ui->grViewVolume->scene());
              }
-             {
-                 ThreadFreeCout pcout;
-                 pcout <<"mid out\n";
-             }
-
          }
          ///////////////////
          std::stringstream ss;
@@ -1818,98 +1814,101 @@ void GraphViewForm::slotPeriodButtonChanged()
      std::pair<int,int> pViewPortRange = getViewPortRangeToHolder();
 
      if(!(pViewPortRange.first > iShEnd || pViewPortRange.second < iShBeg)){
+
          if (iShBeg < pViewPortRange.first)  iShBeg = pViewPortRange.first;
          if (iShEnd > pViewPortRange.second) iShEnd = pViewPortRange.second;
 
-         RepainTask task(0,0,0,false);
-         task.Type |= RepainTask::eRepaintType::FastBars;
-         task.Type |= RepainTask::eRepaintType::FastVolumes;
-         //task.Type |=  RepainTask::eRepaintType::FastFrames;
-         task.bReplacementMode = true;
 
-         task.iStart =  iShBeg - iShift;
-         task.iEnd   =  iShEnd - iShift;
+         {
+             RepainTask task(0,0,0,false);
+             task.Type |= RepainTask::eRepaintType::FastBars;
+             task.Type |= RepainTask::eRepaintType::FastVolumes;
+             //task.Type |=  RepainTask::eRepaintType::FastFrames;
+             task.bReplacementMode = true;
 
-         task.holder = ptrHolder;
+             task.iStart =  iShBeg;
+             task.iEnd   =  iShEnd;
 
-     //    queueRepaint.Push(task);
-         //FastPaintBars(task);
-//         if (iSelectedInterval == Bar::eInterval::pTick){
-//             PaintBars<BarTick>(task.holder, task.iStart, task.iEnd , true, false,false,true);
-//         }
-//         else{
-//             PaintBars<Bar>(task.holder, task.iStart, task.iEnd , true, false,false,true);
-//         }
+             task.holder = ptrHolder;
+
+             queueRepaint.Push(task);
+         }
+         ////////////////////////////////////////////////////
+         {
+//             RepainTask task(0,0,0,false);
+//             task.Type |=  RepainTask::eRepaintType::FastFrames;
+//             task.bReplacementMode = true;
+//             task.iStart =  iShBeg;
+//             task.iEnd   =  iShEnd;
+
+//             queueRepaint.Push(task);
+         }
      }
      ////////////////////////////////////////////////////////////////
      slotProcessRepaintQueue();
-          if (iSelectedInterval == Bar::eInterval::pTick){
-              PaintBarsFastT<BarTick>(0, 0, ptrHolder);
-          }
-          else{
-              PaintBarsFastT<Bar>(0, 0, ptrHolder);
-          }
-
-
+     ////////////////////////////////////////////////////////////////
+//          if (iSelectedInterval == Bar::eInterval::pTick){
+//              PaintBarsFastT<BarTick>(0, 0, ptrHolder);
+//          }
+//          else{
+//              PaintBarsFastT<Bar>(0, 0, ptrHolder);
+//          }
  }
-
-
-
  //---------------------------------------------------------------------------------------------------------------
- template<typename T>
- void GraphViewForm::PaintBarsFastT(std::time_t /*tBegin*/, std::time_t /*tEnd*/,std::shared_ptr<GraphHolder> ptrHolder)
- {
-     std::pair<int,int> pViewPortRange = getViewPortRangeToHolder();
+// template<typename T>
+// void GraphViewForm::PaintBarsFastT(std::time_t /*tBegin*/, std::time_t /*tEnd*/,std::shared_ptr<GraphHolder> ptrHolder)
+// {
+//     std::pair<int,int> pViewPortRange = getViewPortRangeToHolder();
 
-     const int iShift = (int)ptrHolder->getShiftIndex(iSelectedInterval);
-     int iShBeg = iShift;
-     int iShEnd = iShBeg + (int)ptrHolder->getViewGraphSize(iSelectedInterval);
+//     const int iShift = (int)ptrHolder->getShiftIndex(iSelectedInterval);
+//     int iShBeg = iShift;
+//     int iShEnd = iShBeg + (int)ptrHolder->getViewGraphSize(iSelectedInterval);
 
-     if(!(pViewPortRange.first > iShEnd ||
-          pViewPortRange.second < iShBeg
-          )){
-         //
-         if (iShBeg < pViewPortRange.first)  iShBeg = pViewPortRange.first;
-         if (iShEnd > pViewPortRange.second) iShEnd = pViewPortRange.second;
-         //
-         int i = iShBeg;
+//     if(!(pViewPortRange.first > iShEnd ||
+//          pViewPortRange.second < iShBeg
+//          )){
+//         //
+//         if (iShBeg < pViewPortRange.first)  iShBeg = pViewPortRange.first;
+//         if (iShEnd > pViewPortRange.second) iShEnd = pViewPortRange.second;
+//         //
+//         int i = iShBeg;
 
-         while(i < iShEnd){
-             qreal xCur = (i + iLeftShift)     * BarGraphicsItem::BarWidth * dHScale;
+//         while(i < iShEnd){
+//             qreal xCur = (i + iLeftShift)     * BarGraphicsItem::BarWidth * dHScale;
 
-             const T &b = ptrHolder->getByIndex<T>(iSelectedInterval, i - iShift);
+//             const T &b = ptrHolder->getByIndex<T>(iSelectedInterval, i - iShift);
 
-             auto ItFound = mShowedGraphicsBars.find(i);
+//             auto ItFound = mShowedGraphicsBars.find(i);
 
-             if (ItFound == mShowedGraphicsBars.end())
-             {
-                 BarGraphicsItem *item = new BarGraphicsItem(b,i,3,mVScale[iSelectedInterval]);
-                 mShowedGraphicsBars[i].push_back(item);
-                 ui->grViewQuotes->scene()->addItem(item);
-                 item->setPos(xCur , -realYtoSceneY(b.Close()));
-             }
-             else{
-                 //TODO: do by invalidate, not by removing
-                 for (auto & item:mShowedGraphicsBars[i]){
-                     ui->grViewQuotes->scene()->removeItem(item);
-                     delete item;
-                     item = nullptr;
-                 }
-                 mShowedGraphicsBars.erase(ItFound);
-                 //
-                 BarGraphicsItem *item = new BarGraphicsItem(b,i,3,mVScale[iSelectedInterval]);
-                 mShowedGraphicsBars[i].push_back(item);
-                 ui->grViewQuotes->scene()->addItem(item);
-                 item->setPos(xCur , -realYtoSceneY(b.Close()));
+//             if (ItFound == mShowedGraphicsBars.end())
+//             {
+//                 BarGraphicsItem *item = new BarGraphicsItem(b,i,3,mVScale[iSelectedInterval]);
+//                 mShowedGraphicsBars[i].push_back(item);
+//                 ui->grViewQuotes->scene()->addItem(item);
+//                 item->setPos(xCur , -realYtoSceneY(b.Close()));
+//             }
+//             else{
+//                 //TODO: do by invalidate, not by removing
+//                 for (auto & item:mShowedGraphicsBars[i]){
+//                     ui->grViewQuotes->scene()->removeItem(item);
+//                     delete item;
+//                     item = nullptr;
+//                 }
+//                 mShowedGraphicsBars.erase(ItFound);
+//                 //
+//                 BarGraphicsItem *item = new BarGraphicsItem(b,i,3,mVScale[iSelectedInterval]);
+//                 mShowedGraphicsBars[i].push_back(item);
+//                 ui->grViewQuotes->scene()->addItem(item);
+//                 item->setPos(xCur , -realYtoSceneY(b.Close()));
 
-//                 ItFound->second[0]->setBar(b);
-//                 ui->grViewQuotes->invalidateScene(ItFound->second[0]->sceneBoundingRect());
-             }
-             /////////////////////////////////////////////////
-             ++i;
-         }
-     }
- }
+////                 ItFound->second[0]->setBar(b);
+////                 ui->grViewQuotes->invalidateScene(ItFound->second[0]->sceneBoundingRect());
+//             }
+//             /////////////////////////////////////////////////
+//             ++i;
+//         }
+//     }
+// }
 
  //---------------------------------------------------------------------------------------------------------------
  //---------------------------------------------------------------------------------------------------------------
