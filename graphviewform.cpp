@@ -1364,6 +1364,8 @@ void GraphViewForm::slotPeriodButtonChanged()
                              QRectF newRec(0,-iNewViewPortH,xNewRight,iNewViewPortH);
                              grScene->setSceneRect(newRec);
 
+                             ReDoHLines();
+
                              EraseFrames();
                              EraseInvariantFrames(true,true);
                              EraseInvariantFrames(false,true);

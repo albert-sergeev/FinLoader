@@ -775,7 +775,13 @@ bool Graph<T>::BuildFromLowerList(Graph<T_SRC> &grSrc, std::time_t dtStart,std::
     if(bCopyToDst){
         grDst.clear();
         (void)grDst.AddBarsList(v,dtAccStart,dtAccEndLower);
-        grDst.iShiftIndex = mDictionary.lower_bound(dtAccStart)->second;
+        auto It (mDictionary.lower_bound(dtAccStart));
+        if(It != mDictionary.end()){
+            grDst.iShiftIndex = It->second;
+        }
+        else{
+            grDst.iShiftIndex = vContainer.size();
+        }
     }
     return bRes;
 }
