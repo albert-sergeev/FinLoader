@@ -1611,7 +1611,7 @@ void GraphViewForm::slotPeriodButtonChanged()
      QPen blackDotPen(Qt::gray,1,Qt::DotLine);
     // QPen simpleDashPen(Qt::gray,1,Qt::DashLine);
 
-     QPen redPen(Qt::red,1,Qt::SolidLine);
+    // QPen redPen(Qt::red,1,Qt::SolidLine);
 
      int iLineH = ui->grViewScaleUpper->scene()->sceneRect().height()/2;
      static const int iShiftH {4};
@@ -1642,30 +1642,17 @@ void GraphViewForm::slotPeriodButtonChanged()
      std::stringstream ss;
 
      // preliminary (left) scale
-//     for (int j = iBegV ; j <= 0 ; ++j) {
-//         auto ItSL = mVFramesHorisSmallScale.find(j);
-//         if (ItSL == mVFramesHorisSmallScale.end() || ItSL->second.size() == 0){
-//             xCur = (j + iLeftShift)     * BarGraphicsItem::BarWidth * dHScale;
-//             DrawLineToScene(j, xCur,0,xCur,5, mVFramesHorisSmallScale, ui->grViewScaleUpper->scene(),blackSolidPen,tTmp,true);
-//         }
-//     }
+     for (int j = iBegSrc ; j <= 0 ; ++j) {
+         auto ItSL = mVFramesHorisSmallScale.find(j);
+         if (ItSL == mVFramesHorisSmallScale.end() || ItSL->second.size() == 0){
+             xCur = (j + iLeftShift)     * BarGraphicsItem::BarWidth * dHScale;
+             DrawLineToScene(j, xCur,0,xCur,5, mVFramesHorisSmallScale, ui->grViewScaleUpper->scene(),blackSolidPen,tTmp,true);
+         }
+     }
 
      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
      /// creating shift constants
-     ///
      std::call_once(GraphViewForm_init_consts_call_once_flag,&GraphViewForm::init_const,this);
-
-//     QGraphicsTextItem itemNumb1("0");
-//     itemNumb1.setFont(fontNumb);
-//     int iConstWidthNumb1 = ((itemNumb1.boundingRect().width() + 2) / BarGraphicsItem::BarWidth) / dHScale - 1;
-
-//     QGraphicsTextItem itemNumb2("00");
-//     itemNumb2.setFont(fontNumb);
-//     int iConstWidthNumb2 = ((itemNumb2.boundingRect().width() + 2) / BarGraphicsItem::BarWidth) / dHScale - 1;
-
-//     QGraphicsTextItem itemTime("00:00");
-//     itemTime.setFont(fontTime);
-//     int iConstWidthTime = ((itemTime.boundingRect().width() + 2) / BarGraphicsItem::BarWidth) / dHScale - 1;
      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
      // main ciclus
