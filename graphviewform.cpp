@@ -448,7 +448,7 @@ bool GraphViewForm::RepainInvalidRange(RepainTask & data)
                     SetSliderToPos(tStoredMaxDate, iRightShift);
                 }
             }
-            PaintViewPort   (true,true,true, false);
+            PaintViewPort   (true,true,true, false,true);
         }
     }
     return bSuccess;
@@ -516,7 +516,7 @@ void GraphViewForm::slotHorizontalScrollBarValueChanged(int iH)
     ui->grViewQuotes->horizontalScrollBar()->setValue(iH);
     ui->grHorizScroll->horizontalScrollBar()->setValue(iH);
 
-    PaintViewPort(true,true,true,true);
+    PaintViewPort(true,true,true,true,false);
 }
 //---------------------------------------------------------------------------------------------------------------
 std::tuple<int,int,int,int> GraphViewForm::getHPartStep(double realH, double viewportH)
@@ -842,7 +842,7 @@ void GraphViewForm::slotHScaleQuotesClicked(bool bPlus)
         grScene->setSceneRect(newRec);
         connect(ui->grHorizScroll->horizontalScrollBar(),SIGNAL(valueChanged(int)),this,SLOT(slotHorizontalScrollBarValueChanged(int)));
 
-        PaintViewPort(true,true,true,false);
+        PaintViewPort(true,true,true,false,true);
 
         if (tStoredRightPointPosition != 0){
             SetSliderToPos(tStoredRightPointPosition, iStoredRightAggregate);
@@ -853,6 +853,7 @@ void GraphViewForm::slotHScaleQuotesClicked(bool bPlus)
 
     }
 }
+//---------------------------------------------------------------------------------------------------------------
 void GraphViewForm::slotVScaleQuotesClicked(bool bPlus)
 {
     int iNewViewPortH = (mVScale.at(iSelectedInterval) * (dStoredHighMax - dStoredLowMin)  + iViewPortLowStrip + iViewPortHighStrip );
@@ -883,9 +884,10 @@ void GraphViewForm::slotVScaleQuotesClicked(bool bPlus)
         grScene->setSceneRect(newRec);
         connect(ui->grHorizScroll->horizontalScrollBar(),SIGNAL(valueChanged(int)),this,SLOT(slotHorizontalScrollBarValueChanged(int)));
 
-        PaintViewPort(true,true,false,false);
+        PaintViewPort(true,true,false,false,true);
     }
 }
+//---------------------------------------------------------------------------------------------------------------
 void GraphViewForm::slotVScaleVolumeClicked(bool bPlus)
 {
 
@@ -907,7 +909,7 @@ void GraphViewForm::slotVScaleVolumeClicked(bool bPlus)
 
     ui->grViewVolume->scene()->setSceneRect(newRec);
 
-    PaintViewPort(false,false,true,false);
+    PaintViewPort(false,false,true,false,true);
 
 }
 //---------------------------------------------------------------------------------------------------------------
@@ -1130,16 +1132,17 @@ void GraphViewForm::slotPeriodButtonChanged()
  }
 //---------------------------------------------------------------------------------------------------------------
 //---------------------------------------------------------------------------------------------------------------
- void GraphViewForm::PaintViewPort   (bool bFrames ,bool bBars ,bool bVolumes, bool bStoreRightPos)
+ void GraphViewForm::PaintViewPort   (bool bFrames ,bool bBars ,bool bVolumes, bool bStoreRightPos, bool bInvalidate)
  {
      auto iRange = getViewPortRangeToHolder();
 
-     PaintViewPort   (iRange.first/*iBeg*/,iRange.second/* iEnd*/, bFrames, bBars, bVolumes,bStoreRightPos);
+     PaintViewPort   (iRange.first/*iBeg*/,iRange.second/* iEnd*/, bFrames, bBars, bVolumes,bStoreRightPos,bInvalidate);
  }
  //---------------------------------------------------------------------------------------------------------------
- void GraphViewForm::PaintViewPort   (int iStart, int iEnd,bool bFrames,bool bBars,bool bVolumes, bool /*bStoreRightPos*/)
+ void GraphViewForm::PaintViewPort   (int iStart, int iEnd,bool bFrames,bool bBars,bool bVolumes, bool /*bStoreRightPos*/, bool bInvalidate)
  {
      RepainTask task(0,iStart,iEnd,false);
+     task.bInvalidate = bInvalidate;
 
      {
          if (bFrames){
@@ -1208,8 +1211,9 @@ void GraphViewForm::slotPeriodButtonChanged()
          }
      }
 
-     bool bPaintBars = data.Type ^ RepainTask::eRepaintType::FastBars;
-     bool bPaintVolumes = data.Type ^ RepainTask::eRepaintType::FastVolumes;
+     bool bPaintBars = (data.Type & RepainTask::eRepaintType::FastBars) > 0 ? true: false;
+     bool bPaintVolumes = (data.Type & RepainTask::eRepaintType::FastVolumes) > 0 ? true: false;
+
 
      if (iSelectedInterval == Bar::eInterval::pTick){
          return PaintBars<BarTick>(data.holder, data.iStart, data.iEnd , bPaintBars, bPaintVolumes, data.bStoreRightPos,data.bReplacementMode);

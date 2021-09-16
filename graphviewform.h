@@ -234,8 +234,8 @@ protected:
 
     std::pair<int,int> getViewPortRangeToHolder();
 
-    void PaintViewPort               (bool bFrames,bool bBars,bool bVolumes, bool bStoreRightPos);
-    void PaintViewPort               (int iStart, int iEnd,bool bFrames ,bool bBars,bool bVolumes, bool bStoreRightPos);
+    void PaintViewPort               (bool bFrames,bool bBars,bool bVolumes, bool bStoreRightPos, bool bInvalidate);
+    void PaintViewPort               (int iStart, int iEnd,bool bFrames ,bool bBars,bool bVolumes, bool bStoreRightPos, bool bInvalidate);
 
     bool FastLoadHolder(RepainTask &);
     bool FastPaintBars(RepainTask &);
