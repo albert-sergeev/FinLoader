@@ -852,7 +852,7 @@ void GraphViewForm::slotHScaleQuotesClicked(bool bPlus)
         grScene->setSceneRect(newRec);
         connect(ui->grHorizScroll->horizontalScrollBar(),SIGNAL(valueChanged(int)),this,SLOT(slotHorizontalScrollBarValueChanged(int)));
 
-        PaintViewPort(true,true,true,false,true);
+        PaintViewPort(true,true,true,false,false);
 
         if (tStoredRightPointPosition != 0){
             SetSliderToPos(tStoredRightPointPosition, iStoredRightAggregate);
@@ -861,6 +861,7 @@ void GraphViewForm::slotHScaleQuotesClicked(bool bPlus)
             SetSliderToPos(tStoredMaxDate, iRightShift);
         }
 
+        ui->grViewQuotes->scene()->invalidate(ui->grViewQuotes->sceneRect());
     }
 }
 //---------------------------------------------------------------------------------------------------------------
@@ -894,7 +895,9 @@ void GraphViewForm::slotVScaleQuotesClicked(bool bPlus)
         grScene->setSceneRect(newRec);
         connect(ui->grHorizScroll->horizontalScrollBar(),SIGNAL(valueChanged(int)),this,SLOT(slotHorizontalScrollBarValueChanged(int)));
 
-        PaintViewPort(true,true,false,false,true);
+        PaintViewPort(true,true,false,false,false);
+
+        ui->grViewQuotes->scene()->invalidate(ui->grViewQuotes->sceneRect());
     }
 }
 //---------------------------------------------------------------------------------------------------------------
@@ -919,7 +922,9 @@ void GraphViewForm::slotVScaleVolumeClicked(bool bPlus)
 
     ui->grViewVolume->scene()->setSceneRect(newRec);
 
-    PaintViewPort(false,false,true,false,true);
+    PaintViewPort(false,false,true,false,false);
+
+    ui->grViewVolume->scene()->invalidate(ui->grViewVolume->sceneRect());
 
 }
 //---------------------------------------------------------------------------------------------------------------
