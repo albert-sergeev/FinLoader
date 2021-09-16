@@ -492,6 +492,7 @@ void GraphViewForm::showEvent(QShowEvent *event)
 //---------------------------------------------------------------------------------------------------------------
 void GraphViewForm::slotSceneRectChanged( const QRectF & rect)
 {
+    RefreshHLines();
 
     QRectF newRecVR1 =      QRectF(0,rect.y(),   ui->grViewR1->maximumWidth(),rect.height());
     QRectF newRecVL1 =      QRectF(0,rect.y(),   ui->grViewL1->maximumWidth(),rect.height());
@@ -1487,6 +1488,7 @@ void GraphViewForm::slotPeriodButtonChanged()
 //         }
 //     }
      //ReDoHLines();
+     //RefreshHLines();
      ////
      int iMoveCount{0};
      bool bWas{false};
