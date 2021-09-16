@@ -318,6 +318,10 @@ protected:
 protected:
     void resizeEvent(QResizeEvent *event);
     void showEvent(QShowEvent *event);
+
+    // QObject interface
+public:
+    bool eventFilter(QObject *watched, QEvent *event);
 };
 
 inline int GraphViewForm::iConstWidthNumb1;

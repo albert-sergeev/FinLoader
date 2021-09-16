@@ -3,6 +3,7 @@
 #include "storage.h"
 
 #include<QScrollBar>
+#include<QWheelEvent>
 
 #include<sstream>
 #include<iomanip>
@@ -202,6 +203,28 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
     connect(ui->btnDay,  SIGNAL(clicked()),this,SLOT(slotPeriodButtonChanged()));
     connect(ui->btnWeek, SIGNAL(clicked()),this,SLOT(slotPeriodButtonChanged()));
     connect(ui->btnMonth,SIGNAL(clicked()),this,SLOT(slotPeriodButtonChanged()));
+
+
+    ui->grViewQuotes->horizontalScrollBar()->setInvertedControls(false);
+    //ui->grViewQuotes->horizontalScrollBar()->setInvertedControls(true);
+    ui->grViewVolume->horizontalScrollBar()->setInvertedControls(false);
+
+    ui->grViewQuotes->installEventFilter(this);
+    ui->grViewQuotes->verticalScrollBar()->installEventFilter(this);
+    ui->grViewL1->installEventFilter(this);
+    ui->grViewL2->installEventFilter(this);
+    ui->grViewL3->installEventFilter(this);
+    ui->grViewL4->installEventFilter(this);
+    ui->grViewR1->installEventFilter(this);
+    ui->grViewR2->installEventFilter(this);
+    ui->grViewR3->installEventFilter(this);
+    ui->grViewR4->installEventFilter(this);
+    ui->grViewScaleUpper->installEventFilter(this);
+    ui->grViewVolume->installEventFilter(this);
+    ui->grViewVolume->verticalScrollBar()->installEventFilter(this);
+    ui->grViewScaleLower->installEventFilter(this);
+
+
 
    // {ThreadFreeCout pcout; pcout<<"const out\n";}
 
@@ -1236,11 +1259,11 @@ void GraphViewForm::slotPeriodButtonChanged()
      //size_t iViewWidth = ui->grViewQuotes->width()/(dHScale *BarGraphicsItem::BarWidth);
 
 
-     int iBeg    = iStartI - iShift >= 0          ? iStartI - iShift   : 0 ;
-     iBeg           = iBeg < iMaxSize       ? iBeg      : iMaxSize - 1;
+     int iBeg    = iStartI - iShift >= 0    ? iStartI - iShift  : 0 ;
+     iBeg        = iBeg < iMaxSize          ? iBeg              : iMaxSize - 1;
 
-     int iEnd    = iEndI >= 0             ? iEndI      : 0 ;
-     iEnd           = iEnd - iShift < iMaxSize ? iEnd - iShift : iMaxSize - 1;
+     int iEnd    = iEndI >= 0               ? iEndI             : 0 ;
+     iEnd        = iEnd - iShift < iMaxSize ? iEnd - iShift     : iMaxSize - 1;
 
 
 //     if (bStoreRightPos && iEnd > 0){
@@ -1589,21 +1612,12 @@ void GraphViewForm::slotPeriodButtonChanged()
          EraseLinesLower(mVFramesHorisSmallScale,   iEndSrc, ui->grViewScaleUpper->scene());
 
          EraseLinesUpper(mVFramesHorisSmallScaleExtremities,   iEndSrc, ui->grViewScaleUpper->scene());
-//         EraseLinesUpper(mVFramesHorisSmallScaleExtremities,   iBegSrc, ui->grViewScaleUpper->scene());
-//         EraseLinesLower(mVFramesHorisSmallScaleExtremities,   iEndSrc, ui->grViewScaleUpper->scene());
      }
      else{
-
-//         EraseLinesMid(mVFramesViewQuotes,        iBegSrc,iEndSrc, ui->grViewQuotes->scene());
-//         EraseLinesMid(mVFramesScaleUpper,        iBegSrc,iEndSrc, ui->grViewScaleUpper->scene());
-//         EraseLinesMid(mVFramesVolume,            iBegSrc,iEndSrc, ui->grViewVolume->scene());
-//         EraseLinesMid(mVFramesHorisSmallScale,   iBegSrc,iEndSrc, ui->grViewScaleUpper->scene());
-
          EraseLinesUpper(mVFramesHorisSmallScaleExtremities,  iEndSrc, ui->grViewScaleUpper->scene());
 
          iSBeg = iSLeftBeg;
      }
-
 
 
      QPen blackSolidPen(Qt::black,0.5,Qt::SolidLine);
@@ -1630,7 +1644,6 @@ void GraphViewForm::slotPeriodButtonChanged()
 
      tmCur = *threadfree_gmtime(&tTmp);
 
-
      QRectF rectQuotes =  ui->grViewQuotes->scene()->sceneRect();
      QRectF rectVolume =  ui->grViewVolume->scene()->sceneRect();
      /////
@@ -1641,6 +1654,7 @@ void GraphViewForm::slotPeriodButtonChanged()
      /////
      std::stringstream ss;
 
+     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
      // preliminary (left) scale
      for (int j = iBegSrc ; j <= 0 ; ++j) {
          auto ItSL = mVFramesHorisSmallScale.find(j);
@@ -1659,11 +1673,8 @@ void GraphViewForm::slotPeriodButtonChanged()
      for (int indx = iSLeftBeg; indx<= iSEnd; ++indx){
          bLineExists = false;
          //
-
          ss.str("");
          ss.clear();
-//         auto ItSL = mVLinesViewQuotes.find(i);
-//         if (ItSL != mVLinesViewQuotes.end() && ItSL->second.size() >0){
          auto ItSL = mVFramesHorisSmallScale.find(indx + iShift);
          if (ItSL != mVFramesHorisSmallScale.end() && ItSL->second.size() >0){
 
@@ -1672,15 +1683,12 @@ void GraphViewForm::slotPeriodButtonChanged()
                  iInvalidate_X_BEG_2 = indx + iShift;
              }
          }
-
-
          //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          xCur = (indx + iShift + iLeftShift)     * BarGraphicsItem::BarWidth * dHScale;
          if ( indx >= 0 && indx  < iMaxSize
               && (!bReplacementMode || mTimesScale.find(indx + iShift) != mTimesScale.end())
               ){
-
              //--------------------------
              if(!bReplacementMode){
                  const T & tM = graph[indx];// holder->getByIndex<T>(iSelectedInterval,indx + iShift);
@@ -1692,27 +1700,21 @@ void GraphViewForm::slotPeriodButtonChanged()
              tmCur = *threadfree_gmtime(&tTmp);
              //--------------------------
              if (!bFifstLine ){
-                 //
+                 //------------------------------------------------------------------------
+                 // set mark that the time has been processed
                  if (iSBeg <= indx && !bLineExists ){
                      mTimesScale[indx + iShift].second = true;
                  }
-
                  //------------------------------------------------------------------------
                  // draw small lines down under :)
                  if (iSBeg <= indx && !bLineExists ){//&& false
-
-                     //if (mVLinesHorisSmallScale.find(i) == mVLinesHorisSmallScale.end())
-                     {
-                         if (iFCount <= 0){
-                              DrawLineToScene(indx + iShift, xCur,0,xCur,1, mVFramesHorisSmallScale, ui->grViewScaleUpper->scene(),blackSolidPen,tTmp,true);
-                         }
-                         else {
-                              DrawLineToScene(indx + iShift, xCur,0,xCur,5, mVFramesHorisSmallScale, ui->grViewScaleUpper->scene(),blackSolidPen,tTmp,true);
-                         }
+                     if (iFCount <= 0){
+                          DrawLineToScene(indx + iShift, xCur,0,xCur,1, mVFramesHorisSmallScale, ui->grViewScaleUpper->scene(),blackSolidPen,tTmp,true);
+                     }
+                     else {
+                          DrawLineToScene(indx + iShift, xCur,0,xCur,5, mVFramesHorisSmallScale, ui->grViewScaleUpper->scene(),blackSolidPen,tTmp,true);
                      }
                  }
-
-
                  //------------------------------------------------------------------------
                  //  draw year line
                  if(tmPre.tm_year != tmCur.tm_year){
@@ -2106,6 +2108,65 @@ void GraphViewForm::slotPeriodButtonChanged()
 
 
  //---------------------------------------------------------------------------------------------------------------
+ bool GraphViewForm::eventFilter(QObject *watched, QEvent *event)
+ {
+     if (       watched == ui->grViewQuotes
+             || watched == ui->grViewQuotes->verticalScrollBar()
+             || watched == ui->grViewScaleUpper
+             || watched == ui->grViewVolume
+             || watched == ui->grViewVolume->verticalScrollBar()
+             || watched == ui->grViewScaleLower
+             ){
+         if(event->type() == QEvent::Wheel){
+             QWheelEvent* pe = (QWheelEvent*)event;
+             if (pe ){
+                 QPoint numPixels = pe->pixelDelta();
+                 QPoint numDegrees = pe->angleDelta();
+
+                 auto bt = pe->modifiers();
+                 //
+                 if (bt.testFlag(Qt::ShiftModifier)){
+                 }
+                 else if (bt.testFlag(Qt::ControlModifier)){
+                     if ((!numPixels.isNull()  && numPixels.x() != 0) || (!numDegrees.isNull())){
+
+                         bool bPlus{false};
+                         if ((!numPixels.isNull() && numPixels.x() > 0 ) || (!numDegrees.isNull() && numDegrees.y() > 0) ){
+                             bPlus = true;
+                         }
+
+                         if (watched != ui->grViewVolume && watched != ui->grViewVolume->verticalScrollBar()){
+                            slotVScaleQuotesClicked(bPlus);
+                         }
+                         else{
+                             slotVScaleVolumeClicked(bPlus);
+                         }
+                         event->accept();
+                         return true;
+                     }
+                 }
+//                 else if (bt.testFlag(Qt::AltModifier)){
+//                 }
+                 else{
+                     bool bRet;
+                     if (watched != ui->grViewVolume && watched != ui->grViewVolume->verticalScrollBar()){
+                         bRet = ui->grViewQuotes->horizontalScrollBar()->event(event);
+                         slotHorizontalScrollBarValueChanged(ui->grViewQuotes->horizontalScrollBar()->value());
+                     }
+                     else{
+                         bRet = ui->grViewVolume->horizontalScrollBar()->event(event);
+                         slotHorizontalScrollBarValueChanged(ui->grViewVolume->horizontalScrollBar()->value());
+                     }
+
+
+                     event->accept();
+                     return bRet;
+                 }
+             }
+         }
+     }
+     return QObject::eventFilter(watched, event);
+ }
  //---------------------------------------------------------------------------------------------------------------
  //---------------------------------------------------------------------------------------------------------------
  //---------------------------------------------------------------------------------------------------------------
