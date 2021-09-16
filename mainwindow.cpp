@@ -27,7 +27,7 @@ MainWindow::MainWindow(QWidget *parent)
     , vTickersLst{}
     , m_TickerLstModel{vTickersLst,vMarketsLst,mBlinkedState,this}
     , pAmiPipeWindow{nullptr}
-    , thrdPoolLoadFinQuotes{(int)std::thread::hardware_concurrency()/2}
+    , thrdPoolLoadFinQuotes{(int) (2 * double(std::thread::hardware_concurrency())/3.0)}
     , thrdPoolAmiClient{1}
     , thrdPoolFastDataWork{(int)std::thread::hardware_concurrency()/2}
     , ui(new Ui::MainWindow)
