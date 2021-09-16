@@ -206,11 +206,10 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
 
 
     ui->grViewQuotes->horizontalScrollBar()->setInvertedControls(false);
-    //ui->grViewQuotes->horizontalScrollBar()->setInvertedControls(true);
+    ui->grHorizScroll->horizontalScrollBar()->setInvertedControls(false);
     ui->grViewVolume->horizontalScrollBar()->setInvertedControls(false);
 
-    ui->grViewQuotes->installEventFilter(this);
-    ui->grViewQuotes->verticalScrollBar()->installEventFilter(this);
+
     ui->grViewL1->installEventFilter(this);
     ui->grViewL2->installEventFilter(this);
     ui->grViewL3->installEventFilter(this);
@@ -219,10 +218,21 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
     ui->grViewR2->installEventFilter(this);
     ui->grViewR3->installEventFilter(this);
     ui->grViewR4->installEventFilter(this);
+
+    ui->grViewQuotes->installEventFilter(this);
     ui->grViewScaleUpper->installEventFilter(this);
     ui->grViewVolume->installEventFilter(this);
-    ui->grViewVolume->verticalScrollBar()->installEventFilter(this);
     ui->grViewScaleLower->installEventFilter(this);
+
+    ui->grViewQuotes->verticalScrollBar()->installEventFilter(this);
+    ui->grViewScaleUpper->verticalScrollBar()->installEventFilter(this);
+    ui->grViewVolume->verticalScrollBar()->installEventFilter(this);
+    ui->grViewScaleLower->verticalScrollBar()->installEventFilter(this);
+
+    ui->grViewQuotes->horizontalScrollBar()->installEventFilter(this);
+    ui->grViewScaleUpper->horizontalScrollBar()->installEventFilter(this);
+    ui->grViewVolume->horizontalScrollBar()->installEventFilter(this);
+    ui->grViewScaleLower->horizontalScrollBar()->installEventFilter(this);
 
 
 
@@ -2114,12 +2124,20 @@ void GraphViewForm::slotPeriodButtonChanged()
  //---------------------------------------------------------------------------------------------------------------
  bool GraphViewForm::eventFilter(QObject *watched, QEvent *event)
  {
-     if (       watched == ui->grViewQuotes
-             || watched == ui->grViewQuotes->verticalScrollBar()
+     if (    watched == ui->grViewQuotes
              || watched == ui->grViewScaleUpper
              || watched == ui->grViewVolume
-             || watched == ui->grViewVolume->verticalScrollBar()
              || watched == ui->grViewScaleLower
+
+             || watched == ui->grViewQuotes->verticalScrollBar()
+             || watched == ui->grViewScaleUpper->verticalScrollBar()
+             || watched == ui->grViewVolume->verticalScrollBar()
+             || watched == ui->grViewScaleLower->verticalScrollBar()
+
+             || watched == ui->grViewQuotes->horizontalScrollBar()
+             || watched == ui->grViewScaleUpper->horizontalScrollBar()
+             || watched == ui->grViewVolume->horizontalScrollBar()
+             || watched == ui->grViewScaleLower->horizontalScrollBar()
              ){
          if(event->type() == QEvent::Wheel){
              QWheelEvent* pe = (QWheelEvent*)event;
@@ -2149,8 +2167,18 @@ void GraphViewForm::slotPeriodButtonChanged()
                          return true;
                      }
                  }
-//                 else if (bt.testFlag(Qt::AltModifier)){
-//                 }
+                 else if (bt.testFlag(Qt::AltModifier)){
+                     if ((!numPixels.isNull()  && numPixels.x() != 0) || (!numDegrees.isNull())){
+
+                         bool bPlus{false};
+                         if ((!numPixels.isNull() && numPixels.y() > 0 ) || (!numDegrees.isNull() && numDegrees.x() > 0) ){
+                             bPlus = true;
+                         }
+                         slotHScaleQuotesClicked(bPlus);
+                     }
+                     event->accept();
+                     return true;
+                 }
                  else{
                      bool bRet;
                      if (watched != ui->grViewVolume && watched != ui->grViewVolume->verticalScrollBar()){
