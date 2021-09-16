@@ -425,6 +425,8 @@ bool GraphViewForm::RepainInvalidRange(RepainTask & data)
                 connect(ui->grHorizScroll->horizontalScrollBar(),SIGNAL(valueChanged(int)),this,SLOT(slotHorizontalScrollBarValueChanged(int)));
 
                 EraseFrames();
+
+                ReDoHLines();
             }
 
             // resize Scene rect for Volume
@@ -877,6 +879,7 @@ void GraphViewForm::slotVScaleQuotesClicked(bool bPlus)
 
         EraseFrames();
         EraseBars();
+        RefreshHLines();
 
         ui->grViewL1->scene()->invalidate(ui->grViewL1->sceneRect());
         ui->grViewR1->scene()->invalidate(ui->grViewR1->sceneRect());
@@ -1436,20 +1439,13 @@ void GraphViewForm::slotPeriodButtonChanged()
          }
          if (!bReplacementMode && bStoreRightPos && iEndI > 0){
              if(mTimesScale.find(iEndI) != mTimesScale.end()){
-
                  tStoredRightPointPosition = Bar::DateAccommodate(mTimesScale[iEndI].first,iSelectedInterval,true);
                  iStoredRightAggregate  = 0;
-
-                 ThreadFreeCout pcout;
-                 pcout <<"new stored rpos: {"<< threadfree_gmtime_to_str(&tStoredRightPointPosition)<<"} <"<<iStoredRightAggregate<<">\n";
              }
              else{
                  if(mTimesScale.find(iEnd) != mTimesScale.end()){
                      tStoredRightPointPosition = Bar::DateAccommodate(mTimesScale[iEnd].first,iSelectedInterval,true);
                      iStoredRightAggregate  = iEndI > iEnd ? iEndI - iEnd : 0;
-
-                     ThreadFreeCout pcout;
-                     pcout <<"new stored rpos: {"<< threadfree_gmtime_to_str(&tStoredRightPointPosition)<<"} <"<<iStoredRightAggregate<<">\n";
                  }
              }
          }
@@ -1457,8 +1453,7 @@ void GraphViewForm::slotPeriodButtonChanged()
      return true;
  }
  //---------------------------------------------------------------------------------------------------------------
- bool GraphViewForm::PaintHorizontalFrames       ()
- {
+ void GraphViewForm::ReDoHLines(){
      double realH = dStoredHighMax - dStoredLowMin;
      double viewPortH = realYtoSceneY(dStoredHighMax) - realYtoSceneY(dStoredLowMin);
 
@@ -1473,6 +1468,25 @@ void GraphViewForm::slotPeriodButtonChanged()
          vHLines.push_back({dCurrent,false});
          dCurrent +=  dStep;
      }
+ }
+ //---------------------------------------------------------------------------------------------------------------
+ void GraphViewForm::RefreshHLines()
+ {
+     for (auto &d: vHLines){
+         d.second = false;
+     }
+ }
+ //---------------------------------------------------------------------------------------------------------------
+ bool GraphViewForm::PaintHorizontalFrames       ()
+ {
+     // TODO: paint only viewport
+//     if (vHLines.size() > 1){
+//         double dDelta = realYtoSceneY(vHLines[1].first) - realYtoSceneY(vHLines[0].first);
+//         if (dDelta < 60){
+//             ReDoHLines();
+//         }
+//     }
+     //ReDoHLines();
      ////
      int iMoveCount{0};
      bool bWas{false};

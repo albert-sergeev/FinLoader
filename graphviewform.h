@@ -303,6 +303,9 @@ protected:
 
     void init_const();
 
+
+    void ReDoHLines();
+    void RefreshHLines();
     std::tuple<int,int,int,int> getHPartStep(double realH, double viewportH);
 
     void SetMinMaxDateToControls();
