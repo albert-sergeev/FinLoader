@@ -125,7 +125,7 @@ private:
     std::map<int,std::vector<QGraphicsItem *>>      mLeftFrames;
     std::map<int,std::vector<QGraphicsItem *>>      mRightFrames;
 
-    std::map<int,std::time_t>                       mTimesScale;
+    std::map<int,std::pair<std::time_t,bool>>       mTimesScale;
 
 
 private:
