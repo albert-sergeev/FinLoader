@@ -1297,12 +1297,12 @@ void GraphViewForm::slotPeriodButtonChanged()
                      ///////////////////////////////////////////////////////////////
                      ////// resize scene if needed
 
-                     if (bReplacementMode){
-                         //QRectF scRect = grScene->sceneRect();
+                     //if (bReplacementMode)
+                     {
                          QRectF scRect = ui->grViewQuotes->scene()->sceneRect();
 
                          qreal xNewRight = (i + iShift + iLeftShift + iRightShift) * BarGraphicsItem::BarWidth * dHScale;
-                         qreal xNewHalfRight = (i + iShift + iLeftShift + iRightShift/2) * BarGraphicsItem::BarWidth * dHScale;
+                         qreal xNewHalfRight = (i + iShift + iLeftShift + iRightShift/3) * BarGraphicsItem::BarWidth * dHScale;
 
                          if(b.High() > dStoredHighMax)      dStoredHighMax = b.High();
                          if(b.Low() < dStoredLowMin)        dStoredLowMin = b.Low();
@@ -1331,15 +1331,20 @@ void GraphViewForm::slotPeriodButtonChanged()
                              task.iLetShift = 100;
                              queueRepaint.Push(task);
                          }
-                         else if(scRect.width() < xNewHalfRight){
+                         else if(scRect.x() + scRect.width() < xNewHalfRight){
                              QRectF newRec(0,scRect.y(),xNewRight,scRect.height());
+
+                             disconnect(ui->grHorizScroll->horizontalScrollBar(),SIGNAL(valueChanged(int)),this,SLOT(slotHorizontalScrollBarValueChanged(int)));
                              grScene->setSceneRect(newRec);
+                             connect(ui->grHorizScroll->horizontalScrollBar(),SIGNAL(valueChanged(int)),this,SLOT(slotHorizontalScrollBarValueChanged(int)));
 
                              EraseInvariantFrames(true,true);
                              EraseInvariantFrames(false,true);
-                             task.iLetShift = 100;
+
+                             //task.iLetShift = 100;
                              //queueRepaint.Push(task);
                          }
+
                      }
                      ///////////////////////////////////////////////////////////////
                      /// paint bars
@@ -1867,8 +1872,8 @@ void GraphViewForm::slotPeriodButtonChanged()
              if (!bLineExists){
                  if ( indx + iShift >= iMaxSize){ // only right
                      if (mVFramesHorisSmallScaleExtremities.find(indx + iShift) == mVFramesHorisSmallScaleExtremities.end()){
-                        //DrawLineToScene(indx + iShift, xCur,0,xCur,5, mVFramesHorisSmallScaleExtremities, ui->grViewScaleUpper->scene(),blackSolidPen);
-                        DrawLineToScene(indx + iShift, xCur,0,xCur,5, mVFramesHorisSmallScaleExtremities, ui->grViewScaleUpper->scene(),redPen);
+                        DrawLineToScene(indx + iShift, xCur,0,xCur,5, mVFramesHorisSmallScaleExtremities, ui->grViewScaleUpper->scene(),blackSolidPen);
+                        //DrawLineToScene(indx + iShift, xCur,0,xCur,5, mVFramesHorisSmallScaleExtremities, ui->grViewScaleUpper->scene(),redPen);
                      }
                  }
              }
@@ -1883,17 +1888,17 @@ void GraphViewForm::slotPeriodButtonChanged()
          tmPre = tmCur;
      }
 
-//     if (bInvalidate)
-//     {
-//         QRectF rec =  ui->grViewQuotes->scene()->sceneRect();
+     if (bInvalidate)
+     {
+         QRectF rec =  ui->grViewQuotes->scene()->sceneRect();
 
-//         QRectF newRec((iInvalidate_X_BEG_1 + iLeftShift) * BarGraphicsItem::BarWidth * dHScale,
-//                       rec.y(),
-//                       (iInvalidate_X_BEG_2 + iLeftShift) * BarGraphicsItem::BarWidth * dHScale,
-//                       rec.height());
+         QRectF newRec((iInvalidate_X_BEG_1 + iLeftShift) * BarGraphicsItem::BarWidth * dHScale,
+                       rec.y(),
+                       (iInvalidate_X_BEG_2 + iLeftShift) * BarGraphicsItem::BarWidth * dHScale,
+                       rec.height());
 
-//         ui->grViewQuotes->scene()->invalidate(newRec);
-//     }
+         ui->grViewQuotes->scene()->invalidate(newRec);
+     }
      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
      return true;
  }
