@@ -1149,10 +1149,11 @@ void GraphViewForm::slotPeriodButtonChanged()
      PaintViewPort   (iRange.first/*iBeg*/,iRange.second/* iEnd*/, bFrames, bBars, bVolumes,bStoreRightPos,bInvalidate);
  }
  //---------------------------------------------------------------------------------------------------------------
- void GraphViewForm::PaintViewPort   (int iStart, int iEnd,bool bFrames,bool bBars,bool bVolumes, bool /*bStoreRightPos*/, bool bInvalidate)
+ void GraphViewForm::PaintViewPort   (int iStart, int iEnd,bool bFrames,bool bBars,bool bVolumes, bool bStoreRightPos, bool bInvalidate)
  {
      RepainTask task(0,iStart,iEnd,false);
      task.bInvalidate = bInvalidate;
+     task.bStoreRightPos = bStoreRightPos;
 
      {
          if (bFrames){
@@ -1278,14 +1279,6 @@ void GraphViewForm::slotPeriodButtonChanged()
 
      int iEnd    = iEndI >= 0               ? iEndI             : 0 ;
      iEnd        = iEnd - iShift < iMaxSize ? iEnd - iShift     : iMaxSize - 1;
-
-
-//     if (bStoreRightPos && iEnd > 0){
-//         tStoredRightPointPosition = Bar::DateAccommodate(local_holder->getTimeByIndex(iSelectedInterval,iEnd),iSelectedInterval,true);
-//         iStoredRightAggregate = (iEndI > 0 ? iEndI : 0);
-//         iStoredRightAggregate = iStoredRightAggregate > iEnd ? iStoredRightAggregate - iEnd : 0 ;
-//     }
-
 
      /////////////////////////////////////////////////////////////////
 
@@ -1436,8 +1429,26 @@ void GraphViewForm::slotPeriodButtonChanged()
                  //FastPaintFrames(task);
              }
          }
-     }
+         if (!bReplacementMode && bStoreRightPos && iEndI > 0){
+             if(mTimesScale.find(iEndI) != mTimesScale.end()){
 
+                 tStoredRightPointPosition = Bar::DateAccommodate(mTimesScale[iEndI].first,iSelectedInterval,true);
+                 iStoredRightAggregate  = 0;
+
+                 ThreadFreeCout pcout;
+                 pcout <<"new stored rpos: {"<< threadfree_gmtime_to_str(&tStoredRightPointPosition)<<"} <"<<iStoredRightAggregate<<">\n";
+             }
+             else{
+                 if(mTimesScale.find(iEnd) != mTimesScale.end()){
+                     tStoredRightPointPosition = Bar::DateAccommodate(mTimesScale[iEnd].first,iSelectedInterval,true);
+                     iStoredRightAggregate  = iEndI > iEnd ? iEndI - iEnd : 0;
+
+                     ThreadFreeCout pcout;
+                     pcout <<"new stored rpos: {"<< threadfree_gmtime_to_str(&tStoredRightPointPosition)<<"} <"<<iStoredRightAggregate<<">\n";
+                 }
+             }
+         }
+     }
      return true;
  }
  //---------------------------------------------------------------------------------------------------------------

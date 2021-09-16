@@ -309,7 +309,7 @@ void modelTickersList::setGrayColorForInformants(bool b)
 
         QVector<int> vV {Qt::BackgroundColorRole};
         QModelIndex indexBeg = this->index(0,0);
-        QModelIndex indexEnd = this->index(vTickersLst->size()-1,4);
+        QModelIndex indexEnd = this->index((int)vTickersLst->size()-1,4);
 
         emit dataChanged(indexBeg,indexEnd,vV);
     }

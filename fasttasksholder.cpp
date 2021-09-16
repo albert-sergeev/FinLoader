@@ -8,7 +8,7 @@ FastTasksHolder::FastTasksHolder()
 
 //--------------------------------------------------------------------------------------------------------
 void FastTasksHolder::PacketReceived(dataFastLoadTask &data,
-                                     Storage &stStore,
+                                     Storage &/*stStore*/,
                                      std::map<int,std::shared_ptr<GraphHolder>>& Holders,
                                      BlockFreeQueue<dataFastLoadTask> &queueFastTasks,
                                      BlockFreeQueue<dataAmiPipeAnswer>  &queuePipeAnswers
