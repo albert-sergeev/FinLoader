@@ -43,8 +43,8 @@ public:
         ss << "high: "  << b.High()<<"\r\n";
         ss << "low: "   << b.Low()<<"\r\n";
         ss << "close: " << b.Close()<<"\r\n";
-        ss << "volume: " << b.Volume()<<"\n";
-        ss << "index: " << iRealIndex<<"";
+        ss << "volume: " << b.Volume();
+        //ss <<"\n"<< "index: " << iRealIndex<<"";
 
         this->setToolTip(QString::fromStdString(ss.str()));
     };
@@ -63,8 +63,8 @@ public:
             ss <<threadfree_gmtime_to_str(&t)<<"\r\n";
         }
         ss << "close: " << b.Close()<<"\r\n";
-        ss << "volume: " << b.Volume()<<"\n";
-        ss << "index: " << iRealIndex<<"";
+        ss << "volume: " << b.Volume();
+        //ss <<"\n"<< "index: " << iRealIndex<<"";
         this->setToolTip(QString::fromStdString(ss.str()));
     };
 

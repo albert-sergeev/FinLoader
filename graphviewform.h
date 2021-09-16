@@ -13,6 +13,10 @@ namespace Ui {
 class GraphViewForm;
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Class to transmit paint tasks in GraphViewForm
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
 struct RepainTask{
 
     typedef unsigned int Type_type;
@@ -66,6 +70,10 @@ struct RepainTask{
     bool bNeedToRescale {false};
 };
 
+//////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief The GraphViewForm class
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
 class GraphViewForm : public QWidget
 {
     Q_OBJECT
@@ -109,12 +117,16 @@ private:
     std::map<int,std::vector<QGraphicsItem *>>      mVFramesScaleUpper;
     std::map<int,std::vector<QGraphicsItem *>>      mVFramesVolume;
     std::map<int,std::vector<QGraphicsItem *>>      mVFramesHorisSmallScale;
+    std::map<int,std::vector<QGraphicsItem *>>      mVFramesHorisSmallScaleExtremities;
 
     std::vector<std::pair<QGraphicsItem *,double>>  vHorizFramesViewQuotes;
     std::vector<QGraphicsItem *>                    vHorizFramesScaleUpper;
 
     std::map<int,std::vector<QGraphicsItem *>>      mLeftFrames;
     std::map<int,std::vector<QGraphicsItem *>>      mRightFrames;
+
+    std::map<int,std::time_t>                       mTimesScale;
+
 
 private:
 
@@ -149,11 +161,6 @@ private:
     static const int iVolumeViewPortHighStrip{3};
 
 public:
-signals:
-
-    void SendToLog(QString);
-
-public:
     explicit GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::shared_ptr<GraphHolder> hldr, QWidget *parent = nullptr);
     ~GraphViewForm();
 
@@ -161,7 +168,10 @@ public:
 
     double GetHScale() {return mVScale[iSelectedInterval];}
 
+public:
 signals:
+
+    void SendToLog(QString);
     void NeedLoadGraph(const  int iTickerID, const std::time_t tBegin, const std::time_t tEnd);
 
 public slots:
@@ -194,13 +204,25 @@ private:
 
 protected:
 
-
-
-
+    //-----------------------------------------------------------------------------------------------
+    // globals
 //    template<typename T>
 //    void PaintBarsFastT(std::time_t tBegin, std::time_t tEnd,std::shared_ptr<GraphHolder> ptrHolder);
 
+    template<typename T>
+    bool RepainInvalidRange(RepainTask &);
+
+
+    void SetSliderToPos (std::time_t tRightPos, int iRightAggregate);
+    template<typename T>
+    void SetSliderToPosT(std::time_t tRightPos, int iRightAggregate);
+
+    void InvalidateScenes();
+
+
     //-----------------------------------------------------------------------------------------------
+    // intelectual paint procedures
+
     std::pair<int,int> getViewPortRangeToHolder();
 
     void PaintViewPort               (bool bFrames,bool bBars,bool bVolumes, bool bStoreRightPos);
@@ -216,7 +238,7 @@ protected:
                                     bool bStoreRightPos, bool bReplacementMode);
 
     bool PaintHorizontalScales       ();
-    bool PaintHorizontalFrames       (int iStart, int iEnd);
+    bool PaintHorizontalFrames       ();
     bool PaintVerticalSideScales     ();
     bool PaintVerticalFrames         (std::shared_ptr<GraphHolder> local_holder,int iStart, int iEnd,
                                              int iLeftStock, bool bReplacementMode, bool bInvalidate);
@@ -224,50 +246,8 @@ protected:
     template<typename T>
     bool PainVerticalFramesT         (std::shared_ptr<GraphHolder> local_holder,int iStart, int iEnd,
                                             int iLeftStock, bool bReplacementMode, bool bInvalidate);
-
     //-----------------------------------------------------------------------------------------------
-
-
-    template<typename T>
-    bool RepainInvalidRange(RepainTask &);
-
-
-    void SetSliderToPos (std::time_t tRightPos, int iRightAggregate);
-    template<typename T>
-    void SetSliderToPosT(std::time_t tRightPos, int iRightAggregate);
-
-
-    void DrawLineToScene(const int idx,const  qreal x1,const  qreal y1,const qreal x2,const  qreal y2,
-                         std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QPen & pen,
-                         const  std::time_t t = 0, bool bHasTooltip = false);
-    void DrawLineToScene(const int idx,const  qreal x1,const  qreal y1,const qreal x2,const  qreal y2,
-                         std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QPen & pen,
-                         const  std::string sToolTip, bool bHasTooltip = false);
-    void DrawIntermittentLineToScene(const int idx,const  qreal x1,const  qreal y1,const qreal x2,const  qreal y2,
-                         std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QPen & pen,
-                         const  std::time_t t, bool bHasTooltip);
-    void DrawIntermittentLineToScene(const int idx,const  qreal x1,const  qreal y1,const qreal x2,const  qreal y2,
-                         std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QPen & pen,
-                         const  std::string sToolTip, bool bHasTooltip = false);
-
-
-
-    void DrawTimeToScene(const int idx,const  qreal x,const  qreal y,const  std::tm &,
-                                        std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QFont & font);
-    void DrawIntToScene(const int idx,const  qreal x,const  qreal y,const  int n, Qt::AlignmentFlag alignH, Qt::AlignmentFlag alignV,
-                                        std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QFont & font);
-    void DrawDoubleToScene(const int idx,const  qreal x ,const  qreal y,const double n, Qt::AlignmentFlag alignH, Qt::AlignmentFlag alignV,
-                           std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QFont & font);
-
-    void InvalidateScenes();
-
-
-    std::tuple<int,int,int,int> getHPartStep(double realH, double viewportH);
-
-
-    void SetMinMaxDateToControls();
-    void RepositionPlusMinusButtons();
-    void SetSelectedIntervalToControls();
+    // drawed objects manipulation functions
 
     template<typename T>
     void EraseLinesUpper(T& mM, int iStart, QGraphicsScene *);
@@ -278,13 +258,52 @@ protected:
 
 
     void Erase();
-    void EraseFrames();
+    void EraseTimeScale();
     void EraseBars();
     void EraseVolumes();
+    void EraseFrames();
+
+    void EraseInvariantFrames      (bool bHorizontal,bool bRepain);
+    //-----------------------------------------------------------------------------------------------
+    // draw primitives
+
+    void DrawLineToScene(const int idx,const  qreal x1,const  qreal y1,const qreal x2,const  qreal y2,
+                         std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QPen & pen,
+                         const  std::time_t t = 0, bool bHasTooltip = false, const qreal zvalue = 0);
+    void DrawLineToScene(const int idx,const  qreal x1,const  qreal y1,const qreal x2,const  qreal y2,
+                         std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QPen & pen,
+                         const  std::string sToolTip, bool bHasTooltip = false, const qreal zvalue = 0);
+    void DrawIntermittentLineToScene(const int idx,const  qreal x1,const  qreal y1,const qreal x2,const  qreal y2,
+                         std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QPen & pen,
+                         const  std::time_t t, bool bHasTooltip, const qreal zvalue = 0);
+    void DrawIntermittentLineToScene(const int idx,const  qreal x1,const  qreal y1,const qreal x2,const  qreal y2,
+                         std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QPen & pen,
+                         const  std::string sToolTip, bool bHasTooltip = false, const qreal zvalue = 0);
+
+
+
+    void DrawTimeToScene(const int idx,const  qreal x,const  qreal y,const  std::tm &,
+                                        std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QFont & font, const qreal zvalue = 0);
+    void DrawIntToScene(const int idx,const  qreal x,const  qreal y,const  int n, Qt::AlignmentFlag alignH, Qt::AlignmentFlag alignV,
+                                        std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QFont & font, const qreal zvalue = 0);
+    void DrawDoubleToScene(const int idx,const  qreal x ,const  qreal y,const double n, Qt::AlignmentFlag alignH, Qt::AlignmentFlag alignV,
+                           std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QFont & font, const qreal zvalue = 0);
+
+    //-----------------------------------------------------------------------------------------------
+    // utility functions
+
+    std::tuple<int,int,int,int> getHPartStep(double realH, double viewportH);
+
+
+    void SetMinMaxDateToControls();
+    void RepositionPlusMinusButtons();
+    void SetSelectedIntervalToControls();
 
 
     inline double realYtoSceneY      (double y) {return  ((y - dStoredLowMin)       * (mVScale.at      (iSelectedInterval))) + iViewPortLowStrip;};
     inline double realYtoSceneYVolume(double y) {return  ((y - 0) * (mVVolumeScale.at(iSelectedInterval))) + iVolumeViewPortHighStrip;};
+
+    //-----------------------------------------------------------------------------------------------
 
     // QWidget interface
 protected:

@@ -337,6 +337,7 @@ void AmiPipeHolder::ReadConnectedPipes(BlockFreeQueue<dataFastLoadTask>         
     auto ItConnected = mPipesConnected.begin();
     while (ItConnected != mPipesConnected.end()){
 
+
         iTickerID   = ItConnected->second.second.first;
         strBind     = ItConnected->first;
 
