@@ -73,6 +73,8 @@ struct RepainTask{
 //////////////////////////////////////////////////////////////////////////////////////////////////
 /// \brief The GraphViewForm class
 //////////////////////////////////////////////////////////////////////////////////////////////////
+///
+inline std::once_flag GraphViewForm_init_consts_call_once_flag;
 
 class GraphViewForm : public QWidget
 {
@@ -126,6 +128,13 @@ private:
     std::map<int,std::vector<QGraphicsItem *>>      mRightFrames;
 
     std::map<int,std::pair<std::time_t,bool>>       mTimesScale;
+
+    QFont fontTime;
+    QFont fontNumb;
+
+    static int iConstWidthNumb1;
+    static int iConstWidthNumb2;
+    static int iConstWidthTime;
 
 
 private:
@@ -292,13 +301,13 @@ protected:
     //-----------------------------------------------------------------------------------------------
     // utility functions
 
-    std::tuple<int,int,int,int> getHPartStep(double realH, double viewportH);
+    void init_const();
 
+    std::tuple<int,int,int,int> getHPartStep(double realH, double viewportH);
 
     void SetMinMaxDateToControls();
     void RepositionPlusMinusButtons();
     void SetSelectedIntervalToControls();
-
 
     inline double realYtoSceneY      (double y) {return  ((y - dStoredLowMin)       * (mVScale.at      (iSelectedInterval))) + iViewPortLowStrip;};
     inline double realYtoSceneYVolume(double y) {return  ((y - 0) * (mVVolumeScale.at(iSelectedInterval))) + iVolumeViewPortHighStrip;};
@@ -310,5 +319,9 @@ protected:
     void resizeEvent(QResizeEvent *event);
     void showEvent(QShowEvent *event);
 };
+
+inline int GraphViewForm::iConstWidthNumb1;
+inline int GraphViewForm::iConstWidthNumb2;
+inline int GraphViewForm::iConstWidthTime;
 
 #endif // GRAPHVIEWFORM_H

@@ -31,6 +31,16 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
 {
     ui->setupUi(this);
 
+    //-------------------------------------------------------------
+    fontTime.setPixelSize(11);
+    fontTime.setBold(false);
+    fontTime.setFamily("Times New Roman");
+
+    fontNumb.setPixelSize(14);
+    fontNumb.setBold(false);
+    fontNumb.setFamily("Times New Roman");
+    //-------------------------------------------------------------
+
     QColor colorDarkGreen(0, 100, 52,50);
     QColor colorDarkRed(31, 53, 200,40);
     //-------------------------------------------------------------
@@ -1598,17 +1608,6 @@ void GraphViewForm::slotPeriodButtonChanged()
 
      QPen redPen(Qt::red,1,Qt::SolidLine);
 
-
-     QFont fontTime;
-     fontTime.setPixelSize(11);
-     fontTime.setBold(false);
-     fontTime.setFamily("Times New Roman");
-
-     QFont fontNumb;
-     fontNumb.setPixelSize(14);
-     fontNumb.setBold(false);
-     fontNumb.setFamily("Times New Roman");
-
      int iLineH = ui->grViewScaleUpper->scene()->sceneRect().height()/2;
      static const int iShiftH {4};
      //////////////////////////////////////////////////////////////
@@ -1649,18 +1648,19 @@ void GraphViewForm::slotPeriodButtonChanged()
      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
      /// creating shift constants
      ///
+     std::call_once(GraphViewForm_init_consts_call_once_flag,&GraphViewForm::init_const,this);
 
-     QGraphicsTextItem itemNumb1("0");
-     itemNumb1.setFont(fontNumb);
-     int iConstWidthNumb1 = ((itemNumb1.boundingRect().width() + 2) / BarGraphicsItem::BarWidth) / dHScale - 1;
+//     QGraphicsTextItem itemNumb1("0");
+//     itemNumb1.setFont(fontNumb);
+//     int iConstWidthNumb1 = ((itemNumb1.boundingRect().width() + 2) / BarGraphicsItem::BarWidth) / dHScale - 1;
 
-     QGraphicsTextItem itemNumb2("00");
-     itemNumb2.setFont(fontNumb);
-     int iConstWidthNumb2 = ((itemNumb2.boundingRect().width() + 2) / BarGraphicsItem::BarWidth) / dHScale - 1;
+//     QGraphicsTextItem itemNumb2("00");
+//     itemNumb2.setFont(fontNumb);
+//     int iConstWidthNumb2 = ((itemNumb2.boundingRect().width() + 2) / BarGraphicsItem::BarWidth) / dHScale - 1;
 
-     QGraphicsTextItem itemTime("00:00");
-     itemTime.setFont(fontTime);
-     int iConstWidthTime = ((itemTime.boundingRect().width() + 2) / BarGraphicsItem::BarWidth) / dHScale - 1;
+//     QGraphicsTextItem itemTime("00:00");
+//     itemTime.setFont(fontTime);
+//     int iConstWidthTime = ((itemTime.boundingRect().width() + 2) / BarGraphicsItem::BarWidth) / dHScale - 1;
      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
      // main ciclus
@@ -2095,6 +2095,24 @@ void GraphViewForm::slotPeriodButtonChanged()
 // }
 
  //---------------------------------------------------------------------------------------------------------------
+ void GraphViewForm::init_const(){
+
+     QGraphicsTextItem itemNumb1("0");
+     itemNumb1.setFont(fontNumb);
+     iConstWidthNumb1 = ((itemNumb1.boundingRect().width() + 2) / BarGraphicsItem::BarWidth) / dHScale - 1;
+
+     QGraphicsTextItem itemNumb2("00");
+     itemNumb2.setFont(fontNumb);
+     iConstWidthNumb2 = ((itemNumb2.boundingRect().width() + 2) / BarGraphicsItem::BarWidth) / dHScale - 1;
+
+     QGraphicsTextItem itemTime("00:00");
+     itemTime.setFont(fontTime);
+     iConstWidthTime = ((itemTime.boundingRect().width() + 2) / BarGraphicsItem::BarWidth) / dHScale - 1;
+
+ }
+
+
+
  //---------------------------------------------------------------------------------------------------------------
  //---------------------------------------------------------------------------------------------------------------
  //---------------------------------------------------------------------------------------------------------------
