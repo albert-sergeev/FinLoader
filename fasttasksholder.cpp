@@ -198,7 +198,10 @@ void FastTasksHolder::PacketReceived(dataFastLoadTask &data,
                 break;
             }
         }
-        mOldPacketsQueue.erase(mOldPacketsQueue.begin(),ItOldQueue);// erasing processed packets
+        // erasing processed packets
+        if (!mOldPacketsQueue.empty()){
+            mOldPacketsQueue.erase(mOldPacketsQueue.begin(),ItOldQueue);
+        }
     }
 }
 //--------------------------------------------------------------------------------------------------------
