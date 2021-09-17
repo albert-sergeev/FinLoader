@@ -585,8 +585,10 @@ void AmiPipeHolder::ReadConnectedPipes_bytemode_win32(BlockFreeQueue<dataFastLoa
     int iBytesToRead{0};
     int iTotalBytesRead{0};
     int iWriteStart{0};
-//    int iReadStart{0};
+
     int iReadCount{0};
+    static const int iMaxReadCount{30};
+    bool bLastReadMoreData{false};
 
     bool bSuccessfullRead{false};
 
@@ -610,23 +612,26 @@ void AmiPipeHolder::ReadConnectedPipes_bytemode_win32(BlockFreeQueue<dataFastLoa
             char *buff = mBuffer[strBind].data();
             //bLastReadMoreData = true;
 
-            if (pip.read (buff + iWriteStart,iBytesToRead,iTotalBytesRead) || GetLastError() == ERROR_MORE_DATA){
+            while(true){
+                if (pip.read (buff + iWriteStart,iBytesToRead,iTotalBytesRead) || GetLastError() == ERROR_MORE_DATA){
 
-                bSuccessfullRead = true;
-                mPointerToWrite[strBind] = iWriteStart + iTotalBytesRead;
-                BytesRead += iTotalBytesRead;
-                if (GetLastError() == ERROR_MORE_DATA)  {bWasFullBuffers = true; /*bLastReadMoreData = true;*/}
-                else                                    {/*bLastReadMoreData = false;*/}
-                iReadCount++;
-                ////
-                ProcessReceivedBuffer(queueFastTasks,queuePipeAnswers,queueTrdAnswers,
-                            iTickerID,task,buff,mPointerToRead[strBind],mPointerToWrite[strBind]);
+                    bSuccessfullRead = true;
+                    mPointerToWrite[strBind] = iWriteStart + iTotalBytesRead;
+                    BytesRead += iTotalBytesRead;
+                    if (GetLastError() == ERROR_MORE_DATA)  {bLastReadMoreData = true;  bWasFullBuffers = true;}
+                    else                                    {bLastReadMoreData = false;}
+                    iReadCount++;
+                    ////
+                    ProcessReceivedBuffer(queueFastTasks,queuePipeAnswers,queueTrdAnswers,
+                                iTickerID,task,buff,mPointerToRead[strBind],mPointerToWrite[strBind]);
 
-                iWriteStart = mPointerToWrite[strBind];
-                iBytesToRead = iBlockMaxSize  - iWriteStart;
-            }
-            else{
-                if (GetLastError() == ERROR_NO_DATA)  {bSuccessfullRead = true;}
+                    iWriteStart = mPointerToWrite[strBind];
+                    iBytesToRead = iBlockMaxSize  - iWriteStart;
+                }
+                else{
+                    if (GetLastError() == ERROR_NO_DATA)  {bSuccessfullRead = true;}
+                }
+                if (!bLastReadMoreData || iReadCount >= iMaxReadCount) break;
             }
         }
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

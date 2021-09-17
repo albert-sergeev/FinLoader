@@ -10,7 +10,7 @@ FastTasksHolder::FastTasksHolder()
 void FastTasksHolder::PacketReceived(dataFastLoadTask &data,
                                      Storage &stStore,
                                      std::map<int,std::shared_ptr<GraphHolder>>& Holders,
-                                     BlockFreeQueue<dataFastLoadTask> &queueFastTasks,
+                                     BlockFreeQueue<dataFastLoadTask> &/*queueFastTasks*/,
                                      BlockFreeQueue<dataAmiPipeAnswer>  &queuePipeAnswers
                                      )
 {
@@ -64,6 +64,7 @@ void FastTasksHolder::PacketReceived(dataFastLoadTask &data,
         mBuff[iTickerID].resize(iOutBuffMax);
         mHolderTimeSet[iTickerID].clear();
         mTimeSet[iTickerID].clear();
+        mWrongNumberPacketsQueue[iTickerID].clear();
     }
     else{
         if (mTask[iTickerID] > data.lTask){
@@ -78,6 +79,7 @@ void FastTasksHolder::PacketReceived(dataFastLoadTask &data,
             mBuff[iTickerID].resize(iOutBuffMax);
             mHolderTimeSet[iTickerID].clear();
             mTimeSet[iTickerID].clear();
+            mWrongNumberPacketsQueue[iTickerID].clear();
         }
     }
 
@@ -93,6 +95,7 @@ void FastTasksHolder::PacketReceived(dataFastLoadTask &data,
     std::string             & strBuff                               = mBuff[iTickerID];
     std::set<std::time_t>   & stTimeSet                             = mTimeSet[iTickerID];
     std::set<std::time_t>   & stHolderTimeSet                       = mHolderTimeSet[iTickerID];
+    std::map<long long,dataFastLoadTask> &mOldPacketsQueue          = mWrongNumberPacketsQueue[iTickerID];
 
     ////////////////////////////////////////////////////////////////////////////
     /// 2.2 Unlock global mutex
@@ -106,94 +109,96 @@ void FastTasksHolder::PacketReceived(dataFastLoadTask &data,
         /// 3.1 drop
     }
     else if (llPacketsCounter < data.llPackesCounter
-             /*&& data.RepushCount()<1000000000*/ && data.TimeTilCreate() < 120000ms
+             /*&& data.RepushCount()<1000000000 && data.TimeTilCreate() < 120000ms*/
              ){
         /// 3.2 push again if wrong number
-        data.IncrementRepush();
-        queueFastTasks.Push(data);
-        conditionFastData.notify_one();
+        mOldPacketsQueue[data.llPackesCounter] = data;
+//        data.IncrementRepush();
+//        queueFastTasks.Push(data);
+//        conditionFastData.notify_one();
     }
     else{
-        if (llPacketsCounter < data.llPackesCounter){
-            ThreadFreeCout pcout;
-            pcout <<"{"<<iTickerID<<"} fail recovery. drop data\n";
-        }
         llPacketsCounter = data.llPackesCounter + 1;
         /// 3.3 Adding
-        if(data.vV.size()>0){
-            //////////////////////////////////////////////////////
-            /// adding to holder
-            std::pair<std::time_t,std::time_t> pairRange;
-            dataAmiPipeAnswer answ;
-            answ.ptrHolder = std::make_shared<GraphHolder>(GraphHolder{iTickerID});
+        ///
 
-            if (!holder->AddBarsListsFast(data.vV,stHolderTimeSet,pairRange,*answ.ptrHolder) &&
-                    !this_thread_flagInterrup.isSet()){
-                dataAmiPipeAnswer answ; answ.SetTickerID(iTickerID); answ.SetType(dataAmiPipeAnswer::ErrMessage);
-                std::stringstream ss;
-                ss <<"Error during adding fast ticks to holder {"<<iTickerID<<"}";
-                answ.SetErrString(ss.str());
-                queuePipeAnswers.Push(answ);
+        std::vector<BarTick> v = std::move(data.vV);
+        auto ItOldQueue = mOldPacketsQueue.begin();
 
-            }
-            //////////////////////////////////////////////////////
-            /// send fast repaint event
-            if (pairRange.first !=0 && pairRange.second != 0)
-            {
-                answ.SetTickerID(iTickerID);
-                answ.SetType(dataAmiPipeAnswer::FastShowEvent);
-                answ.tBegin = pairRange.first;
-                answ.tEnd = pairRange.second;
-                queuePipeAnswers.Push(answ);
-            }
-            //////////////////////////////////////////////////////
-            /// show activity
+        while(true){
+            if(v.size()>0){
+                //////////////////////////////////////////////////////
+                /// adding to holder
+                std::pair<std::time_t,std::time_t> pairRange;
+                dataAmiPipeAnswer answ;
+                answ.ptrHolder = std::make_shared<GraphHolder>(GraphHolder{iTickerID});
 
-            std::time_t tLast = lastTimePacketReceived.load();
-            if (tLast < data.vV.back().Period()){
-                while(!lastTimePacketReceived.compare_exchange_weak(tLast,data.vV.back().Period())){
-                    if (tLast < data.vV.back().Period()){
-                        break;
+                if (!holder->AddBarsListsFast(v,stHolderTimeSet,pairRange,*answ.ptrHolder) &&
+                        !this_thread_flagInterrup.isSet()){
+                    dataAmiPipeAnswer answ; answ.SetTickerID(iTickerID); answ.SetType(dataAmiPipeAnswer::ErrMessage);
+                    std::stringstream ss;
+                    ss <<"Error during adding fast ticks to holder {"<<iTickerID<<"}";
+                    answ.SetErrString(ss.str());
+                    queuePipeAnswers.Push(answ);
+
+                }
+                //////////////////////////////////////////////////////
+                /// send fast repaint event
+                if (pairRange.first !=0 && pairRange.second != 0)
+                {
+                    answ.SetTickerID(iTickerID);
+                    answ.SetType(dataAmiPipeAnswer::FastShowEvent);
+                    answ.tBegin = pairRange.first;
+                    answ.tEnd = pairRange.second;
+                    queuePipeAnswers.Push(answ);
+                }
+                //////////////////////////////////////////////////////
+                /// show activity
+                std::time_t tLast = lastTimePacketReceived.load();
+                if (tLast < v.back().Period()){
+                    while(!lastTimePacketReceived.compare_exchange_weak(tLast,v.back().Period())){
+                        if (tLast < v.back().Period()){
+                            break;
+                        }
                     }
                 }
+                //////////////////////////////////////////////////////
+                /// writing to database
+                WriteVectorToStorage(iTickerID,tLastTime,strBuff,stTimeSet,stStore,v,queuePipeAnswers);
+                //////////////////////////////////////////////////////
+                /// set new last time
+                tLastTime = v.back().Period();
+                //////////////////////////////////////////////////////
+                /// cleaning too old sets for 24/7 worktime
+                if(!stTimeSet.empty()){
+                    std::time_t tD = Bar::DateAccommodate((*stTimeSet.rbegin()),Bar::pDay);
+                    auto It = stTimeSet.lower_bound(tD);
+                    if (It != stTimeSet.begin()){
+                        stTimeSet.erase(stTimeSet.begin(),It);
+                    }
+                }
+                if(!stHolderTimeSet.empty()){
+                    std::time_t tD = Bar::DateAccommodate((*stHolderTimeSet.rbegin()),Bar::pDay);
+                    auto It = stHolderTimeSet.lower_bound(tD);
+                    if (It != stHolderTimeSet.begin()){
+                        stHolderTimeSet.erase(stHolderTimeSet.begin(),It);
+                    }
+                }
+                /////////////////////////////////////////////////////////////
             }
+            // prepare next packet to read
+            if(ItOldQueue == mOldPacketsQueue.end()) break;
 
-//            milliseconds tActivityCount = std::chrono::steady_clock::now() - dtActivity;
-//            if (tActivityCount > 100ms){
-//                dtActivity = std::chrono::steady_clock::now();
-//                //
-//                if (iTickerID == 1){ // TODO: delete. for tests
-//                    dataAmiPipeAnswer answ;
-//                    answ.SetTickerID(iTickerID);
-//                    answ.SetType(dataAmiPipeAnswer::testTimeEvent);
-//                    answ.SetTime(data.vV.back().Period());
-//                    queuePipeAnswers.Push(answ);
-//                }
-//            }
-            //////////////////////////////////////////////////////
-            /// writing to database
-            WriteVectorToStorage(iTickerID,tLastTime,strBuff,stTimeSet,stStore,data.vV,queuePipeAnswers);
-            //////////////////////////////////////////////////////
-            /// set new last time
-            tLastTime = data.vV.back().Period();
-            //////////////////////////////////////////////////////
-            /// cleaning too old sets for 24/7 worktime
-            if(!stTimeSet.empty()){
-                std::time_t tD = Bar::DateAccommodate((*stTimeSet.rbegin()),Bar::pDay);
-                auto It = stTimeSet.lower_bound(tD);
-                if (It != stTimeSet.begin()){
-                    stTimeSet.erase(stTimeSet.begin(),It);
-                }
+            if (ItOldQueue->first == llPacketsCounter){
+                v = std::move(ItOldQueue->second.vV);
+                ++llPacketsCounter;
+                ++ItOldQueue;
             }
-            if(!stHolderTimeSet.empty()){
-                std::time_t tD = Bar::DateAccommodate((*stHolderTimeSet.rbegin()),Bar::pDay);
-                auto It = stHolderTimeSet.lower_bound(tD);
-                if (It != stHolderTimeSet.begin()){
-                    stHolderTimeSet.erase(stHolderTimeSet.begin(),It);
-                }
+            else{
+                break;
             }
-            /////////////////////////////////////////////////////////////
         }
+        mOldPacketsQueue.erase(mOldPacketsQueue.begin(),ItOldQueue);// erasing processed packets
     }
 }
 //--------------------------------------------------------------------------------------------------------

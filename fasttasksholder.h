@@ -30,6 +30,8 @@ class FastTasksHolder
     std::map<int,std::set<std::time_t>> mHolderTimeSet;
     std::map<int,std::set<std::time_t>> mTimeSet;
 
+    std::map<int,std::map<long long,dataFastLoadTask>> mWrongNumberPacketsQueue;
+
 
     static const int iOutBuffMax {8192};
 

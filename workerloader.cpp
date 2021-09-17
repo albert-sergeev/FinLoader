@@ -1414,24 +1414,7 @@ void workerLoader::workerAmiClient(BlockFreeQueue<dataFinLoadTask> & /*queueFinQ
                             BlockFreeQueue<dataAmiPipeAnswer> &queuePipeAnswers,
                             BlockFreeQueue<dataFastLoadTask> &queueFastTasks,
                             AmiPipeHolder& pipesHolder)
-{
-    //    int iID = WorkerThreadCounter.load();
-    //    while (!WorkerThreadCounter.compare_exchange_weak(iID,iID + 1)) {;}
-    //    WorkerThreadID = iID;
-//    {
-//        ThreadFreeCout pcout;
-//        pcout <<"workerAmiClient in\n";
-//    }
-
-//    std::string sPath = "\\\\.\\pipe\\AmiBroker2QUIK_TQBR.SBER_TICKS";
-//    pipesHolder.testPipe.setPipePath(sPath);
-//    pipesHolder.testPipe.open();
-//    char testbuffer[1024];
-//    int iBytesRead{0};
-
-//    std::this_thread::sleep_for(std::chrono::microseconds(10));
-//    pipesHolder.testPipe.read(testbuffer,1024,iBytesRead);
-
+{   
         try{
             bool bSuccess{false};
             bool bLoop{true};
@@ -1485,13 +1468,8 @@ void workerLoader::workerAmiClient(BlockFreeQueue<dataFinLoadTask> & /*queueFinQ
                 }
                 else
                 {
-                    // TODO: to fast read. if uncomment there will be one tick packets.
-                    // Do some buffering maybe?
-                    // or read incoming message whole at once?
-                    //if (iBytesRead == 0)
-                    //if (!bWasFullBuffers)
+                    if (!bWasFullBuffers)
                     {
-                        //std::this_thread::sleep_for(std::chrono::microseconds(100));
                         std::this_thread::sleep_for(std::chrono::microseconds(100));
                     }
 
@@ -1505,10 +1483,6 @@ void workerLoader::workerAmiClient(BlockFreeQueue<dataFinLoadTask> & /*queueFinQ
             ThreadFreeCout pcout;
             pcout <<"crash ecxeption" <<ex.what()<<"\n";
         }
-//    {
-//        ThreadFreeCout pcout;
-//        pcout <<"workerAmiClient out\n";
-//    }
 }
 //------------------------------------------------------------------------------------------------------------------------------------------
 void workerLoader::workerFastDataWork( BlockFreeQueue<dataFastLoadTask>     &queueFastTasks,
