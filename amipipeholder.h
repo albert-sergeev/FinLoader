@@ -55,6 +55,7 @@ protected:
 
     std::map<int,long> mTask;
     std::map<int,long long> mPacketsCounter;
+    std::map<int,std::string> mPaperName;
 
     ePipeMode_type iMode {Byte_Nonblocking};
 
@@ -100,7 +101,7 @@ protected:
 
     void SendToLog      (BlockFreeQueue<dataAmiPipeAnswer> &queuePipeAnswers, const int iTickerID, const std::string &s);
     void SendToErrorLog (BlockFreeQueue<dataAmiPipeAnswer> &queuePipeAnswers, const int iTickerID, const std::string &s);
-    void dumpToFile     (BlockFreeQueue<dataAmiPipeAnswer> &queuePipeAnswers, const int iTickerID, const std::string &sFileName, const  char * cBuff, const size_t bytes, const int iReadStart);
+    void dumpToFile     (BlockFreeQueue<dataAmiPipeAnswer> &queuePipeAnswers, const int iTickerID, const std::string &sFileName, const  char * cBuff, const size_t bytes, const int iReadStart, const bool  bWriteHeader = true);
 
     //------------------------------------------------------------------------------------------------
 

@@ -1368,6 +1368,8 @@ void MainWindow::slotGraphViewWindow()
                                    QMessageBox::Ok
                                    );
     }
+    //ui->lstView->clearSelection();
+    //qml->clearSelection();
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::slotConfigWndow()

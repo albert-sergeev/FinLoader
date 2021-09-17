@@ -369,6 +369,8 @@ void AmiPipeHolder::AddUtilityMapEntry(int iTickerID, std::string sBind)
     mTask[iTickerID] = lTask;
     mPacketsCounter[iTickerID] = 1;
 
+    mPaperName[iTickerID] = "";
+
 }
 //-------------------------------------------------------------------------------------------------
 void AmiPipeHolder::RemoveUtilityMapEntry(int iTickerID, std::string sBind)
@@ -405,6 +407,11 @@ void AmiPipeHolder::RemoveUtilityMapEntry(int iTickerID, std::string sBind)
     if (ItPackets != mPacketsCounter.end()){
         mPacketsCounter.erase(ItPackets);
     }
+
+    auto ItName = mPaperName.find(iTickerID);
+    if (ItName != mPaperName.end()){
+        mPaperName.erase(ItName);
+    }
 }
 //-------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------
@@ -433,8 +440,13 @@ int AmiPipeHolder::ProcessReceivedBuffer(BlockFreeQueue<dataFastLoadTask>       
     unsigned long long longDate{0};
     double volume{0};
     double vC{0};
+    std::string strName;
 
     bool bInStream{false};
+    enum eStream:int {s0,s1,s2,sN,s6,s7,s8};
+    eStream streamNum{s0};
+    int16_t iStreamNameLen;
+
     int iBlockStart{0};
     int iReadStart{0};
 
@@ -447,12 +459,52 @@ int AmiPipeHolder::ProcessReceivedBuffer(BlockFreeQueue<dataFastLoadTask>       
     int i = ptrToRead;
     while(i < ptrToWrite){
         if(i >= 2 && !bInStream){
-            if(buff[i - 2] == 8 && buff[i - 1] == 0){
+            if(buff[i - 2] == 0 && buff[i - 1] == 0){ iReadStart = i;}
+            if(buff[i - 2] == 1 && buff[i - 1] == 0){ bInStream = true; streamNum = s1;}
+            if(buff[i - 2] == 2 && buff[i - 1] == 0){ bInStream = true; streamNum = s2;}
+            if(buff[i - 2] == 6 && buff[i - 1] == 0){ bInStream = true; streamNum = s6;}
+            if(buff[i - 2] == 7 && buff[i - 1] == 0){ bInStream = true; streamNum = s7;}
+            if(buff[i - 2] == 8 && buff[i - 1] == 0){ bInStream = true; streamNum = s8;}
+            iBlockStart = 0;
+        }
+        //----------------------------------------------------------------------------
+        if (bInStream && streamNum == s1 && iBlockStart >= 0){
+            bInStream = false;
+            iReadStart = i - iBlockStart;
+        }
+        else if (bInStream && streamNum == s2 && iBlockStart >= 4){
+            bInStream = false;
+            iReadStart = i - iBlockStart;
+            iReadStart+=2;
+            memcpy(&iStreamNameLen,buff + iReadStart, 2);     iReadStart += 2;
+
+            if(iStreamNameLen > 0){
                 bInStream = true;
+                streamNum = sN;
                 iBlockStart = 0;
             }
         }
-        if (bInStream && iBlockStart >= 48){
+        else if (bInStream && streamNum == sN && iBlockStart >= iStreamNameLen){
+
+            bInStream = false;
+            iReadStart = i - iBlockStart;
+            strName.resize(iStreamNameLen+1);
+            memcpy(strName.data(),buff + iReadStart, iStreamNameLen);     iReadStart += iStreamNameLen;
+
+            if (strName[iStreamNameLen] == '\0'){
+                strName.resize(iStreamNameLen);
+            }
+            else{
+                strName[iStreamNameLen+1] = '\0';
+            }
+            mPaperName[iTickerID] = strName;
+        }
+        else if (bInStream && (streamNum == s6 || streamNum == s7) && iBlockStart >= 4){
+            bInStream = false;
+            iReadStart = i - iBlockStart;
+            iReadStart += 4;
+        }
+        else if (bInStream && iBlockStart >= 48){
             bInStream = false;
             iReadStart = i - iBlockStart;
 
@@ -476,17 +528,13 @@ int AmiPipeHolder::ProcessReceivedBuffer(BlockFreeQueue<dataFastLoadTask>       
                 std::stringstream ss;
                 ss <<"error in time during import from pipe: "<<iTickerID<<"\n";
                 SendToErrorLog(queuePipeAnswers, iTickerID,ss.str());
-                //TODO: delete. for tests
-                std::stringstream ssfilename;
-                ssfilename <<"errdump_" << iTickerID <<".txt";
-                dumpToFile(queuePipeAnswers, iTickerID,ssfilename.str(),buff,ptrToWrite,iReadStart);
             }
         }
         ++i;
         ++iBlockStart;
     }
 
-    if(iReadStart > 0){
+    if(iReadStart > 0 && !task.vV.empty()){
         ptrToRead = iReadStart;
 
         int iDelta = ptrToWrite - iReadStart;
@@ -509,9 +557,9 @@ int AmiPipeHolder::ProcessReceivedBuffer(BlockFreeQueue<dataFastLoadTask>       
         }
     }
 
-    if(ptrToWrite + 48 > iBlockMaxSize){
+    if(ptrToWrite + 48 > iBlockMaxSize/2){
 
-        memcpy(buff,buff + ptrToWrite - 48, iBlockMaxSize - ptrToWrite + 48);
+        memcpy(buff,buff + ptrToWrite - 48, iBlockMaxSize/2 - ptrToWrite + 48);
         ptrToRead = 0;
         ptrToWrite = 48;
     }
@@ -564,8 +612,6 @@ void AmiPipeHolder::ReadConnectedPipes_bytemode_win32(BlockFreeQueue<dataFastLoa
 
             if (pip.read (buff + iWriteStart,iBytesToRead,iTotalBytesRead) || GetLastError() == ERROR_MORE_DATA){
 
-                //SendToErrorLog(queuePipeAnswers, iTickerID, "successfull read");
-
                 bSuccessfullRead = true;
                 mPointerToWrite[strBind] = iWriteStart + iTotalBytesRead;
                 BytesRead += iTotalBytesRead;
@@ -581,21 +627,10 @@ void AmiPipeHolder::ReadConnectedPipes_bytemode_win32(BlockFreeQueue<dataFastLoa
             }
             else{
                 if (GetLastError() == ERROR_NO_DATA)  {bSuccessfullRead = true;}
-
-//                std::stringstream ss;
-//                ss <<"GetLastError(){"<<GetLastError()<<"}\n";
-//                ss <<"ERROR_NO_DATA: {"<<ERROR_NO_DATA<<"}\n";
-//                ss <<"bSuccessfullRead: {"<<bSuccessfullRead<<"}\n";
-//                SendToErrorLog(queuePipeAnswers, iTickerID, ss.str());
-
             }
         }
-//        else{
-//            if (GetLastError() == ERROR_NO_DATA)  {bSuccessfullRead = true;}
-//        }
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         if(!bSuccessfullRead){
-
 
             /////////////////////////////////////////////////////////////////////
             std::stringstream ss;
@@ -955,31 +990,36 @@ void AmiPipeHolder::SendToErrorLog (BlockFreeQueue<dataAmiPipeAnswer> &queuePipe
     pcout <<s<<"\n";
 }
 //-------------------------------------------------------------------------------------------------
-void AmiPipeHolder::dumpToFile     (BlockFreeQueue<dataAmiPipeAnswer> &queuePipeAnswers,  const int iTickerID, const std::string &sFileName, const  char * cBuff, const size_t bytes, const int iReadStart)
+void AmiPipeHolder::dumpToFile     (BlockFreeQueue<dataAmiPipeAnswer> &queuePipeAnswers,  const int iTickerID, const std::string &sFileName, const  char * cBuff, const size_t bytes, const int iReadStart, const bool bWriteHeader)
 {
     std::filesystem::path pathFile = std::filesystem::absolute(pathCurr/sFileName);
 
-    std::ofstream fileW(pathFile,std::ios_base::app);
-    if (fileW.good()){
-        std::time_t t = std::chrono::system_clock::to_time_t( std::chrono::system_clock::now());
-        fileW <<"\n====================================================================\n";
-        fileW << threadfree_gmtime_to_str(&t)<<"\n";
-        fileW << "iReadStart: "<< iReadStart<<"\n";
-        fileW <<"====================================================================\n";
-        fileW.close();
-        //
-        std::ofstream fileW(pathFile,std::ios_base::app | std::ios_base::binary);
+    if (bWriteHeader){
+        std::ofstream fileW(pathFile,std::ios_base::app);
         if (fileW.good()){
-            if(fileW.write(cBuff,bytes)){
-                std::stringstream ss;
-                ss <<"Writing buff dump {"<<iTickerID<<"} bites: {"<<bytes<<"} FileName: {"<<sFileName<<"}";
-                SendToLog(queuePipeAnswers,iTickerID,ss.str());
-            }
-            else{
-                std::stringstream ss;
-                ss <<"Unsuccessful write buff dump operation {"<<iTickerID<<"} FileName: {"<<sFileName<<"}";
-                SendToErrorLog(queuePipeAnswers,iTickerID,ss.str());
-            }
+
+                std::time_t t = std::chrono::system_clock::to_time_t( std::chrono::system_clock::now());
+                fileW <<"\n====================================================================\n";
+                fileW << threadfree_gmtime_to_str(&t)<<"\n";
+                fileW << "iReadStart: "<< iReadStart<<"\n";
+                fileW <<"====================================================================\n";
+                fileW.close();
+
+        }
+        else{
+            std::stringstream ss;
+            ss <<"Unsuccessful write buff dump operation {"<<iTickerID<<"} FileName: {"<<sFileName<<"}";
+            SendToErrorLog(queuePipeAnswers,iTickerID,ss.str());
+            return;
+        }
+    }
+    //
+    std::ofstream fileW(pathFile,std::ios_base::app | std::ios_base::binary);
+    if (fileW.good()){
+        if(fileW.write(cBuff,bytes)){
+//                std::stringstream ss;
+//                ss <<"Writing buff dump {"<<iTickerID<<"} bites: {"<<bytes<<"} FileName: {"<<sFileName<<"}";
+//                SendToLog(queuePipeAnswers,iTickerID,ss.str());
         }
         else{
             std::stringstream ss;
