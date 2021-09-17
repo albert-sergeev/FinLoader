@@ -8,7 +8,7 @@ FastTasksHolder::FastTasksHolder()
 
 //--------------------------------------------------------------------------------------------------------
 void FastTasksHolder::PacketReceived(dataFastLoadTask &data,
-                                     Storage &/*stStore*/,
+                                     Storage &stStore,
                                      std::map<int,std::shared_ptr<GraphHolder>>& Holders,
                                      BlockFreeQueue<dataFastLoadTask> &queueFastTasks,
                                      BlockFreeQueue<dataAmiPipeAnswer>  &queuePipeAnswers
@@ -172,7 +172,7 @@ void FastTasksHolder::PacketReceived(dataFastLoadTask &data,
 //            }
             //////////////////////////////////////////////////////
             /// writing to database
-            //WriteVectorToStorage(iTickerID,tLastTime,strBuff,stTimeSet,stStore,data.vV,queuePipeAnswers);
+            WriteVectorToStorage(iTickerID,tLastTime,strBuff,stTimeSet,stStore,data.vV,queuePipeAnswers);
             //////////////////////////////////////////////////////
             /// set new last time
             tLastTime = data.vV.back().Period();

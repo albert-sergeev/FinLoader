@@ -94,6 +94,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     LoadDataStorage();
 
+    pipesHolder.setCurrentPath(stStore.GetCurrentPath());
+
     InitDockBar();
 
     connect(&m_TickerLstModel,SIGNAL(dataChanged(const QModelIndex &,const QModelIndex &)), this,SLOT(slotTickerDataStorageUpdate(const QModelIndex &,const QModelIndex &)));

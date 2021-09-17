@@ -23,6 +23,7 @@ class AmiPipeHolder
 {
 public:
     //typedef std::map<std::string,std::pair<int,std::tuple<std::string,std::string,std::string,int,int>>> pipes_type;    
+    enum ePipeMode_type:int {Byte_Nonblocking = 1,Message_Nonblocking = 2};
 protected:
 
     std::time_t t1971_01_01_00_00_00;
@@ -55,6 +56,10 @@ protected:
     std::map<int,long> mTask;
     std::map<int,long long> mPacketsCounter;
 
+    ePipeMode_type iMode {Byte_Nonblocking};
+
+    std::filesystem::path pathCurr;
+
     //////////////////////////////////////////////////////////////////////
     std::atomic<long> aiTaskCounter;
     //////////////////////////////////////////////////////////////////////
@@ -62,6 +67,8 @@ protected:
 
 public:
     AmiPipeHolder();
+
+    inline void setCurrentPath(std::filesystem::path path) {pathCurr = path;};
 
     static void CheckPipes(std::vector<Ticker> &vT,
                            dataAmiPipeTask::pipes_type & mBindedPipes,
@@ -77,7 +84,7 @@ public:
     void ReadConnectedPipes(BlockFreeQueue<dataFastLoadTask>                    &queueFastTasks,
                             BlockFreeQueue<dataAmiPipeAnswer>                   &queuePipeAnswers,
                             BlockFreeQueue<dataBuckgroundThreadAnswer>          &queueTrdAnswers,
-                            size_t & BytesRead,
+                            int & BytesRead,
                             bool & bWasFullBuffers
                             );
 
@@ -91,6 +98,50 @@ protected:
 
     void initStartConst();
 
+    void SendToLog      (BlockFreeQueue<dataAmiPipeAnswer> &queuePipeAnswers, const int iTickerID, const std::string &s);
+    void SendToErrorLog (BlockFreeQueue<dataAmiPipeAnswer> &queuePipeAnswers, const int iTickerID, const std::string &s);
+    void dumpToFile     (BlockFreeQueue<dataAmiPipeAnswer> &queuePipeAnswers, const int iTickerID, const std::string &sFileName, const  char * cBuff, const size_t bytes, const int iReadStart);
+
+    //------------------------------------------------------------------------------------------------
+
+    int ProcessReceivedBuffer(BlockFreeQueue<dataFastLoadTask>              &queueFastTasks,
+                              BlockFreeQueue<dataAmiPipeAnswer>             &queuePipeAnswers,
+                              BlockFreeQueue<dataBuckgroundThreadAnswer>    &queueTrdAnswers,
+                              const int iTickerID,
+                              dataFastLoadTask &task,
+                              char *buff,
+                              int &ptrToRead,
+                              int &ptrToWrite
+                              );
+protected:
+#ifdef _WIN32
+    void ReadConnectedPipes_bytemode_win32(BlockFreeQueue<dataFastLoadTask>     &queueFastTasks,
+                            BlockFreeQueue<dataAmiPipeAnswer>                   &queuePipeAnswers,
+                            BlockFreeQueue<dataBuckgroundThreadAnswer>          &queueTrdAnswers,
+                            int & BytesRead,
+                            bool & bWasFullBuffers
+                            );
+    void ReadConnectedPipes_messagemode_win32(BlockFreeQueue<dataFastLoadTask>        &queueFastTasks,
+                            BlockFreeQueue<dataAmiPipeAnswer>                   &queuePipeAnswers,
+                            BlockFreeQueue<dataBuckgroundThreadAnswer>          &queueTrdAnswers,
+                            int & BytesRead,
+                            bool & bWasFullBuffers
+                            );
+#else
+    void ReadConnectedPipes_bytemode_linux(BlockFreeQueue<dataFastLoadTask>     &queueFastTasks,
+                            BlockFreeQueue<dataAmiPipeAnswer>                   &queuePipeAnswers,
+                            BlockFreeQueue<dataBuckgroundThreadAnswer>          &queueTrdAnswers,
+                            int & BytesRead,
+                            bool & bWasFullBuffers
+                            );
+    void ReadConnectedPipes_messagemode_linux(BlockFreeQueue<dataFastLoadTask>        &queueFastTasks,
+                            BlockFreeQueue<dataAmiPipeAnswer>                   &queuePipeAnswers,
+                            BlockFreeQueue<dataBuckgroundThreadAnswer>          &queueTrdAnswers,
+                            int & BytesRead,
+                            bool & bWasFullBuffers
+                            );
+#endif
+    //------------------------------------------------------------------------------------------------
 };
 
 #endif // AMIPIPEHOLDER_H

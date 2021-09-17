@@ -1435,7 +1435,7 @@ void workerLoader::workerAmiClient(BlockFreeQueue<dataFinLoadTask> & /*queueFinQ
         try{
             bool bSuccess{false};
             bool bLoop{true};
-            size_t iBytesRead{0};
+            int iBytesRead{0};
             bool bWasFullBuffers{false};
             while(bLoop){
                 ///////////////////////////////////////////////////////////////////////////////
@@ -1489,8 +1489,9 @@ void workerLoader::workerAmiClient(BlockFreeQueue<dataFinLoadTask> & /*queueFinQ
                     // Do some buffering maybe?
                     // or read incoming message whole at once?
                     //if (iBytesRead == 0)
-                    if (!bWasFullBuffers)
+                    //if (!bWasFullBuffers)
                     {
+                        //std::this_thread::sleep_for(std::chrono::microseconds(100));
                         std::this_thread::sleep_for(std::chrono::microseconds(100));
                     }
 
