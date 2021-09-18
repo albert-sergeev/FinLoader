@@ -90,6 +90,7 @@ public:
     std::size_t GetShiftIndex()  const {return iShiftIndex;};
 
     void CloneGraph(Graph<T> &grNew,const size_t Start, const size_t End, const size_t LetShift);
+    bool shrink_extras_left(std::time_t dtEnd);
     //
 private:
     static size_t GetMoreThenIndex(std::vector<T> & v, std::time_t tT);
@@ -686,7 +687,25 @@ size_t Graph<T>::getIndex(const std::time_t t) const
     }
 }
 //------------------------------------------------------------------------------------------------------------
+template<typename T>
+bool Graph<T>::shrink_extras_left(std::time_t dtEnd)
+{
+    auto It = mDictionary.lower_bound(dtEnd);
+    if(It == mDictionary.end()) {return true;}
 
+    auto ItContEnd = std::next(vContainer.begin(),It->second);
+
+    vContainer.erase(vContainer.begin(),ItContEnd);
+    mDictionary.erase(mDictionary.begin(),It);
+
+    size_t iDelta = It->second;
+    while(It != mDictionary.end()){
+        It->second += iDelta;
+        ++It;
+    }
+    return true;
+}
+//------------------------------------------------------------------------------------------------------------
 template<typename T> template<typename T_SRC>
 //bool Graph<T>::BuildFromLowerList(Graph<BarTick> &grSrc, std::time_t dtStart,std::time_t dtEnd)
 bool Graph<T>::BuildFromLowerList(Graph<T_SRC> &grSrc, std::time_t dtStart,std::time_t dtEnd,

@@ -1935,20 +1935,6 @@ void MainWindow::BuildSessionsTableForFastTasks(FastTasksHolder & fastHolder)
     fastHolder.setRepoTable(mappedRepoTable);    
 }
 //--------------------------------------------------------------------------------------------------------------------------------
-/*
- * auto ItT (std::find_if(vTickersLst.begin(),vTickersLst.end(),[&](const Ticker &t){
-        return t.TickerID() == iTickerID;
-        }));
-    if (ItT != vTickersLst.end()){
-        auto ItM (std::find_if(vMarketsLst.begin(),vMarketsLst.end(),[&](const Market &m){
-            return m.MarketID() == ItT->MarketID();
-            }));
-        if (ItM != vMarketsLst.end()){
-            dataTask.vSessionTable  = ItM->SessionTable();
-            dataTask.vRepoTable     = ItM->RepoTable();
-        }
-    }
-*/
 //--------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------

@@ -61,7 +61,25 @@ GraphHolder::GraphHolder(GraphHolder && o):
 {
 
 }
+//------------------------------------------------------------------------------------------------------
+bool GraphHolder::shrink_extras_left(std::time_t dtEnd)
+{
+    std::unique_lock lk(mutexHolder);
 
+    bool bRet = graphTick.shrink_extras_left(dtEnd);
+    if (bRet) bRet = graph1.shrink_extras_left(dtEnd);
+    if (bRet) bRet = graph5.shrink_extras_left(dtEnd);
+    if (bRet) bRet = graph10.shrink_extras_left(dtEnd);
+    if (bRet) bRet = graph15.shrink_extras_left(dtEnd);
+    if (bRet) bRet = graph30.shrink_extras_left(dtEnd);
+    if (bRet) bRet = graph60.shrink_extras_left(dtEnd);
+    if (bRet) bRet = graph120.shrink_extras_left(dtEnd);
+    if (bRet) bRet = graph180.shrink_extras_left(dtEnd);
+    if (bRet) bRet = graphDay.shrink_extras_left(dtEnd);
+    if (bRet) bRet = graphMonth.shrink_extras_left(dtEnd);
+
+    return bRet;
+}
 //------------------------------------------------------------------------------------------------------
 bool GraphHolder::AddBarsLists(std::vector<std::vector<BarTick>> &v, std::time_t dtStart,std::time_t dtEnd)
 {

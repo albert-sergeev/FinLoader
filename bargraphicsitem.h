@@ -44,7 +44,7 @@ public:
         ss << "low: "   << b.Low()<<"\r\n";
         ss << "close: " << b.Close()<<"\r\n";
         ss << "volume: " << b.Volume();
-        //ss <<"\n"<< "index: " << iRealIndex<<"";
+        ss <<"\n"<< "index: " << iRealIndex<<"";
 
         this->setToolTip(QString::fromStdString(ss.str()));
     };
@@ -64,7 +64,7 @@ public:
         }
         ss << "close: " << b.Close()<<"\r\n";
         ss << "volume: " << b.Volume();
-        //ss <<"\n"<< "index: " << iRealIndex<<"";
+        ss <<"\n"<< "index: " << iRealIndex<<"";
         this->setToolTip(QString::fromStdString(ss.str()));
     };
 

@@ -4,6 +4,7 @@
 
 #include<QScrollBar>
 #include<QWheelEvent>
+#include<QMessageBox>
 
 #include<sstream>
 #include<iomanip>
@@ -1025,7 +1026,40 @@ void GraphViewForm::SetMinMaxDateToControls()
 //---------------------------------------------------------------------------------------------------------------
 void GraphViewForm::dateTimeBeginChanged(const QDateTime&)
 {
-    SetMinMaxDateToControls(); // keep old value
+
+    const QDate tmD(ui->dtBeginDate->date());
+
+    std::tm tmSt;
+    {
+        tmSt.tm_year   = tmD.year() - 1900;
+        tmSt.tm_mon    = tmD.month() - 1;
+        tmSt.tm_mday   = tmD.day();
+        tmSt.tm_hour   = 0;
+        tmSt.tm_min    = 0;
+        tmSt.tm_sec    = 0;
+        tmSt.tm_isdst  = 0;
+    }
+    std::time_t tS (mktime_gm(&tmSt));
+
+//    ThreadFreeCout pcout;
+//    pcout <<"begtime: "<<threadfree_gmtime_to_str(&tS)<<"\n";
+
+    if (tS < tStoredMinDate){
+        emit NeedLoadGraph(iTickerID, tS, tStoredMaxDate);
+        SetMinMaxDateToControls(); // keep old value
+    }
+    else if (tS > tStoredMinDate){
+        int n=QMessageBox::warning(0,tr("Warning"),
+                                   tr("Do you want to unload extra data?"),
+                                   QMessageBox::Yes|QMessageBox::Cancel
+                                   );
+        if (n==QMessageBox::Yes){
+            tStoredMinDate = tS;
+            holder->shrink_extras_left(tS);
+            Erase();
+            emit NeedLoadGraph(iTickerID, tS, tStoredMaxDate);
+        }
+    }
 }
 //---------------------------------------------------------------------------------------------------------------
 void GraphViewForm::dateTimeEndChanged(const QDateTime&)
