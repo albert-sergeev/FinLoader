@@ -1928,11 +1928,11 @@ void MainWindow::BuildSessionsTableForFastTasks(FastTasksHolder & fastHolder)
             return m.MarketID() == t.MarketID();
             }));
         if (ItM != vMarketsLst.end()){
-            mappedRepoTable[t.MarketID()] = ItM->RepoTable();
+            mappedRepoTable[t.TickerID()] = ItM->RepoTable();
         }
     }
     ////
-    fastHolder.setRepoTable(mappedRepoTable);
+    fastHolder.setRepoTable(mappedRepoTable);    
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 /*
