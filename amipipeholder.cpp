@@ -637,18 +637,25 @@ void AmiPipeHolder::ReadConnectedPipes_bytemode_win32(BlockFreeQueue<dataFastLoa
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         if(!bSuccessfullRead){
 
-            /////////////////////////////////////////////////////////////////////
-            std::stringstream ss;
-            ss <<"-----------------------------------------------------\n";
-            ss <<"halt dump:\n";
-            if (mBuffer.find(strBind) != mBuffer.end()){ss <<"mBuffer[strBind].size(): "<<mBuffer[strBind].size()<<"\n";}
-            else                                        {ss <<"mBuffer[strBind] not found!!!\n";}
-            ss <<"strBind: {"<<strBind<<"}\n";
-            ss <<"iWriteStart: "<<iWriteStart<<"\n";
-            ss <<"iBytesToRead: "<<iBytesToRead<<"\n";
-            ss <<"iTotalBytesRead: "<<iTotalBytesRead<<"\n";
-            SendToErrorLog(queuePipeAnswers, iTickerID, ss.str());
-            /////////////////////////////////////////////////////////////////////
+            if (GetLastError() != 233){ // server close connection
+                /////////////////////////////////////////////////////////////////////
+                std::stringstream ss;
+                ss <<"-----------------------------------------------------\n";
+                ss <<"halt dump:\n";
+                if (mBuffer.find(strBind) != mBuffer.end()){ss <<"mBuffer[strBind].size(): "<<mBuffer[strBind].size()<<"\n";}
+                else                                        {ss <<"mBuffer[strBind] not found!!!\n";}
+                ss <<"strBind: {"<<strBind<<"}\n";
+                ss <<"iWriteStart: "<<iWriteStart<<"\n";
+                ss <<"iBytesToRead: "<<iBytesToRead<<"\n";
+                ss <<"iTotalBytesRead: "<<iTotalBytesRead<<"\n";
+                SendToErrorLog(queuePipeAnswers, iTickerID, ss.str());
+                /////////////////////////////////////////////////////////////////////
+            }
+            else{
+                std::stringstream ss;
+                ss <<"server close connection on {"<<iTickerID<<"} {"<<strBind<<"}";
+                SendToErrorLog(queuePipeAnswers, iTickerID, ss.str());
+            }
             try{
                 ItConnected->second.second.second.close();
             }

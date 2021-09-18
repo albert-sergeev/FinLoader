@@ -204,8 +204,11 @@ bool Win32NamedPipe::read(char * buff, int buffsize, int &bytesRead)
 
 
     if (!fSuccess && GetLastError() != ERROR_MORE_DATA && GetLastError() != ERROR_NO_DATA){
-        ThreadFreeCout pcout;
-        pcout <<"ReadFile error. GLE={"<<GetLastError()<<"} <"<<cbRead<<">\n";
+        if (GetLastError() != 233)
+        {
+            ThreadFreeCout pcout;
+            pcout <<"ReadFile error. GLE={"<<GetLastError()<<"} <"<<cbRead<<">\n";
+        }
         pipeState = ePipeState_type::Error;
         return false;
     }
