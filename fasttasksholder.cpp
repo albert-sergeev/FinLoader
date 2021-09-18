@@ -97,6 +97,8 @@ void FastTasksHolder::PacketReceived(dataFastLoadTask &data,
     std::set<std::time_t>   & stHolderTimeSet                       = mHolderTimeSet[iTickerID];
     std::map<long long,dataFastLoadTask> &mOldPacketsQueue          = mWrongNumberPacketsQueue[iTickerID];
 
+    std::shared_ptr<std::map<int,Market::SessionTable_type>> shptrRepoM = getRepoTable();
+
     ////////////////////////////////////////////////////////////////////////////
     /// 2.2 Unlock global mutex
     lkMap.unlock();
@@ -127,11 +129,28 @@ void FastTasksHolder::PacketReceived(dataFastLoadTask &data,
 
         while(true){
             if(v.size()>0){
+                std::time_t tLastPacketTime = v.back().Period();
+                //////////////////////////////////////////////////////
+                /// writing to database
+                WriteVectorToStorage(iTickerID,tLastTime,strBuff,stTimeSet,stStore,v,queuePipeAnswers);
+                //////////////////////////////////////////////////////
+                /// set new last time
+                tLastTime = v.back().Period();
                 //////////////////////////////////////////////////////
                 /// adding to holder
                 std::pair<std::time_t,std::time_t> pairRange;
                 dataAmiPipeAnswer answ;
                 answ.ptrHolder = std::make_shared<GraphHolder>(GraphHolder{iTickerID});
+
+                if (shptrRepoM){
+                    FilterPacket(v,(*shptrRepoM)[iTickerID]);
+                }
+                else{
+                    std::stringstream ss;
+                    ss <<"Session (repo) table for ticker  {"<<iTickerID<<"} not set!";
+                    answ.SetErrString(ss.str());
+                    queuePipeAnswers.Push(answ);
+                }
 
                 if (!holder->AddBarsListsFast(v,stHolderTimeSet,pairRange,*answ.ptrHolder) &&
                         !this_thread_flagInterrup.isSet()){
@@ -155,19 +174,13 @@ void FastTasksHolder::PacketReceived(dataFastLoadTask &data,
                 //////////////////////////////////////////////////////
                 /// show activity
                 std::time_t tLast = lastTimePacketReceived.load();
-                if (tLast < v.back().Period()){
-                    while(!lastTimePacketReceived.compare_exchange_weak(tLast,v.back().Period())){
-                        if (tLast < v.back().Period()){
+                if (tLast < tLastPacketTime){
+                    while(!lastTimePacketReceived.compare_exchange_weak(tLast,tLastPacketTime)){
+                        if (tLast < tLastPacketTime){
                             break;
                         }
                     }
                 }
-                //////////////////////////////////////////////////////
-                /// writing to database
-                WriteVectorToStorage(iTickerID,tLastTime,strBuff,stTimeSet,stStore,v,queuePipeAnswers);
-                //////////////////////////////////////////////////////
-                /// set new last time
-                tLastTime = v.back().Period();
                 //////////////////////////////////////////////////////
                 /// cleaning too old sets for 24/7 worktime
                 if(!stTimeSet.empty()){
@@ -385,9 +398,33 @@ int FastTasksHolder::createCleanPackets(std::time_t tMonth, char* cBuff,int iBuf
     return iBuffPointer;
 }
 //--------------------------------------------------------------------------------------------------------
+void FastTasksHolder::setRepoTable(const std::map<int,Market::SessionTable_type>&  mappedRepoTable)
+{
+    std::unique_lock lk(mutexSessionTables);
+
+    shptrMappedRepoTable = std::make_shared<std::map<int,Market::SessionTable_type>>(std::map<int,Market::SessionTable_type>{mappedRepoTable});
+}
 //--------------------------------------------------------------------------------------------------------
+std::shared_ptr<std::map<int,Market::SessionTable_type>> FastTasksHolder::getRepoTable()
+{
+    std::shared_lock lk(mutexSessionTables);
+    std::shared_ptr<std::map<int,Market::SessionTable_type>> shRet = shptrMappedRepoTable;
+    return shRet;
+}
 //--------------------------------------------------------------------------------------------------------
-//--------------------------------------------------------------------------------------------------------
-//--------------------------------------------------------------------------------------------------------
+void FastTasksHolder::FilterPacket(std::vector<BarTick> &v,Market::SessionTable_type &repoTable)
+{
+    auto ItEnd = std::accumulate(v.begin(),v.end(),v.begin(),[&](auto It,const auto &b){
+                    if(!Market::IsInSessionTabe(repoTable,b.Period())){
+                        if (&(*It) != &b) *It = b;
+                        ++It;
+                    }
+                    return It;
+                });
+
+    //
+    size_t tNewSize = std::distance(v.begin(),ItEnd);
+    v.resize(tNewSize);
+}
 //--------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------

@@ -288,6 +288,8 @@ protected slots: // for main window
     void CheckActiveProcesses();
     void CheckLastPacketTime();
 
+    void BuildSessionsTableForFastTasks(FastTasksHolder &);
+
 
 private:
     //std::vector<std::vector<Bar>> testPvBars; // TODO: delete. for tests

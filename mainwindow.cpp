@@ -95,6 +95,7 @@ MainWindow::MainWindow(QWidget *parent)
     LoadDataStorage();
 
     pipesHolder.setCurrentPath(stStore.GetCurrentPath());
+    BuildSessionsTableForFastTasks(fastHolder);
 
     InitDockBar();
 
@@ -1918,6 +1919,41 @@ void MainWindow::slotAmiPipeSaveShowByNamesOff(bool b)
     SaveSettings();
 }
 //--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::BuildSessionsTableForFastTasks(FastTasksHolder & fastHolder)
+{
+    std::map<int,Market::SessionTable_type>  mappedRepoTable;
+
+    for (const auto &t:vTickersLst){
+        auto ItM (std::find_if(vMarketsLst.begin(),vMarketsLst.end(),[&](const Market &m){
+            return m.MarketID() == t.MarketID();
+            }));
+        if (ItM != vMarketsLst.end()){
+            mappedRepoTable[t.MarketID()] = ItM->RepoTable();
+        }
+    }
+    ////
+    fastHolder.setRepoTable(mappedRepoTable);
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+/*
+ * auto ItT (std::find_if(vTickersLst.begin(),vTickersLst.end(),[&](const Ticker &t){
+        return t.TickerID() == iTickerID;
+        }));
+    if (ItT != vTickersLst.end()){
+        auto ItM (std::find_if(vMarketsLst.begin(),vMarketsLst.end(),[&](const Market &m){
+            return m.MarketID() == ItT->MarketID();
+            }));
+        if (ItM != vMarketsLst.end()){
+            dataTask.vSessionTable  = ItM->SessionTable();
+            dataTask.vRepoTable     = ItM->RepoTable();
+        }
+    }
+*/
+//--------------------------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------------------
+
 
 
 

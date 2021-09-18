@@ -17,8 +17,8 @@ inline std::shared_mutex mutexMainHolder;
 class FastTasksHolder
 {
     std::shared_mutex mutexUtilityMaps;
-
     std::map<int,std::shared_mutex>   mUtilityMutexes;
+    std::shared_mutex mutexSessionTables;
 
     std::map<int,long>   mTask;
     std::map<int,long long>   mPacketsCounter;
@@ -32,6 +32,7 @@ class FastTasksHolder
 
     std::map<int,std::map<long long,dataFastLoadTask>> mWrongNumberPacketsQueue;
 
+    std::shared_ptr<std::map<int,Market::SessionTable_type>>  shptrMappedRepoTable;
 
     static const int iOutBuffMax {8192};
 
@@ -44,6 +45,8 @@ public:
                         std::map<int,std::shared_ptr<GraphHolder>>& Holders,
                         BlockFreeQueue<dataFastLoadTask> &queueFastTasks,
                         BlockFreeQueue<dataAmiPipeAnswer>  &queuePipeAnswers);
+
+    void setRepoTable(const std::map<int,Market::SessionTable_type>&  mappedRepoTable);
 
 private:
     void WriteVectorToStorage(int iTickerID,
@@ -59,6 +62,11 @@ private:
                            int iBuffPointer,
                            std::time_t tBegin,
                            std::time_t tEnd);
+
+
+    std::shared_ptr<std::map<int,Market::SessionTable_type>> getRepoTable();
+
+    void FilterPacket(std::vector<BarTick> &v,Market::SessionTable_type &repoTable);
 };
 
 #endif // FASTTASKSHOLDER_H
