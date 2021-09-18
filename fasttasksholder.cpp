@@ -414,7 +414,8 @@ std::shared_ptr<std::map<int,Market::SessionTable_type>> FastTasksHolder::getRep
 //--------------------------------------------------------------------------------------------------------
 void FastTasksHolder::FilterPacket(std::vector<BarTick> &v,Market::SessionTable_type &repoTable)
 {
-    auto ItEnd = std::accumulate(v.begin(),v.end(),v.begin(),[&](auto It,const auto &b){
+    auto It (v.begin());
+    auto ItEnd = std::accumulate(v.begin(),v.end(),It,[&](auto &It,const auto &b){
                     if(!Market::IsInSessionTabe(repoTable,b.Period())){
                         if (&(*It) != &b) *It = b;
                         ++It;
