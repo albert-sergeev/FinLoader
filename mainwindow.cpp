@@ -94,6 +94,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     LoadDataStorage();
 
+    std::copy(vTickersLst.begin(),vTickersLst.end(),std::back_inserter(vTickersLstEtalon));
+
     pipesHolder.setCurrentPath(stStore.GetCurrentPath());
     BuildSessionsTableForFastTasks(fastHolder);
 
@@ -714,7 +716,7 @@ void MainWindow::slotTickerDataStorageUpdate(const QModelIndex & indxL,const QMo
     try{
         //qDebug()<<"store indexes: {"<<indxL.row()<<":"<<indxR.row()<<"}";
         for (int i = indxL.row(); i <= indxR.row(); ++i){
-            stStore.SaveTickerConfig(vTickersLst[i]);
+            slotSaveTickerConigRef(vTickersLst[i]);
         }
     }
     catch (std::exception &e){
@@ -730,7 +732,6 @@ void MainWindow::slotTickerDataStorageRemove(const Ticker & tT)
     try{
         //std::cout<<"remove ticker: {"<<tT.TickerID()<<":"<<tT.TickerSign()<<"}";
         stStore.SaveTickerConfig(tT,Storage::op_type::remove);
-
     }
     catch (std::exception &e){
         //
@@ -739,6 +740,30 @@ void MainWindow::slotTickerDataStorageRemove(const Ticker & tT)
         //
     }
 }
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotSaveTickerConig(const Ticker tT, const bool bFull)
+{
+    slotSaveTickerConigRef(tT, bFull);
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotSaveTickerConigRef(const Ticker & tT, bool bFull)
+{
+    auto It (std::find_if(vTickersLstEtalon.begin(),vTickersLstEtalon.end(),[&](const auto &t){
+                  return t.TickerID() == tT.TickerID();
+                }));
+
+    if (It == vTickersLstEtalon.end()
+            || (bFull && !It->equalFull(tT))
+            || (!bFull && !It->equal(tT))
+            ){
+
+        if (It == vTickersLstEtalon.end())  {vTickersLstEtalon.push_back(tT);}
+        else                                {*It = tT;}
+
+        stStore.SaveTickerConfig(tT);
+    }
+}
+
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::SaveDataStorage()
 {
@@ -1623,8 +1648,10 @@ void MainWindow::slotSetSelectedTicker(const  int iTickerID)
                   this,SLOT(slotLoadGraph(const  int,const std::time_t,const std::time_t)));
 
         connect(pdoc,SIGNAL(SendToLog(QString)),this,SIGNAL(SendToLog(QString)));
-
         connect(this,SIGNAL(slotSendSignalToProcessRepaintQueue()),pdoc,SLOT(slotProcessRepaintQueue()));
+        connect(pdoc,SIGNAL(NeedSaveTickerConig(const Ticker, const bool)),this,SLOT(slotSaveTickerConig(const Ticker, const bool)));
+
+        connect(this,SIGNAL(SaveUnsavedConfigs()),pdoc,SLOT(slotSaveUnsavedConfigs()));
 
 
         pdoc->setFramesVisibility(tp);

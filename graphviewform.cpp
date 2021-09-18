@@ -16,7 +16,7 @@
 
 //---------------------------------------------------------------------------------------------------------------
 GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::shared_ptr<GraphHolder> hldr, QWidget *parent) :
-    QWidget(parent),    
+    QWidget(parent),
     iTickerID{TickerID},
     tTicker{0,"","",1},
     vTickersLst{v},
@@ -55,6 +55,7 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
     lt1->addWidget(swtCandle);
     swtCandle->SetOnColor(QPalette::Window,colorDarkGreen);
     swtCandle->SetOffColor(QPalette::Window,colorDarkRed);
+    connect(swtCandle,SIGNAL(stateChanged(int)),this,SLOT(slotCandleStateChanged(int)));
     //-------------------------------------------------------------
 
     btnScaleHViewPlus       = new PlusButton(true,this);
@@ -99,41 +100,45 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
     }
     tTicker = (*It);
     this->setWindowTitle(QString::fromStdString(tTicker.TickerSign()));
-    //------------------------------
+    //-------------------------------------------------------------------------------------
     // TODO: save default selected interval other settings
 
-    iSelectedInterval   = Bar::eInterval::pTick;
-    //iMaxGraphViewSize   = 0;
-    dHScale             = 1;
-    bOHLC               = true;
+    iSelectedInterval   = tTicker.StoredSelectedInterval();
+    dStoredVValue       = tTicker.StoredVValue();
+    dHScale             = tTicker.StoredHScale() == 0 ? 1 : tTicker.StoredHScale();
+    bOHLC               = tTicker.OHLC();
+    swtCandle->setChecked(bOHLC);
 
-    mVScale[Bar::eInterval::pTick]      = 0;
-    mVScale[Bar::eInterval::p1]         = 0;
-    mVScale[Bar::eInterval::p5]         = 0;
-    mVScale[Bar::eInterval::p10]        = 0;
-    mVScale[Bar::eInterval::p15]        = 0;
-    mVScale[Bar::eInterval::p30]        = 0;
-    mVScale[Bar::eInterval::p60]        = 0;
-    mVScale[Bar::eInterval::p120]       = 0;
-    mVScale[Bar::eInterval::p180]       = 0;
-    mVScale[Bar::eInterval::pDay]       = 0;
-    mVScale[Bar::eInterval::pWeek]      = 0;
-    mVScale[Bar::eInterval::pMonth]     = 0;
+    tStoredRightPointPosition           = tTicker.StoredTimePosition();
+    iStoredRightAggregate               = tTicker.StoredRightAggregate();
 
-    mVVolumeScale[Bar::eInterval::pTick]      = 0;
-    mVVolumeScale[Bar::eInterval::p1]         = 0;
-    mVVolumeScale[Bar::eInterval::p5]         = 0;
-    mVVolumeScale[Bar::eInterval::p10]        = 0;
-    mVVolumeScale[Bar::eInterval::p15]        = 0;
-    mVVolumeScale[Bar::eInterval::p30]        = 0;
-    mVVolumeScale[Bar::eInterval::p60]        = 0;
-    mVVolumeScale[Bar::eInterval::p120]       = 0;
-    mVVolumeScale[Bar::eInterval::p180]       = 0;
-    mVVolumeScale[Bar::eInterval::pDay]       = 0;
-    mVVolumeScale[Bar::eInterval::pWeek]      = 0;
-    mVVolumeScale[Bar::eInterval::pMonth]     = 0;
+    mVScale[Bar::eInterval::pTick]      = tTicker.StoredVScale(Bar::eInterval::pTick);
+    mVScale[Bar::eInterval::p1]         = tTicker.StoredVScale(Bar::eInterval::p1);
+    mVScale[Bar::eInterval::p5]         = tTicker.StoredVScale(Bar::eInterval::p5);
+    mVScale[Bar::eInterval::p10]        = tTicker.StoredVScale(Bar::eInterval::p10);
+    mVScale[Bar::eInterval::p15]        = tTicker.StoredVScale(Bar::eInterval::p15);
+    mVScale[Bar::eInterval::p30]        = tTicker.StoredVScale(Bar::eInterval::p30);
+    mVScale[Bar::eInterval::p60]        = tTicker.StoredVScale(Bar::eInterval::p60);
+    mVScale[Bar::eInterval::p120]       = tTicker.StoredVScale(Bar::eInterval::p120);
+    mVScale[Bar::eInterval::p180]       = tTicker.StoredVScale(Bar::eInterval::p180);
+    mVScale[Bar::eInterval::pDay]       = tTicker.StoredVScale(Bar::eInterval::pDay);
+    mVScale[Bar::eInterval::pWeek]      = tTicker.StoredVScale(Bar::eInterval::pWeek);
+    mVScale[Bar::eInterval::pMonth]     = tTicker.StoredVScale(Bar::eInterval::pMonth);
 
-    //------------------------------
+    mVVolumeScale[Bar::eInterval::pTick]      = tTicker.StoredVVolumeScale(Bar::eInterval::pTick);
+    mVVolumeScale[Bar::eInterval::p1]         = tTicker.StoredVVolumeScale(Bar::eInterval::p1);
+    mVVolumeScale[Bar::eInterval::p5]         = tTicker.StoredVVolumeScale(Bar::eInterval::p5);
+    mVVolumeScale[Bar::eInterval::p10]        = tTicker.StoredVVolumeScale(Bar::eInterval::p10);
+    mVVolumeScale[Bar::eInterval::p15]        = tTicker.StoredVVolumeScale(Bar::eInterval::p15);
+    mVVolumeScale[Bar::eInterval::p30]        = tTicker.StoredVVolumeScale(Bar::eInterval::p30);
+    mVVolumeScale[Bar::eInterval::p60]        = tTicker.StoredVVolumeScale(Bar::eInterval::p60);
+    mVVolumeScale[Bar::eInterval::p120]       = tTicker.StoredVVolumeScale(Bar::eInterval::p120);
+    mVVolumeScale[Bar::eInterval::p180]       = tTicker.StoredVVolumeScale(Bar::eInterval::p180);
+    mVVolumeScale[Bar::eInterval::pDay]       = tTicker.StoredVVolumeScale(Bar::eInterval::pDay);
+    mVVolumeScale[Bar::eInterval::pWeek]      = tTicker.StoredVVolumeScale(Bar::eInterval::pWeek);
+    mVVolumeScale[Bar::eInterval::pMonth]     = tTicker.StoredVVolumeScale(Bar::eInterval::pMonth);
+
+    //-------------------------------------------------------------------------------------
 
     grScene = new QGraphicsScene();
     ui->grViewQuotes->setScene(grScene);
@@ -234,8 +239,6 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
     ui->grViewScaleUpper->horizontalScrollBar()->installEventFilter(this);
     ui->grViewVolume->horizontalScrollBar()->installEventFilter(this);
     ui->grViewScaleLower->horizontalScrollBar()->installEventFilter(this);
-
-
 
    // {ThreadFreeCout pcout; pcout<<"const out\n";}
 
@@ -519,6 +522,12 @@ void GraphViewForm::slotVerticalScrollBarValueChanged(int iV)
     ui->grViewR1->verticalScrollBar()->setValue(iV);
     ui->grViewQuotes->verticalScrollBar()->setValue(iV);
     ui->grVertScroll->verticalScrollBar()->setValue(iV);
+
+    //dStoredVValue;
+    {
+//        ThreadFreeCout pcout;
+//        pcout <<"verticalV {"<<iV<<"}\n";
+    }
 }
 //---------------------------------------------------------------------------------------------------------------
 void GraphViewForm::slotHorizontalScrollBarValueChanged(int iH)
@@ -1099,6 +1108,10 @@ void GraphViewForm::setFramesVisibility(std::tuple<bool,bool,bool,bool,bool> tp)
 //---------------------------------------------------------------------------------------------------------------
 void GraphViewForm::RepositionPlusMinusButtons()
 {
+    {
+        ThreadFreeCout pcout;
+        pcout <<"reposition\n";
+    }
     QRect rectQ = ui->grViewQuotes->rect();
     QPoint pQ   = ui->grViewQuotes->pos();
     QPoint pV   = ui->grViewVolume->pos();
@@ -1289,7 +1302,7 @@ void GraphViewForm::slotPeriodButtonChanged()
  bool GraphViewForm::PaintBars (std::shared_ptr<GraphHolder> local_holder,int iStartI, int iEndI ,
                                 bool bPaintBars, bool bPaintVolumes,
                                 bool bStoreRightPos, bool bReplacementMode)
- {
+{
 //     {
 //         ThreadFreeCout pcout;
 //         pcout << "PaintBars <"<<iStartI<<":"<<iEndI<<">\n";
@@ -1488,9 +1501,10 @@ void GraphViewForm::slotPeriodButtonChanged()
          }
      }
      return true;
- }
+}
  //---------------------------------------------------------------------------------------------------------------
- void GraphViewForm::ReDoHLines(){
+void GraphViewForm::ReDoHLines()
+{
      double realH = dStoredHighMax - dStoredLowMin;
      double viewPortH = realYtoSceneY(dStoredHighMax) - realYtoSceneY(dStoredLowMin);
 
@@ -1505,17 +1519,17 @@ void GraphViewForm::slotPeriodButtonChanged()
          vHLines.push_back({dCurrent,false});
          dCurrent +=  dStep;
      }
- }
- //---------------------------------------------------------------------------------------------------------------
- void GraphViewForm::RefreshHLines()
- {
+}
+//---------------------------------------------------------------------------------------------------------------
+void GraphViewForm::RefreshHLines()
+{
      for (auto &d: vHLines){
          d.second = false;
      }
- }
- //---------------------------------------------------------------------------------------------------------------
- bool GraphViewForm::PaintHorizontalFrames       ()
- {
+}
+//---------------------------------------------------------------------------------------------------------------
+bool GraphViewForm::PaintHorizontalFrames       ()
+{
      // TODO: paint only viewport
 //     if (vHLines.size() > 1){
 //         double dDelta = realYtoSceneY(vHLines[1].first) - realYtoSceneY(vHLines[0].first);
@@ -1578,10 +1592,10 @@ void GraphViewForm::slotPeriodButtonChanged()
          }
      }
      return true;
- }
- //---------------------------------------------------------------------------------------------------------------
- bool GraphViewForm::PaintVerticalSideScales     ()
- {
+}
+//---------------------------------------------------------------------------------------------------------------
+bool GraphViewForm::PaintVerticalSideScales     ()
+{
      QRectF rL = ui->grViewL1->scene()->sceneRect();
      QRectF rR = ui->grViewR1->scene()->sceneRect();
 
@@ -1616,13 +1630,13 @@ void GraphViewForm::slotPeriodButtonChanged()
      }
 
      return true;
- }
- //---------------------------------------------------------------------------------------------------------------
- bool GraphViewForm::PaintVerticalFrames ( std::shared_ptr<GraphHolder> local_holder, int iStart, int iEnd,
+}
+//---------------------------------------------------------------------------------------------------------------
+bool GraphViewForm::PaintVerticalFrames ( std::shared_ptr<GraphHolder> local_holder, int iStart, int iEnd,
                                            int iLeftStock,
                                            bool bReplacementMode,
                                            bool bInvalidate)
- {
+{
      if (!bReplacementMode){
          if (!local_holder) return true;
          bool bSuccess;
@@ -1649,14 +1663,14 @@ void GraphViewForm::slotPeriodButtonChanged()
              return PainVerticalFramesT<Bar>       (local_holder, iStart, iEnd,iLeftStock,bReplacementMode,bInvalidate);
          }
      }
- }
- //---------------------------------------------------------------------------------------------------------------
- template<typename T>
- bool GraphViewForm::PainVerticalFramesT(std::shared_ptr<GraphHolder> local_holder,int iBegSrc, int iEndSrc,
+}
+//---------------------------------------------------------------------------------------------------------------
+template<typename T>
+bool GraphViewForm::PainVerticalFramesT(std::shared_ptr<GraphHolder> local_holder,int iBegSrc, int iEndSrc,
                                          int iLeftStock,
                                          bool bReplacementMode,
                                          bool bInvalidate)
- {
+{
 
      const Graph<T>  grTmp(iTickerID,iSelectedInterval);
      const Graph<T>& graph = !bReplacementMode  ? local_holder->getGraph<T>(iSelectedInterval)              : grTmp;
@@ -1972,10 +1986,10 @@ void GraphViewForm::slotPeriodButtonChanged()
      }
      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
      return true;
- }
- //---------------------------------------------------------------------------------------------------------------
- bool GraphViewForm::PaintHorizontalScales()
- {
+}
+//---------------------------------------------------------------------------------------------------------------
+bool GraphViewForm::PaintHorizontalScales()
+{
 
      QColor color(204, 122, 0,155);// orange
      QPen Pen(color,1,Qt::DashLine);
@@ -2011,10 +2025,10 @@ void GraphViewForm::slotPeriodButtonChanged()
      }
 
      return true;
- }
- //---------------------------------------------------------------------------------------------------------------
- void GraphViewForm::SetSliderToPos(std::time_t tRightPos, int iRightAggregate)
- {
+}
+//---------------------------------------------------------------------------------------------------------------
+void GraphViewForm::SetSliderToPos(std::time_t tRightPos, int iRightAggregate)
+{
      if (iSelectedInterval == Bar::eInterval::pTick){
          SetSliderToPosT<BarTick>(tRightPos, iRightAggregate);
      }
@@ -2049,10 +2063,10 @@ void GraphViewForm::slotPeriodButtonChanged()
         ui->grViewQuotes->horizontalScrollBar()->setValue(xCur);
         ui->grHorizScroll->horizontalScrollBar()->setValue(xCur);
      }
- }
- //---------------------------------------------------------------------------------------------------------------
- std::pair<int,int> GraphViewForm::getViewPortRangeToHolder()
- {
+}
+//---------------------------------------------------------------------------------------------------------------
+std::pair<int,int> GraphViewForm::getViewPortRangeToHolder()
+{
      int iBeg = ui->grViewQuotes->horizontalScrollBar()->value();
      int iEnd = iBeg + ui->grViewQuotes->horizontalScrollBar()->pageStep();
 
@@ -2070,10 +2084,10 @@ void GraphViewForm::slotPeriodButtonChanged()
          iEnd = ((rS.width()/dHScale)/(double)BarGraphicsItem::BarWidth) - iLeftShift;
      }
      return {iBeg,iEnd};
- }
- //---------------------------------------------------------------------------------------------------------------
- void GraphViewForm::slotFastShowEvent(std::shared_ptr<GraphHolder> ptrHolder)
- {
+}
+//---------------------------------------------------------------------------------------------------------------
+void GraphViewForm::slotFastShowEvent(std::shared_ptr<GraphHolder> ptrHolder)
+{
 
 
 
@@ -2113,8 +2127,8 @@ void GraphViewForm::slotPeriodButtonChanged()
 //          else{
 //              PaintBarsFastT<Bar>(0, 0, ptrHolder);
 //          }
- }
- //---------------------------------------------------------------------------------------------------------------
+}
+//---------------------------------------------------------------------------------------------------------------
 // template<typename T>
 // void GraphViewForm::PaintBarsFastT(std::time_t /*tBegin*/, std::time_t /*tEnd*/,std::shared_ptr<GraphHolder> ptrHolder)
 // {
@@ -2170,8 +2184,8 @@ void GraphViewForm::slotPeriodButtonChanged()
 //     }
 // }
 
- //---------------------------------------------------------------------------------------------------------------
- void GraphViewForm::init_const(){
+//---------------------------------------------------------------------------------------------------------------
+void GraphViewForm::init_const(){
 
      QGraphicsTextItem itemNumb1("0");
      itemNumb1.setFont(fontNumb);
@@ -2185,13 +2199,10 @@ void GraphViewForm::slotPeriodButtonChanged()
      itemTime.setFont(fontTime);
      iConstWidthTime = ((itemTime.boundingRect().width() + 2) / BarGraphicsItem::BarWidth) / dHScale - 1;
 
- }
-
-
-
- //---------------------------------------------------------------------------------------------------------------
- bool GraphViewForm::eventFilter(QObject *watched, QEvent *event)
- {
+}
+//---------------------------------------------------------------------------------------------------------------
+bool GraphViewForm::eventFilter(QObject *watched, QEvent *event)
+{
      if (    watched == ui->grViewQuotes
              || watched == ui->grViewScaleUpper
              || watched == ui->grViewVolume
@@ -2266,9 +2277,45 @@ void GraphViewForm::slotPeriodButtonChanged()
          }
      }
      return QObject::eventFilter(watched, event);
- }
- //---------------------------------------------------------------------------------------------------------------
- //---------------------------------------------------------------------------------------------------------------
- //---------------------------------------------------------------------------------------------------------------
+}
+//---------------------------------------------------------------------------------------------------------------
+bool GraphViewForm::event(QEvent *event)
+{
+    if(event->type() == QEvent::Close)
+    {
+        slotSaveUnsavedConfigs();
+    }
+    return QWidget::event(event);
+}
+//---------------------------------------------------------------------------------------------------------------
+void GraphViewForm::slotSaveUnsavedConfigs()
+{
+    auto It (std::find_if(vTickersLst.begin(),vTickersLst.end(),[&](const Ticker &t){
+                return t.TickerID() == iTickerID;
+                }));
+    if(It != vTickersLst.end()){
+        //tTicker = (*It);
+        It->SetStoredSelectedInterval(iSelectedInterval);
+        It->SetStoredTimePosition(tStoredRightPointPosition);
+        It->SetStoredRightAggregate(iStoredRightAggregate);
+        It->SetStoredHValue(dStoredVValue);
+        It->SetHScale(dHScale);
+        It->SetOHLC(bOHLC);
+        ////////////////////////
+        It->SetVScale(mVScale);
+        It->SetVVolumeScale(mVVolumeScale);
+
+        if (!tTicker.equalFull(*It)){
+            emit NeedSaveTickerConig(*It, true);
+        }
+    }
+}
+//---------------------------------------------------------------------------------------------------------------
+void GraphViewForm::slotCandleStateChanged(int)
+{
+    bOHLC = swtCandle->isChecked();
+}
+//---------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------
 
 

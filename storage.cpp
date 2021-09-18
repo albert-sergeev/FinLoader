@@ -557,23 +557,39 @@ void Storage::SaveTickerConfigV_2(std::filesystem::path  pathFile,const Ticker &
     fileTicker<<tT.StoredSelectedInterval()<<",";
     fileTicker<<tT.OHLC()<<",";
     fileTicker<<tT.StoredTimePosition()<<",";
-    fileTicker<<tT.ViewBeginDate()<<",";
-    fileTicker<<tT.ViewEndDate()<<",";
+    fileTicker<<tT.StoredViewBeginDate()<<",";
+    fileTicker<<tT.StoredViewEndDate()<<",";
 
-    fileTicker<<tT.HScale()<<"|";
-    fileTicker<<tT.VVolumeScale()<<"|";
-    fileTicker<< tT.VScalse(Bar::eInterval::pTick)<<"|";
-    fileTicker<< tT.VScalse(Bar::eInterval::p1)<<"|";
-    fileTicker<< tT.VScalse(Bar::eInterval::p5)<<"|";
-    fileTicker<< tT.VScalse(Bar::eInterval::p10)<<"|";
-    fileTicker<< tT.VScalse(Bar::eInterval::p15)<<"|";
-    fileTicker<< tT.VScalse(Bar::eInterval::p30)<<"|";
-    fileTicker<< tT.VScalse(Bar::eInterval::p60)<<"|";
-    fileTicker<< tT.VScalse(Bar::eInterval::p120)<<"|";
-    fileTicker<< tT.VScalse(Bar::eInterval::p180)<<"|";
-    fileTicker<< tT.VScalse(Bar::eInterval::pDay)<<"|";
-    fileTicker<< tT.VScalse(Bar::eInterval::pWeek)<<"|";
-    fileTicker<< tT.VScalse(Bar::eInterval::pMonth)<<"";
+    fileTicker<<tT.StoredVValue()<<"|";
+    fileTicker<<tT.StoredHScale()<<"|";
+
+    fileTicker<< tT.StoredVScale(Bar::eInterval::pTick)<<"|";
+    fileTicker<< tT.StoredVScale(Bar::eInterval::p1)<<"|";
+    fileTicker<< tT.StoredVScale(Bar::eInterval::p5)<<"|";
+    fileTicker<< tT.StoredVScale(Bar::eInterval::p10)<<"|";
+    fileTicker<< tT.StoredVScale(Bar::eInterval::p15)<<"|";
+    fileTicker<< tT.StoredVScale(Bar::eInterval::p30)<<"|";
+    fileTicker<< tT.StoredVScale(Bar::eInterval::p60)<<"|";
+    fileTicker<< tT.StoredVScale(Bar::eInterval::p120)<<"|";
+    fileTicker<< tT.StoredVScale(Bar::eInterval::p180)<<"|";
+    fileTicker<< tT.StoredVScale(Bar::eInterval::pDay)<<"|";
+    fileTicker<< tT.StoredVScale(Bar::eInterval::pWeek)<<"|";
+    fileTicker<< tT.StoredVScale(Bar::eInterval::pMonth)<<"|";
+
+    fileTicker<< tT.StoredRightAggregate()<<"|";
+
+    fileTicker<< tT.StoredVVolumeScale(Bar::eInterval::pTick)<<"|";
+    fileTicker<< tT.StoredVVolumeScale(Bar::eInterval::p1)<<"|";
+    fileTicker<< tT.StoredVVolumeScale(Bar::eInterval::p5)<<"|";
+    fileTicker<< tT.StoredVVolumeScale(Bar::eInterval::p10)<<"|";
+    fileTicker<< tT.StoredVVolumeScale(Bar::eInterval::p15)<<"|";
+    fileTicker<< tT.StoredVVolumeScale(Bar::eInterval::p30)<<"|";
+    fileTicker<< tT.StoredVVolumeScale(Bar::eInterval::p60)<<"|";
+    fileTicker<< tT.StoredVVolumeScale(Bar::eInterval::p120)<<"|";
+    fileTicker<< tT.StoredVVolumeScale(Bar::eInterval::p180)<<"|";
+    fileTicker<< tT.StoredVVolumeScale(Bar::eInterval::pDay)<<"|";
+    fileTicker<< tT.StoredVVolumeScale(Bar::eInterval::pWeek)<<"|";
+    fileTicker<< tT.StoredVVolumeScale(Bar::eInterval::pMonth)<<"|";
 
 
     fileTicker<<"\n";
@@ -658,10 +674,11 @@ int Storage::ParsTickerConfigV_2(std::vector<Ticker> & vTickersLst, std::ifstrea
 
         std::stringstream ss;
         double d;
+        int iTmp;
         std::map<int,double> m;
 
-        ss.clear(); ss.str(vS2[0]);  ss >> d; t.SetHScale(d);
-        ss.clear(); ss.str(vS2[1]);  ss >> d; t.SetVVolumeScale(d);
+        ss.clear(); ss.str(vS2[0]);  ss >> d; t.SetStoredHValue(d);
+        ss.clear(); ss.str(vS2[1]);  ss >> d; t.SetHScale(d);
 
         ss.clear(); ss.str(vS2[2]);  ss >> d; m[Bar::eInterval::pTick]        = d;
         ss.clear(); ss.str(vS2[3]);  ss >> d; m[Bar::eInterval::p1]           = d;
@@ -670,14 +687,38 @@ int Storage::ParsTickerConfigV_2(std::vector<Ticker> & vTickersLst, std::ifstrea
         ss.clear(); ss.str(vS2[6]);  ss >> d; m[Bar::eInterval::p15]          = d;
         ss.clear(); ss.str(vS2[7]);  ss >> d; m[Bar::eInterval::p30]          = d;
         ss.clear(); ss.str(vS2[8]);  ss >> d; m[Bar::eInterval::p60]          = d;
-        ss.clear(); ss.str(vS2[9]);  ss >> d; m[Bar::eInterval::p120]         = d;
+        ss.clear(); ss.str(vS2[9]);  ss >> d; m[Bar::eInterval::p120]        = d;
         ss.clear(); ss.str(vS2[10]); ss >> d; m[Bar::eInterval::p180]         = d;
         ss.clear(); ss.str(vS2[11]); ss >> d; m[Bar::eInterval::pDay]         = d;
         ss.clear(); ss.str(vS2[12]); ss >> d; m[Bar::eInterval::pWeek]        = d;
         ss.clear(); ss.str(vS2[13]); ss >> d; m[Bar::eInterval::pMonth]       = d;
 
+        std::map<int,double> m2;
 
-        t.SetVScalse(m);
+        if(vS2.size() > 26){
+            if(vS2.size()<27){
+                std::stringstream ss;
+                ss <<"error parsing file. wrong format: "<<pathTickersFile;
+                throw std::runtime_error(ss.str());
+            }
+            ss.clear(); ss.str(vS2[14]); ss >> iTmp; t.SetStoredRightAggregate(iTmp);
+
+            ss.clear(); ss.str(vS2[15]);  ss >> d; m2[Bar::eInterval::pTick]        = d;
+            ss.clear(); ss.str(vS2[16]);  ss >> d; m2[Bar::eInterval::p1]           = d;
+            ss.clear(); ss.str(vS2[17]);  ss >> d; m2[Bar::eInterval::p5]           = d;
+            ss.clear(); ss.str(vS2[18]);  ss >> d; m2[Bar::eInterval::p10]          = d;
+            ss.clear(); ss.str(vS2[19]);  ss >> d; m2[Bar::eInterval::p15]          = d;
+            ss.clear(); ss.str(vS2[20]);  ss >> d; m2[Bar::eInterval::p30]          = d;
+            ss.clear(); ss.str(vS2[21]);  ss >> d; m2[Bar::eInterval::p60]          = d;
+            ss.clear(); ss.str(vS2[22]);  ss >> d; m2[Bar::eInterval::p120]         = d;
+            ss.clear(); ss.str(vS2[23]); ss >> d; m2[Bar::eInterval::p180]         = d;
+            ss.clear(); ss.str(vS2[24]); ss >> d; m2[Bar::eInterval::pDay]         = d;
+            ss.clear(); ss.str(vS2[25]); ss >> d; m2[Bar::eInterval::pWeek]        = d;
+            ss.clear(); ss.str(vS2[26]); ss >> d; m2[Bar::eInterval::pMonth]       = d;
+        }
+
+        t.SetVScale(m);
+        t.SetVVolumeScale(m2);
 
         auto ItM (mM.find(t.TickerID()));
 

@@ -403,12 +403,6 @@ void FastTasksHolder::setRepoTable(const std::map<int,Market::SessionTable_type>
     std::unique_lock lk(mutexSessionTables);
 
     shptrMappedRepoTable = std::make_shared<std::map<int,Market::SessionTable_type>>(std::map<int,Market::SessionTable_type>{mappedRepoTable});
-
-    ThreadFreeCout pcout;
-
-    for(const auto&r:*shptrMappedRepoTable){
-        pcout <<"TicketId {"<<r.first<<"} size:" << r.second.size()<<"\n";
-    }
 }
 //--------------------------------------------------------------------------------------------------------
 std::shared_ptr<std::map<int,Market::SessionTable_type>> FastTasksHolder::getRepoTable()

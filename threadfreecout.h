@@ -12,8 +12,10 @@ public:
     ThreadFreeCout(){;};
     ~ThreadFreeCout(){
         std::lock_guard<std::mutex> lk(mut);
-        std::cout<<this->rdbuf();
-        std::cout.flush();
+        if (this->peek() != ThreadFreeCout::traits_type::eof()){
+            std::cout<<this->rdbuf();
+            std::cout.flush();
+        }
     }
 };
 

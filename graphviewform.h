@@ -1,7 +1,9 @@
 #ifndef GRAPHVIEWFORM_H
 #define GRAPHVIEWFORM_H
 
+
 #include <QWidget>
+#include<QMdiSubWindow>
 #include "ticker.h"
 #include "graphholder.h"
 #include "blockfreequeue.h"
@@ -152,7 +154,7 @@ private:
     double dStoredVolumeHighMax;
 
     Bar::eInterval iSelectedInterval;
-    //size_t iMaxGraphViewSize;
+    double dStoredVValue;
     double dHScale;
     std::map<int,double> mVScale;
     std::map<int,double> mVVolumeScale;
@@ -182,14 +184,17 @@ signals:
 
     void SendToLog(QString);
     void NeedLoadGraph(const  int iTickerID, const std::time_t tBegin, const std::time_t tEnd);
+    void NeedSaveTickerConig(const Ticker tT, const bool bFull);
+
 
 public slots:
 
     void slotInvalidateGraph(std::time_t dtDegin, std::time_t dtEnd, bool bNeedToRescale = false);
     void slotProcessRepaintQueue();
     void setFramesVisibility(std::tuple<bool,bool,bool,bool,bool>);
-    //void slotFastShowEvent(std::time_t tBegin, std::time_t tEnd,std::shared_ptr<GraphHolder> ptrHolder);
     void slotFastShowEvent(std::shared_ptr<GraphHolder> ptrHolder);
+
+    void slotSaveUnsavedConfigs();
 
 protected slots:
   //  void slotLoadGraphButton(); // for tests
@@ -207,6 +212,7 @@ protected slots:
 
     void slotPeriodButtonChanged();
 
+    void slotCandleStateChanged(int);
 
 private:
     Ui::GraphViewForm *ui;
@@ -325,6 +331,7 @@ protected:
     // QObject interface
 public:
     bool eventFilter(QObject *watched, QEvent *event);
+    virtual bool event(QEvent *event);
 };
 
 inline int GraphViewForm::iConstWidthNumb1;

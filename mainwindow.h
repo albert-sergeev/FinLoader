@@ -47,6 +47,7 @@
 
 
 
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -139,11 +140,15 @@ private:
     bool bConfigTickerShowByName;
     bool bConfigTickerSortByName;
     std::vector<Ticker> vTickersLst;
+    std::vector<Ticker> vTickersLstEtalon;
     modelTickersList m_TickerLstModel;
 
     // for inport FinQuotes subwindow
     QString qsDefaultOpenDir;
     char cImportDelimiter;
+
+    // for GraphViewForm;
+
 
     // for AmiPipes
     AmiPipeHolder pipesHolder;
@@ -290,10 +295,17 @@ protected slots: // for main window
 
     void BuildSessionsTableForFastTasks(FastTasksHolder &);
 
+    void slotSaveTickerConigRef(const Ticker & tT, bool bFull = false);
+    void slotSaveTickerConig(const Ticker tT, const bool bFull);
+
 
 private:
     //std::vector<std::vector<Bar>> testPvBars; // TODO: delete. for tests
 
     Ui::MainWindow *ui;
+
+
+    // QWidget interface
+
 };
 #endif // MAINWINDOW_H
