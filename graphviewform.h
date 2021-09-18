@@ -227,6 +227,7 @@ protected:
     template<typename T>
     bool RepainInvalidRange(RepainTask &);
 
+    void SetSliderToVertPos(double dPos);
 
     void SetSliderToPos (std::time_t tRightPos, int iRightAggregate);
     template<typename T>
@@ -320,6 +321,12 @@ protected:
 
     inline double realYtoSceneY      (double y) {return  ((y - dStoredLowMin)       * (mVScale.at      (iSelectedInterval))) + iViewPortLowStrip;};
     inline double realYtoSceneYVolume(double y) {return  ((y - 0) * (mVVolumeScale.at(iSelectedInterval))) + iVolumeViewPortHighStrip;};
+
+
+    inline double sceneYtoRealY      (double yScene) {
+        return   (yScene - iViewPortLowStrip) / (mVScale.at      (iSelectedInterval)) + dStoredLowMin;
+
+    };
 
     //-----------------------------------------------------------------------------------------------
 

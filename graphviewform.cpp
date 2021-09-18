@@ -463,6 +463,7 @@ bool GraphViewForm::RepainInvalidRange(RepainTask & data)
                 else{
                     SetSliderToPos(tStoredMaxDate, iRightShift);
                 }
+                SetSliderToVertPos(dStoredVValue);
             }
             PaintViewPort   (true,true,true, false,true);
         }
@@ -488,6 +489,7 @@ void GraphViewForm::showEvent(QShowEvent *event)
     else{
         SetSliderToPos(tStoredMaxDate, iRightShift);
     }
+    SetSliderToVertPos(dStoredVValue);
     ///////////
     RepositionPlusMinusButtons();
 
@@ -523,10 +525,8 @@ void GraphViewForm::slotVerticalScrollBarValueChanged(int iV)
     ui->grViewQuotes->verticalScrollBar()->setValue(iV);
     ui->grVertScroll->verticalScrollBar()->setValue(iV);
 
-    //dStoredVValue;
-    {
-//        ThreadFreeCout pcout;
-//        pcout <<"verticalV {"<<iV<<"}\n";
+    if(iStoredMaxSize > 0){
+        dStoredVValue = sceneYtoRealY(-iV) - (sceneYtoRealY(-iV) - sceneYtoRealY(-iV - ui->grViewQuotes->verticalScrollBar()->pageStep())) / 2 ;
     }
 }
 //---------------------------------------------------------------------------------------------------------------
@@ -874,6 +874,7 @@ void GraphViewForm::slotHScaleQuotesClicked(bool bPlus)
             SetSliderToPos(tStoredMaxDate, iRightShift);
         }
 
+
         ui->grViewQuotes->scene()->invalidate(ui->grViewQuotes->sceneRect());
     }
 }
@@ -908,6 +909,8 @@ void GraphViewForm::slotVScaleQuotesClicked(bool bPlus)
         disconnect(ui->grHorizScroll->horizontalScrollBar(),SIGNAL(valueChanged(int)),this,SLOT(slotHorizontalScrollBarValueChanged(int)));
         grScene->setSceneRect(newRec);
         connect(ui->grHorizScroll->horizontalScrollBar(),SIGNAL(valueChanged(int)),this,SLOT(slotHorizontalScrollBarValueChanged(int)));
+
+        SetSliderToVertPos(dStoredVValue);
 
         PaintViewPort(true,true,false,false,false);
 
@@ -1108,10 +1111,6 @@ void GraphViewForm::setFramesVisibility(std::tuple<bool,bool,bool,bool,bool> tp)
 //---------------------------------------------------------------------------------------------------------------
 void GraphViewForm::RepositionPlusMinusButtons()
 {
-    {
-        ThreadFreeCout pcout;
-        pcout <<"reposition\n";
-    }
     QRect rectQ = ui->grViewQuotes->rect();
     QPoint pQ   = ui->grViewQuotes->pos();
     QPoint pV   = ui->grViewVolume->pos();
@@ -2027,6 +2026,28 @@ bool GraphViewForm::PaintHorizontalScales()
      return true;
 }
 //---------------------------------------------------------------------------------------------------------------
+void GraphViewForm::SetSliderToVertPos(double dPos)
+{
+
+
+    double dHalf = (sceneYtoRealY(-ui->grViewQuotes->verticalScrollBar()->value()) -
+                    sceneYtoRealY(-ui->grViewQuotes->verticalScrollBar()->value() - ui->grViewQuotes->verticalScrollBar()->pageStep())
+                ) / 2 ;
+
+    double dCur = dPos + dHalf;
+
+//    ThreadFreeCout pcout;
+//    pcout <<"pos: " <<dPos <<"\n";
+//    pcout <<"top: " <<sceneYtoRealY(-ui->grViewQuotes->verticalScrollBar()->value()) <<"\n";
+//    pcout <<"button: " <<sceneYtoRealY(-ui->grViewQuotes->verticalScrollBar()->value() - ui->grViewQuotes->verticalScrollBar()->pageStep()) <<"\n";
+//    pcout <<"dHalf: " <<dHalf <<"\n";
+//    pcout <<"set to pos: " <<dCur <<"\n";
+
+    ui->grViewQuotes->verticalScrollBar()->setValue(-realYtoSceneY(dCur));
+
+
+}
+//---------------------------------------------------------------------------------------------------------------
 void GraphViewForm::SetSliderToPos(std::time_t tRightPos, int iRightAggregate)
 {
      if (iSelectedInterval == Bar::eInterval::pTick){
@@ -2290,6 +2311,11 @@ bool GraphViewForm::event(QEvent *event)
 //---------------------------------------------------------------------------------------------------------------
 void GraphViewForm::slotSaveUnsavedConfigs()
 {
+    {
+        ThreadFreeCout pcout;
+        pcout <<"dStoredVValue: " <<dStoredVValue <<"\n";
+
+    }
     auto It (std::find_if(vTickersLst.begin(),vTickersLst.end(),[&](const Ticker &t){
                 return t.TickerID() == iTickerID;
                 }));
@@ -2317,5 +2343,7 @@ void GraphViewForm::slotCandleStateChanged(int)
 }
 //---------------------------------------------------------------------------------------------------------------
 //---------------------------------------------------------------------------------------------------------------
+
+
 
 
