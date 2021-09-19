@@ -41,6 +41,7 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     market.cpp \
+    memometer.cpp \
     modelmarketslist.cpp \
     modeltickerslist.cpp \
     oneofkindprotector.cpp \
@@ -79,6 +80,7 @@ HEADERS += \
     importfinqotesform.h \
     mainwindow.h \
     market.h \
+    memometer.h \
     modelmarketslist.h \
     modeltickerslist.h \
     oneofkindprotector.h \

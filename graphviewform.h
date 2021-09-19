@@ -10,6 +10,7 @@
 #include "bargraphicsitem.h"
 #include "styledswitcher.h"
 #include "plusbutton.h"
+#include "memometer.h"
 
 namespace Ui {
 class GraphViewForm;
@@ -125,6 +126,8 @@ private:
     PlusButton *  btnScaleVVolumePlus;
     PlusButton *  btnScaleVVolumeMinus;
 
+    Memometer  *  indicatorMemo;
+
 
 
     const int iTickerID;
@@ -236,7 +239,7 @@ public slots:
 
     void slotSaveUnsavedConfigs();
 
-
+    void slotUsedMemoryChanged(size_t,size_t);
 
 protected slots:
   //  void slotLoadGraphButton(); // for tests
@@ -356,10 +359,13 @@ protected:
     void ReDoHLines();
     void RefreshHLines();
     std::tuple<int,int,int,int> getHPartStep(double realH, double viewportH);
+    std::string MemoSizeToStr(size_t iSize);
 
     void SetMinMaxDateToControls();
     void RepositionPlusMinusButtons();
     void SetSelectedIntervalToControls();
+    void ResizeMemometer();
+
 
     inline double realYtoSceneY      (double y) {return  ((y - dStoredLowMin)       * (mVScale.at      (iSelectedInterval))) + iViewPortLowStrip;};
     inline double realYtoSceneYVolume(double y) {return  ((y - 0) * (mVVolumeScale.at(iSelectedInterval))) + iVolumeViewPortHighStrip;};

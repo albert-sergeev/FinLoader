@@ -44,6 +44,11 @@
 #include "dataamipipetask.h"
 #include "combindicator.h"
 
+#ifdef _WIN32
+
+#include<windows.h>
+
+#endif
 
 
 
@@ -128,6 +133,10 @@ private:
     QString m_Language;
     QTranslator m_translator;
 
+    std::chrono::time_point<std::chrono::steady_clock> dtCheckMemoryUsage;
+    std::size_t iStoredUsedMemory;
+    std::size_t iPhisicalMemory;
+
     // global storage objects
     QSettings m_settings;
     std::vector<Market> vMarketsLst;
@@ -201,6 +210,8 @@ signals:
     void SaveUnsavedConfigs();
 
     void slotSendSignalToProcessRepaintQueue();
+
+    void UsedMemoryChanged(size_t,size_t);
 
 protected:
     void InitAction();
@@ -292,12 +303,14 @@ protected slots: // for main window
     void CheckActivePipes();
     void CheckActiveProcesses();
     void CheckLastPacketTime();
+    void CheckUsedMemory();
 
     void BuildSessionsTableForFastTasks(FastTasksHolder &);
 
     void slotSaveTickerConigRef(const Ticker & tT, bool bFull = false);
     void slotSaveTickerConig(const Ticker tT, const bool bFull);
 
+    std::size_t getPhisicalMemory();
 
 private:
     //std::vector<std::vector<Bar>> testPvBars; // TODO: delete. for tests

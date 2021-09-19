@@ -89,6 +89,8 @@ public:
     std::string ToStringPeriods();
     std::size_t GetShiftIndex()  const {return iShiftIndex;};
 
+    std::size_t GetUsedMemory() const;
+
     void CloneGraph(Graph<T> &grNew,const size_t Start, const size_t End, const size_t LetShift);
     bool shrink_extras_left(std::time_t dtEnd);
     //
@@ -805,6 +807,11 @@ bool Graph<T>::BuildFromLowerList(Graph<T_SRC> &grSrc, std::time_t dtStart,std::
     return bRes;
 }
 //------------------------------------------------------------------------------------------------------------
+template<typename T>
+std::size_t Graph<T>::GetUsedMemory() const
+{
+    return vContainer.size() * sizeof(T) + mDictionary.size() * (sizeof(std::time_t) + sizeof(size_t));
+}
 //------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------

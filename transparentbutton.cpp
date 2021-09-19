@@ -42,6 +42,9 @@ void TransparentButton::showEvent(QShowEvent */*event*/)
 void TransparentButton::paintEvent(QPaintEvent */*event*/)
 {
     QPainter painter(this);
+
+    painter.save();
+
     painter.setRenderHint(QPainter::Antialiasing, true);
 
     QPen blackSolidPen(Qt::black,1,Qt::SolidLine);
@@ -97,6 +100,8 @@ void TransparentButton::paintEvent(QPaintEvent */*event*/)
     painter.drawText(drawTextRect, Qt::AlignmentFlag::AlignLeft | Qt::AlignmentFlag::AlignTop, sTxt);
     painter.setPen(grayPen);
     painter.drawRect(drawRect);
+
+    painter.restore();
 
 }
 //----------------------------------------------------------------------------------------------------------------------------

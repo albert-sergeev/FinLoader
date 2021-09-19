@@ -8,7 +8,6 @@
 #include<QProcess>
 
 
-
 using seconds=std::chrono::duration<double>;
 using milliseconds=std::chrono::duration<double,
     std::ratio_multiply<seconds::period,std::milli>
@@ -22,6 +21,7 @@ using milliseconds=std::chrono::duration<double,
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , lcdN{nullptr}
+    ,iStoredUsedMemory{0}
     , vMarketsLst{}   
     , m_MarketLstModel{vMarketsLst,this}
     , vTickersLst{}
@@ -98,6 +98,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     pipesHolder.setCurrentPath(stStore.GetCurrentPath());
     BuildSessionsTableForFastTasks(fastHolder);
+    iPhisicalMemory = getPhisicalMemory();
 
     InitDockBar();
 
@@ -117,6 +118,7 @@ MainWindow::MainWindow(QWidget *parent)
     InitHolders();
     //
     dtCheckPipesActivity = std::chrono::steady_clock::now();
+    dtCheckMemoryUsage = std::chrono::steady_clock::now();
     CheckActivePipes();
     ////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////
@@ -441,6 +443,7 @@ void MainWindow::timerEvent(QTimerEvent * event)
     CheckLastPacketTime();
     CheckActivePipes();
     ListViewActivityTermination();
+    CheckUsedMemory();
     //
     emit slotSendSignalToProcessRepaintQueue();
     //
@@ -462,6 +465,29 @@ void MainWindow::CheckActiveProcesses()
     int iCount = aActiveProcCounter.load();
     wtCombIndicator->setCurrentLevel(iCount);
 
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::CheckUsedMemory(){
+    milliseconds tActivityCount  = std::chrono::steady_clock::now() - dtCheckMemoryUsage;
+    if (tActivityCount > 1000ms){
+
+        std::size_t iMemory{0};
+        std::size_t iTmpSize{0};
+        for(const auto &hl:Holders){
+            if(!hl.second->GetUsedMemory(iTmpSize)){
+                return;//holder iz buzy
+            }
+            iMemory += iTmpSize;
+        }
+        if (iMemory !=0){
+            double d = iStoredUsedMemory > iMemory ? iStoredUsedMemory - iMemory : iMemory - iStoredUsedMemory;
+            if (iStoredUsedMemory == 0 || d/iMemory > 0.01){
+                iStoredUsedMemory = iMemory;
+                emit UsedMemoryChanged(iStoredUsedMemory,iPhisicalMemory);
+            }
+        }
+        dtCheckMemoryUsage = std::chrono::steady_clock::now();
+    }
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::CheckActivePipes()
@@ -1653,9 +1679,12 @@ void MainWindow::slotSetSelectedTicker(const  int iTickerID)
 
         connect(this,SIGNAL(SaveUnsavedConfigs()),pdoc,SLOT(slotSaveUnsavedConfigs()));
 
+        connect(this,SIGNAL(UsedMemoryChanged(size_t,size_t)),pdoc,SLOT(slotUsedMemoryChanged(size_t,size_t)));
 
         pdoc->setFramesVisibility(tp);
         pdoc->show();
+
+        emit UsedMemoryChanged(iStoredUsedMemory,iPhisicalMemory);
     }
     else{
         wnd->setFocus();
@@ -1962,6 +1991,41 @@ void MainWindow::BuildSessionsTableForFastTasks(FastTasksHolder & fastHolder)
     fastHolder.setRepoTable(mappedRepoTable);    
 }
 //--------------------------------------------------------------------------------------------------------------------------------
+std::size_t MainWindow::getPhisicalMemory()
+{
+#ifdef _WIN32
+    std::size_t iResult{0};
+
+    typedef BOOL (WINAPI *PGMSE)(LPMEMORYSTATUSEX);
+    std::string strModule("kernel32.dll");
+    std::wstring wModule(strModule.begin(), strModule.end());
+
+    PGMSE pGMSE = (PGMSE) GetProcAddress( GetModuleHandle( wModule.data()), "GlobalMemoryStatusEx" );
+    //PGMSE pGMSE = (PGMSE) GetProcAddress( GetModuleHandle( TEXT( "kernel32.dll" ) ), TEXT( "GlobalMemoryStatusEx") );
+    if ( pGMSE != 0 )
+    {
+        MEMORYSTATUSEX mi;
+        memset( &mi, 0, sizeof(MEMORYSTATUSEX) );
+        mi.dwLength = sizeof(MEMORYSTATUSEX);
+        if ( pGMSE( &mi ) == TRUE )
+            iResult = mi.ullTotalPhys;
+        else
+            pGMSE = 0;
+    }
+    if ( pGMSE == 0 )
+    {
+        MEMORYSTATUS mi;
+        memset( &mi, 0, sizeof(MEMORYSTATUS) );
+        mi.dwLength = sizeof(MEMORYSTATUS);
+        GlobalMemoryStatus( &mi );
+        iResult = mi.dwTotalPhys;
+    }
+    return iResult;
+#else
+    //read /proc/meminfo
+    return 0;
+#endif
+}
 //--------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------

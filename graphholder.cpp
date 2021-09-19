@@ -256,6 +256,29 @@ std::time_t GraphHolder::getTimeByIndex(const Bar::eInterval it,const size_t ind
     }
 }
 //------------------------------------------------------------------------------------------------------
+bool GraphHolder::GetUsedMemory(std::size_t &iSize) const
+{
+    iSize = 0;
+    std::shared_lock lk(mutexHolder,std::defer_lock);
+    if(lk.try_lock()){
+        iSize += graphTick.GetUsedMemory();
+        iSize += graph1.GetUsedMemory();
+        iSize += graph5.GetUsedMemory();
+        iSize += graph10.GetUsedMemory();
+        iSize += graph15.GetUsedMemory();
+        iSize += graph30.GetUsedMemory();
+        iSize += graph60.GetUsedMemory();
+        iSize += graph120.GetUsedMemory();
+        iSize += graph180.GetUsedMemory();
+        iSize += graphDay.GetUsedMemory();
+        iSize += graphWeek.GetUsedMemory();
+        iSize += graphMonth.GetUsedMemory();
+        return true;
+    }
+    else{
+        return false;
+    }
+}
 //------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------

@@ -63,7 +63,7 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
     QHBoxLayout *ltView =  new QHBoxLayout();
     ltView->setContentsMargins(0,0,0,0);
     ltView->setMargin(3);
-    ui->grViewL4->setLayout(ltView);
+    ui->grViewL2->setLayout(ltView);
     QLabel *lblSign = new QLabel(tr("SIGN"));
     lblSign->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     lblSign->setAlignment(Qt::AlignCenter);
@@ -90,11 +90,15 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
     QHBoxLayout *ltViewR2 =  new QHBoxLayout();
     ltViewR2->setContentsMargins(0,0,0,0);
     ltViewR2->setMargin(3);
-    ui->grViewR3->setLayout(ltViewR2);
+    ui->grViewL4->setLayout(ltViewR2);
     QPushButton  *btnHelpR = new QPushButton(tr("Help"));
     btnHelpR->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     ltViewR2->addWidget(btnHelpR);
     //btnHelp->setVisible(false);
+    //-------------------------------------------------------------
+    indicatorMemo = new Memometer(this);
+    indicatorMemo->setValue(0);
+    indicatorMemo->setToolTipText(QString(tr("Memory usage: 0")).toStdString());
     //-------------------------------------------------------------
 
     btnScaleHViewPlus       = new PlusButton(true,this);
@@ -522,6 +526,7 @@ void GraphViewForm::resizeEvent(QResizeEvent *event)
     InvalidateCounterDefender def(aiInvalidateCounter);
     ///////////
     RepositionPlusMinusButtons();
+    ResizeMemometer();
 
     QWidget::resizeEvent(event);
 }
@@ -540,6 +545,7 @@ void GraphViewForm::showEvent(QShowEvent *event)
     SetSliderToVertPos(dStoredVValue);
     ///////////
     RepositionPlusMinusButtons();
+    ResizeMemometer();
 
     QWidget::showEvent(event);
 }
@@ -1163,6 +1169,7 @@ void GraphViewForm::setFramesVisibility(std::tuple<bool,bool,bool,bool,bool> tp)
     btnScaleVVolumeMinus->setVisible(bVolume);
 
     RepositionPlusMinusButtons();
+    ResizeMemometer();
 
 }
 //---------------------------------------------------------------------------------------------------------------
@@ -2401,8 +2408,60 @@ void GraphViewForm::slotCandleStateChanged(int)
     //ui->grViewQuotes->invalidateScene(ui->grViewQuotes->sceneRect());
 }
 //---------------------------------------------------------------------------------------------------------------
+void GraphViewForm::ResizeMemometer()
+{
+    QPoint pU   = ui->grViewR1->pos();
+    QRect rU    = ui->grViewR1->rect();
+
+    if (!ui->grViewR1->isHidden()){
+        if (indicatorMemo->isHidden()){
+            indicatorMemo->show();
+        }
+        indicatorMemo->setGeometry(pU.x() + rU.width() - 10, pU.y() ,10,ui->grViewR1->height());
+    }
+    else{
+        indicatorMemo->hide();
+    }
+
+
+}
 //---------------------------------------------------------------------------------------------------------------
+void GraphViewForm::slotUsedMemoryChanged(size_t iM,size_t iTotal)
+{
+    std::stringstream ss;
+    ss <<QString(tr("Memory usage: ")).toStdString()<<MemoSizeToStr(iM);
 
+    double dPercent{1};
+    if(iTotal !=0 ){
+        dPercent = double(iM)/double(iTotal);
+        ss <<QString(tr(" from: ")).toStdString()<<MemoSizeToStr(iTotal);
+    }
+    indicatorMemo->setValue(dPercent);
 
-
+    indicatorMemo->setToolTipText(ss.str());
+}
+//---------------------------------------------------------------------------------------------------------------
+std::string GraphViewForm::MemoSizeToStr(size_t iSize)
+{
+    std::stringstream ss;
+    ss << std::fixed << std::setprecision(2);
+    if (iSize > 1099511627776){
+        ss << (iSize/1099511627776.0) << QString(tr("T")).toStdString();
+    }
+    else if (iSize > 1073741824){
+        ss << (iSize/1073741824.0) << QString(tr("G")).toStdString();
+    }
+    else if (iSize > 1048576){
+        ss << (iSize/1048576.0) << QString(tr("M")).toStdString();
+    }
+    else if (iSize > 1024){
+        ss << (iSize/1024.0) << QString(tr("G")).toStdString();
+    }
+    else{
+        ss << (iSize) << QString(tr("B")).toStdString();
+    }
+    return ss.str();
+}
+//---------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------
 
