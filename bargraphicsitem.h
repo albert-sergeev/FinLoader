@@ -6,8 +6,34 @@
 #include "threadfreelocaltime.h"
 
 
+
+
 class BarGraphicsItem : public QGraphicsItem
 {
+    ///////////////////////////////////////////////////////
+    /// \brief b
+    template<typename T>
+    class FuncWrapper{
+        struct impl_base{
+            virtual bool call()=0;
+            virtual ~impl_base(){;};
+        };
+        template<typename F>
+        struct impl_type:impl_base{
+            F ff;
+            impl_type(F &&f):ff{std::move(f)}{;}
+            virtual bool call(){return ff();};
+        };
+        std::unique_ptr<impl_base> impl;
+    public:
+
+        FuncWrapper(){
+
+        }
+    protected:
+        virtual bool Call() = 0;
+    };
+    //////////////////////////////////////////////////////////
     Bar b;
     size_t iRealIndex;
     bool bOHLC;

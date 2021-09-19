@@ -242,6 +242,8 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
     ui->grViewVolume->horizontalScrollBar()->installEventFilter(this);
     ui->grViewScaleLower->horizontalScrollBar()->installEventFilter(this);
 
+    ui->grViewL1->installEventFilter(this);
+
    // {ThreadFreeCout pcout; pcout<<"const out\n";}
 
 //    connect(ui->btnTestLoad,SIGNAL(clicked()),this,SLOT(slotLoadGraphButton()));
@@ -1128,6 +1130,7 @@ void GraphViewForm::setFramesVisibility(std::tuple<bool,bool,bool,bool,bool> tp)
 void GraphViewForm::RepositionPlusMinusButtons()
 {
     QRect rectQ = ui->grViewQuotes->rect();
+    //QRect rectL = ui->grViewL1->rect();
     QPoint pQ   = ui->grViewQuotes->pos();
     QPoint pV   = ui->grViewVolume->pos();
     QPoint pU   = ui->grViewScaleUpper->pos();
@@ -1145,14 +1148,21 @@ void GraphViewForm::RepositionPlusMinusButtons()
             }
     }
 
-    btnScaleVViewPlus->move     (pQ.x() + rectQ.width() - 15, pQ.y() + 10 );
-    btnScaleVViewMinus->move    (pQ.x() + rectQ.width() - 15, pQ.y() + 30 );
+    qreal rX = this->width() - ui->grVertScroll->width() - 3 /*+ ui->grViewR1->width()*/;
+    if (!ui->grViewR1->isHidden()){
+        rX -= ui->grViewR1->width();
+    }
+    //rX = pQ.x() + rectQ.width();
 
-    btnScaleHViewPlus->move     (pQ.x() + rectQ.width() - 30, pT.y() - 20 );
-    btnScaleHViewMinus->move    (pQ.x() + rectQ.width() - 15, pT.y() - 20 );
+    //pQ.x() + rectQ.width() + rectL.width() + rAdd - 15
+    btnScaleVViewPlus->move     (rX - 15, pQ.y() + 10 );
+    btnScaleVViewMinus->move    (rX - 15, pQ.y() + 30 );
 
-    btnScaleVVolumePlus->move   (pQ.x() + rectQ.width() - 15, pV.y() + 10 );
-    btnScaleVVolumeMinus->move  (pQ.x() + rectQ.width() - 15, pV.y() + 30 );
+    btnScaleHViewPlus->move     (rX - 30, pT.y() - 20 );
+    btnScaleHViewMinus->move    (rX - 15, pT.y() - 20 );
+
+    btnScaleVVolumePlus->move   (rX - 15, pV.y() + 10 );
+    btnScaleVVolumeMinus->move  (rX - 15, pV.y() + 30 );
 }
 //---------------------------------------------------------------------------------------------------------------
 void GraphViewForm::slotPeriodButtonChanged()
@@ -2301,6 +2311,11 @@ bool GraphViewForm::eventFilter(QObject *watched, QEvent *event)
                      return bRet;
                  }
              }
+         }
+     }
+     if(watched == ui->grViewL1){
+         if(event->type() == QEvent::Hide){
+             RepositionPlusMinusButtons();
          }
      }
      return QObject::eventFilter(watched, event);
