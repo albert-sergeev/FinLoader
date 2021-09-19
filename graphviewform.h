@@ -71,6 +71,36 @@ struct RepainTask{
     std::time_t dtEnd   {0};
     bool bNeedToRescale {false};
 };
+//////////////////////////////////////////////////////////////////////////////////////////////////
+/// Cover for Invalidate counter
+
+class InvalidateCounterDefender
+{
+    std::atomic<int> &aiCounter;
+    std::atomic<bool> bFree;
+public:
+    InvalidateCounterDefender(std::atomic<int> &Counter):aiCounter{Counter},bFree{false}{
+        int iCounter = aiCounter.load();
+        int iCounterNew = iCounter + 1;
+        while(!aiCounter.compare_exchange_weak(iCounter,iCounterNew)){;}
+    };
+    ~InvalidateCounterDefender(){
+        free();
+    }
+    void free(){
+        bool free = bFree.load();
+        if (!free){
+            while(!bFree.compare_exchange_weak(free,true )){
+                if (free) return;
+                free = bFree.load();
+            }
+            int iCounter = aiCounter.load();
+            int iCounterNew = iCounter - 1;
+            while(!aiCounter.compare_exchange_weak(iCounter,iCounterNew )){;}
+        }
+    }
+
+};
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 /// \brief The GraphViewForm class
@@ -137,6 +167,14 @@ private:
     static int iConstWidthNumb1;
     static int iConstWidthNumb2;
     static int iConstWidthTime;
+
+
+    std::atomic<int> aiInvalidateCounter;
+
+    friend class InvalidateCounterDefender;
+
+    InvalidateCounterDefender defInit;
+
 
 
 private:
