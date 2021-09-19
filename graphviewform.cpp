@@ -5,6 +5,7 @@
 #include<QScrollBar>
 #include<QWheelEvent>
 #include<QMessageBox>
+#include<QSizePolicy>
 
 #include<sstream>
 #include<iomanip>
@@ -59,6 +60,42 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
     swtCandle->SetOffColor(QPalette::Window,colorDarkRed);
     connect(swtCandle,SIGNAL(stateChanged(int)),this,SLOT(slotCandleStateChanged(int)));
     //-------------------------------------------------------------
+    QHBoxLayout *ltView =  new QHBoxLayout();
+    ltView->setContentsMargins(0,0,0,0);
+    ltView->setMargin(3);
+    ui->grViewL4->setLayout(ltView);
+    QLabel *lblSign = new QLabel(tr("SIGN"));
+    lblSign->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+    lblSign->setAlignment(Qt::AlignCenter);
+    ltView->addWidget(lblSign);
+    //-------------------------------------------------------------
+    QHBoxLayout *ltViewR1 =  new QHBoxLayout();
+    ltViewR1->setContentsMargins(0,0,0,0);
+    ltViewR1->setMargin(3);
+    ui->grViewR4->setLayout(ltViewR1);
+    QLabel *lblSignR = new QLabel(tr("SIGN"));
+    lblSignR->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+    lblSignR->setAlignment(Qt::AlignCenter);
+    ltViewR1->addWidget(lblSignR);
+    //-------------------------------------------------------------
+    QHBoxLayout *ltView2 =  new QHBoxLayout();
+    ltView2->setContentsMargins(0,0,0,0);
+    ltView2->setMargin(3);
+    ui->grViewL3->setLayout(ltView2);
+    QPushButton  *btnHelp = new QPushButton(tr("Help"));
+    btnHelp->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+    ltView2->addWidget(btnHelp);
+    //btnHelp->setVisible(false);
+    //-------------------------------------------------------------
+    QHBoxLayout *ltViewR2 =  new QHBoxLayout();
+    ltViewR2->setContentsMargins(0,0,0,0);
+    ltViewR2->setMargin(3);
+    ui->grViewR3->setLayout(ltViewR2);
+    QPushButton  *btnHelpR = new QPushButton(tr("Help"));
+    btnHelpR->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+    ltViewR2->addWidget(btnHelpR);
+    //btnHelp->setVisible(false);
+    //-------------------------------------------------------------
 
     btnScaleHViewPlus       = new PlusButton(true,this);
     btnScaleHViewMinus      = new PlusButton(false,this);
@@ -102,6 +139,8 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
     }
     tTicker = (*It);
     this->setWindowTitle(QString::fromStdString(tTicker.TickerSign()));
+    lblSign->setText(QString::fromStdString(tTicker.TickerSign()));
+    lblSignR->setText(QString::fromStdString(tTicker.TickerSign()));
     //-------------------------------------------------------------------------------------
     // TODO: save default selected interval other settings
 
