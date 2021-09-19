@@ -11,38 +11,12 @@
 class BarGraphicsItem : public QGraphicsItem
 {
     ///////////////////////////////////////////////////////
-    /// \brief b
-    template<typename T>
-    class FuncWrapper{
-        struct impl_base{
-            virtual bool call()=0;
-            virtual ~impl_base(){;};
-        };
-        template<typename F>
-        struct impl_type:impl_base{
-            F ff;
-            impl_type(F &&f):ff{std::move(f)}{;}
-            virtual bool call(){return ff();};
-        };
-        std::unique_ptr<impl_base> impl;
-    public:
 
-        FuncWrapper(){
-
-        }
-    protected:
-        virtual bool Call() = 0;
-    };
-    //////////////////////////////////////////////////////////
     Bar b;
     size_t iRealIndex;
     bool bOHLC;
     int iState;
     double dHScale;
-
-    std::function<double()> funC;
-
-
     bool IsTick{false};
 public:
 
@@ -107,8 +81,13 @@ public:
     void setBar(const Bar &bb)         {b = bb;};
     void setBar(const BarTick &bb)     {b = bb;};
 
+    template <class F, class... Args>
+    void SetOHLC(F&& f, Args&&... args){funcOHLC = std::bind (f,args...);}
+
 private:
-    bool IsOHLC()   const  {return  bOHLC;}
+
+    std::function<bool()> funcOHLC;
+    bool IsOHLC()   const  {return  funcOHLC();}
 
     double HScale() const {return dHScale;}
 

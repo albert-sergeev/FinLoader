@@ -41,24 +41,44 @@ void BarGraphicsItem::paint(QPainter* painter, const QStyleOptionGraphicsItem*, 
     case 2: qtColor = Qt::red; break;
     default:qtColor = Qt::magenta; break;
     }
+
     painter->save();
-    painter->setPen(QPen(qtColor,nPenWidth));
+
     //painter->setRenderHint(QPainter::Antialiasing, true);
 
-    if (IsOHLC()){
-        if (IsTick){
-            painter->drawLine(0                ,-(/*HScale() **/ nTickHalfHeight),0                  ,+(/*HScale() **/ nTickHalfHeight) ); // HLine
-          //painter->drawLine(-nPenWidth * 2   ,0                            ,0                  ,0                             ); // OpenLine
-            painter->drawLine(0                ,0                            ,0 + nPenWidth * 2  ,0                             ); // CloseLine
-        }
-        else{
+    if (IsTick){
+        painter->setPen(QPen(qtColor,nPenWidth));
+        painter->drawLine(0                ,-(/*HScale() **/ nTickHalfHeight),0                  ,+(/*HScale() **/ nTickHalfHeight) ); // HLine
+        painter->drawLine(0                ,0                            ,0 + nPenWidth * 2  ,0                             ); // CloseLine
+    }
+    else{
+        if (IsOHLC())
+        {
+            if (b.Open() > b.Close())   qtColor = Qt::red;
+            else                        qtColor = Qt::darkGreen;
+
+            painter->setPen(QPen(qtColor,nPenWidth));
+
+            painter->setPen(QPen(qtColor,nPenWidth));
+
             painter->drawLine(0                ,-(HScale() * (b.High()-b.Close()))  ,0                  ,-(HScale() * (b.Low()-b.Close()))  ); // HLine
             painter->drawLine(-nPenWidth * 2   ,-(HScale() * (b.Open()-b.Close()))  ,0                  ,-(HScale() * (b.Open()-b.Close())) ); // OpenLine
             painter->drawLine(0                ,0                                   ,0 + nPenWidth * 2  ,0                                  ); // CloseLine
+
         }
-    }
-    else{
-        ;
+        else
+        {
+            if (b.Open() > b.Close())   qtColor = Qt::red;
+            else                        qtColor = Qt::darkGreen;
+
+            painter->setPen(QPen(qtColor,nPenWidth));
+            painter->setBrush(qtColor);
+
+            QRectF rec (-nPenWidth * 2, -(HScale() * (b.Open()-b.Close())), nPenWidth * 4, (HScale() * (b.Open()-b.Close())));
+
+            painter->drawRect(rec);
+            painter->drawLine(0                ,-(HScale() * (b.High()-b.Close()))  ,0                  ,-(HScale() * (b.Low()-b.Close()))  ); // HLine
+        }
     }
     painter->restore();
 }

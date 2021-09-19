@@ -217,6 +217,8 @@ public:
 
     double GetHScale() {return mVScale[iSelectedInterval];}
 
+    bool IsOHLC() const {return bOHLC;};
+
 public:
 signals:
 
@@ -233,6 +235,8 @@ public slots:
     void slotFastShowEvent(std::shared_ptr<GraphHolder> ptrHolder);
 
     void slotSaveUnsavedConfigs();
+
+
 
 protected slots:
   //  void slotLoadGraphButton(); // for tests

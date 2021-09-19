@@ -1129,8 +1129,6 @@ void GraphViewForm::setFramesVisibility(std::tuple<bool,bool,bool,bool,bool> tp)
 //---------------------------------------------------------------------------------------------------------------
 void GraphViewForm::RepositionPlusMinusButtons()
 {
-    QRect rectQ = ui->grViewQuotes->rect();
-    //QRect rectL = ui->grViewL1->rect();
     QPoint pQ   = ui->grViewQuotes->pos();
     QPoint pV   = ui->grViewVolume->pos();
     QPoint pU   = ui->grViewScaleUpper->pos();
@@ -1148,13 +1146,16 @@ void GraphViewForm::RepositionPlusMinusButtons()
             }
     }
 
-    qreal rX = this->width() - ui->grVertScroll->width() - 3 /*+ ui->grViewR1->width()*/;
+    qreal rX = this->width() - ui->grVertScroll->width() - 3;
     if (!ui->grViewR1->isHidden()){
         rX -= ui->grViewR1->width();
     }
-    //rX = pQ.x() + rectQ.width();
 
+    //QRect rectQ = ui->grViewQuotes->rect();
+    //QRect rectL = ui->grViewL1->rect();
+    //rX = pQ.x() + rectQ.width();
     //pQ.x() + rectQ.width() + rectL.width() + rAdd - 15
+
     btnScaleVViewPlus->move     (rX - 15, pQ.y() + 10 );
     btnScaleVViewMinus->move    (rX - 15, pQ.y() + 30 );
 
@@ -1466,6 +1467,7 @@ void GraphViewForm::slotPeriodButtonChanged()
                      BarGraphicsItem *item = new BarGraphicsItem(b,i + iShift,3,mVScale[iSelectedInterval]);
                      mShowedGraphicsBars[i + iShift].push_back(item);
                      item->setZValue(5); // always on top
+                     item->SetOHLC(&GraphViewForm::IsOHLC,this);
                      ui->grViewQuotes->scene()->addItem(item);
                      item->setPos(xCur , -realYtoSceneY(b.Close()));
                 }
@@ -2356,6 +2358,8 @@ void GraphViewForm::slotSaveUnsavedConfigs()
 void GraphViewForm::slotCandleStateChanged(int)
 {
     bOHLC = swtCandle->isChecked();
+    ui->grViewQuotes->scene()->invalidate(ui->grViewQuotes->sceneRect());
+    //ui->grViewQuotes->invalidateScene(ui->grViewQuotes->sceneRect());
 }
 //---------------------------------------------------------------------------------------------------------------
 //---------------------------------------------------------------------------------------------------------------
