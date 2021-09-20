@@ -174,6 +174,10 @@ private:
     StyledSwitcher * swtShowAll;
     StyledSwitcher * swtShowMarkets;
     TickerProxyListModel proxyTickerModel;
+    int iStoredLeftDocbarRightPos;
+    int iStoredLeftDocbarWidth;
+    bool bInResizingLeftToolbar;
+    bool bLeftToolbarCursorOverriden;
 
 
     std::vector<Bulbululator *> vBulbululators;
@@ -320,5 +324,9 @@ private:
 
     // QWidget interface
 
+
+    // QObject interface
+public:
+    bool eventFilter(QObject *watched, QEvent *event);
 };
 #endif // MAINWINDOW_H

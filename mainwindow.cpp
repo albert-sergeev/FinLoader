@@ -6,6 +6,8 @@
 #include<QHBoxLayout>
 #include<QStandardPaths>
 #include<QProcess>
+#include<QMouseEvent>
+#include<QEvent>
 
 
 using seconds=std::chrono::duration<double>;
@@ -35,6 +37,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     ui->setupUi(this);
 
+    //==============================================================================================================================
+    // init widgets part
     //-------------------------------------------------------------
     ui->statusbar->setSizeGripEnabled(false);
     //
@@ -83,6 +87,14 @@ MainWindow::MainWindow(QWidget *parent)
     swtShowByName->SetOnColor(QPalette::Window,colorDarkGreen);
     swtShowByName->SetOffColor(QPalette::Window,colorDarkRed);
     //-------------------------------------------------------------
+    ui->dkActiveTickers->setTitleBarWidget(new QWidget());
+    ui->lineDragRight->installEventFilter(this);
+    bInResizingLeftToolbar = false;
+    bLeftToolbarCursorOverriden = false;
+
+
+    //==============================================================================================================================
+    // init data part
 
 
     LoadSettings();
@@ -1270,6 +1282,19 @@ void MainWindow::slotSetActiveStyle     (QString s)
         qApp->setStyleSheet(strCSS);
     }
     else{
+        /////////////////////////////////////////
+        ///
+        QPalette  pal  =  this->palette();
+//        pal.setBrush(QPalette::Button, QBrush(Qt::red, Qt::Dense1Pattern));
+//        pal.setBrush(QPalette::Base, QBrush(Qt::red, Qt::Dense1Pattern));
+//!!!!!       pal.setBrush(QPalette::ColorRole::Window, QBrush(Qt::blue, Qt::BrushStyle::SolidPattern));
+//        pal.setColor(QPalette: :ButtonText, Qt: :Ыuе);
+//        pal.setColor(QPalette::Text,  Qt::magenta);
+        //pal.setColor(QPalette::Active, QPalette::Base, Qt::white);
+        //pal.setColor(QPalette::ColorRole::Window, Qt::white);
+        this->setPalette(pal);
+
+        /////////////////////////////////////////
         QStyle * st=QStyleFactory::create(s);
         //qApp->setStyle(st);
         QApplication::setStyle(st);
@@ -2051,10 +2076,66 @@ std::size_t MainWindow::getPhisicalMemory()
     return iResult;
 }
 //--------------------------------------------------------------------------------------------------------------------------------
-//--------------------------------------------------------------------------------------------------------------------------------
-//--------------------------------------------------------------------------------------------------------------------------------
-//--------------------------------------------------------------------------------------------------------------------------------
+bool MainWindow::eventFilter(QObject *watched, QEvent *event)
+{
+    if (watched == ui->lineDragRight){
+        if (event->type() == QEvent::MouseMove){
+            if (bInResizingLeftToolbar){
+                QMouseEvent *pe = (QMouseEvent *)event;
+                int iStoped = pe->globalX();
+                int iNewWidth = iStoredLeftDocbarWidth + (iStoped - iStoredLeftDocbarRightPos);
+                if (ui->dkActiveTickers->minimumWidth() < iNewWidth){
+                    resizeDocks({ui->dkActiveTickers},{iNewWidth},Qt::Orientation::Horizontal);
+                }
 
+            }
+        }
+        else if (event->type() == QEvent::MouseButtonPress){
+            bInResizingLeftToolbar = true;
+            if (!bLeftToolbarCursorOverriden){
+                QApplication::setOverrideCursor(Qt::CursorShape::SizeHorCursor);
+                bLeftToolbarCursorOverriden = true;
+            }
 
+            QMouseEvent *pe = (QMouseEvent *)event;
+            iStoredLeftDocbarRightPos = pe->globalX();
+            iStoredLeftDocbarWidth = ui->dkActiveTickers->width();
+
+        }
+        else if (event->type() == QEvent::MouseButtonRelease){
+            bInResizingLeftToolbar = false;
+            if (bLeftToolbarCursorOverriden) QApplication::restoreOverrideCursor();
+            bLeftToolbarCursorOverriden = false;
+
+            QMouseEvent *pe = (QMouseEvent *)event;
+            int iStoped = pe->globalX();
+            int iNewWidth = iStoredLeftDocbarWidth + (iStoped - iStoredLeftDocbarRightPos);
+            if (ui->dkActiveTickers->minimumWidth() < iNewWidth){
+                resizeDocks({ui->dkActiveTickers},{iNewWidth},Qt::Orientation::Horizontal);
+//                if (lcdN->minimumWidth() < iNewWidth){
+//                    QRect rec =  lcdN->geometry();
+//                    rec.setWidth(iNewWidth);
+//                    lcdN->setGeometry(rec);
+//                }
+            }
+        }
+        //MouseEnter/MouseLeave
+        else if (event->type() == QEvent::Enter){
+            if (!bLeftToolbarCursorOverriden){
+                QApplication::setOverrideCursor(Qt::CursorShape::SizeHorCursor);
+                bLeftToolbarCursorOverriden = true;
+            }
+        }
+        else if (event->type() == QEvent::Leave){
+            if (bLeftToolbarCursorOverriden) QApplication::restoreOverrideCursor();
+            bLeftToolbarCursorOverriden = false;
+        }
+
+    }
+    return QObject::eventFilter(watched, event);
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------------------
 
 
