@@ -931,6 +931,7 @@ void GraphViewForm::slotHScaleQuotesClicked(bool bPlus)
 
 
         ui->grViewQuotes->scene()->invalidate(ui->grViewQuotes->sceneRect());
+        ui->grViewVolume->scene()->invalidate(ui->grViewVolume->sceneRect());
     }
 }
 //---------------------------------------------------------------------------------------------------------------
