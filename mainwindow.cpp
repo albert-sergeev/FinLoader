@@ -1993,8 +1993,9 @@ void MainWindow::BuildSessionsTableForFastTasks(FastTasksHolder & fastHolder)
 //--------------------------------------------------------------------------------------------------------------------------------
 std::size_t MainWindow::getPhisicalMemory()
 {
-#ifdef _WIN32
     std::size_t iResult{0};
+
+#ifdef _WIN32
 
     typedef BOOL (WINAPI *PGMSE)(LPMEMORYSTATUSEX);
     std::string strModule("kernel32.dll");
@@ -2020,11 +2021,34 @@ std::size_t MainWindow::getPhisicalMemory()
         GlobalMemoryStatus( &mi );
         iResult = mi.dwTotalPhys;
     }
-    return iResult;
-#else
+
+#elif __linux__
+
     //read /proc/meminfo
-    return 0;
+    QProcess p;
+    p.start("awk", QStringList() << "/MemTotal/ { print $2 }" << "/proc/meminfo");
+    p.waitForFinished();
+    QString memory = p.readAllStandardOutput();
+    iResult = memory.toLong();
+    p.close();
+
+#elif defined(__APPLE__) && defined(__MACH__)
+
+    // read sysctl
+    QProcess p;
+    p.start("sysctl", QStringList() << "kern.version" << "hw.physmem");
+    p.waitForFinished();
+    QString system_info = p.readAllStandardOutput();
+    iResult = system_info.toLong();
+    p.close();
+
+#else
+
+    iResult = 0;
+
 #endif
+
+    return iResult;
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------
