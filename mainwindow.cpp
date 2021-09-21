@@ -10,16 +10,12 @@
 #include<QEvent>
 #include<QTimer>
 
-#include "testform.h"
 
 
 using seconds=std::chrono::duration<double>;
 using milliseconds=std::chrono::duration<double,
     std::ratio_multiply<seconds::period,std::milli>
     >;
-
-
-
 
 
 //--------------------------------------------------------------------------------------------------------------------------------
@@ -616,13 +612,6 @@ void MainWindow::LoadSettings()
             bGrayColorFroNotAutoloadedTickers   = m_settings.value("GrayColorFroNotAutoloadedTickers",false).toBool();
             iDefaultMonthDepth          = m_settings.value("DefaultMonthDepth",1).toInt();
 
-            iStoredAmiPipeFormWidth     = m_settings.value("StoredAmiPipeFormWidth",700).toInt();
-            iStoredTickerBarWidth       = m_settings.value("StoredTickerBarWidth",100).toInt();
-
-            bAmiPipesFormShown          = m_settings.value("AmiPipesFormShown",false).toBool();
-            bAmiPipesNewWndShown        = m_settings.value("bAmiPipesNewWndShown",true).toBool();
-            bAmiPipesActiveWndShown     = m_settings.value("bAmiPipesActiveWndShown",true).toBool();
-
         m_settings.endGroup();
 
         m_settings.beginGroup("Configwindow");
@@ -647,6 +636,13 @@ void MainWindow::LoadSettings()
         m_settings.endGroup();
 
         m_settings.beginGroup("AmiPipeForm");
+            iStoredAmiPipeFormWidth     = m_settings.value("StoredAmiPipeFormWidth",700).toInt();
+            iStoredTickerBarWidth       = m_settings.value("StoredTickerBarWidth",100).toInt();
+
+            bAmiPipesFormShown          = m_settings.value("AmiPipesFormShown",false).toBool();
+            bAmiPipesNewWndShown        = m_settings.value("bAmiPipesNewWndShown",true).toBool();
+            bAmiPipesActiveWndShown     = m_settings.value("bAmiPipesActiveWndShown",true).toBool();
+
             bAmiPipeShowByNameUnallocated   = m_settings.value("AmiPipeShowByNameUnallocated"   ,false).toBool();
             bAmiPipeShowByNameActive        = m_settings.value("AmiPipeShowByNameActive"        ,false).toBool();
             bAmiPipeShowByNameOff           = m_settings.value("AmiPipeShowByNameOff"           ,false).toBool();
@@ -682,12 +678,6 @@ void MainWindow::SaveSettings()
             m_settings.setValue("GrayColorFroNotAutoloadedTickers",bGrayColorFroNotAutoloadedTickers);
             m_settings.setValue("DefaultMonthDepth",iDefaultMonthDepth);
 
-            m_settings.setValue("StoredAmiPipeFormWidth",iStoredAmiPipeFormWidth);
-            m_settings.setValue("StoredTickerBarWidth",iStoredTickerBarWidth);
-            m_settings.setValue("AmiPipesFormShown",bAmiPipesFormShown);
-            m_settings.setValue("bAmiPipesNewWndShown",bAmiPipesNewWndShown);
-            m_settings.setValue("bAmiPipesActiveWndShown",bAmiPipesActiveWndShown);
-
         m_settings.endGroup();
 
         m_settings.beginGroup("Configwindow");
@@ -712,6 +702,12 @@ void MainWindow::SaveSettings()
         m_settings.endGroup();
 
         m_settings.beginGroup("AmiPipeForm");
+            m_settings.setValue("StoredAmiPipeFormWidth",iStoredAmiPipeFormWidth);
+            m_settings.setValue("StoredTickerBarWidth",iStoredTickerBarWidth);
+            m_settings.setValue("AmiPipesFormShown",bAmiPipesFormShown);
+            m_settings.setValue("bAmiPipesNewWndShown",bAmiPipesNewWndShown);
+            m_settings.setValue("bAmiPipesActiveWndShown",bAmiPipesActiveWndShown);
+
             m_settings.setValue("AmiPipeShowByNameUnallocated"  ,bAmiPipeShowByNameUnallocated);
             m_settings.setValue("AmiPipeShowByNameActive"  ,bAmiPipeShowByNameActive);
             m_settings.setValue("AmiPipeShowByNameOff"  ,bAmiPipeShowByNameOff);
@@ -2177,7 +2173,7 @@ bool MainWindow::eventFilter(QObject *watched, QEvent *event)
     return QObject::eventFilter(watched, event);
 }
 //--------------------------------------------------------------------------------------------------------------------------------
-bool MainWindow::eventTickerBar(QObject *watched, QEvent *event)
+bool MainWindow::eventTickerBar(QObject */*watched*/, QEvent *event)
 {
 
     const int iLineWidth{3};
