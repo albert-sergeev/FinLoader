@@ -1,6 +1,7 @@
 #include "amipipesform.h"
 #include "ui_amipipesform.h"
 #include<QMessageBox>
+#include<QMouseEvent>
 
 //--------------------------------------------------------------------------------------------------------------------
 AmiPipesForm::AmiPipesForm(modelMarketsList *modelM, int DefaultTickerMarket,
@@ -10,8 +11,10 @@ AmiPipesForm::AmiPipesForm(modelMarketsList *modelM, int DefaultTickerMarket,
                            bool ShowByNameUnallocated,
                            bool ShowByNameActive,
                            bool ShowByNameOff,
+                           bool bAmiPipesNewWndShown,
+                           bool bAmiPipesActiveWndShown,
                            QWidget *parent) :
-    QWidget(parent),//,Qt::Window | Qt::WindowStaysOnTopHint
+    QWidget(parent,Qt::Tool |Qt::FramelessWindowHint),//,Qt::Window | Qt::WindowStaysOnTopHint Qt::ToolQt::Sheet
     iDefaultTickerMarket{DefaultTickerMarket},
     modelMarket{modelM},
     modelTicker{modelT},
@@ -23,6 +26,11 @@ AmiPipesForm::AmiPipesForm(modelMarketsList *modelM, int DefaultTickerMarket,
     ui(new Ui::AmiPipesForm)
 {
     ui->setupUi(this);
+
+
+    ui->lineLeft->installEventFilter(this);
+    ui->lineDivider->installEventFilter(this);
+
 
     ///////////////////////////////////////////////////////////////////////
 //    trbtnLeft   = new TransparentButton(">","<",true,this);
@@ -61,6 +69,13 @@ AmiPipesForm::AmiPipesForm(modelMarketsList *modelM, int DefaultTickerMarket,
     swtShowByNameOff->SetOnColor(QPalette::Window,colorDarkGreen);
     swtShowByNameOff->SetOffColor(QPalette::Window,colorDarkRed);
     //-------------------------------------------------------------
+
+    if(!bAmiPipesNewWndShown){
+        slotTransparentBtnLeftStateChanged(0);
+    }
+    else if(!bAmiPipesActiveWndShown){
+        slotTransparentBtnRightStateChanged(0);
+    }
 
     ///////////////////////////////////////////////////////////////////////
 
@@ -772,6 +787,11 @@ void AmiPipesForm::showEvent(QShowEvent */*event*/)
 //--------------------------------------------------------------------------------------------------------------------
 void AmiPipesForm::resizeEvent(QResizeEvent */*event*/)
 {
+//    {
+//        ThreadFreeCout pcout;
+//        pcout <<"event->size().width(): "<<event->size().width()<<"\n";
+//    }
+//    emit WidthWasChanged(event->size().width());
     RepositionTransparentButtons();
 }
 //--------------------------------------------------------------------------------------------------------------------
@@ -821,7 +841,8 @@ void AmiPipesForm::slotShowByNamesOffChecked(int Checked)
 //--------------------------------------------------------------------------------------------------------------------
 void AmiPipesForm::slotBtnQuitClicked()
 {
-    this->close();
+    //this->close();
+    emit buttonHideClicked();
 }
 //--------------------------------------------------------------------------------------------------------------------
 void AmiPipesForm::RepositionTransparentButtons()
@@ -837,6 +858,7 @@ void AmiPipesForm::slotTransparentBtnLeftStateChanged(int /*iState*/)
     if(!ui->wtNew->isHidden() && !ui->wtActivities->isHidden()){
         QPoint pPos = ui->lineDivider->pos();
         iStoredWidthLeft = this->width() - pPos.x() + ui->lineDivider->width();
+        iStoredWidthNew = ui->wtNew->width();
 
         QRect rect = this->geometry();
 
@@ -846,6 +868,10 @@ void AmiPipesForm::slotTransparentBtnLeftStateChanged(int /*iState*/)
 
         trbtnLeft->hide();
         RepositionTransparentButtons();
+        emit WidthWasChanged(rect.width());
+        trbtnRight->setText(">");
+        emit NewWndStateChanged(0);
+
     }
 
     if(ui->wtActivities->isHidden()){
@@ -857,6 +883,9 @@ void AmiPipesForm::slotTransparentBtnLeftStateChanged(int /*iState*/)
 
         trbtnRight->show();
         RepositionTransparentButtons();
+        emit WidthWasChanged(rect.width());
+        trbtnLeft->setText(">");
+        emit ActiveWndStateChanged(1);
     }
 }
 //--------------------------------------------------------------------------------------------------------------------
@@ -865,6 +894,7 @@ void AmiPipesForm::slotTransparentBtnRightStateChanged(int /*iState*/)
     if(!ui->wtNew->isHidden() && !ui->wtActivities->isHidden()){
         QPoint pPos = ui->lineDivider->pos();
         iStoredWidthRight = this->width() - pPos.x() - ui->lineDivider->width();
+        iStoredWidthActive = ui->wtActivities->width();
 
         QRect rect = this->geometry();
         rect.setWidth(rect.width() - iStoredWidthRight);
@@ -874,6 +904,9 @@ void AmiPipesForm::slotTransparentBtnRightStateChanged(int /*iState*/)
 
         trbtnRight->hide();
         RepositionTransparentButtons();
+        emit WidthWasChanged(rect.width());
+        trbtnLeft->setText("<");
+        emit ActiveWndStateChanged(0);
     }
 
     if(ui->wtNew->isHidden()){
@@ -886,9 +919,89 @@ void AmiPipesForm::slotTransparentBtnRightStateChanged(int /*iState*/)
 
         trbtnLeft->show();
         RepositionTransparentButtons();
+        emit WidthWasChanged(rect.width());
+        trbtnRight->setText("<");
+        emit NewWndStateChanged(1);
     }
 }
 //--------------------------------------------------------------------------------------------------------------------
+int AmiPipesForm::CalculatedMimimum(){
+    const int iMinmumWidth{570}; // miminum was fixed, so...
+    int iCalculatedMimimum{iMinmumWidth};
+    if(ui->wtNew->isHidden()){
+        iCalculatedMimimum -= iStoredWidthNew;
+    }
+    if(ui->wtActivities->isHidden()){
+        iCalculatedMimimum -= iStoredWidthActive;
+    }
+    if (iCalculatedMimimum > iStoredWidthRight){
+        iCalculatedMimimum = iStoredWidthRight;
+    }
+    return iCalculatedMimimum;
+}
 //--------------------------------------------------------------------------------------------------------------------
+bool AmiPipesForm::eventFilter(QObject *watched, QEvent *event)
+{
+
+    if (watched == ui->lineLeft){
+        if (event->type() == QEvent::MouseMove){
+            if (bInResizingLeftLine){
+                QMouseEvent *pe = (QMouseEvent *)event;
+                int iStoped = pe->globalX();//pe->pos().x();
+
+                int iNewWidth = iStoredWidthRight + (iStoped - iStoredMousePos);
+                if (CalculatedMimimum() < iNewWidth)
+                {
+                      emit WidthWasChanged(iNewWidth);
+                }
+            }
+        }
+        else if (event->type() == QEvent::MouseButtonPress){
+
+            bInResizingLeftLine = true;
+            if (!bCursorOverrided){
+                QApplication::setOverrideCursor(Qt::CursorShape::SizeHorCursor);
+                bCursorOverrided = true;
+            }
+
+            QMouseEvent *pe = (QMouseEvent *)event;
+            iStoredMousePos = pe->globalX();//pe->pos().x();
+            iStoredWidthRight = this->width();
+
+        }
+        else if (event->type() == QEvent::MouseButtonRelease){
+            bInResizingLeftLine = false;
+            if (bCursorOverrided) QApplication::restoreOverrideCursor();
+            bCursorOverrided = false;
+
+            QMouseEvent *pe = (QMouseEvent *)event;
+
+            int iStoped = pe->globalX();//pe->pos().x();
+            int iNewWidth = iStoredWidthRight + (iStoped - iStoredMousePos);
+
+            if (CalculatedMimimum() < iNewWidth)
+            {
+                  emit WidthWasChanged(iNewWidth);
+                //resizeDocks({ui->dkActiveTickers},{iNewWidth},Qt::Orientation::Horizontal);
+            }
+        }
+        else if (event->type() == QEvent::Enter){
+            if (!bCursorOverrided){
+                QApplication::setOverrideCursor(Qt::CursorShape::SizeHorCursor);
+                bCursorOverrided = true;
+            }
+        }
+        else if (event->type() == QEvent::Leave){
+            if (bCursorOverrided) QApplication::restoreOverrideCursor();
+            bCursorOverrided = false;
+        }
+    }
+    if (watched == ui->lineDivider){
+
+    }
+    return QObject::eventFilter(watched, event);
+}
+//--------------------------------------------------------------------------------------------------------------------
+
 //--------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------

@@ -179,6 +179,14 @@ private:
     bool bInResizingLeftToolbar;
     bool bLeftToolbarCursorOverriden;
 
+    QDockWidget *wtAmiDockbar;
+    int iStoredAmiPipeFormWidth;
+    int iStoredTickerBarWidth;
+    bool bAmiPipesFormShown;
+
+    bool bAmiPipesNewWndShown;
+    bool bAmiPipesActiveWndShown;
+
 
     std::vector<Bulbululator *> vBulbululators;
 
@@ -249,11 +257,18 @@ public slots: // for import FinQuotes winow
     void slotSaveNewDefaultPath(bool,QString);
     void slotSaveGeneralOptions(bool,bool,int);
 
-public slots:
+public slots: // for amipipe form
 
     void slotAmiPipeSaveShowByNamesUnallocated(bool);
     void slotAmiPipeSaveShowByNamesActive(bool);
     void slotAmiPipeSaveShowByNamesOff(bool);
+
+    void slotAmiPipeWidthWasChanged(int);
+
+    void slotAmiPipeNewWndStateChanged(int);
+    void slotAmiPipeActiveWndStateChanged(int);
+
+    void slotAmiPipeHideClicked();
 
 
 protected slots: // for main window
@@ -316,6 +331,8 @@ protected slots: // for main window
 
     std::size_t getPhisicalMemory();
 
+    void ResizingLeftToolBars();
+
 private:
     //std::vector<std::vector<Bar>> testPvBars; // TODO: delete. for tests
 
@@ -328,5 +345,6 @@ private:
     // QObject interface
 public:
     bool eventFilter(QObject *watched, QEvent *event);
+    bool eventTickerBar(QObject *watched, QEvent *event);
 };
 #endif // MAINWINDOW_H

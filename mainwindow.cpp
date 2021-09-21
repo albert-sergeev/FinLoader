@@ -8,6 +8,9 @@
 #include<QProcess>
 #include<QMouseEvent>
 #include<QEvent>
+#include<QTimer>
+
+#include "testform.h"
 
 
 using seconds=std::chrono::duration<double>;
@@ -88,7 +91,10 @@ MainWindow::MainWindow(QWidget *parent)
     swtShowByName->SetOffColor(QPalette::Window,colorDarkRed);
     //-------------------------------------------------------------
     ui->dkActiveTickers->setTitleBarWidget(new QWidget());
-    ui->lineDragRight->installEventFilter(this);
+//    //ui->lineDragRight->installEventFilter(this);
+    ui->wtTickerBar->installEventFilter(this);
+    ui->wtTickerBar->setAttribute(Qt::WA_Hover, true);
+
     bInResizingLeftToolbar = false;
     bLeftToolbarCursorOverriden = false;
 
@@ -610,6 +616,13 @@ void MainWindow::LoadSettings()
             bGrayColorFroNotAutoloadedTickers   = m_settings.value("GrayColorFroNotAutoloadedTickers",false).toBool();
             iDefaultMonthDepth          = m_settings.value("DefaultMonthDepth",1).toInt();
 
+            iStoredAmiPipeFormWidth     = m_settings.value("StoredAmiPipeFormWidth",700).toInt();
+            iStoredTickerBarWidth       = m_settings.value("StoredTickerBarWidth",100).toInt();
+
+            bAmiPipesFormShown          = m_settings.value("AmiPipesFormShown",false).toBool();
+            bAmiPipesNewWndShown        = m_settings.value("bAmiPipesNewWndShown",true).toBool();
+            bAmiPipesActiveWndShown     = m_settings.value("bAmiPipesActiveWndShown",true).toBool();
+
         m_settings.endGroup();
 
         m_settings.beginGroup("Configwindow");
@@ -668,6 +681,12 @@ void MainWindow::SaveSettings()
             m_settings.setValue("FillNotAutoloadedTickers",bFillNotAutoloadedTickers);
             m_settings.setValue("GrayColorFroNotAutoloadedTickers",bGrayColorFroNotAutoloadedTickers);
             m_settings.setValue("DefaultMonthDepth",iDefaultMonthDepth);
+
+            m_settings.setValue("StoredAmiPipeFormWidth",iStoredAmiPipeFormWidth);
+            m_settings.setValue("StoredTickerBarWidth",iStoredTickerBarWidth);
+            m_settings.setValue("AmiPipesFormShown",bAmiPipesFormShown);
+            m_settings.setValue("bAmiPipesNewWndShown",bAmiPipesNewWndShown);
+            m_settings.setValue("bAmiPipesActiveWndShown",bAmiPipesActiveWndShown);
 
         m_settings.endGroup();
 
@@ -1292,7 +1311,7 @@ void MainWindow::slotSetActiveStyle     (QString s)
 //        pal.setColor(QPalette::Text,  Qt::magenta);
         //pal.setColor(QPalette::Active, QPalette::Base, Qt::white);
         //pal.setColor(QPalette::ColorRole::Window, Qt::white);
-        this->setPalette(pal);
+//        this->setPalette(pal);
 
         /////////////////////////////////////////
         QStyle * st=QStyleFactory::create(s);
@@ -1570,6 +1589,9 @@ void MainWindow::slotDocbarShowNyNameChanged(int i)
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::InitDockBar()
 {
+    ////////////////////////////////////////////////////////////////////////
+    /// prepare content for tickers bar doc
+
     if (swtShowAll){
         proxyTickerModel.setFilterByActive(!swtShowAll->isChecked());
     }
@@ -1579,7 +1601,69 @@ void MainWindow::InitDockBar()
     ui->lstView->setModel(&proxyTickerModel);
 
     slotDocbarShowMarketChanged(0);
+    ////////////////////////////////////////////////////////////////////////
+    /// prepare dockbar objects
 
+    wtAmiDockbar = new QDockWidget();
+    wtAmiDockbar->setObjectName("wtAmiDockbar");
+    wtAmiDockbar ->setTitleBarWidget(new QWidget());
+    addDockWidget(Qt::LeftDockWidgetArea, wtAmiDockbar);
+    splitDockWidget(wtAmiDockbar,ui->dkActiveTickers,Qt::Horizontal);
+    ////////////////////////////////////////////////////////////////////////
+    /// prepare content for ami pipe docbar doc
+
+    pAmiPipeWindow=new AmiPipesForm (&m_MarketLstModel,iDefaultTickerMarket,&m_TickerLstModel,pipesHolder,vTickersLst,
+                                              bAmiPipeShowByNameUnallocated, bAmiPipeShowByNameActive,bAmiPipeShowByNameOff,
+                                              bAmiPipesNewWndShown, bAmiPipesActiveWndShown);
+
+    pAmiPipeWindow->setWindowTitle(tr("Import from trade sistems"));
+    pAmiPipeWindow->setWindowIcon(QPixmap(":/store/images/sc_cut"));
+    connect(pAmiPipeWindow,SIGNAL(NeedSaveDefaultTickerMarket(int)),this,SLOT(slotStoreDefaultTickerMarket(int)));
+
+    connect(pAmiPipeWindow,SIGNAL(SendToMainLog(QString)),this,SIGNAL(SendToLog(QString)));
+    connect(pAmiPipeWindow,SIGNAL(WasCloseEvent()),this,SLOT(slotAmiPipeFormWasClosed()));
+
+    connect(pAmiPipeWindow,SIGNAL(NeedSaveShowByNamesUnallocated(bool)),this,SLOT(slotAmiPipeSaveShowByNamesUnallocated(bool)));
+    connect(pAmiPipeWindow,SIGNAL(NeedSaveShowByNamesActive(bool)),this,SLOT(slotAmiPipeSaveShowByNamesActive(bool)));
+    connect(pAmiPipeWindow,SIGNAL(NeedSaveShowByNamesOff(bool)),this,SLOT(slotAmiPipeSaveShowByNamesOff(bool)));
+
+    connect(pAmiPipeWindow,SIGNAL(WidthWasChanged(int)),this,SLOT(slotAmiPipeWidthWasChanged(int)));
+
+    connect(pAmiPipeWindow,SIGNAL(NewWndStateChanged(int)),this,SLOT(slotAmiPipeNewWndStateChanged(int)));
+    connect(pAmiPipeWindow,SIGNAL(ActiveWndStateChanged(int)),this,SLOT(slotAmiPipeActiveWndStateChanged(int)));
+
+    connect(pAmiPipeWindow,SIGNAL(buttonHideClicked()),this,SLOT(slotAmiPipeHideClicked()));
+
+    ///////////////////////////////////////////////////////////////////////
+
+    wtAmiDockbar->setWidget(pAmiPipeWindow);
+    ////////////////////////////////////////////////////////////////////////
+    /// resizing and hiding/showing
+
+    ResizingLeftToolBars();
+
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::ResizingLeftToolBars()
+{
+    if (bAmiPipesFormShown){
+        if (wtAmiDockbar->isHidden()) wtAmiDockbar->show();
+
+        pAmiPipeWindow->setFixedWidth(iStoredAmiPipeFormWidth);
+
+        resizeDocks({wtAmiDockbar,ui->dkActiveTickers},{iStoredAmiPipeFormWidth,iStoredTickerBarWidth},Qt::Orientation::Horizontal);
+
+    }
+    else{
+        if (!wtAmiDockbar->isHidden()) wtAmiDockbar->hide();
+        resizeDocks({ui->dkActiveTickers},{iStoredTickerBarWidth},Qt::Orientation::Horizontal);
+    }
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotAmiPipeWidthWasChanged(int iW)
+{
+    iStoredAmiPipeFormWidth = iW;
+    ResizingLeftToolBars();
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::slotToolBarStateChanged()
@@ -1937,29 +2021,36 @@ void MainWindow::slotSaveNewDefaultPath(bool bDef,QString qsPath)
 void MainWindow::slotAmiPipeWndow()
 {
 
-    if(pAmiPipeWindow == nullptr){
-        pAmiPipeWindow=new AmiPipesForm (&m_MarketLstModel,iDefaultTickerMarket,&m_TickerLstModel,pipesHolder,vTickersLst,
-                                          bAmiPipeShowByNameUnallocated, bAmiPipeShowByNameActive,bAmiPipeShowByNameOff);
-        pAmiPipeWindow->setAttribute(Qt::WA_DeleteOnClose);
-        pAmiPipeWindow->setWindowTitle(tr("Import from trade sistems"));
-        pAmiPipeWindow->setWindowIcon(QPixmap(":/store/images/sc_cut"));
-        connect(pAmiPipeWindow,SIGNAL(NeedSaveDefaultTickerMarket(int)),this,SLOT(slotStoreDefaultTickerMarket(int)));
+    bAmiPipesFormShown = !bAmiPipesFormShown;
 
-        //ui->mdiArea->addSubWindow(pdoc);
-
-        connect(pAmiPipeWindow,SIGNAL(SendToMainLog(QString)),this,SIGNAL(SendToLog(QString)));
-        connect(pAmiPipeWindow,SIGNAL(WasCloseEvent()),this,SLOT(slotAmiPipeFormWasClosed()));
-
-        connect(pAmiPipeWindow,SIGNAL(NeedSaveShowByNamesUnallocated(bool)),this,SLOT(slotAmiPipeSaveShowByNamesUnallocated(bool)));
-        connect(pAmiPipeWindow,SIGNAL(NeedSaveShowByNamesActive(bool)),this,SLOT(slotAmiPipeSaveShowByNamesActive(bool)));
-        connect(pAmiPipeWindow,SIGNAL(NeedSaveShowByNamesOff(bool)),this,SLOT(slotAmiPipeSaveShowByNamesOff(bool)));
+    ResizingLeftToolBars();
 
 
-        pAmiPipeWindow->show();
-    }
-    else{
-        pAmiPipeWindow->setFocus();
-    }
+//    if(pAmiPipeWindow == nullptr){
+
+//        pAmiPipeWindow=new AmiPipesForm (&m_MarketLstModel,iDefaultTickerMarket,&m_TickerLstModel,pipesHolder,vTickersLst,
+//                                          bAmiPipeShowByNameUnallocated, bAmiPipeShowByNameActive,bAmiPipeShowByNameOff);
+//        pAmiPipeWindow->setAttribute(Qt::WA_DeleteOnClose);
+//        pAmiPipeWindow->setWindowTitle(tr("Import from trade sistems"));
+//        pAmiPipeWindow->setWindowIcon(QPixmap(":/store/images/sc_cut"));
+//        connect(pAmiPipeWindow,SIGNAL(NeedSaveDefaultTickerMarket(int)),this,SLOT(slotStoreDefaultTickerMarket(int)));
+
+//        //ui->mdiArea->addSubWindow(pdoc);
+
+//        connect(pAmiPipeWindow,SIGNAL(SendToMainLog(QString)),this,SIGNAL(SendToLog(QString)));
+//        connect(pAmiPipeWindow,SIGNAL(WasCloseEvent()),this,SLOT(slotAmiPipeFormWasClosed()));
+
+//        connect(pAmiPipeWindow,SIGNAL(NeedSaveShowByNamesUnallocated(bool)),this,SLOT(slotAmiPipeSaveShowByNamesUnallocated(bool)));
+//        connect(pAmiPipeWindow,SIGNAL(NeedSaveShowByNamesActive(bool)),this,SLOT(slotAmiPipeSaveShowByNamesActive(bool)));
+//        connect(pAmiPipeWindow,SIGNAL(NeedSaveShowByNamesOff(bool)),this,SLOT(slotAmiPipeSaveShowByNamesOff(bool)));
+
+
+//        pAmiPipeWindow->show();
+//    }
+//    else{
+//        pAmiPipeWindow->show();
+//        pAmiPipeWindow->setFocus();
+//    }
 
 }
 //--------------------------------------------------------------------------------------------------------------------------------
@@ -1976,10 +2067,12 @@ void MainWindow::slotSaveGeneralOptions(bool FillNotAutoloaded,bool GrayColor,in
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::slotAmiPipeFormWasClosed()
 {
-    if (pAmiPipeWindow){
-        delete pAmiPipeWindow;
-        pAmiPipeWindow = nullptr;
-    }
+//    resizeDocks({ui->dkActiveTickers},{iStoredTickerBarWidth},Qt::Orientation::Horizontal);
+//    if (pAmiPipeWindow){
+//        ui->gridLayoutDockBarRight->removeWidget(pAmiPipeWindow);
+//        delete pAmiPipeWindow;
+//        pAmiPipeWindow = nullptr;
+//    }
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::slotAmiPipeSaveShowByNamesUnallocated(bool b)
@@ -2078,19 +2171,48 @@ std::size_t MainWindow::getPhisicalMemory()
 //--------------------------------------------------------------------------------------------------------------------------------
 bool MainWindow::eventFilter(QObject *watched, QEvent *event)
 {
-    if (watched == ui->lineDragRight){
-        if (event->type() == QEvent::MouseMove){
-            if (bInResizingLeftToolbar){
-                QMouseEvent *pe = (QMouseEvent *)event;
-                int iStoped = pe->globalX();
-                int iNewWidth = iStoredLeftDocbarWidth + (iStoped - iStoredLeftDocbarRightPos);
-                if (ui->dkActiveTickers->minimumWidth() < iNewWidth){
-                    resizeDocks({ui->dkActiveTickers},{iNewWidth},Qt::Orientation::Horizontal);
-                }
+    if (watched == ui->wtTickerBar){
+        eventTickerBar(watched, event);
+    }
+    return QObject::eventFilter(watched, event);
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+bool MainWindow::eventTickerBar(QObject *watched, QEvent *event)
+{
 
+    const int iLineWidth{3};
+
+    if (event->type() == QEvent::HoverMove){
+        QMouseEvent *pe = (QMouseEvent *)event;
+        QPoint pt = pe->pos();
+        if (pt.x() + iLineWidth > ui->wtTickerBar->width()){
+            if (!bLeftToolbarCursorOverriden){
+                QApplication::setOverrideCursor(Qt::CursorShape::SizeHorCursor);
+                bLeftToolbarCursorOverriden = true;
             }
         }
-        else if (event->type() == QEvent::MouseButtonPress){
+        else{
+            if (bLeftToolbarCursorOverriden && !bInResizingLeftToolbar) {
+                QApplication::restoreOverrideCursor();
+                bLeftToolbarCursorOverriden = false;
+            }
+        }
+        if (bInResizingLeftToolbar){
+
+            int iStoped = pe->pos().x();
+            int iNewWidth = iStoredLeftDocbarWidth + (iStoped - iStoredLeftDocbarRightPos);
+
+            if (ui->dkActiveTickers->minimumWidth() < iNewWidth){
+                iStoredTickerBarWidth = iNewWidth;
+                //resizeDocks({ui->dkActiveTickers},{iNewWidth},Qt::Orientation::Horizontal);
+                ResizingLeftToolBars();
+            }
+        }
+    }
+    else if (event->type() == QEvent::MouseButtonPress){
+        QMouseEvent *pe = (QMouseEvent *)event;
+        QPoint pt = pe->pos();
+        if (pt.x() + iLineWidth > ui->wtTickerBar->width()){
             bInResizingLeftToolbar = true;
             if (!bLeftToolbarCursorOverriden){
                 QApplication::setOverrideCursor(Qt::CursorShape::SizeHorCursor);
@@ -2098,44 +2220,74 @@ bool MainWindow::eventFilter(QObject *watched, QEvent *event)
             }
 
             QMouseEvent *pe = (QMouseEvent *)event;
-            iStoredLeftDocbarRightPos = pe->globalX();
+            iStoredLeftDocbarRightPos = pe->pos().x();
             iStoredLeftDocbarWidth = ui->dkActiveTickers->width();
-
         }
-        else if (event->type() == QEvent::MouseButtonRelease){
-            bInResizingLeftToolbar = false;
-            if (bLeftToolbarCursorOverriden) QApplication::restoreOverrideCursor();
+    }
+    else if (event->type() == QEvent::MouseButtonRelease){
+
+        if (bLeftToolbarCursorOverriden){
+            QApplication::restoreOverrideCursor();
             bLeftToolbarCursorOverriden = false;
-
-            QMouseEvent *pe = (QMouseEvent *)event;
-            int iStoped = pe->globalX();
-            int iNewWidth = iStoredLeftDocbarWidth + (iStoped - iStoredLeftDocbarRightPos);
-            if (ui->dkActiveTickers->minimumWidth() < iNewWidth){
-                resizeDocks({ui->dkActiveTickers},{iNewWidth},Qt::Orientation::Horizontal);
-//                if (lcdN->minimumWidth() < iNewWidth){
-//                    QRect rec =  lcdN->geometry();
-//                    rec.setWidth(iNewWidth);
-//                    lcdN->setGeometry(rec);
-//                }
-            }
         }
-        //MouseEnter/MouseLeave
-        else if (event->type() == QEvent::Enter){
+        if (bInResizingLeftToolbar){
+                bInResizingLeftToolbar = false;
+
+                QMouseEvent *pe = (QMouseEvent *)event;
+                int iStoped = pe->pos().x();
+                int iNewWidth = iStoredLeftDocbarWidth + (iStoped - iStoredLeftDocbarRightPos);
+
+                if (ui->dkActiveTickers->minimumWidth() < iNewWidth){
+
+                    iStoredTickerBarWidth = iNewWidth;
+                    //resizeDocks({ui->dkActiveTickers},{iNewWidth},Qt::Orientation::Horizontal);
+                    ResizingLeftToolBars();
+
+                }
+        }
+    }
+    else if (event->type() == QEvent::HoverEnter){
+        QMouseEvent *pe = (QMouseEvent *)event;
+        QPoint pt = pe->pos();
+        if (pt.x() + iLineWidth > ui->wtTickerBar->width()){
             if (!bLeftToolbarCursorOverriden){
                 QApplication::setOverrideCursor(Qt::CursorShape::SizeHorCursor);
                 bLeftToolbarCursorOverriden = true;
             }
         }
-        else if (event->type() == QEvent::Leave){
-            if (bLeftToolbarCursorOverriden) QApplication::restoreOverrideCursor();
+    }
+    else if (event->type() == QEvent::HoverLeave){
+        if (bLeftToolbarCursorOverriden) {
+            QApplication::restoreOverrideCursor();
             bLeftToolbarCursorOverriden = false;
         }
-
     }
-    return QObject::eventFilter(watched, event);
+    return true;
+}
+
+//--------------------------------------------------------------------------------------------------------------------------------
+void  MainWindow::slotAmiPipeNewWndStateChanged(int iS)
+{
+    if (iS != 0)    bAmiPipesNewWndShown = true;
+    else            bAmiPipesNewWndShown = false;
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void  MainWindow::slotAmiPipeActiveWndStateChanged(int iS)
+{
+    if (iS != 0)    bAmiPipesActiveWndShown = true;
+    else            bAmiPipesActiveWndShown = false;
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void  MainWindow::slotAmiPipeHideClicked()
+{
+    bAmiPipesFormShown = false;
+    ResizingLeftToolBars();
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------------------------------------
+
 
 

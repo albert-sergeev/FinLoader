@@ -53,6 +53,13 @@ protected:
 
     int iStoredWidthLeft{0};
     int iStoredWidthRight{0};
+    int iStoredMousePos{0};
+
+    bool bInResizingLeftLine;    
+    bool bCursorOverrided;
+
+    int iStoredWidthNew{0};
+    int iStoredWidthActive{0};
 
 public:
     explicit AmiPipesForm(modelMarketsList *modelM, int DefaultTickerMarket,
@@ -62,6 +69,8 @@ public:
                           bool ShowByNameUnallocated,
                           bool ShowByNameActive,
                           bool ShowByNameOff,
+                          bool bAmiPipesNewWndShown,
+                          bool bAmiPipesActiveWndShown,
                           QWidget *parent = nullptr);
     ~AmiPipesForm();
 
@@ -74,6 +83,13 @@ signals:
     void NeedSaveShowByNamesUnallocated(bool);
     void NeedSaveShowByNamesActive(bool);
     void NeedSaveShowByNamesOff(bool);
+
+    void WidthWasChanged(int);
+
+    void NewWndStateChanged(int);
+    void ActiveWndStateChanged(int);
+
+    void buttonHideClicked();
 
 
 protected:
@@ -123,6 +139,8 @@ protected slots:
     void slotTransparentBtnLeftStateChanged(int);
     void slotTransparentBtnRightStateChanged(int);
 
+    int CalculatedMimimum();
+
 private:
     Ui::AmiPipesForm *ui;
 
@@ -131,6 +149,8 @@ protected:
     void showEvent(QShowEvent *event);
     void resizeEvent(QResizeEvent *event);
     void closeEvent(QCloseEvent *event);
+
+    bool eventFilter(QObject *watched, QEvent *event);
 };
 
 #endif // AMIPIPERFORM_H

@@ -13,11 +13,9 @@ int main(int argc, char *argv[])
     //------------------------------------------------------
 
     int iCount{0};
-    bool bTheOne {false};
     while(iCount < 5){ // wait for 5 second if it was reboot
         OneOfKindProtector one;
         if (one.TheOne()){
-            bTheOne = true;
             /////////////////////////
             MainWindow w;
             w.show();
@@ -29,11 +27,9 @@ int main(int argc, char *argv[])
         ++iCount;
     }
 
-    if (!bTheOne){
-        (void)QMessageBox::critical(0,"Warning",
-                                   "Only one instance of the application can be runing at a time!",
-                                   QMessageBox::Ok
-                                   );
-        std::cout<<"Only one instance of the application can be runing at a time!\n";
-    }
+    (void)QMessageBox::critical(0,"Warning",
+                               "Only one instance of the application can be runing at a time!",
+                               QMessageBox::Ok
+                               );
+    std::cout<<"Only one instance of the application can be runing at a time!\n";
 }
