@@ -134,6 +134,7 @@ protected slots:
 
     void slotSelectNewTicker(const  QModelIndex&);
     void slotBindClicked();
+    void slotBindAllClicked();
 
     void slotShowByNamesUnallocatedChecked(int Checked);
     void slotShowByNamesActiveChecked(int Checked);
