@@ -1443,8 +1443,10 @@ void workerLoader::workerAmiClient(BlockFreeQueue<dataFinLoadTask> & /*queueFinQ
                         }
                         bWasRefresh = true;
                         break;
-
-                    }
+                    case dataAmiPipeTask::eTask_type::AskPipesNames:
+                        pipesHolder.AskPipesNames(data.pipesFree,queuePipeAnswers);
+                        break;
+                    }   
                     ///
                     if (!this_thread_flagInterrup.isSet()){
                         pdata =queuePipeTasks.Pop(bSuccess);
@@ -1458,7 +1460,14 @@ void workerLoader::workerAmiClient(BlockFreeQueue<dataFinLoadTask> & /*queueFinQ
 
                 {
                     ActiveProcessCounter counter;
-                    pipesHolder.ReadConnectedPipes(queueFastTasks,queuePipeAnswers,queueTrdAnswers,iBytesRead,bWasFullBuffers);
+                    pipesHolder.ReadConnectedPipes(queueFastTasks,queuePipeAnswers,queueTrdAnswers,false,iBytesRead,bWasFullBuffers);
+                }
+
+                {
+                    ActiveProcessCounter counter;
+                    int iBytesRead;
+                    bool bWasFullBuffers;
+                    pipesHolder.ReadConnectedPipes(queueFastTasks,queuePipeAnswers,queueTrdAnswers,true,iBytesRead,bWasFullBuffers);
                 }
 
                 ///////////////////////////////////////////////////////////////////////////////

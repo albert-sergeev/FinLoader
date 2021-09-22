@@ -230,6 +230,8 @@ signals:
 
     void AmiPipeInternalPanelsStateChanged(bool bLeft, bool bRight);
 
+    void PipeNameReceived(std::string,std::string);
+
 protected:
     void InitAction();
     void SaveSettings();
@@ -278,7 +280,7 @@ public slots: // for amipipe form
     void slotAmiPipeWndowNew();
     void slotAmiPipeWndowActive();
 
-
+    void slotAskPipesNames(dataAmiPipeTask::pipes_type &pipesFree);
 
 protected slots: // for main window
     void slotNotImpl    ();

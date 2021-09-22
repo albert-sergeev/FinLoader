@@ -296,6 +296,9 @@ void MainWindow::timerEvent(QTimerEvent * event)
             case dataAmiPipeAnswer::eAnswerType::FastShowEvent:
                 slotSendSignalToFastShow(data.TickerID(), data.tBegin, data.tEnd, data.ptrHolder);
                 break;
+            case dataAmiPipeAnswer::eAnswerType::AskNameAnswer:
+                emit PipeNameReceived(data.GetBind(),data.GetPipeName());
+                break;
             }
             //////////////////////////////////////////////
             pdataAmiPipe = queuePipeAnswers.Pop(bSuccessAmi);
@@ -511,10 +514,10 @@ void MainWindow::CheckActivePipes()
         dtCheckPipesActivity = std::chrono::steady_clock::now();
         //
         dataAmiPipeTask taskAmi(dataAmiPipeTask::eTask_type::RefreshPipeList);
-        dataAmiPipeTask::pipes_type FreePipes;
+
         std::vector<int> vUnconnected;
         std::vector<int> vInformants;
-        pipesHolder.CheckPipes(vTickersLst,taskAmi.pipesBindedActive,taskAmi.pipesBindedOff,FreePipes,vUnconnected,vInformants);
+        pipesHolder.CheckPipes(vTickersLst,taskAmi.pipesBindedActive,taskAmi.pipesBindedOff,taskAmi.pipesFree,vUnconnected,vInformants);
         ////////////////////////////
         for (auto &m:mStoredUnconnected) m.second = 0;
         for(const auto &TickerID:vUnconnected){
@@ -552,6 +555,14 @@ void MainWindow::CheckActivePipes()
         //
         queuePipeTasks.Push(taskAmi);
     }
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotAskPipesNames(dataAmiPipeTask::pipes_type &pipesFree)
+{
+    dataAmiPipeTask task(dataAmiPipeTask::eTask_type::AskPipesNames);
+    task.pipesFree = pipesFree;
+
+    queuePipeTasks.Push(task);
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::slotSendSignalToInvalidateGraph(int TickerID, std::time_t dtDegin, std::time_t dtEnd)
@@ -1658,6 +1669,10 @@ void MainWindow::InitDockBar()
     connect(pAmiPipeWindow,SIGNAL(buttonHideClicked()),this,SLOT(slotAmiPipeHideClicked()));
 
     connect(this,SIGNAL(AmiPipeInternalPanelsStateChanged(bool, bool)),pAmiPipeWindow,SLOT(slotInternalPanelsStateChanged(bool, bool)));
+
+    connect(pAmiPipeWindow,SIGNAL(AskPipesNames(dataAmiPipeTask::pipes_type &)),this,SLOT(slotAskPipesNames(dataAmiPipeTask::pipes_type &)));
+
+    connect(this,SIGNAL(PipeNameReceived(std::string,std::string)),pAmiPipeWindow,SLOT(slotPipeNameReceived(std::string,std::string)));
 
     ///////////////////////////////////////////////////////////////////////
 

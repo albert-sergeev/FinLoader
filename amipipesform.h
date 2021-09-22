@@ -35,6 +35,7 @@ protected:
 
     QStringListModel    *modelNew;
     dataAmiPipeTask::pipes_type mFreePipes;
+    dataAmiPipeTask::pipes_type mFreePipesAsked;
 
     AmiPipeHolder &pipes;
 
@@ -91,8 +92,11 @@ signals:
 
     void buttonHideClicked();
 
+    void AskPipesNames(dataAmiPipeTask::pipes_type &pipesFree);
+
 public slots:
     void slotInternalPanelsStateChanged(bool bLeft, bool bRight);
+    void slotPipeNameReceived(std::string,std::string);
 
 protected:
     void SetMarketModel();

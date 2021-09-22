@@ -15,12 +15,14 @@ class dataAmiPipeTask
 //                                             std::tuple<std::string,std::string,std::filesystem::directory_entry,int>
 //                >> pipes_type;
 public:
-    enum eTask_type:int {Nop = -1, RefreshPipeList = 1};
+    enum eTask_type:int {Nop = -1, RefreshPipeList = 1, AskPipesNames = 2};
 
-    typedef std::map<std::string,std::pair<int,std::tuple<std::string,std::string,std::string,int,int>>> pipes_type;
+    typedef std::map<std::string,std::pair<int,std::tuple<std::string,std::string,std::string,int,int,std::string>>> pipes_type;
 private:
     eTask_type tType;
 public:
+    dataAmiPipeTask::pipes_type pipesFree;
+
     dataAmiPipeTask::pipes_type pipesBindedActive;
     dataAmiPipeTask::pipes_type pipesBindedOff;
 

@@ -216,8 +216,8 @@ void Storage::SaveMarketConfigV_1(std::vector<Market> & vMarketsLst)
     //
     for(const auto & m:vMarketsLst){
         fileMarket<<m.MarketID()<<" ";
-        fileMarket<<m.MarketName()<<" ";
-        fileMarket<<m.MarketSign()<<" ";
+        fileMarket<<filter(trim(m.MarketName()))<<" ";
+        fileMarket<<filter(trim(m.MarketSign()))<<" ";
         fileMarket<<m.AutoLoad()<<" ";
         fileMarket<<m.UpToSys()<<" ";
         fileMarket<<m.StartTime()<<" ";
@@ -541,12 +541,12 @@ void Storage::SaveTickerConfigV_2(std::filesystem::path  pathFile,const Ticker &
     fileTicker<<tT.MarketID()<<",";
     fileTicker<<tT.TickerID()<<",";
 
-    fileTicker<<trim(tT.TickerName())<<",";
+    fileTicker<<filter(trim(tT.TickerName()))<<",";
     //fileTicker<<tT.TickerName()<<",";
 
-    fileTicker<<trim(tT.TickerSign())<<",";
-    fileTicker<<trim(tT.TickerSignFinam())<<",";
-    fileTicker<<trim(tT.TickerSignQuik())<<",";
+    fileTicker<<filter(trim(tT.TickerSign()))<<",";
+    fileTicker<<filter(trim(tT.TickerSignFinam()))<<",";
+    fileTicker<<filter(trim(tT.TickerSignQuik()))<<",";
     fileTicker<<tT.AutoLoad()<<",";
     fileTicker<<tT.UpToSys()<<",";
     fileTicker<<tT.Bulbululator()<<",";

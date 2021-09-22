@@ -66,6 +66,36 @@ void AmiPipeHolder::initStartConst(){
     t1970_01_01_04_00_00 = mktime_gm(&t_tm);
 };
 //-------------------------------------------------------------------------------------------------
+std::string AmiPipeHolder::getSignFromBind(std::string sBind)
+{
+    std::stringstream ssRegSign;
+    ssRegSign <<"(?:(?![.]).)+$";
+    const std::regex reAmiSign {ssRegSign.str()};
+    const auto ItSign = std::sregex_token_iterator(sBind.begin(),sBind.end(),reAmiSign);
+
+    if (ItSign != std::sregex_token_iterator()){
+        return *ItSign;
+    }
+    else{
+        return "";
+    }
+}
+//-------------------------------------------------------------------------------------------------
+std::string AmiPipeHolder::getNameFromRaw(std::string sRaw)
+{
+    std::stringstream ssRegName;
+    ssRegName <<"^[^\[]+";
+    const std::regex reAmiSign {ssRegName.str()};
+    const auto ItSign = std::sregex_token_iterator(sRaw.begin(),sRaw.end(),reAmiSign);
+
+    if (ItSign != std::sregex_token_iterator()){
+        return *ItSign;
+    }
+    else{
+        return "";
+    }
+}
+//-------------------------------------------------------------------------------------------------
 dataAmiPipeTask::pipes_type AmiPipeHolder::ScanActivePipes()
 {
     dataAmiPipeTask::pipes_type mRet;
@@ -113,18 +143,19 @@ dataAmiPipeTask::pipes_type AmiPipeHolder::ScanActivePipes()
                     const auto ItQuik = std::sregex_token_iterator(ss.begin(),ss.end(),reAmiPipe,1);
                     sBind = *ItQuik;
                     if (ItQuik != std::sregex_token_iterator()){
-                        const auto ItSign = std::sregex_token_iterator(sBind.begin(),sBind.end(),reAmiSign);
-                        sSign = "";
-                        if (ItSign != std::sregex_token_iterator()){
-                            sSign = *ItSign;
-                        }
+//                        const auto ItSign = std::sregex_token_iterator(sBind.begin(),sBind.end(),reAmiSign);
+//                        sSign = "";
+//                        if (ItSign != std::sregex_token_iterator()){
+//                            sSign = *ItSign;
+//                        }
+                        sSign = getSignFromBind(sBind);
                         ssFilePath.str("");
                         ssFilePath.clear();
                         ssFilePath <<sPipeDir<<(*ItPipe);
                         //ssFilePath <<fl.path().filename().string();
 
 
-                        mRet[sBind] = {0,{*ItPipe,sSign,ssFilePath.str(),0,0}};
+                        mRet[sBind] = {0,{*ItPipe,sSign,ssFilePath.str(),0,0,sSign}};
                     }
                 }
             }
@@ -157,14 +188,18 @@ void AmiPipeHolder::CheckPipes(std::vector<Ticker> &vT,
                                        std::get<1>(mPipes[sTmp].second),
                                        std::get<2>(mPipes[sTmp].second),
                                        t.TickerID(),
-                                       1};
+                                       1,
+                                       std::get<5>(mPipes[sTmp].second)
+                                      };
             }
             else{
                 mPipes[sTmp].second = {std::get<0>(mPipes[sTmp].second),
                                        std::get<1>(mPipes[sTmp].second),
                                        std::get<2>(mPipes[sTmp].second),
                                        t.TickerID(),
-                                       2};
+                                       2,
+                                       std::get<5>(mPipes[sTmp].second)
+                                      };
             }
 
         }
@@ -203,16 +238,6 @@ void AmiPipeHolder::RefreshActiveSockets(dataAmiPipeTask::pipes_type& pActive,
         if ( ItHalted == mPipesHalted.end()){
             auto ItConnected (mPipesConnected.find(p.first));
             if ( ItConnected == mPipesConnected.end()){
-//                {
-//                    ThreadFreeCout pcout;
-//                    pcout <<"pipename: "<<std::get<2>(p.second.second)<<"\n";
-//                    if(std::filesystem::is_fifo(std::get<2>(p.second.second))){
-//                        pcout <<"is fifo\n";
-//                    }
-//                    else{
-//                        pcout <<"is regular file\n";
-//                    }
-//                }
                 bool bOpend{false};
                 try{
 #ifdef _WIN32
@@ -322,23 +347,24 @@ void AmiPipeHolder::RefreshActiveSockets(dataAmiPipeTask::pipes_type& pActive,
 void AmiPipeHolder::ReadConnectedPipes(BlockFreeQueue<dataFastLoadTask>                    &queueFastTasks,
                                        BlockFreeQueue<dataAmiPipeAnswer>                   &queuePipeAnswers,
                                        BlockFreeQueue<dataBuckgroundThreadAnswer>          &queueTrdAnswers,
+                                       bool bCheckMode,
                                        int &BytesRead,
                                        bool & bWasFullBuffers)
 {
 #ifdef _WIN32
     if (iMode == AmiPipeHolder::ePipeMode_type::Byte_Nonblocking){
-        return ReadConnectedPipes_bytemode_win32(queueFastTasks,queuePipeAnswers,queueTrdAnswers,BytesRead,bWasFullBuffers);
+        return ReadConnectedPipes_bytemode_win32(queueFastTasks,queuePipeAnswers,queueTrdAnswers,bCheckMode,BytesRead,bWasFullBuffers);
     }
     else{
-        return ReadConnectedPipes_bytemode_win32(queueFastTasks,queuePipeAnswers,queueTrdAnswers,BytesRead,bWasFullBuffers);
+        return ReadConnectedPipes_bytemode_win32(queueFastTasks,queuePipeAnswers,queueTrdAnswers,bCheckMode,BytesRead,bWasFullBuffers);
         //return ReadConnectedPipes_messagemode_win32(queueFastTasks,queuePipeAnswers,queueTrdAnswers,BytesRead,bWasFullBuffers);
     }
 #else
     if (iMode == AmiPipeHolder::ePipeMode_type::Byte_Nonblocking){
-        return ReadConnectedPipes_bytemode_linux(queueFastTasks,queuePipeAnswers,queueTrdAnswers,BytesRead,bWasFullBuffers);
+        return ReadConnectedPipes_bytemode_linux<PIPES_MAP>(queueFastTasks,queuePipeAnswers,queueTrdAnswers,bCheckMode,BytesRead,bWasFullBuffers);
     }
     else{
-        return ReadConnectedPipes_messagemode_linux(queueFastTasks,queuePipeAnswers,queueTrdAnswers,BytesRead,bWasFullBuffers);
+        return ReadConnectedPipes_messagemode_linux<PIPES_MAP>(queueFastTasks,queuePipeAnswers,queueTrdAnswers,bCheckMode,BytesRead,bWasFullBuffers);
     }
 #endif
 }
@@ -369,11 +395,12 @@ void AmiPipeHolder::AddUtilityMapEntry(int iTickerID, std::string sBind)
     mTask[iTickerID] = lTask;
     mPacketsCounter[iTickerID] = 1;
 
-    mPaperName[iTickerID] = "";
+    mPaperName[sBind] = "";//getSignFromBind(sBind);
+    mCheckTime[sBind] = std::chrono::steady_clock::now();
 
 }
 //-------------------------------------------------------------------------------------------------
-void AmiPipeHolder::RemoveUtilityMapEntry(int iTickerID, std::string sBind)
+void AmiPipeHolder::RemoveUtilityMapEntry(int iTickerID, std::string sBind, bool bCheckMode)
 {
     std::unique_lock lk(mutUtility);
 
@@ -398,19 +425,26 @@ void AmiPipeHolder::RemoveUtilityMapEntry(int iTickerID, std::string sBind)
         mCurrentSecond.erase(ItSec);
     }
 
-    auto ItTask = mTask.find(iTickerID);
-    if (ItTask != mTask.end()){
-        mTask.erase(ItTask);
+    if (!(bCheckMode && iTickerID == 0)){
+        auto ItTask = mTask.find(iTickerID);
+        if (ItTask != mTask.end()){
+            mTask.erase(ItTask);
+        }
+
+        auto ItPackets = mPacketsCounter.find(iTickerID);
+        if (ItPackets != mPacketsCounter.end()){
+            mPacketsCounter.erase(ItPackets);
+        }
     }
 
-    auto ItPackets = mPacketsCounter.find(iTickerID);
-    if (ItPackets != mPacketsCounter.end()){
-        mPacketsCounter.erase(ItPackets);
-    }
-
-    auto ItName = mPaperName.find(iTickerID);
+    auto ItName = mPaperName.find(sBind);
     if (ItName != mPaperName.end()){
         mPaperName.erase(ItName);
+    }
+
+    auto ItCheckTime = mCheckTime.find(sBind);
+    if (ItCheckTime != mCheckTime.end()){
+        mCheckTime.erase(ItCheckTime);
     }
 }
 //-------------------------------------------------------------------------------------------------
@@ -424,13 +458,15 @@ int AmiPipeHolder::ProcessReceivedBuffer(BlockFreeQueue<dataFastLoadTask>       
                                          BlockFreeQueue<dataAmiPipeAnswer>                  &queuePipeAnswers,
                                          BlockFreeQueue<dataBuckgroundThreadAnswer>         &queueTrdAnswers,
                                          const int iTickerID,
+                                         const std::string strBind,
+                                         bool bCheckMode,
                                          dataFastLoadTask &task,
                                          char *buff,
                                          int &ptrToRead,
                                          int &ptrToWrite
                                          )
 {
-    assert(iTickerID  > 0);
+    assert(iTickerID  > 0 || bCheckMode);
     assert(ptrToRead  >= 0);
     assert(ptrToWrite >= 0);
     assert(ptrToWrite >= ptrToRead);
@@ -497,7 +533,8 @@ int AmiPipeHolder::ProcessReceivedBuffer(BlockFreeQueue<dataFastLoadTask>       
             else{
                 strName[iStreamNameLen+1] = '\0';
             }
-            mPaperName[iTickerID] = strName;
+
+            mPaperName[strBind] = getNameFromRaw(QString::fromLocal8Bit(strName.data(),(int)strName.size()).toStdString());
         }
         else if (bInStream && (streamNum == s6 || streamNum == s7) && iBlockStart >= 4){
             bInStream = false;
@@ -543,17 +580,20 @@ int AmiPipeHolder::ProcessReceivedBuffer(BlockFreeQueue<dataFastLoadTask>       
         ptrToWrite -= iReadStart;
         ptrToRead = 0;
 
-        task.iTickerID       = iTickerID;
-        task.lTask           = mTask[iTickerID];
-        task.llPackesCounter = mPacketsCounter[iTickerID]++;
-        queueFastTasks.Push(task);
-        conditionFastData.notify_one();
+        if (!bCheckMode){
+            task.iTickerID       = iTickerID;
+            task.lTask           = mTask[iTickerID];
+            task.llPackesCounter = mPacketsCounter[iTickerID]++;
+            queueFastTasks.Push(task);
+            conditionFastData.notify_one();
 
-        milliseconds tActivityCount = std::chrono::steady_clock::now() - mDtActivity[iTickerID];
-        if (tActivityCount > 1800ms){
-            mDtActivity[iTickerID] = std::chrono::steady_clock::now();
-            dataBuckgroundThreadAnswer dt(iTickerID,dataBuckgroundThreadAnswer::eAnswerType::LoadActivity,nullptr);
-            queueTrdAnswers.Push(dt);
+
+            milliseconds tActivityCount = std::chrono::steady_clock::now() - mDtActivity[iTickerID];
+            if (tActivityCount > 1800ms){
+                mDtActivity[iTickerID] = std::chrono::steady_clock::now();
+                dataBuckgroundThreadAnswer dt(iTickerID,dataBuckgroundThreadAnswer::eAnswerType::LoadActivity,nullptr);
+                queueTrdAnswers.Push(dt);
+            }
         }
     }
 
@@ -567,9 +607,64 @@ int AmiPipeHolder::ProcessReceivedBuffer(BlockFreeQueue<dataFastLoadTask>       
     return 0;
 }
 //-------------------------------------------------------------------------------------------------
+bool AmiPipeHolder::ReadPipe_bytemode_win32(Win32NamedPipe &pip,
+                                            bool bCheckMode,
+                                            const int iTickerID,
+                                            const std::string strBind,
+                                            BlockFreeQueue<dataFastLoadTask>        &queueFastTasks,
+                                            BlockFreeQueue<dataAmiPipeAnswer>                   &queuePipeAnswers,
+                                            BlockFreeQueue<dataBuckgroundThreadAnswer>          &queueTrdAnswers,
+                                            int & BytesRead,
+                                            bool & bWasFullBuffers)
+{
+
+    dataFastLoadTask task(dataFastLoadTask::NewTicks);
+
+    int iWriteStart{0};
+    int iReadCount{0};
+    int iBytesToRead{0};
+    static const int iMaxReadCount{30};
+    bool bLastReadMoreData{false};
+    int iTotalBytesRead{0};
+    bool bSuccessfullRead{false};
+
+    iWriteStart = mPointerToWrite[strBind];
+    //iReadStart = mPointerToRead[strBind];
+    iBytesToRead = iBlockMaxSize  - iWriteStart;
+    iReadCount = 0;
+    iTotalBytesRead = 0;
+    char *buff = mBuffer[strBind].data();
+    //bLastReadMoreData = true;
+
+    while(true){
+        if (pip.read (buff + iWriteStart,iBytesToRead,iTotalBytesRead) || GetLastError() == ERROR_MORE_DATA){
+
+            bSuccessfullRead = true;
+            mPointerToWrite[strBind] = iWriteStart + iTotalBytesRead;
+            BytesRead += iTotalBytesRead;
+            if (GetLastError() == ERROR_MORE_DATA)  {bLastReadMoreData = true;  bWasFullBuffers = true;}
+            else                                    {bLastReadMoreData = false;}
+            iReadCount++;
+            ////
+            ProcessReceivedBuffer(queueFastTasks,queuePipeAnswers,queueTrdAnswers,
+                        iTickerID,strBind,bCheckMode,task,buff,mPointerToRead[strBind],mPointerToWrite[strBind]);
+
+            iWriteStart = mPointerToWrite[strBind];
+            iBytesToRead = iBlockMaxSize  - iWriteStart;
+        }
+        else{
+            if (GetLastError() == ERROR_NO_DATA)  {bSuccessfullRead = true;}
+        }
+        if (!bLastReadMoreData || iReadCount >= iMaxReadCount) break;
+    }
+
+    return bSuccessfullRead;
+}
+//-------------------------------------------------------------------------------------------------
 void AmiPipeHolder::ReadConnectedPipes_bytemode_win32(BlockFreeQueue<dataFastLoadTask>     &queueFastTasks,
                             BlockFreeQueue<dataAmiPipeAnswer>                   &queuePipeAnswers,
                             BlockFreeQueue<dataBuckgroundThreadAnswer>          &queueTrdAnswers,
+                            bool bCheckMode,
                             int & BytesRead,
                             bool & bWasFullBuffers
                             )
@@ -582,56 +677,55 @@ void AmiPipeHolder::ReadConnectedPipes_bytemode_win32(BlockFreeQueue<dataFastLoa
     int iTickerID{0};
     std::string strBind;
 
-    int iBytesToRead{0};
-    int iTotalBytesRead{0};
-    int iWriteStart{0};
-
-    int iReadCount{0};
-    static const int iMaxReadCount{30};
-    bool bLastReadMoreData{false};
-
     bool bSuccessfullRead{false};
+    milliseconds tActivityCount;
+
+    ////////////////////////////////////////////////
+    internal_pipes_type &mMap = !bCheckMode  ? mPipesConnected : mPipesFree;
+    ////////////////////////////////////////////////
+
+    auto ItConnected = mMap.begin();
+
+    while (ItConnected != mMap.end()){
 
 
-    auto ItConnected = mPipesConnected.begin();
-    while (ItConnected != mPipesConnected.end()){
-
-        dataFastLoadTask task(dataFastLoadTask::NewTicks);
         iTickerID   = ItConnected->second.second.first;
         strBind     = ItConnected->first;
         Win32NamedPipe &pip = ItConnected->second.second.second;
         bSuccessfullRead = false;
 
         if (pip.good()){
+            bSuccessfullRead = ReadPipe_bytemode_win32(pip,bCheckMode,iTickerID,strBind,
+                                                       queueFastTasks,
+                                                       queuePipeAnswers,
+                                                       queueTrdAnswers,
+                                                       BytesRead,
+                                                       bWasFullBuffers);
+            if(bCheckMode){
+                tActivityCount = std::chrono::steady_clock::now() - mCheckTime[strBind];
+                if (mPaperName[strBind].size() > 0 || tActivityCount > 2000ms){
 
-            iWriteStart = mPointerToWrite[strBind];
-            //iReadStart = mPointerToRead[strBind];
-            iBytesToRead = iBlockMaxSize  - iWriteStart;
-            iReadCount = 0;
-            iTotalBytesRead = 0;
-            char *buff = mBuffer[strBind].data();
-            //bLastReadMoreData = true;
+                    dataAmiPipeAnswer answ;
+                    answ.SetType(dataAmiPipeAnswer::AskNameAnswer);
+                    answ.SetTickerID(iTickerID);
+                    answ.SetBind(strBind);
 
-            while(true){
-                if (pip.read (buff + iWriteStart,iBytesToRead,iTotalBytesRead) || GetLastError() == ERROR_MORE_DATA){
+                    if (mPaperName[strBind].size() > 0) answ.SetPipeName(mPaperName[strBind]);
+                    else                                answ.SetPipeName(getSignFromBind(strBind));
+                    queuePipeAnswers.Push(answ);
 
-                    bSuccessfullRead = true;
-                    mPointerToWrite[strBind] = iWriteStart + iTotalBytesRead;
-                    BytesRead += iTotalBytesRead;
-                    if (GetLastError() == ERROR_MORE_DATA)  {bLastReadMoreData = true;  bWasFullBuffers = true;}
-                    else                                    {bLastReadMoreData = false;}
-                    iReadCount++;
-                    ////
-                    ProcessReceivedBuffer(queueFastTasks,queuePipeAnswers,queueTrdAnswers,
-                                iTickerID,task,buff,mPointerToRead[strBind],mPointerToWrite[strBind]);
+                    try{
+                        ItConnected->second.second.second.close();
+                    }
+                    catch (...) {;}
 
-                    iWriteStart = mPointerToWrite[strBind];
-                    iBytesToRead = iBlockMaxSize  - iWriteStart;
+                    RemoveUtilityMapEntry(iTickerID, strBind);
+                    //
+                    auto ItNext = std::next(ItConnected);
+                    mMap.erase(ItConnected);
+                    ItConnected = ItNext;
+                    continue;
                 }
-                else{
-                    if (GetLastError() == ERROR_NO_DATA)  {bSuccessfullRead = true;}
-                }
-                if (!bLastReadMoreData || iReadCount >= iMaxReadCount) break;
             }
         }
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -645,9 +739,6 @@ void AmiPipeHolder::ReadConnectedPipes_bytemode_win32(BlockFreeQueue<dataFastLoa
                 if (mBuffer.find(strBind) != mBuffer.end()){ss <<"mBuffer[strBind].size(): "<<mBuffer[strBind].size()<<"\n";}
                 else                                        {ss <<"mBuffer[strBind] not found!!!\n";}
                 ss <<"strBind: {"<<strBind<<"}\n";
-                ss <<"iWriteStart: "<<iWriteStart<<"\n";
-                ss <<"iBytesToRead: "<<iBytesToRead<<"\n";
-                ss <<"iTotalBytesRead: "<<iTotalBytesRead<<"\n";
                 SendToErrorLog(queuePipeAnswers, iTickerID, ss.str());
                 /////////////////////////////////////////////////////////////////////
             }
@@ -662,15 +753,25 @@ void AmiPipeHolder::ReadConnectedPipes_bytemode_win32(BlockFreeQueue<dataFastLoa
             catch (...) {;}
             //
             //
-            dataAmiPipeAnswer answ;
-            answ.SetType(dataAmiPipeAnswer::PipeDisconnected);
-            answ.SetTickerID(ItConnected->second.second.first);
-            queuePipeAnswers.Push(answ);
+            if (!bCheckMode){
+                dataAmiPipeAnswer answ;
+                answ.SetType(dataAmiPipeAnswer::PipeDisconnected);
+                answ.SetTickerID(ItConnected->second.second.first);
+                queuePipeAnswers.Push(answ);
+            }
+            else{
+                dataAmiPipeAnswer answ;
+                answ.SetType(dataAmiPipeAnswer::AskNameAnswer);
+                answ.SetTickerID(ItConnected->second.second.first);
+                answ.SetBind(ItConnected->first);
+                answ.SetPipeName(getSignFromBind(ItConnected->first)+"_t2");
+                queuePipeAnswers.Push(answ);
+            }
             //
             RemoveUtilityMapEntry(iTickerID, strBind);
             //
             auto ItNext = std::next(ItConnected);
-            mPipesConnected.erase(ItConnected);
+            mMap.erase(ItConnected);
             ItConnected = ItNext;
             /////////////////////////////////////////////////////////////////////
         }
@@ -685,6 +786,7 @@ void AmiPipeHolder::ReadConnectedPipes_bytemode_win32(BlockFreeQueue<dataFastLoa
 void AmiPipeHolder::ReadConnectedPipes_messagemode_win32(BlockFreeQueue<dataFastLoadTask>        &/*queueFastTasks*/,
                             BlockFreeQueue<dataAmiPipeAnswer>                   &/*queuePipeAnswers*/,
                             BlockFreeQueue<dataBuckgroundThreadAnswer>          &/*queueTrdAnswers*/,
+                            bool /*bCheckMode*/,
                             int & BytesRead,
                             bool & bWasFullBuffers
                             )
@@ -701,6 +803,7 @@ void AmiPipeHolder::ReadConnectedPipes_messagemode_win32(BlockFreeQueue<dataFast
 void AmiPipeHolder::ReadConnectedPipes_bytemode_linux(BlockFreeQueue<dataFastLoadTask>     &queueFastTasks,
                             BlockFreeQueue<dataAmiPipeAnswer>                   &queuePipeAnswers,
                             BlockFreeQueue<dataBuckgroundThreadAnswer>          &queueTrdAnswers,
+                            bool bCheckMode,
                             size_t & BytesRead,
                             bool & bWasFullBuffers
                             )
@@ -968,6 +1071,7 @@ void AmiPipeHolder::ReadConnectedPipes_bytemode_linux(BlockFreeQueue<dataFastLoa
 void AmiPipeHolder::ReadConnectedPipes_messagemode_linux(BlockFreeQueue<dataFastLoadTask>        &/*queueFastTasks*/,
                             BlockFreeQueue<dataAmiPipeAnswer>                   &/*queuePipeAnswers*/,
                             BlockFreeQueue<dataBuckgroundThreadAnswer>          &/*queueTrdAnswers*/,
+                            bool bCheckMode,
                             size_t & BytesRead,
                             bool & bWasFullBuffers
                             )
@@ -1046,5 +1150,61 @@ void AmiPipeHolder::dumpToFile     (BlockFreeQueue<dataAmiPipeAnswer> &queuePipe
     }
 }
 //-------------------------------------------------------------------------------------------------
+void AmiPipeHolder::AskPipesNames(dataAmiPipeTask::pipes_type &pFree, BlockFreeQueue<dataAmiPipeAnswer> & queuePipeAnswers)
+{
+    //mFreePipesAsked
+    for (const auto &p:pFree){
+        if (mPipesFree.find(p.first) == mPipesFree.end()){
+            bool bOpend{false};
+            try{
+#ifdef _WIN32
+                mPipesFree[p.first].first  = 1;
+                mPipesFree[p.first].second = {std::get<3>(p.second.second),{}};
+                mPipesFree[p.first].second.second.setPipePath(std::get<2>(p.second.second));
+
+                if (iMode == Byte_Nonblocking){
+                    mPipesFree[p.first].second.second.setMode(Win32NamedPipe::ePipeMode_type::Byte_Nonblocking);
+                }
+                else{
+                    mPipesFree[p.first].second.second.setMode(Win32NamedPipe::ePipeMode_type::Message_Nonblocking);
+                }
+                mPipesFree[p.first].second.second.open();
+
+                if (mPipesFree[p.first].second.second.good()){
+#else
+                std::ifstream file(std::get<2>(p.second.second),std::ios::in);
+                if (file.good()){
+                    mPipesFree[p.first].second = {std::get<3>(p.second.second),
+                                                        std::move(file)};
+#endif
+                    AddUtilityMapEntry(std::get<3>(p.second.second), p.first);
+                    //
+                    bOpend = true;
+                }
+#ifdef _WIN32
+                else{
+                    auto ItD (mPipesFree.find(p.first));
+                    if (ItD != mPipesFree.end()){
+                        mPipesFree.erase(ItD);
+                    }
+                }
+#endif
+            }
+            catch(std::exception &){
+                ;
+            }
+            if (!bOpend){
+                //
+                dataAmiPipeAnswer answ;
+                answ.SetType(dataAmiPipeAnswer::AskNameAnswer);
+                answ.SetTickerID(std::get<3>(p.second.second));
+                answ.SetBind(p.first);
+                answ.SetPipeName(std::get<1>(p.second.second)+"_t1");
+                queuePipeAnswers.Push(answ);
+            }
+
+        }
+    }
+}
 //-------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------

@@ -150,27 +150,42 @@ void AmiPipesForm::slotBtnCheckClicked()
 {
     dataAmiPipeTask::pipes_type mBindedPipes;
     dataAmiPipeTask::pipes_type mBindedPipesOff;
-    mFreePipes.clear();
+    dataAmiPipeTask::pipes_type mTmpFree;
+    dataAmiPipeTask::pipes_type mAsk;
+
     std::vector<int> vUnconnected;
     std::vector<int> vInformants;
 
-    pipes.CheckPipes(vTickersLst,mBindedPipes,mBindedPipesOff,mFreePipes,vUnconnected,vInformants);
-
-    modelNew->removeRows(0,modelNew->rowCount());
+    pipes.CheckPipes(vTickersLst,mBindedPipes,mBindedPipesOff,mTmpFree,vUnconnected,vInformants);
 
 
-    for (const auto & e:mFreePipes){
-        modelNew->insertRow(modelNew->rowCount());
-        QModelIndex indx =  modelNew->index(modelNew->rowCount()-1);
-        modelNew->setData(indx,QString::fromStdString(e.first));
-
-
-//        ThreadFreeCout pcout;
-//        pcout <<"bind = ["<<e.first<<"]\n";
-//        pcout <<"pipe = ["<<std::get<0>(e.second.second)<<"]\n";
-//        pcout <<"sign = ["<<std::get<1>(e.second.second)<<"]\n";
-//        pcout <<"path = ["<<std::get<2>(e.second.second).path().string()<<"]\n";
+    for (const auto & e:mTmpFree){
+        if (mFreePipes.find(e.first) == mFreePipes.end()){
+            if (mFreePipesAsked.find(e.first) == mFreePipesAsked.end()){
+                mAsk[e.first] = e.second;
+                mFreePipesAsked[e.first] = e.second;
+            }
+        }
     }
+
+
+    if (mAsk.size() > 0){
+        emit AskPipesNames(mAsk);
+    }
+
+//    modelNew->removeRows(0,modelNew->rowCount());
+
+
+//    for (const auto & e:mFreePipes){
+//        modelNew->insertRow(modelNew->rowCount());
+//        QModelIndex indx =  modelNew->index(modelNew->rowCount()-1);
+//        modelNew->setData(indx,QString::fromStdString(e.first));
+////        ThreadFreeCout pcout;
+////        pcout <<"bind = ["<<e.first<<"]\n";
+////        pcout <<"pipe = ["<<std::get<0>(e.second.second)<<"]\n";
+////        pcout <<"sign = ["<<std::get<1>(e.second.second)<<"]\n";
+////        pcout <<"path = ["<<std::get<2>(e.second.second).path().string()<<"]\n";
+//    }
 }
 //--------------------------------------------------------------------------------------------------------------------
 void AmiPipesForm::SetMarketModel()
@@ -427,6 +442,8 @@ void AmiPipesForm::slotActiveDissociateClicked()
             t.SetTickerSignQuik("");
             proxyTickerModelActive.setData(lst[0],t,Qt::EditRole);
             lst =qml->selectedIndexes();
+            auto It (mFreePipes.find(t.TickerSign()));
+            if (It != mFreePipes.end()) mFreePipes.erase(It);
         }
     }
 }
@@ -446,6 +463,8 @@ void AmiPipesForm::slotOffDissociateClicked()
             t.SetTickerSignQuik("");
             proxyTickerModelOff.setData(lst[0],t,Qt::EditRole);
             lst =qml->selectedIndexes();
+            auto It (mFreePipes.find(t.TickerSign()));
+            if (It != mFreePipes.end()) mFreePipes.erase(It);
         }
     }
 }
@@ -528,6 +547,8 @@ void AmiPipesForm::slotActiveContextMenuRequested(const QPoint & pos)
                 t.SetTickerSignQuik("");
                 proxyTickerModelActive.setData(lst[0],t,Qt::EditRole);
                 lst =qml->selectedIndexes();
+                auto It (mFreePipes.find(t.TickerSign()));
+                if (It != mFreePipes.end()) mFreePipes.erase(It);
             }
         }
     }
@@ -596,6 +617,8 @@ void AmiPipesForm::slotOffContextMenuRequested(const QPoint & pos)
                 t.SetTickerSignQuik("");
                 proxyTickerModelOff.setData(lst[0],t,Qt::EditRole);
                 lst =qml->selectedIndexes();
+                auto It (mFreePipes.find(t.TickerSign()));
+                if (It != mFreePipes.end()) mFreePipes.erase(It);
             }
         }
     }
@@ -668,12 +691,23 @@ void AmiPipesForm::slotBindClicked()
 
 
     std::string sSign;
+    std::string sName;
     std::string sBind;
 
     if(lst.size() >0 ){
         QString str = modelNew->itemData(lst[0])[0].value<QString>();
         sBind = str.toStdString();
         sSign = sBind;
+        sName = sSign;
+        auto ItFree(mFreePipes.find(sBind));
+        if ( ItFree != mFreePipes.end()){
+            sSign = std::get<1>(ItFree->second.second);
+
+            if((std::get<5>(ItFree->second.second)).size() > 0){
+                sName = std::get<5>(ItFree->second.second);
+            }
+        }
+
         //
         if (lstUn.size()>0){
             Ticker t=proxyTickerModelUnallocated.getTicker(lstUn[0]);
@@ -681,16 +715,15 @@ void AmiPipesForm::slotBindClicked()
             t.SetTickerSignQuik       (trim(sBind));
             t.SetAutoLoad             (true);
             //t.SetBulbululator         (true);
+            if (t.TickerName() == t.TickerSign()){
+                t.SetTickerName(sName);
+            }
             ///
             proxyTickerModelUnallocated.setData(lstUn[0],t,Qt::EditRole);
 
             modelNew->removeRows(lst[0].row(),1);
         }
         else{
-            auto It (mFreePipes.find(sBind));
-            if (It != mFreePipes.end()){
-                sSign = std::get<1>(It->second.second);
-            }
 
             QString sQuestion;
             sQuestion = tr("No ticker with <") + QString::fromStdString(sSign) + "> " +
@@ -699,7 +732,7 @@ void AmiPipesForm::slotBindClicked()
                     tr("} data source?\n");
             int n=QMessageBox::warning(0,tr("Warning"),sQuestion,QMessageBox::Yes | QMessageBox::No);
             if (n==QMessageBox::Yes){
-                Ticker t {              trim(sSign),
+                Ticker t {              trim(sName),
                                         trim(sSign),
                                         iDefaultTickerMarket};
                 t.SetTickerSignFinam    ("");
@@ -731,11 +764,21 @@ void AmiPipesForm::slotDoubleClickedNew(const  QModelIndex& indx)
 
     std::string sSign;
     std::string sBind;
+    std::string sName;
 
     if(indx.isValid()){
         QString str = modelNew->itemData(indx)[0].value<QString>();
         sBind = str.toStdString();
         sSign = sBind;
+        sName = sSign;
+        auto ItFree(mFreePipes.find(sBind));
+        if ( ItFree != mFreePipes.end()){
+            sSign = std::get<1>(ItFree->second.second);
+
+            if((std::get<5>(ItFree->second.second)).size() > 0){
+                sName = std::get<5>(ItFree->second.second);
+            }
+        }
         //
         if (lstUn.size()>0){
             Ticker t=proxyTickerModelUnallocated.getTicker(lstUn[0]);
@@ -743,16 +786,16 @@ void AmiPipesForm::slotDoubleClickedNew(const  QModelIndex& indx)
             t.SetTickerSignQuik       (trim(sBind));
             t.SetAutoLoad             (true);
             //t.SetBulbululator         (true);
+            if (t.TickerName() == t.TickerSign()){
+
+                t.SetTickerName(trim(sName));
+            }
             ///
             proxyTickerModelUnallocated.setData(lstUn[0],t,Qt::EditRole);
 
             modelNew->removeRows(indx.row(),1);
         }
         else{
-            auto It (mFreePipes.find(sBind));
-            if (It != mFreePipes.end()){
-                sSign = std::get<1>(It->second.second);
-            }
 
             QString sQuestion;
             sQuestion = tr("No ticker with <") + QString::fromStdString(sSign) + "> " +
@@ -761,7 +804,7 @@ void AmiPipesForm::slotDoubleClickedNew(const  QModelIndex& indx)
                     tr("} data source?\n");
             int n=QMessageBox::warning(0,tr("Warning"),sQuestion,QMessageBox::Yes | QMessageBox::No);
             if (n==QMessageBox::Yes){
-                Ticker t {              trim(sSign),
+                Ticker t {              trim(sName),
                                         trim(sSign),
                                         iDefaultTickerMarket};
                 t.SetTickerSignFinam    ("");
@@ -836,7 +879,7 @@ void AmiPipesForm::slotShowByNamesOffChecked(int Checked)
     }
 
     proxyTickerModelOff.invalidate();
-    NeedSaveShowByNamesOff(Checked);
+    emit NeedSaveShowByNamesOff(Checked);
 }
 //--------------------------------------------------------------------------------------------------------------------
 void AmiPipesForm::slotBtnQuitClicked()
@@ -1056,4 +1099,36 @@ void AmiPipesForm::slotInternalPanelsStateChanged(bool bLeft, bool bRight)
     }
 }
 //--------------------------------------------------------------------------------------------------------------------
+void AmiPipesForm::slotPipeNameReceived(std::string sBind,std::string sName)
+{
+    auto It (mFreePipesAsked.find(sBind));
+    if ( It != mFreePipesAsked.end()){
+        if (mFreePipes.find(sBind) == mFreePipes.end()){
+            mFreePipes[sBind] = {It->second.first,{
+                                     std::get<0>(It->second.second),
+                                     std::get<1>(It->second.second),
+                                     std::get<2>(It->second.second),
+                                     std::get<3>(It->second.second),
+                                     std::get<4>(It->second.second),
+                                     sName
+                                 }};
+
+
+        }
+    }
+
+    modelNew->removeRows(0,modelNew->rowCount());
+
+    for (const auto & e:mFreePipes){
+        modelNew->insertRow(modelNew->rowCount());
+        QModelIndex indx =  modelNew->index(modelNew->rowCount()-1);
+        modelNew->setData(indx,QString::fromStdString(e.first));
+//        ThreadFreeCout pcout;
+//        pcout <<"bind = ["<<e.first<<"]\n";
+//        pcout <<"pipe = ["<<std::get<0>(e.second.second)<<"]\n";
+//        pcout <<"sign = ["<<std::get<1>(e.second.second)<<"]\n";
+//        pcout <<"path = ["<<std::get<2>(e.second.second)<<"]\n";
+//        pcout <<"name = ["<<std::get<5>(e.second.second)<<"]\n";
+    }
+}
 //--------------------------------------------------------------------------------------------------------------------

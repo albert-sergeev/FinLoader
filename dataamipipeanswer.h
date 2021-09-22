@@ -12,7 +12,8 @@ class dataAmiPipeAnswer
 public:
     enum eAnswerType:int {Nop, ProcessNewComplite, PipeConnected, PipeDisconnected, PipeHalted, PipeOff,
                           TextMessage, ErrMessage, testTimeEvent,
-                          FastShowEvent
+                          FastShowEvent,
+                          AskNameAnswer
                          };
 public:
 
@@ -22,6 +23,10 @@ private:
     std::string strErr;
     std::string strTextInfo;
     std::time_t tTime;
+
+    std::string strBind;
+    std::string strPipeName;
+
 public:
     dataAmiPipeAnswer(){};
     dataAmiPipeAnswer(const dataAmiPipeAnswer &o) = default;
@@ -37,9 +42,16 @@ public:
     //
     inline void SetTickerID(const int i)            {iTickerID = i;};
     inline int  TickerID()   const                  {return iTickerID;};
-
+    //
     inline void SetTime(const std::time_t t)        {tTime = t;};
     inline std::time_t   Time()   const             {return tTime;};
+    //
+    inline std::string GetBind() const              {return strBind;}
+    inline void SetBind(const std::string s)        {strBind = s;};
+    //
+    inline std::string GetPipeName() const          {return strPipeName;}
+    inline void SetPipeName(const std::string s)    {strPipeName = s;};
+    //
 
     std::time_t tBegin{0};
     std::time_t tEnd{0};
