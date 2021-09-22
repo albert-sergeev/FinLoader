@@ -91,6 +91,8 @@ signals:
 
     void buttonHideClicked();
 
+public slots:
+    void slotInternalPanelsStateChanged(bool bLeft, bool bRight);
 
 protected:
     void SetMarketModel();

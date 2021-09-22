@@ -1002,6 +1002,58 @@ bool AmiPipesForm::eventFilter(QObject *watched, QEvent *event)
     return QObject::eventFilter(watched, event);
 }
 //--------------------------------------------------------------------------------------------------------------------
-
+void AmiPipesForm::slotInternalPanelsStateChanged(bool bLeft, bool bRight)
+{
+    {
+        ThreadFreeCout pcout;
+        pcout <<"receive: {"<<bLeft<<":"<<bRight<<"}\n";
+    }
+    if (bLeft && bRight){
+        {
+            ThreadFreeCout pcout;
+            pcout <<"do show all\n";
+        }
+        if (ui->wtNew->isHidden()){
+            {
+                ThreadFreeCout pcout;
+                pcout <<"restore left\n";
+            }
+            slotTransparentBtnRightStateChanged(0);
+        }
+        else if (ui->wtActivities->isHidden()){
+            {
+                ThreadFreeCout pcout;
+                pcout <<"restore right\n";
+            }
+            slotTransparentBtnLeftStateChanged(0);
+        }
+    }
+    else if (!bLeft){
+        {
+            ThreadFreeCout pcout;
+            pcout <<"do hide left\n";
+        }
+        if (!ui->wtNew->isHidden() && !ui->wtActivities->isHidden()){
+            slotTransparentBtnLeftStateChanged(0);
+        }
+        else if (ui->wtActivities->isHidden()){
+            slotTransparentBtnLeftStateChanged(0);
+            slotTransparentBtnLeftStateChanged(0);
+        }
+    }
+    else if (!bRight){
+        {
+            ThreadFreeCout pcout;
+            pcout <<"do hide right\n";
+        }
+        if (!ui->wtNew->isHidden() && !ui->wtActivities->isHidden()){
+            slotTransparentBtnRightStateChanged(0);
+        }
+        else if (ui->wtNew->isHidden()){
+            slotTransparentBtnRightStateChanged(0);
+            slotTransparentBtnRightStateChanged(0);
+        }
+    }
+}
 //--------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------

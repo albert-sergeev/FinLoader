@@ -172,7 +172,7 @@
            </sizepolicy>
           </property>
           <property name="text">
-           <string>Close</string>
+           <string>Close panel</string>
           </property>
          </widget>
         </item>

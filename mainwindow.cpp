@@ -838,27 +838,16 @@ void MainWindow::InitAction()
 
     //------------------------------------------------
     QAction * pacNewDoc =new QAction("newdoc");
-    pacNewDoc->setText(tr("&New"));
+    pacNewDoc->setText(tr("&Quotes graph"));
     pacNewDoc->setShortcut(QKeySequence(tr("CTRL+N")));
-    pacNewDoc->setToolTip(tr("New graph"));
-    pacNewDoc->setStatusTip(tr("New graph"));
-    pacNewDoc->setWhatsThis(tr("New graph"));
+    pacNewDoc->setToolTip(tr("Quotes graph"));
+    pacNewDoc->setStatusTip(tr("Quotes graph"));
+    pacNewDoc->setWhatsThis(tr("Quotes graph"));
     pacNewDoc->setIcon(QPixmap(":/store/images/sc_newdoc"));
     connect(pacNewDoc,SIGNAL(triggered()),SLOT(slotGraphViewWindow()));
-
-    //------------------------------------------------
-    QAction * pacAmiPipe =new QAction("AmiPipe");
-    pacAmiPipe->setText(tr("&Import from trade sistem"));
-    pacAmiPipe->setShortcut(QKeySequence(tr("CTRL+I")));
-    pacAmiPipe->setToolTip(tr("Import from trade sistem"));
-    pacAmiPipe->setStatusTip(tr("Import from trade sistem"));
-    pacAmiPipe->setWhatsThis(tr("Import from trade sistem"));
-    pacAmiPipe->setIcon(QPixmap(":/store/images/sc_cut"));
-    connect(pacAmiPipe,SIGNAL(triggered()),SLOT(slotAmiPipeWndow()));
-
     //------------------------------------------------
     QAction * pacOpen =new QAction("Open");
-    pacOpen->setText(tr("&Open"));
+    pacOpen->setText(tr("&Load history data"));
     pacOpen->setShortcut(QKeySequence(tr("CTRL+O")));
     pacOpen->setToolTip(tr("Load history data"));
     pacOpen->setStatusTip(tr("Load history data"));
@@ -866,13 +855,13 @@ void MainWindow::InitAction()
     pacOpen->setIcon(QPixmap(":/store/images/sc_open"));
     connect(pacOpen,SIGNAL(triggered()),SLOT(slotImportFinQuotesWndow()));
     //------------------------------------------------
-    QAction * pacSave =new QAction("Save");
-    pacSave->setText(tr("&Save"));
-    pacSave->setShortcut(QKeySequence(tr("CTRL+S")));
-    pacSave->setToolTip(tr("Save Document"));
-    pacSave->setStatusTip(tr("Save file to disk"));
-    pacSave->setWhatsThis(tr("Save file to disk"));
-    pacSave->setIcon(QPixmap(":/store/images/sc_save"));
+//    QAction * pacSave =new QAction("Save");
+//    pacSave->setText(tr("&Save"));
+//    pacSave->setShortcut(QKeySequence(tr("CTRL+S")));
+//    pacSave->setToolTip(tr("Save Document"));
+//    pacSave->setStatusTip(tr("Save file to disk"));
+//    pacSave->setWhatsThis(tr("Save file to disk"));
+//    pacSave->setIcon(QPixmap(":/store/images/sc_save"));
     //------------------------------------------------
     QAction * pacLogWnd =new QAction("LogWnd");
     pacLogWnd->setText(tr("Lo&g window"));
@@ -901,10 +890,40 @@ void MainWindow::InitAction()
     pacConfig->setIcon(QPixmap(":/store/images/sc_config"));
     connect(pacConfig,SIGNAL(triggered()),SLOT(slotConfigWndow()));
     //------------------------------------------------
+    pacAmiPipe =new QAction("AmiPipe");
+    pacAmiPipe->setText(tr("&Import from trade sistem"));
+    pacAmiPipe->setCheckable(true);
+    pacAmiPipe->setChecked(bAmiPipesFormShown);
+    pacAmiPipe->setShortcut(QKeySequence(tr("CTRL+I")));
+    pacAmiPipe->setToolTip(tr("Import from trade sistem"));
+    pacAmiPipe->setStatusTip(tr("Import from trade sistem"));
+    pacAmiPipe->setWhatsThis(tr("Import from trade sistem"));
+    pacAmiPipe->setIcon(QPixmap(":/store/images/sc_cut"));
+    connect(pacAmiPipe,SIGNAL(triggered()),SLOT(slotAmiPipeWndow()));
+    //------------------------------------------------
+    pacAmiPipeBarNew =new QAction("pacAmiPipeBarNew");
+    pacAmiPipeBarNew->setText(tr("&New found pipes"));
+    pacAmiPipeBarNew->setCheckable(true);
+    pacAmiPipeBarNew->setChecked(bAmiPipesNewWndShown);
+    pacAmiPipeBarNew->setToolTip(tr("New found pipes"));
+    pacAmiPipeBarNew->setStatusTip(tr("New found pipes"));
+    pacAmiPipeBarNew->setWhatsThis(tr("New found pipes"));
+    connect(pacAmiPipeBarNew,SIGNAL(triggered()),SLOT(slotAmiPipeWndowNew()));
+    //------------------------------------------------
+    pacAmiPipeBarActive =new QAction("pacAmiPipeBarActive");
+    pacAmiPipeBarActive->setText(tr("&Active pipes"));
+    pacAmiPipeBarActive->setCheckable(true);
+    pacAmiPipeBarActive->setChecked(bAmiPipesActiveWndShown);
+    pacAmiPipeBarActive->setToolTip(tr("Active pipes"));
+    pacAmiPipeBarActive->setStatusTip(tr("Active pipes"));
+    pacAmiPipeBarActive->setWhatsThis(tr("Active pipes"));
+    connect(pacAmiPipeBarActive,SIGNAL(triggered()),SLOT(slotAmiPipeWndowActive()));
+    //------------------------------------------------
     pacTickersBar =new QAction(tr("Tickers bar"));
     pacTickersBar->setText(tr("Tickers bar"));
     pacTickersBar->setCheckable(true);
     pacTickersBar->setChecked(!bTickerBarOnLoadIsHidden);
+    pacTickersBar->setIcon(QPixmap(":/store/images/sc_save"));
     connect(pacTickersBar,SIGNAL(triggered()),SLOT(slotTickersBarStateChanged()));
     //------------------------------------------------
     pacTickersBarButtonsHide =new QAction(tr("Show tickers bar panel"));
@@ -959,9 +978,9 @@ void MainWindow::InitAction()
     //
     pmnuFile = new QMenu(tr("&File","menu"));
     pmnuFile->addAction(pacNewDoc);
-    pmnuFile->addAction(pacAmiPipe);
+    //pmnuFile->addAction(pacAmiPipe);
     pmnuFile->addAction(pacOpen);
-    pmnuFile->addAction(pacSave);
+    //pmnuFile->addAction(pacSave);
     pmnuFile->addSeparator();
     pmnuFile->addAction(tr("&Quit"),
                         qApp,
@@ -983,6 +1002,9 @@ void MainWindow::InitAction()
     pmnuSettings = new QMenu(tr("&Settings"));
 
     pmnuSettings->addAction(pacToolBar);
+    m_mnuAmiPipePanels = new QMenu(tr("&Import from trade sistem panel"));
+    pmnuSettings->addMenu(m_mnuAmiPipePanels);
+
     pmnuSettings->addAction(pacTickersBar);
     pmnuSettings->addAction(pacStatusBar);
     pmnuSettings->addAction(pacTickersBarButtonsHide);
@@ -998,6 +1020,10 @@ void MainWindow::InitAction()
     m_mnuGraphViewConfig->addAction(pacGVUpperSc);
     m_mnuGraphViewConfig->addAction(pacGVLowerSc);
     m_mnuGraphViewConfig->addAction(pacGVVolumeSc);
+
+    m_mnuAmiPipePanels->addAction(pacAmiPipe);
+    m_mnuAmiPipePanels->addAction(pacAmiPipeBarNew);
+    m_mnuAmiPipePanels->addAction(pacAmiPipeBarActive);
 
     m_mnuStyles = new QMenu(tr("St&yles"));
     pmnuSettings->addMenu(m_mnuStyles);
@@ -1024,9 +1050,10 @@ void MainWindow::InitAction()
     tbrToolBar =new QToolBar("Toolbar");
     tbrToolBar->setObjectName("Toolbar");
     tbrToolBar->addAction(pacNewDoc);
+    tbrToolBar->addAction(pacTickersBar);
     tbrToolBar->addAction(pacAmiPipe);
     tbrToolBar->addAction(pacOpen);
-    tbrToolBar->addAction(pacSave);
+    //tbrToolBar->addAction(pacSave);
     tbrToolBar->addAction(pacConfig);
     tbrToolBar->addAction(pacLogWnd);
     tbrToolBar->addAction(pacErrLogWnd);
@@ -1456,7 +1483,7 @@ void MainWindow::slotGraphViewWindow()
     if (!bWas){
         //TODO: do non blocking floating warning
         QMessageBox::warning(0,tr("Warning"),
-                                   tr("Please, select a ticker in the box at the bottom left to continue!\n"),
+                                   tr("Please, select a ticker in the box at the bottom left to continue!"),
                                    QMessageBox::Ok
                                    );
     }
@@ -1629,6 +1656,8 @@ void MainWindow::InitDockBar()
     connect(pAmiPipeWindow,SIGNAL(ActiveWndStateChanged(int)),this,SLOT(slotAmiPipeActiveWndStateChanged(int)));
 
     connect(pAmiPipeWindow,SIGNAL(buttonHideClicked()),this,SLOT(slotAmiPipeHideClicked()));
+
+    connect(this,SIGNAL(AmiPipeInternalPanelsStateChanged(bool, bool)),pAmiPipeWindow,SLOT(slotInternalPanelsStateChanged(bool, bool)));
 
     ///////////////////////////////////////////////////////////////////////
 
@@ -2266,12 +2295,15 @@ void  MainWindow::slotAmiPipeNewWndStateChanged(int iS)
 {
     if (iS != 0)    bAmiPipesNewWndShown = true;
     else            bAmiPipesNewWndShown = false;
+    pacAmiPipeBarNew->setChecked(bAmiPipesNewWndShown);
+
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 void  MainWindow::slotAmiPipeActiveWndStateChanged(int iS)
 {
     if (iS != 0)    bAmiPipesActiveWndShown = true;
     else            bAmiPipesActiveWndShown = false;
+    pacAmiPipeBarActive->setChecked(bAmiPipesActiveWndShown);
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 void  MainWindow::slotAmiPipeHideClicked()
@@ -2280,7 +2312,27 @@ void  MainWindow::slotAmiPipeHideClicked()
     ResizingLeftToolBars();
 }
 //--------------------------------------------------------------------------------------------------------------------------------
+void  MainWindow::slotAmiPipeWndowNew()
+{
+    bAmiPipesNewWndShown = pacAmiPipeBarNew->isChecked();
+    if (!bAmiPipesNewWndShown){
+        bAmiPipesActiveWndShown = true;
+        pacAmiPipeBarActive->setChecked(true);
+    }
+    AmiPipeInternalPanelsStateChanged(bAmiPipesNewWndShown,bAmiPipesActiveWndShown);
+}
 //--------------------------------------------------------------------------------------------------------------------------------
+void  MainWindow::slotAmiPipeWndowActive()
+{
+    bAmiPipesActiveWndShown = pacAmiPipeBarActive->isChecked();
+    if (!bAmiPipesActiveWndShown){
+        bAmiPipesNewWndShown = true;
+        pacAmiPipeBarNew->setChecked(true);
+    }
+    AmiPipeInternalPanelsStateChanged(bAmiPipesNewWndShown,bAmiPipesActiveWndShown);
+
+    //slotInternalPanelsStateChanged(bool bLeft, bool bRight)
+}
 //--------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------

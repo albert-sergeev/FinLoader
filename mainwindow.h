@@ -79,13 +79,16 @@ private:
     QMenu * m_mnuStyles;
     QMenu * m_mnuLangs;
     QMenu * m_mnuGraphViewConfig;
+    QMenu * m_mnuAmiPipePanels;
 
     QMenu * pmnuFile;
     QMenu * pmnuTools;
     QMenu * pmnuSettings;
     QMenu * pmnuHelp;
 
-
+    QAction * pacAmiPipe;
+    QAction * pacAmiPipeBarNew;
+    QAction * pacAmiPipeBarActive;
     QAction * pacTickersBar;
     QAction * pacStatusBar;
     QAction * pacToolBar;
@@ -225,6 +228,8 @@ signals:
 
     void UsedMemoryChanged(size_t,size_t);
 
+    void AmiPipeInternalPanelsStateChanged(bool bLeft, bool bRight);
+
 protected:
     void InitAction();
     void SaveSettings();
@@ -269,6 +274,10 @@ public slots: // for amipipe form
     void slotAmiPipeActiveWndStateChanged(int);
 
     void slotAmiPipeHideClicked();
+
+    void slotAmiPipeWndowNew();
+    void slotAmiPipeWndowActive();
+
 
 
 protected slots: // for main window
