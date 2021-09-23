@@ -158,9 +158,11 @@ private:
     bool bDefaultSaveLogToFile;
     int iDefaultLogSize;
     int iDefaultLogCount;
+    int iCurrentLogfile;
     bool bDefaultSaveErrorLogToFile;
     int iDefaultErrorLogSize;
     int iDefaultErrorLogCount;
+    int iCurrentErrorLogfile;
     bool bDefaultInvertMouseWheel;
     bool bDefaultShowHelpButtons;
     bool bDefaultWhiteBackgtound;
@@ -355,6 +357,9 @@ protected slots: // for main window
     std::size_t getPhisicalMemory();
 
     void ResizingLeftToolBars();
+
+    void slotSendToLog(QString);
+    void slotSendToErrorLog(QString);
 
 private:
     //std::vector<std::vector<Bar>> testPvBars; // TODO: delete. for tests

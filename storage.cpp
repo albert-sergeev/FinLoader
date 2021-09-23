@@ -1925,6 +1925,53 @@ bool Storage::WriteMapToStore(std::string sFileName, std::map<std::time_t,std::v
 
 }
 //--------------------------------------------------------------------------------------------------------
+int Storage::SaveToLogfile(const std::string &str,const  std::string & strLogFileName,
+                           const int iCurrentLogfileNumb, const int iMasLogfileSize, const int iMaxLogfiles)
+{
+    int iNewNumb = iCurrentLogfileNumb;
+    std::stringstream ssFName;
+    ssFName << strLogFileName<<"_"<<iCurrentLogfileNumb<<".log";
+    ///////////////////////////////////////////
+    // check file existence & size
+
+    if (std::filesystem::exists(pathCurr/ssFName.str())){
+        std::ifstream fileR (pathCurr/ssFName.str());
+        size_t filesize{0};
+        if(fileR){
+            fileR.seekg(0,std::ios::end);
+            filesize = fileR.tellg();
+            fileR.seekg(0, std::ios::beg);
+        }
+        // logrotate
+        if (!fileR || (filesize + str.size())/1048576 >= iMasLogfileSize){
+
+            iNewNumb = iCurrentLogfileNumb + 1 > iMaxLogfiles ? 1 : iCurrentLogfileNumb + 1;
+            if (iNewNumb == iCurrentLogfileNumb){
+                ThreadFreeCout pcout;
+                pcout <<"cannot change logfile!\n";
+                return iCurrentLogfileNumb;
+            }
+            //
+            ssFName.str("");
+            ssFName.clear();
+            ssFName << strLogFileName<<"_"<<iNewNumb<<".log";
+            std::ofstream fileW (pathCurr/ssFName.str());
+            if (!fileW){
+                ThreadFreeCout pcout;
+                pcout <<"cannot change logfile!\n";
+                return iCurrentLogfileNumb;
+            }
+            //
+            std::time_t t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+            fileW <<threadfree_gmtime_to_str(&t)<<": " <<"logrotate\n";
+        }
+    }
+    ///////////////////////////////////////////
+    std::ofstream file (pathCurr/ssFName.str(),std::ios::app);
+    file << str<<"\n";
+
+    return iNewNumb;
+}
 //--------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------

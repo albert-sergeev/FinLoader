@@ -205,8 +205,6 @@ ConfigWindow::ConfigWindow(modelMarketsList *modelM,int DefaultTickerMarket,
     swtIntroductoryTips->setChecked(bDefaultShowIntroductoryTips);
     //-------------------------------------------------------------
 
-
-
     ui->spnbLogfileSize->setValue(iLogSize);
     ui->spnbLogfilesCount->setValue(iLogCount);
     ui->spnbErrorLogfileSize->setValue(iErrorLogSize);

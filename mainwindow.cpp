@@ -125,6 +125,9 @@ MainWindow::MainWindow(QWidget *parent)
     connect(swtShowAll,SIGNAL(stateChanged(int)),this,SLOT(slotDocbarShowAllChanged(int)));
     connect(swtShowMarkets,SIGNAL(stateChanged(int)),this,SLOT(slotDocbarShowMarketChanged(int)));
 
+    connect(this,SIGNAL(SendToLog(QString)),this,SLOT(slotSendToLog(QString)));
+    connect(this,SIGNAL(SendToErrorLog(QString)),this,SLOT(slotSendToErrorLog(QString)));
+
 
     ////////////////////////////////////////////////////////////////////
     iTimerID = startTimer(100); // timer to process GUID events
@@ -624,6 +627,8 @@ void MainWindow::LoadSettings()
             bGrayColorFroNotAutoloadedTickers   = m_settings.value("GrayColorFroNotAutoloadedTickers",false).toBool();
             iDefaultMonthDepth          = m_settings.value("DefaultMonthDepth",1).toInt();
 
+            iCurrentLogfile             = m_settings.value("CurrentLogfile",1).toInt();
+            iCurrentErrorLogfile        = m_settings.value("CurrentErrorLogfile",1).toInt();
         m_settings.endGroup();
 
         m_settings.beginGroup("Configwindow");
@@ -641,7 +646,6 @@ void MainWindow::LoadSettings()
             bDefaultShowHelpButtons     = m_settings.value("DefaultShowHelpButtons",true).toBool();
             bDefaultWhiteBackgtound     = m_settings.value("DefaultWhiteBackgtound",true).toBool();
             bDefaultShowIntroductoryTips= m_settings.value("DefaultShowIntroductoryTips",true).toBool();
-
         m_settings.endGroup();
 
         m_settings.beginGroup("ImportFinamForm");
@@ -702,6 +706,8 @@ void MainWindow::SaveSettings()
             m_settings.setValue("GrayColorFroNotAutoloadedTickers",bGrayColorFroNotAutoloadedTickers);
             m_settings.setValue("DefaultMonthDepth",iDefaultMonthDepth);
 
+            m_settings.setValue("CurrentLogfile",iCurrentLogfile);
+            m_settings.setValue("CurrentErrorLogfile",iCurrentErrorLogfile);
         m_settings.endGroup();
 
         m_settings.beginGroup("Configwindow");
@@ -719,7 +725,6 @@ void MainWindow::SaveSettings()
             m_settings.setValue("DefaultShowHelpButtons",bDefaultShowHelpButtons);
             m_settings.setValue("DefaultWhiteBackgtound",bDefaultWhiteBackgtound);
             m_settings.setValue("DefaultShowIntroductoryTips",bDefaultShowIntroductoryTips);
-
         m_settings.endGroup();
 
         m_settings.beginGroup("ImportFinamForm");
@@ -2408,6 +2413,31 @@ void  MainWindow::slotAmiPipeWndowActive()
     //slotInternalPanelsStateChanged(bool bLeft, bool bRight)
 }
 //--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotSendToLog(QString str)
+{
+    if (bDefaultSaveLogToFile){
+        std::stringstream ss;
+        std::time_t t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+        ss << threadfree_gmtime_to_str(&t)<<": ";
+        ss << str.toStdString();
+
+        iCurrentLogfile = stStore.SaveToLogfile(ss.str(), "logfile", iCurrentLogfile,iDefaultLogSize, iDefaultLogCount);
+        SaveSettings();
+    }
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotSendToErrorLog(QString str)
+{
+    if (bDefaultSaveErrorLogToFile){
+        std::stringstream ss;
+        std::time_t t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+        ss << threadfree_gmtime_to_str(&t)<<": ";
+        ss << str.toStdString();
+
+        iCurrentErrorLogfile = stStore.SaveToLogfile(ss.str(), "errorlog", iCurrentErrorLogfile,iDefaultErrorLogSize, iDefaultErrorLogCount);
+        SaveSettings();
+    }
+}
 //--------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------
 
