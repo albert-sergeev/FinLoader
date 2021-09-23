@@ -630,6 +630,18 @@ void MainWindow::LoadSettings()
             iDefaultTickerMarket    = m_settings.value("DefaultTickerMarket",0).toInt();
             bConfigTickerShowByName = m_settings.value("ConfigTickerShowByName",true).toBool();
             bConfigTickerSortByName = m_settings.value("ConfigTickerSortByName",true).toBool();
+
+            bDefaultSaveLogToFile       = m_settings.value("DefaultSaveLogToFile",false).toBool();
+            iDefaultLogSize             = m_settings.value("DefaultLogSize",10).toInt();
+            iDefaultLogCount            = m_settings.value("DefaultLogCount",4).toInt();
+            bDefaultSaveErrorLogToFile  = m_settings.value("DefaultSaveErrorLogToFile",true).toBool();
+            iDefaultErrorLogSize        = m_settings.value("DefaultErrorLogSize",10).toInt();
+            iDefaultErrorLogCount       = m_settings.value("DefaultErrorLogCount",4).toInt();
+            bDefaultInvertMouseWheel    = m_settings.value("DefaultInvertMouseWheel",true).toBool();
+            bDefaultShowHelpButtons     = m_settings.value("DefaultShowHelpButtons",true).toBool();
+            bDefaultWhiteBackgtound     = m_settings.value("DefaultWhiteBackgtound",true).toBool();
+            bDefaultShowIntroductoryTips= m_settings.value("DefaultShowIntroductoryTips",true).toBool();
+
         m_settings.endGroup();
 
         m_settings.beginGroup("ImportFinamForm");
@@ -696,6 +708,18 @@ void MainWindow::SaveSettings()
             m_settings.setValue("DefaultTickerMarket",iDefaultTickerMarket);
             m_settings.setValue("ConfigTickerShowByName",bConfigTickerShowByName);
             m_settings.setValue("ConfigTickerSortByName",bConfigTickerSortByName);
+
+            m_settings.setValue("DefaultSaveLogToFile",bDefaultSaveLogToFile);
+            m_settings.setValue("DefaultLogSize",iDefaultLogSize);
+            m_settings.setValue("DefaultLogCount",iDefaultLogCount);
+            m_settings.setValue("DefaultSaveErrorLogToFile",bDefaultSaveErrorLogToFile);
+            m_settings.setValue("DefaultErrorLogSize",iDefaultErrorLogSize);
+            m_settings.setValue("DefaultErrorLogCount",iDefaultErrorLogCount);
+            m_settings.setValue("DefaultInvertMouseWheel",bDefaultInvertMouseWheel);
+            m_settings.setValue("DefaultShowHelpButtons",bDefaultShowHelpButtons);
+            m_settings.setValue("DefaultWhiteBackgtound",bDefaultWhiteBackgtound);
+            m_settings.setValue("DefaultShowIntroductoryTips",bDefaultShowIntroductoryTips);
+
         m_settings.endGroup();
 
         m_settings.beginGroup("ImportFinamForm");
@@ -1510,7 +1534,17 @@ void MainWindow::slotConfigWndow()
                                         bDefaultStoragePath,qsStorageDirPath,stStore,
                                         bFillNotAutoloadedTickers,
                                         bGrayColorFroNotAutoloadedTickers,
-                                        iDefaultMonthDepth
+                                        iDefaultMonthDepth,
+                                        bDefaultSaveLogToFile,
+                                        iDefaultLogSize,
+                                        iDefaultLogCount,
+                                        bDefaultSaveErrorLogToFile,
+                                        iDefaultErrorLogSize,
+                                        iDefaultErrorLogCount,
+                                        bDefaultInvertMouseWheel,
+                                        bDefaultShowHelpButtons,
+                                        bDefaultWhiteBackgtound,
+                                        bDefaultShowIntroductoryTips
                                         );
     pdoc->setAttribute(Qt::WA_DeleteOnClose);
     pdoc->setWindowTitle(tr("Config"));
@@ -1530,7 +1564,8 @@ void MainWindow::slotConfigWndow()
     connect(this,SIGNAL(SaveUnsavedConfigs()),pdoc,SLOT(slotBtnSaveTickerClicked()));
 
     connect(pdoc,SIGNAL(NeedChangeDefaultPath(bool,QString)),this,SLOT(slotSaveNewDefaultPath(bool,QString)));
-    connect(pdoc,SIGNAL(NeedSaveGeneralOptions(bool,bool,int)),this,SLOT(slotSaveGeneralOptions(bool,bool,int)));
+    connect(pdoc,SIGNAL(NeedSaveGeneralOptions(bool,bool,int, bool,int,int,bool,int,int,bool,bool,bool,bool)),
+              this,SLOT(slotSaveGeneralOptions(bool,bool,int, bool,int,int,bool,int,int,bool,bool,bool,bool)));
 
     pdoc->show();
 }
@@ -2095,11 +2130,34 @@ void MainWindow::slotAmiPipeWndow()
 
 }
 //--------------------------------------------------------------------------------------------------------------------------------
-void MainWindow::slotSaveGeneralOptions(bool FillNotAutoloaded,bool GrayColor,int MonthDepth)
+void MainWindow::slotSaveGeneralOptions(bool FillNotAutoloaded,bool GrayColor,int MonthDepth,
+                                        bool bSaveLogToFile,
+                                        int iLogSize,
+                                        int iLogCount,
+                                        bool bSaveErrorLogToFile,
+                                        int iErrorLogSize,
+                                        int iErrorLogCount,
+                                        bool bInvertMouseWheel,
+                                        bool bShowHelpButtons,
+                                        bool bWhiteBackgtound,
+                                        bool bShowIntroductoryTips
+                                        )
 {
     bFillNotAutoloadedTickers           = FillNotAutoloaded;
     bGrayColorFroNotAutoloadedTickers   = GrayColor;
     iDefaultMonthDepth                  = MonthDepth;
+
+    bDefaultSaveLogToFile           = bSaveLogToFile;
+    iDefaultLogSize                 = iLogSize;
+    iDefaultLogCount                = iLogCount;
+    bDefaultSaveErrorLogToFile      = bSaveErrorLogToFile;
+    iDefaultErrorLogSize            = iErrorLogSize;
+    iDefaultErrorLogCount           = iErrorLogCount;
+    bDefaultInvertMouseWheel        = bInvertMouseWheel;
+    bDefaultShowHelpButtons         = bShowHelpButtons;
+    bDefaultWhiteBackgtound         = bWhiteBackgtound;
+    bDefaultShowIntroductoryTips    = bShowIntroductoryTips;
+
     SaveSettings();
 
     m_TickerLstModel.setGrayColorForInformants(bGrayColorFroNotAutoloadedTickers);

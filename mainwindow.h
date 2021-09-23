@@ -155,6 +155,17 @@ private:
     std::vector<Ticker> vTickersLstEtalon;
     modelTickersList m_TickerLstModel;
 
+    bool bDefaultSaveLogToFile;
+    int iDefaultLogSize;
+    int iDefaultLogCount;
+    bool bDefaultSaveErrorLogToFile;
+    int iDefaultErrorLogSize;
+    int iDefaultErrorLogCount;
+    bool bDefaultInvertMouseWheel;
+    bool bDefaultShowHelpButtons;
+    bool bDefaultWhiteBackgtound;
+    bool bDefaultShowIntroductoryTips;
+
     // for inport FinQuotes subwindow
     QString qsDefaultOpenDir;
     char cImportDelimiter;
@@ -252,6 +263,8 @@ public slots: // for config window
     void slotStoreConfigTickerShowByName(bool b)    {bConfigTickerShowByName = b;};
     void slotStoreConfigTickerSortByName(bool b)    {bConfigTickerSortByName = b;};
 
+    void slotSaveGeneralOptions(bool,bool,int, bool,int,int,bool,int,int,bool,bool,bool,bool);
+
 public slots: // for import FinQuotes winow
     void slotDefaultOpenDirChanged(QString & s) {qsDefaultOpenDir = s;};
     void slotImportDelimiterChanged(char c)     {cImportDelimiter = c;};
@@ -262,7 +275,6 @@ public slots: // for import FinQuotes winow
     void slotLoadGraph(const  int iTickerID, const std::time_t tBegin, const std::time_t tEnd);
 
     void slotSaveNewDefaultPath(bool,QString);
-    void slotSaveGeneralOptions(bool,bool,int);
 
 public slots: // for amipipe form
 

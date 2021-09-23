@@ -31,6 +31,16 @@ public:
                           bool bFillNotAutoloadedTickers,
                           bool bGrayColorFroNotAutoloadedTickers,
                           int iDefaultMonthDepth,
+                          bool bSaveLogToFile,
+                          int iLogSize,
+                          int iLogCount,
+                          bool bSaveErrorLogToFile,
+                          int iErrorLogSize,
+                          int iErrorLogCount,
+                          bool bInvertMouseWheel,
+                          bool bShowHelpButtons,
+                          bool bWhiteBackgtound,
+                          bool bShowIntroductoryTips,
                           QWidget *parent = nullptr);
     ~ConfigWindow();
 private:
@@ -74,12 +84,29 @@ private:
     StyledSwitcher *swtFillNotAutoloadedTickers;
     StyledSwitcher *swtGrayColorFroNotAutoloadedTickers;
 
+    StyledSwitcher *swtSaveLogToFile;
+    StyledSwitcher *swtSaveErrorLogToFile;
+    StyledSwitcher *swtInvertMouseWheel;
+    StyledSwitcher *swtShowHelpButtons;
+    StyledSwitcher *swtWhiteBackgtound;
+    StyledSwitcher *swtIntroductoryTips;
+
+    bool bDefaultSaveLogToFile;
+    int iDefaultLogSize;
+    int iDefaultLogCount;
+    bool bDefaultSaveErrorLogToFile;
+    int iDefaultErrorLogSize;
+    int iDefaultErrorLogCount;
+    bool bDefaultInvertMouseWheel;
+    bool bDefaultShowHelpButtons;
+    bool bDefaultWhiteBackgtound;
+    bool bDefaultShowIntroductoryTips;
+
 
     int iDefaultTickerMarket;
     modelMarketsList *modelMarket;
     modelTickersList *modelTicker;
     TickerProxyListModel proxyTickerModel;
-
 
 
 //////////////////////////////////////////
@@ -145,7 +172,7 @@ public:
 
 signals:
     void NeedChangeDefaultPath(bool,QString);
-    void NeedSaveGeneralOptions(bool,bool,int);
+    void NeedSaveGeneralOptions(bool,bool,int, bool,int,int,bool,int,int,bool,bool,bool,bool);
 
 protected slots:
 
@@ -157,9 +184,10 @@ protected slots:
     void slotGeneralCancelClicked();
     void slotGeneralOpenStorageDirClicked();
 
-    void slotFillNotAutoloadedChenged(int);
-    void slotGrayColorChenged(int);
-    void slotMonthDepthChenged(int);
+//    void slotFillNotAutoloadedChenged(int);
+//    void slotGrayColorChenged(int);
+//    void slotMonthDepthChenged(int);
+    void slotGeneralOptionChenged(int);
 
 //    void slotAboutQuit();
 

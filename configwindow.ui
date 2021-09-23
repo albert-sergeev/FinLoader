@@ -23,7 +23,7 @@
    <item row="0" column="0">
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>2</number>
      </property>
      <widget class="QWidget" name="tabTicker">
       <attribute name="title">
@@ -487,24 +487,212 @@
             <property name="verticalSpacing">
              <number>2</number>
             </property>
-            <item row="1" column="0">
-             <widget class="QLabel" name="label_17">
+            <item row="15" column="0">
+             <widget class="QLabel" name="label_26">
               <property name="text">
-               <string>Default tickers data load depth (in month)</string>
+               <string>White background</string>
               </property>
              </widget>
             </item>
-            <item row="0" column="2" colspan="2">
+            <item row="5" column="0">
+             <widget class="QLabel" name="label_16">
+              <property name="text">
+               <string>Save log to file</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="2" colspan="2">
              <widget class="QWidget" name="wtLoadLoadedTickers" native="true"/>
             </item>
-            <item row="0" column="0">
+            <item row="6" column="0">
+             <widget class="QLabel" name="label_19">
+              <property name="text">
+               <string>Log file size (in megabytes)</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
              <widget class="QLabel" name="label_15">
               <property name="text">
                <string>Fill data for not autoloaded tickers on start</string>
               </property>
              </widget>
             </item>
-            <item row="1" column="3">
+            <item row="14" column="2" colspan="2">
+             <widget class="QWidget" name="wtShowHelpButtons" native="true"/>
+            </item>
+            <item row="15" column="1">
+             <spacer name="horizontalSpacer_16">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item row="7" column="1" colspan="2">
+             <spacer name="horizontalSpacer_10">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item row="3" column="0">
+             <widget class="QLabel" name="label_18">
+              <property name="text">
+               <string>Gray color for not autoloaded tickers</string>
+              </property>
+             </widget>
+            </item>
+            <item row="10" column="3">
+             <widget class="QSpinBox" name="spnbErrorLogfileSize">
+              <property name="minimum">
+               <number>1</number>
+              </property>
+             </widget>
+            </item>
+            <item row="8" column="0" colspan="4">
+             <widget class="Line" name="line_4">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="14" column="1">
+             <spacer name="horizontalSpacer_15">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item row="5" column="1">
+             <spacer name="horizontalSpacer_8">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item row="13" column="0">
+             <widget class="QLabel" name="label_24">
+              <property name="text">
+               <string>Invert mouse wheel horizontal/vertical movements</string>
+              </property>
+             </widget>
+            </item>
+            <item row="9" column="0">
+             <widget class="QLabel" name="label_21">
+              <property name="text">
+               <string>Save error log to file</string>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="2" colspan="2">
+             <widget class="QWidget" name="wtSaveLogToFile" native="true"/>
+            </item>
+            <item row="10" column="0">
+             <widget class="QLabel" name="label_22">
+              <property name="text">
+               <string>Error log file size (in megabytes)</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="0" colspan="4">
+             <widget class="Line" name="line_6">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="7" column="0">
+             <widget class="QLabel" name="label_20">
+              <property name="text">
+               <string>Log files count</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="label_17">
+              <property name="text">
+               <string>Default tickers data load depth (in month)</string>
+              </property>
+             </widget>
+            </item>
+            <item row="10" column="1" colspan="2">
+             <spacer name="horizontalSpacer_12">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item row="11" column="3">
+             <widget class="QSpinBox" name="spnbErrorLogfilesCount">
+              <property name="minimum">
+               <number>1</number>
+              </property>
+              <property name="maximum">
+               <number>4</number>
+              </property>
+             </widget>
+            </item>
+            <item row="7" column="3">
+             <widget class="QSpinBox" name="spnbLogfilesCount">
+              <property name="minimum">
+               <number>1</number>
+              </property>
+              <property name="maximum">
+               <number>4</number>
+              </property>
+             </widget>
+            </item>
+            <item row="12" column="0" colspan="4">
+             <widget class="Line" name="line_5">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="6" column="1" colspan="2">
+             <spacer name="horizontalSpacer_9">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item row="2" column="3">
              <widget class="QSpinBox" name="spnbMonthDepth">
               <property name="maximumSize">
                <size>
@@ -520,18 +708,14 @@
               </property>
              </widget>
             </item>
-            <item row="2" column="0">
-             <widget class="QLabel" name="label_18">
-              <property name="text">
-               <string>Gray color for not autoloaded tickers</string>
-              </property>
-             </widget>
+            <item row="15" column="2" colspan="2">
+             <widget class="QWidget" name="wtWhiteBackgtound" native="true"/>
             </item>
-            <item row="2" column="2" colspan="2">
+            <item row="3" column="2" colspan="2">
              <widget class="QWidget" name="wtInformantGrayColor" native="true"/>
             </item>
-            <item row="0" column="1">
-             <spacer name="horizontalSpacer_4">
+            <item row="9" column="1">
+             <spacer name="horizontalSpacer_11">
               <property name="orientation">
                <enum>Qt::Horizontal</enum>
               </property>
@@ -543,7 +727,67 @@
               </property>
              </spacer>
             </item>
-            <item row="2" column="1">
+            <item row="11" column="1" colspan="2">
+             <spacer name="horizontalSpacer_13">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item row="14" column="0">
+             <widget class="QLabel" name="label_25">
+              <property name="text">
+               <string>Show help buttons in windows</string>
+              </property>
+             </widget>
+            </item>
+            <item row="13" column="1">
+             <spacer name="horizontalSpacer_14">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item row="11" column="0">
+             <widget class="QLabel" name="label_23">
+              <property name="text">
+               <string>Error log files count</string>
+              </property>
+             </widget>
+            </item>
+            <item row="6" column="3">
+             <widget class="QSpinBox" name="spnbLogfileSize">
+              <property name="minimum">
+               <number>1</number>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1" colspan="2">
+             <spacer name="horizontalSpacer_7">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item row="3" column="1">
              <spacer name="horizontalSpacer_6">
               <property name="orientation">
                <enum>Qt::Horizontal</enum>
@@ -556,8 +800,44 @@
               </property>
              </spacer>
             </item>
-            <item row="1" column="1" colspan="2">
-             <spacer name="horizontalSpacer_7">
+            <item row="13" column="2" colspan="2">
+             <widget class="QWidget" name="wtInvertMouseWheel" native="true"/>
+            </item>
+            <item row="9" column="2" colspan="2">
+             <widget class="QWidget" name="wtSaveErrorLogToFile" native="true"/>
+            </item>
+            <item row="4" column="0" colspan="4">
+             <widget class="Line" name="line_3">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <spacer name="horizontalSpacer_4">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item row="16" column="0">
+             <widget class="QLabel" name="label_27">
+              <property name="text">
+               <string>Show introductory tips</string>
+              </property>
+             </widget>
+            </item>
+            <item row="16" column="2" colspan="2">
+             <widget class="QWidget" name="wtIntroductoryTips" native="true"/>
+            </item>
+            <item row="16" column="1">
+             <spacer name="horizontalSpacer_17">
               <property name="orientation">
                <enum>Qt::Horizontal</enum>
               </property>

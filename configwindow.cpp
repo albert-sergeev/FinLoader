@@ -17,6 +17,16 @@ ConfigWindow::ConfigWindow(modelMarketsList *modelM,int DefaultTickerMarket,
                            bool FillNotAutoloadedTickers,
                            bool GrayColorFroNotAutoloadedTickers,
                            int DefaultMonthDepth,
+                           bool bSaveLogToFile,
+                           int iLogSize,
+                           int iLogCount,
+                           bool bSaveErrorLogToFile,
+                           int iErrorLogSize,
+                           int iErrorLogCount,
+                           bool bInvertMouseWheel,
+                           bool bShowHelpButtons,
+                           bool bWhiteBackgtound,
+                           bool bShowIntroductoryTips,
                            QWidget *parent) :
     QWidget(parent)
     , stStore{st}
@@ -31,6 +41,16 @@ ConfigWindow::ConfigWindow(modelMarketsList *modelM,int DefaultTickerMarket,
     , bFillNotAutoloadedTickers{FillNotAutoloadedTickers}
     , bGrayColorFroNotAutoloadedTickers{GrayColorFroNotAutoloadedTickers}
     , iDefaultMonthDepth{DefaultMonthDepth}
+    , bDefaultSaveLogToFile {bSaveLogToFile}
+    , iDefaultLogSize {iLogSize}
+    , iDefaultLogCount {iLogCount}
+    , bDefaultSaveErrorLogToFile {bSaveErrorLogToFile}
+    , iDefaultErrorLogSize {iErrorLogSize}
+    , iDefaultErrorLogCount {iErrorLogCount}
+    , bDefaultInvertMouseWheel {bInvertMouseWheel}
+    , bDefaultShowHelpButtons {bShowHelpButtons}
+    , bDefaultWhiteBackgtound {bWhiteBackgtound}
+    , bDefaultShowIntroductoryTips {bShowIntroductoryTips}
     ,iDefaultTickerMarket{DefaultTickerMarket}
     , modelMarket{modelM}
     , modelTicker{modelT}
@@ -142,6 +162,55 @@ ConfigWindow::ConfigWindow(modelMarketsList *modelM,int DefaultTickerMarket,
     lt10->addWidget(swtGrayColorFroNotAutoloadedTickers);
     //-------------------------------------------------------------
 
+    QHBoxLayout *lt11 = new QHBoxLayout();
+    lt11->setMargin(0);
+    ui->wtSaveLogToFile->setLayout(lt11);
+    swtSaveLogToFile = new StyledSwitcher(tr("On "),tr(" Off"),true,10,this);
+    lt11->addWidget(swtSaveLogToFile);
+    swtSaveLogToFile->setChecked(bSaveLogToFile);
+    //-------------------------------------------------------------
+    QHBoxLayout *lt12 = new QHBoxLayout();
+    lt12->setMargin(0);
+    ui->wtSaveErrorLogToFile->setLayout(lt12);
+    swtSaveErrorLogToFile = new StyledSwitcher(tr("On "),tr(" Off"),true,10,this);
+    lt12->addWidget(swtSaveErrorLogToFile);
+    swtSaveErrorLogToFile->setChecked(bSaveErrorLogToFile);
+    //-------------------------------------------------------------
+    QHBoxLayout *lt13 = new QHBoxLayout();
+    lt13->setMargin(0);
+    ui->wtInvertMouseWheel->setLayout(lt13);
+    swtInvertMouseWheel = new StyledSwitcher(tr("On "),tr(" Off"),true,10,this);
+    lt13->addWidget(swtInvertMouseWheel);
+    swtInvertMouseWheel->setChecked(bInvertMouseWheel);
+    //-------------------------------------------------------------
+    QHBoxLayout *lt14 = new QHBoxLayout();
+    lt14->setMargin(0);
+    ui->wtShowHelpButtons->setLayout(lt14);
+    swtShowHelpButtons = new StyledSwitcher(tr("On "),tr(" Off"),true,10,this);
+    lt14->addWidget(swtShowHelpButtons);
+    swtShowHelpButtons->setChecked(bShowHelpButtons);
+    //-------------------------------------------------------------
+    QHBoxLayout *lt15 = new QHBoxLayout();
+    lt15->setMargin(0);
+    ui->wtWhiteBackgtound->setLayout(lt15);
+    swtWhiteBackgtound = new StyledSwitcher(tr("On "),tr(" Off"),true,10,this);
+    lt15->addWidget(swtWhiteBackgtound);
+    swtWhiteBackgtound->setChecked(bWhiteBackgtound);
+    //-------------------------------------------------------------
+    QHBoxLayout *lt16 = new QHBoxLayout();
+    lt16->setMargin(0);
+    ui->wtIntroductoryTips->setLayout(lt16);
+    swtIntroductoryTips = new StyledSwitcher(tr("On "),tr(" Off"),true,10,this);
+    lt16->addWidget(swtIntroductoryTips);
+    swtIntroductoryTips->setChecked(bDefaultShowIntroductoryTips);
+    //-------------------------------------------------------------
+
+
+
+    ui->spnbLogfileSize->setValue(iLogSize);
+    ui->spnbLogfilesCount->setValue(iLogCount);
+    ui->spnbErrorLogfileSize->setValue(iErrorLogSize);
+    ui->spnbErrorLogfilesCount->setValue(iErrorLogCount);
 
     ///////////////////////////////////////////////////////////////////////
     // market-tab work
@@ -212,9 +281,24 @@ ConfigWindow::ConfigWindow(modelMarketsList *modelM,int DefaultTickerMarket,
     connect(swtDefPath,SIGNAL(stateChanged(int)),this,SLOT(slotDefPathChenged(int)));
     connect(ui->edStoragePath,SIGNAL(textChanged(const QString &)),this,SLOT(slotStoragePathChanged(const QString &)));
 
-    connect(swtFillNotAutoloadedTickers,SIGNAL(stateChanged(int)),this,SLOT(slotFillNotAutoloadedChenged(int)));
-    connect(swtGrayColorFroNotAutoloadedTickers,SIGNAL(stateChanged(int)),this,SLOT(slotGrayColorChenged(int)));
-    connect(ui->spnbMonthDepth,SIGNAL(valueChanged(int)),this,SLOT(slotMonthDepthChenged(int)));
+//    connect(swtFillNotAutoloadedTickers,SIGNAL(stateChanged(int)),this,SLOT(slotFillNotAutoloadedChenged(int)));
+//    connect(swtGrayColorFroNotAutoloadedTickers,SIGNAL(stateChanged(int)),this,SLOT(slotGrayColorChenged(int)));
+//    connect(ui->spnbMonthDepth,SIGNAL(valueChanged(int)),this,SLOT(slotMonthDepthChenged(int)));
+
+    connect(swtFillNotAutoloadedTickers,SIGNAL(stateChanged(int)),this,SLOT(slotGeneralOptionChenged(int)));
+    connect(swtGrayColorFroNotAutoloadedTickers,SIGNAL(stateChanged(int)),this,SLOT(slotGeneralOptionChenged(int)));
+    connect(ui->spnbMonthDepth,SIGNAL(valueChanged(int)),this,SLOT(slotGeneralOptionChenged(int)));
+
+    connect(swtSaveLogToFile,SIGNAL(stateChanged(int)),this,SLOT(slotGeneralOptionChenged(int)));
+    connect(ui->spnbLogfileSize,SIGNAL(valueChanged(int)),this,SLOT(slotGeneralOptionChenged(int)));
+    connect(ui->spnbLogfilesCount,SIGNAL(valueChanged(int)),this,SLOT(slotGeneralOptionChenged(int)));
+    connect(swtSaveErrorLogToFile,SIGNAL(stateChanged(int)),this,SLOT(slotGeneralOptionChenged(int)));
+    connect(ui->spnbErrorLogfileSize,SIGNAL(valueChanged(int)),this,SLOT(slotGeneralOptionChenged(int)));
+    connect(ui->spnbErrorLogfilesCount,SIGNAL(valueChanged(int)),this,SLOT(slotGeneralOptionChenged(int)));
+    connect(swtInvertMouseWheel,SIGNAL(stateChanged(int)),this,SLOT(slotGeneralOptionChenged(int)));
+    connect(swtShowHelpButtons,SIGNAL(stateChanged(int)),this,SLOT(slotGeneralOptionChenged(int)));
+    connect(swtWhiteBackgtound,SIGNAL(stateChanged(int)),this,SLOT(slotGeneralOptionChenged(int)));
+    connect(swtIntroductoryTips,SIGNAL(stateChanged(int)),this,SLOT(slotGeneralOptionChenged(int)));
 
     ui->btnGeneralSave ->setEnabled(false);
     ui->btnGeneralCancel ->setEnabled(false);
@@ -246,6 +330,14 @@ ConfigWindow::~ConfigWindow()
     if(swtDefPath)                          {   delete swtDefPath;                          swtDefPath = nullptr;}
     if(swtFillNotAutoloadedTickers)         {   delete swtFillNotAutoloadedTickers;         swtFillNotAutoloadedTickers = nullptr;}
     if(swtGrayColorFroNotAutoloadedTickers) {   delete swtGrayColorFroNotAutoloadedTickers; swtGrayColorFroNotAutoloadedTickers = nullptr;}
+
+    if(swtSaveLogToFile)                    {   delete swtSaveLogToFile;                    swtSaveLogToFile = nullptr;}
+    if(swtSaveErrorLogToFile)               {   delete swtSaveErrorLogToFile;               swtSaveErrorLogToFile = nullptr;}
+    if(swtInvertMouseWheel)                 {   delete swtInvertMouseWheel;                 swtInvertMouseWheel = nullptr;}
+    if(swtShowHelpButtons)                  {   delete swtShowHelpButtons;                  swtShowHelpButtons = nullptr;}
+    if(swtWhiteBackgtound)                  {   delete swtWhiteBackgtound;                  swtWhiteBackgtound = nullptr;}
+    if(swtIntroductoryTips)                 {   delete swtIntroductoryTips;                 swtIntroductoryTips = nullptr;}
+
     //----------------------------------
     delete ui;
 }
@@ -1061,6 +1153,17 @@ void ConfigWindow::slotGeneralCancelClicked()
         swtGrayColorFroNotAutoloadedTickers->setChecked(bGrayColorFroNotAutoloadedTickers);
         ui->spnbMonthDepth->setValue(iDefaultMonthDepth);
 
+        swtSaveLogToFile->setChecked(bDefaultSaveLogToFile);
+        ui->spnbLogfileSize->setValue(iDefaultLogSize);
+        ui->spnbLogfilesCount->setValue(iDefaultLogCount);
+        swtSaveErrorLogToFile->setChecked(bDefaultSaveErrorLogToFile);
+        ui->spnbErrorLogfileSize->setValue(iDefaultErrorLogSize);
+        ui->spnbErrorLogfilesCount->setValue(iDefaultErrorLogCount);
+        swtInvertMouseWheel->setChecked(bDefaultInvertMouseWheel);
+        swtShowHelpButtons->setChecked(bDefaultShowHelpButtons);
+        swtWhiteBackgtound->setChecked(bDefaultWhiteBackgtound);
+        swtIntroductoryTips->setChecked(bDefaultShowIntroductoryTips);
+
         bDataGeneralOptionsChanged = false;
     }
 
@@ -1096,7 +1199,28 @@ void ConfigWindow::slotGeneralSaveClicked()
             bGrayColorFroNotAutoloadedTickers = swtGrayColorFroNotAutoloadedTickers->isChecked();
             iDefaultMonthDepth = ui->spnbMonthDepth->value();
 
-            emit NeedSaveGeneralOptions(bFillNotAutoloadedTickers,bGrayColorFroNotAutoloadedTickers,iDefaultMonthDepth);
+            bDefaultSaveLogToFile       = swtSaveLogToFile->isChecked();
+            iDefaultLogSize             = ui->spnbLogfileSize->value();
+            iDefaultLogCount            = ui->spnbLogfilesCount->value();
+            bDefaultSaveErrorLogToFile  = swtSaveErrorLogToFile->isChecked();
+            iDefaultErrorLogSize        = ui->spnbErrorLogfileSize->value();
+            iDefaultErrorLogCount       = ui->spnbErrorLogfilesCount->value();
+            bDefaultInvertMouseWheel    = swtInvertMouseWheel->isChecked();
+            bDefaultShowHelpButtons     = swtShowHelpButtons->isChecked();
+            bDefaultWhiteBackgtound     = swtWhiteBackgtound->isChecked();
+            bDefaultShowIntroductoryTips= swtIntroductoryTips->isChecked();
+
+            emit NeedSaveGeneralOptions(bFillNotAutoloadedTickers,bGrayColorFroNotAutoloadedTickers,iDefaultMonthDepth,
+                                        bDefaultSaveLogToFile,
+                                        iDefaultLogSize,
+                                        iDefaultLogCount,
+                                        bDefaultSaveErrorLogToFile,
+                                        iDefaultErrorLogSize,
+                                        iDefaultErrorLogCount,
+                                        bDefaultInvertMouseWheel,
+                                        bDefaultShowHelpButtons,
+                                        bDefaultWhiteBackgtound,
+                                        bDefaultShowIntroductoryTips);
 
             emit NeedChangeDefaultPath(swtDefPath->isChecked(),ui->edStoragePath->text());// do restart!!!
 
@@ -1110,7 +1234,29 @@ void ConfigWindow::slotGeneralSaveClicked()
         bGrayColorFroNotAutoloadedTickers = swtGrayColorFroNotAutoloadedTickers->isChecked();
         iDefaultMonthDepth = ui->spnbMonthDepth->value();
 
-        emit NeedSaveGeneralOptions(bFillNotAutoloadedTickers,bGrayColorFroNotAutoloadedTickers,iDefaultMonthDepth);
+        bDefaultSaveLogToFile       = swtSaveLogToFile->isChecked();
+        iDefaultLogSize             = ui->spnbLogfileSize->value();
+        iDefaultLogCount            = ui->spnbLogfilesCount->value();
+        bDefaultSaveErrorLogToFile  = swtSaveErrorLogToFile->isChecked();
+        iDefaultErrorLogSize        = ui->spnbErrorLogfileSize->value();
+        iDefaultErrorLogCount       = ui->spnbErrorLogfilesCount->value();
+        bDefaultInvertMouseWheel    = swtInvertMouseWheel->isChecked();
+        bDefaultShowHelpButtons     = swtShowHelpButtons->isChecked();
+        bDefaultWhiteBackgtound     = swtWhiteBackgtound->isChecked();
+        bDefaultShowIntroductoryTips= swtIntroductoryTips->isChecked();
+
+        emit NeedSaveGeneralOptions(bFillNotAutoloadedTickers,bGrayColorFroNotAutoloadedTickers,iDefaultMonthDepth,
+                                    bDefaultSaveLogToFile,
+                                    iDefaultLogSize,
+                                    iDefaultLogCount,
+                                    bDefaultSaveErrorLogToFile,
+                                    iDefaultErrorLogSize,
+                                    iDefaultErrorLogCount,
+                                    bDefaultInvertMouseWheel,
+                                    bDefaultShowHelpButtons,
+                                    bDefaultWhiteBackgtound,
+                                    bDefaultShowIntroductoryTips);
+
         bDataGeneralOptionsChanged = false;
 
         ui->btnGeneralSave ->setEnabled(false);
@@ -1125,19 +1271,25 @@ void ConfigWindow::slotGeneralOpenStorageDirClicked()
 }
 //--------------------------------------------------------------------------------------------------------
 
-void ConfigWindow::slotFillNotAutoloadedChenged(int)
-{
-    bDataGeneralOptionsChanged = true;
-    ui->btnGeneralSave ->setEnabled(true);
-    ui->btnGeneralCancel ->setEnabled(true);
-}
-void ConfigWindow::slotGrayColorChenged(int)
-{
-    bDataGeneralOptionsChanged = true;
-    ui->btnGeneralSave ->setEnabled(true);
-    ui->btnGeneralCancel ->setEnabled(true);
-}
-void ConfigWindow::slotMonthDepthChenged(int)
+//void ConfigWindow::slotFillNotAutoloadedChenged(int)
+//{
+//    bDataGeneralOptionsChanged = true;
+//    ui->btnGeneralSave ->setEnabled(true);
+//    ui->btnGeneralCancel ->setEnabled(true);
+//}
+//void ConfigWindow::slotGrayColorChenged(int)
+//{
+//    bDataGeneralOptionsChanged = true;
+//    ui->btnGeneralSave ->setEnabled(true);
+//    ui->btnGeneralCancel ->setEnabled(true);
+//}
+//void ConfigWindow::slotMonthDepthChenged(int)
+//{
+//    bDataGeneralOptionsChanged = true;
+//    ui->btnGeneralSave ->setEnabled(true);
+//    ui->btnGeneralCancel ->setEnabled(true);
+//}
+void ConfigWindow::slotGeneralOptionChenged(int)
 {
     bDataGeneralOptionsChanged = true;
     ui->btnGeneralSave ->setEnabled(true);
