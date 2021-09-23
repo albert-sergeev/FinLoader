@@ -115,7 +115,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QPushButton" name="btnCreate">
+          <widget class="QPushButton" name="btnHelp">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
              <horstretch>0</horstretch>
@@ -957,7 +957,7 @@
  <tabstops>
   <tabstop>btnOpen</tabstop>
   <tabstop>edSign</tabstop>
-  <tabstop>btnCreate</tabstop>
+  <tabstop>btnHelp</tabstop>
   <tabstop>btnImport</tabstop>
   <tabstop>edDelimiter</tabstop>
   <tabstop>cmbMarket</tabstop>

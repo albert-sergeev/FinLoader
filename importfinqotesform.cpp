@@ -61,7 +61,7 @@ ImportFinQuotesForm::ImportFinQuotesForm(modelMarketsList *modelM, int DefaultTi
     /////////////////////////////////
 
     connect(ui->btnOpen,SIGNAL(clicked()),this,SLOT(slotBtnOpenClicked()));
-    connect(ui->btnCreate,SIGNAL(clicked()),this,SLOT(slotBtnCreateClicked()));
+    connect(ui->btnHelp,SIGNAL(clicked()),this,SLOT(slotBtnCreateClicked()));
     connect(ui->btnImport,SIGNAL(clicked()),this,SLOT(slotBtnImportClicked()));
     connect(ui->btnTest,SIGNAL(clicked()),this,SLOT(slotBtnTestClicked()));
 
@@ -1001,7 +1001,7 @@ void ImportFinQuotesForm::slotTextInfo(QString qsStr){
 //--------------------------------------------------------------------------------------------------------
 void ImportFinQuotesForm::slotSetWidgetsInLoadState(bool bInLoad)
 {
-    ui->btnCreate->setEnabled(!bInLoad);
+    ui->btnHelp->setEnabled(!bInLoad);
     ui->btnOpen->setEnabled(!bInLoad);
     ui->btnTest->setEnabled(!bInLoad);
     ui->edDelimiter->setEnabled(!bInLoad);
@@ -1079,3 +1079,9 @@ bool ImportFinQuotesForm::eventFilter(QObject *watched, QEvent *event)
 }
 
 //--------------------------------------------------------------------------------------------------------
+void ImportFinQuotesForm::slotShowHelpButtonsChanged(bool b)
+{
+    ui->btnHelp->setVisible(b);
+}
+//--------------------------------------------------------------------------------------------------------
+

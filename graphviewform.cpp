@@ -82,7 +82,7 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
     ltView2->setContentsMargins(0,0,0,0);
     ltView2->setMargin(3);
     ui->grViewL3->setLayout(ltView2);
-    QPushButton  *btnHelp = new QPushButton(tr("Help"));
+    btnHelp = new QPushButton(tr("Help"));
     btnHelp->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     ltView2->addWidget(btnHelp);
     //btnHelp->setVisible(false);
@@ -91,7 +91,7 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
     ltViewR2->setContentsMargins(0,0,0,0);
     ltViewR2->setMargin(3);
     ui->grViewL4->setLayout(ltViewR2);
-    QPushButton  *btnHelpR = new QPushButton(tr("Help"));
+    btnHelpR = new QPushButton(tr("Help"));
     btnHelpR->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     ltViewR2->addWidget(btnHelpR);
     //btnHelp->setVisible(false);
@@ -2469,4 +2469,9 @@ void GraphViewForm::slotInvertMouseWheelChanged(bool b)
     bInvertMouseWheel = b;
 }
 //---------------------------------------------------------------------------------------------------------------
-
+void GraphViewForm::slotShowHelpButtonsChanged(bool b)
+{
+    btnHelp->setVisible(b);
+    btnHelpR->setVisible(b);
+}
+//---------------------------------------------------------------------------------------------------------------

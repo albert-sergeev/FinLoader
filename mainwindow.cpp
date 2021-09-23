@@ -1595,6 +1595,10 @@ void MainWindow::slotImportFinQuotesWndow ()
     connect(pdoc,SIGNAL(NeedParseImportFinQuotesFile(dataFinLoadTask &)),this,SLOT(slotParseImportFinQuotesFile(dataFinLoadTask &)));
     connect(pdoc,SIGNAL(NeedToStopLoadings()),this,SLOT(slotStopFinQuotesLoadings()));
 
+    connect(this,SIGNAL(ShowHelpButtonsChanged(bool)),pdoc,SLOT(slotShowHelpButtonsChanged(bool)));
+
+    emit ShowHelpButtonsChanged(bDefaultShowHelpButtons);
+
     //
     pdoc->show();
 }
@@ -1872,8 +1876,11 @@ void MainWindow::slotSetSelectedTicker(const  int iTickerID)
         connect(this,SIGNAL(UsedMemoryChanged(size_t,size_t)),pdoc,SLOT(slotUsedMemoryChanged(size_t,size_t)));
 
         connect(this,SIGNAL(InvertMouseWheelChanged(bool)),pdoc,SLOT(slotInvertMouseWheelChanged(bool)));
+        connect(this,SIGNAL(ShowHelpButtonsChanged(bool)),pdoc,SLOT(slotShowHelpButtonsChanged(bool)));
 
-        InvertMouseWheelChanged(bDefaultInvertMouseWheel);
+        emit InvertMouseWheelChanged(bDefaultInvertMouseWheel);
+        emit ShowHelpButtonsChanged(bDefaultShowHelpButtons);
+
         pdoc->setFramesVisibility(tp);
         pdoc->show();
 
@@ -2170,7 +2177,8 @@ void MainWindow::slotSaveGeneralOptions(bool FillNotAutoloaded,bool GrayColor,in
 
     m_TickerLstModel.setGrayColorForInformants(bGrayColorFroNotAutoloadedTickers);
 
-    InvertMouseWheelChanged(bDefaultInvertMouseWheel);
+    emit InvertMouseWheelChanged(bDefaultInvertMouseWheel);
+    emit ShowHelpButtonsChanged(bDefaultShowHelpButtons);
 
 }
 //--------------------------------------------------------------------------------------------------------------------------------

@@ -246,6 +246,7 @@ signals:
     void PipeNameReceived(std::string,std::string);
 
     void InvertMouseWheelChanged(bool b);
+    void ShowHelpButtonsChanged(bool b);
 
 protected:
     void InitAction();

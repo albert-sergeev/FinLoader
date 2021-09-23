@@ -82,6 +82,7 @@ public slots:
     void slotLoadingHasFinished(bool bSuccess, QString qsErr);
     void slotLoadingActivity();
     void slotTextInfo(QString qsStr);
+    void slotShowHelpButtonsChanged(bool);
 
 signals:
     void OpenImportFilePathChanged(QString &);

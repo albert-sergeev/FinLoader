@@ -128,6 +128,9 @@ private:
 
     Memometer  *  indicatorMemo;
 
+    QPushButton  *btnHelp;
+    QPushButton  *btnHelpR;
+
 
 
     const int iTickerID;
@@ -244,6 +247,7 @@ public slots:
     void slotUsedMemoryChanged(size_t,size_t);
 
     void slotInvertMouseWheelChanged(bool);
+    void slotShowHelpButtonsChanged(bool);
 
 protected slots:
   //  void slotLoadGraphButton(); // for tests
