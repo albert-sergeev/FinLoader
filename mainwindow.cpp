@@ -187,6 +187,7 @@ MainWindow::~MainWindow()
     thrdPoolLoadFinQuotes.Halt();
     thrdPoolAmiClient.Halt();
     thrdPoolFastDataWork.Halt();
+    this_thread_flagInterrup.set();
 
     std::this_thread::yield();
     std::this_thread::sleep_for(milliseconds(100));

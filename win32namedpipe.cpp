@@ -42,9 +42,9 @@ bool Win32NamedPipe::open_messagemode()
     std::wstring wstr(sPipePath.begin(), sPipePath.end());
 
     while(1){
-        if (! WaitNamedPipe(wstr.c_str(), 20000)) {
+        if (! WaitNamedPipe(wstr.c_str(), 2000)) {
             ThreadFreeCout pcout;
-            pcout <<"Could not open pipe: 20 second wait timed out.\n";
+            pcout <<"Could not open pipe: 2 second wait timed out.\n";
 
             pipeState = ePipeState_type::Error;
             return false;
@@ -121,9 +121,9 @@ bool Win32NamedPipe::open_bytemode()
     std::wstring wstr(sPipePath.begin(), sPipePath.end());
 
     while(1){
-        if (! WaitNamedPipe(wstr.c_str(), 20000)) {
+        if (! WaitNamedPipe(wstr.c_str(), 2000)) {
             ThreadFreeCout pcout;
-            pcout <<"Could not open pipe: 20 second wait timed out.\n";
+            pcout <<"Could not open pipe: 2 second wait timed out.\n";
             pipeState = ePipeState_type::Error;
             return false;
         }

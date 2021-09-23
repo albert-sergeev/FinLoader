@@ -234,6 +234,9 @@ void AmiPipeHolder::RefreshActiveSockets(dataAmiPipeTask::pipes_type& pActive,
     for (auto &m:mPipesConnected){m.second.first =0;}
     //
     for(const auto & p:pActive){
+        if (this_thread_flagInterrup.isSet()){
+            return;
+        }
         auto ItHalted (mPipesHalted.find(p.first));
         if ( ItHalted == mPipesHalted.end()){
             auto ItConnected (mPipesConnected.find(p.first));
@@ -304,12 +307,15 @@ void AmiPipeHolder::RefreshActiveSockets(dataAmiPipeTask::pipes_type& pActive,
         else{
             ItHalted->second.first = 1;
         }
+        if (this_thread_flagInterrup.isSet()){
+            return;
+        }
     }
     //////////////////////////////////////////////////////////
     auto ItConnected = mPipesConnected.begin();
     while (ItConnected != mPipesConnected.end()){
         if (ItConnected->second.first == 0){
-            /// TODO: disconnect;
+            ///
             ItConnected->second.second.second.close();
             ///
             dataAmiPipeAnswer answ;
@@ -1154,6 +1160,9 @@ void AmiPipeHolder::AskPipesNames(dataAmiPipeTask::pipes_type &pFree, BlockFreeQ
 {
     //mFreePipesAsked
     for (const auto &p:pFree){
+        if (this_thread_flagInterrup.isSet()){
+            return;
+        }
         if (mPipesFree.find(p.first) == mPipesFree.end()){
             bool bOpend{false};
             try{
