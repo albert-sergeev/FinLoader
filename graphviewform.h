@@ -203,6 +203,8 @@ private:
     std::vector<std::pair<double,bool>> vHLines;
     bool bOHLC;
 
+    bool bInvertMouseWheel;
+
     static const int iLeftShift{20};
     static const int iRightShift{50};
 
@@ -240,6 +242,8 @@ public slots:
     void slotSaveUnsavedConfigs();
 
     void slotUsedMemoryChanged(size_t,size_t);
+
+    void slotInvertMouseWheelChanged(bool);
 
 protected slots:
   //  void slotLoadGraphButton(); // for tests

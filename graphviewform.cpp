@@ -2312,9 +2312,7 @@ bool GraphViewForm::eventFilter(QObject *watched, QEvent *event)
 
                  auto bt = pe->modifiers();
                  //
-                 if (bt.testFlag(Qt::ShiftModifier)){
-                 }
-                 else if (bt.testFlag(Qt::ControlModifier)){
+                 if (bt.testFlag(Qt::ControlModifier)){
                      if ((!numPixels.isNull()  && numPixels.x() != 0) || (!numDegrees.isNull())){
 
                          bool bPlus{false};
@@ -2344,7 +2342,9 @@ bool GraphViewForm::eventFilter(QObject *watched, QEvent *event)
                      event->accept();
                      return true;
                  }
-                 else{
+                 else if ((bt.testFlag(Qt::ShiftModifier) && bInvertMouseWheel) || (!bt.testFlag(Qt::ShiftModifier) && !bInvertMouseWheel)){
+                 }
+                 else if ((bt.testFlag(Qt::ShiftModifier) && !bInvertMouseWheel) || bInvertMouseWheel){
                      bool bRet;
                      if (watched != ui->grViewVolume && watched != ui->grViewVolume->verticalScrollBar()){
                          bRet = ui->grViewQuotes->horizontalScrollBar()->event(event);
@@ -2464,5 +2464,9 @@ std::string GraphViewForm::MemoSizeToStr(size_t iSize)
     return ss.str();
 }
 //---------------------------------------------------------------------------------------------------------------
+void GraphViewForm::slotInvertMouseWheelChanged(bool b)
+{
+    bInvertMouseWheel = b;
+}
 //---------------------------------------------------------------------------------------------------------------
 

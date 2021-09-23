@@ -1963,7 +1963,7 @@ int Storage::SaveToLogfile(const std::string &str,const  std::string & strLogFil
             }
             //
             std::time_t t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-            fileW <<threadfree_gmtime_to_str(&t)<<": " <<"logrotate\n";
+            fileW <<threadfree_gmtime_to_str(&t)<<": " <<"log rotate\n";
         }
     }
     ///////////////////////////////////////////

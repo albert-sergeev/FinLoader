@@ -1871,6 +1871,9 @@ void MainWindow::slotSetSelectedTicker(const  int iTickerID)
 
         connect(this,SIGNAL(UsedMemoryChanged(size_t,size_t)),pdoc,SLOT(slotUsedMemoryChanged(size_t,size_t)));
 
+        connect(this,SIGNAL(InvertMouseWheelChanged(bool)),pdoc,SLOT(slotInvertMouseWheelChanged(bool)));
+
+        InvertMouseWheelChanged(bDefaultInvertMouseWheel);
         pdoc->setFramesVisibility(tp);
         pdoc->show();
 
@@ -2166,6 +2169,8 @@ void MainWindow::slotSaveGeneralOptions(bool FillNotAutoloaded,bool GrayColor,in
     SaveSettings();
 
     m_TickerLstModel.setGrayColorForInformants(bGrayColorFroNotAutoloadedTickers);
+
+    InvertMouseWheelChanged(bDefaultInvertMouseWheel);
 
 }
 //--------------------------------------------------------------------------------------------------------------------------------

@@ -245,6 +245,8 @@ signals:
 
     void PipeNameReceived(std::string,std::string);
 
+    void InvertMouseWheelChanged(bool b);
+
 protected:
     void InitAction();
     void SaveSettings();
