@@ -717,6 +717,7 @@ void AmiPipesForm::slotBindClicked()
         if (lstUn.size()>0){
             Ticker t=proxyTickerModelUnallocated.getTicker(lstUn[0]);
 
+
             t.SetTickerSignQuik       (trim(sBind));
             t.SetAutoLoad             (true);
             //t.SetBulbululator         (true);
@@ -746,7 +747,6 @@ void AmiPipesForm::slotBindClicked()
                 t.SetUpToSys(false);
                 t.SetBulbululator(true);
 
-                //int i = modelTicker->AddRow(t);
                 (void) proxyTickerModelUnallocated.AddRow(t);
 
                 modelNew->removeRows(lst[0].row(),1);
@@ -787,6 +787,8 @@ void AmiPipesForm::slotDoubleClickedNew(const  QModelIndex& indx)
         //
         if (lstUn.size()>0){
             Ticker t=proxyTickerModelUnallocated.getTicker(lstUn[0]);
+
+
 
             t.SetTickerSignQuik       (trim(sBind));
             t.SetAutoLoad             (true);
@@ -1162,8 +1164,11 @@ void AmiPipesForm::slotBindAllClicked()
             sName = std::get<5>(e.second.second);
         }
 
-        if (proxyTickerModelUnallocated.searchTickerByPureSign(sSign,indx)){
-            Ticker t=proxyTickerModelUnallocated.getTicker(indx);
+
+        //if (proxyTickerModelUnallocated.searchTickerByPureSign(sSign,indx)){
+        //    Ticker t=proxyTickerModelUnallocated.getTicker(indx);
+        if (modelTicker->searchTickerByPureSign(sSign,indx)){
+            Ticker t=modelTicker->getTicker(indx);
 
             t.SetTickerSignQuik       (trim(sBind));
             t.SetAutoLoad             (true);
@@ -1172,7 +1177,8 @@ void AmiPipesForm::slotBindAllClicked()
                 t.SetTickerName(sName);
             }
             ///
-            proxyTickerModelUnallocated.setData(indx,t,Qt::EditRole);
+            //proxyTickerModelUnallocated.setData(indx,t,Qt::EditRole);
+            modelTicker->setData(indx,t,Qt::EditRole);
         }
         else{
             Ticker t {              trim(sName),
@@ -1185,8 +1191,8 @@ void AmiPipesForm::slotBindAllClicked()
             t.SetBulbululator(true);
 
             //int i = modelTicker->AddRow(t);
-            (void) proxyTickerModelUnallocated.AddRow(t);
-
+            //(void) proxyTickerModelUnallocated.AddRow(t);
+            (void) modelTicker->AddRow(t);
         }
     }
     modelNew->removeRows(0,modelNew->rowCount());

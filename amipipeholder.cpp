@@ -84,7 +84,7 @@ std::string AmiPipeHolder::getSignFromBind(std::string sBind)
 std::string AmiPipeHolder::getNameFromRaw(std::string sRaw)
 {
     std::stringstream ssRegName;
-    ssRegName <<"^[^\[]+";
+    ssRegName <<"^[^\[]*";
     const std::regex reAmiSign {ssRegName.str()};
     const auto ItSign = std::sregex_token_iterator(sRaw.begin(),sRaw.end(),reAmiSign);
 
@@ -1208,7 +1208,7 @@ void AmiPipeHolder::AskPipesNames(dataAmiPipeTask::pipes_type &pFree, BlockFreeQ
                 answ.SetType(dataAmiPipeAnswer::AskNameAnswer);
                 answ.SetTickerID(std::get<3>(p.second.second));
                 answ.SetBind(p.first);
-                answ.SetPipeName(std::get<1>(p.second.second)+"_t1");
+                answ.SetPipeName(std::get<1>(p.second.second));
                 queuePipeAnswers.Push(answ);
             }
 
