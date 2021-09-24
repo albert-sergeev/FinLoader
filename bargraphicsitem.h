@@ -6,17 +6,17 @@
 #include "threadfreelocaltime.h"
 
 
+
+
 class BarGraphicsItem : public QGraphicsItem
 {
+    ///////////////////////////////////////////////////////
+
     Bar b;
     size_t iRealIndex;
     bool bOHLC;
     int iState;
     double dHScale;
-
-    std::function<double()> funC;
-
-
     bool IsTick{false};
 public:
 
@@ -43,8 +43,8 @@ public:
         ss << "high: "  << b.High()<<"\r\n";
         ss << "low: "   << b.Low()<<"\r\n";
         ss << "close: " << b.Close()<<"\r\n";
-        ss << "volume: " << b.Volume()<<"\n";
-        ss << "index: " << iRealIndex<<"";
+        ss << "volume: " << b.Volume();
+        ss <<"\n"<< "index: " << iRealIndex<<"";
 
         this->setToolTip(QString::fromStdString(ss.str()));
     };
@@ -63,8 +63,8 @@ public:
             ss <<threadfree_gmtime_to_str(&t)<<"\r\n";
         }
         ss << "close: " << b.Close()<<"\r\n";
-        ss << "volume: " << b.Volume()<<"\n";
-        ss << "index: " << iRealIndex<<"";
+        ss << "volume: " << b.Volume();
+        ss <<"\n"<< "index: " << iRealIndex<<"";
         this->setToolTip(QString::fromStdString(ss.str()));
     };
 
@@ -81,8 +81,13 @@ public:
     void setBar(const Bar &bb)         {b = bb;};
     void setBar(const BarTick &bb)     {b = bb;};
 
+    template <class F, class... Args>
+    void SetOHLC(F&& f, Args&&... args){funcOHLC = std::bind (f,args...);}
+
 private:
-    bool IsOHLC()   const  {return  bOHLC;}
+
+    std::function<bool()> funcOHLC;
+    bool IsOHLC()   const  {return  funcOHLC();}
 
     double HScale() const {return dHScale;}
 

@@ -20,6 +20,9 @@ PlusButton::PlusButton(bool Plus, QWidget *parent) : QWidget(parent),bPlus{Plus}
 void PlusButton::paintEvent(QPaintEvent */*event*/)
 {
     QPainter painter(this);
+
+    painter.save();
+
     painter.setRenderHint(QPainter::Antialiasing, true);
 
     //QPen blackSolidPen(Qt::black,1,Qt::SolidLine);
@@ -69,6 +72,7 @@ void PlusButton::paintEvent(QPaintEvent */*event*/)
         }
     }
 
+    painter.restore();
 }
 
 void PlusButton::mousePressEvent(QMouseEvent */*event*/){

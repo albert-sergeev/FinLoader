@@ -38,11 +38,17 @@
 #include "styledswitcher.h"
 #include "graphviewform.h"
 #include "graphholder.h"
-#include "amipiperform.h"
+#include "amipipesform.h"
 #include "amipipeholder.h"
 #include "dataamipipeanswer.h"
 #include "dataamipipetask.h"
 #include "combindicator.h"
+
+#ifdef _WIN32
+
+#include<windows.h>
+
+#endif
 
 
 
@@ -73,13 +79,16 @@ private:
     QMenu * m_mnuStyles;
     QMenu * m_mnuLangs;
     QMenu * m_mnuGraphViewConfig;
+    QMenu * m_mnuAmiPipePanels;
 
     QMenu * pmnuFile;
     QMenu * pmnuTools;
     QMenu * pmnuSettings;
     QMenu * pmnuHelp;
 
-
+    QAction * pacAmiPipe;
+    QAction * pacAmiPipeBarNew;
+    QAction * pacAmiPipeBarActive;
     QAction * pacTickersBar;
     QAction * pacStatusBar;
     QAction * pacToolBar;
@@ -127,6 +136,10 @@ private:
     QString m_Language;
     QTranslator m_translator;
 
+    std::chrono::time_point<std::chrono::steady_clock> dtCheckMemoryUsage;
+    std::size_t iStoredUsedMemory;
+    std::size_t iPhisicalMemory;
+
     // global storage objects
     QSettings m_settings;
     std::vector<Market> vMarketsLst;
@@ -139,23 +152,56 @@ private:
     bool bConfigTickerShowByName;
     bool bConfigTickerSortByName;
     std::vector<Ticker> vTickersLst;
+    std::vector<Ticker> vTickersLstEtalon;
     modelTickersList m_TickerLstModel;
+
+    bool bDefaultSaveLogToFile;
+    int iDefaultLogSize;
+    int iDefaultLogCount;
+    int iCurrentLogfile;
+    bool bDefaultSaveErrorLogToFile;
+    int iDefaultErrorLogSize;
+    int iDefaultErrorLogCount;
+    int iCurrentErrorLogfile;
+    bool bDefaultInvertMouseWheel;
+    bool bDefaultShowHelpButtons;
+    bool bDefaultWhiteBackgtound;
+    bool bDefaultShowIntroductoryTips;
 
     // for inport FinQuotes subwindow
     QString qsDefaultOpenDir;
     char cImportDelimiter;
+
+    // for GraphViewForm;
+
 
     // for AmiPipes
     AmiPipeHolder pipesHolder;
     std::chrono::time_point<std::chrono::steady_clock> dtCheckPipesActivity;
     std::map<int,int> mStoredUnconnected;
     FastTasksHolder fastHolder;
+    AmiPipesForm  *pAmiPipeWindow;
+    bool bAmiPipeShowByNameUnallocated;
+    bool bAmiPipeShowByNameActive;
+    bool bAmiPipeShowByNameOff;
 
     // for docked bar
     StyledSwitcher * swtShowByName;
     StyledSwitcher * swtShowAll;
     StyledSwitcher * swtShowMarkets;
     TickerProxyListModel proxyTickerModel;
+    int iStoredLeftDocbarRightPos;
+    int iStoredLeftDocbarWidth;
+    bool bInResizingLeftToolbar;
+    bool bLeftToolbarCursorOverriden;
+
+    QDockWidget *wtAmiDockbar;
+    int iStoredAmiPipeFormWidth;
+    int iStoredTickerBarWidth;
+    bool bAmiPipesFormShown;
+
+    bool bAmiPipesNewWndShown;
+    bool bAmiPipesActiveWndShown;
 
 
     std::vector<Bulbululator *> vBulbululators;
@@ -191,6 +237,17 @@ signals:
     void SendToErrorLog(QString);
     void SaveUnsavedConfigs();
 
+    void slotSendSignalToProcessRepaintQueue();
+
+    void UsedMemoryChanged(size_t,size_t);
+
+    void AmiPipeInternalPanelsStateChanged(bool bLeft, bool bRight);
+
+    void PipeNameReceived(std::string,std::string);
+
+    void InvertMouseWheelChanged(bool b);
+    void ShowHelpButtonsChanged(bool b);
+
 protected:
     void InitAction();
     void SaveSettings();
@@ -211,6 +268,8 @@ public slots: // for config window
     void slotStoreConfigTickerShowByName(bool b)    {bConfigTickerShowByName = b;};
     void slotStoreConfigTickerSortByName(bool b)    {bConfigTickerSortByName = b;};
 
+    void slotSaveGeneralOptions(bool,bool,int, bool,int,int,bool,int,int,bool,bool,bool,bool);
+
 public slots: // for import FinQuotes winow
     void slotDefaultOpenDirChanged(QString & s) {qsDefaultOpenDir = s;};
     void slotImportDelimiterChanged(char c)     {cImportDelimiter = c;};
@@ -221,8 +280,24 @@ public slots: // for import FinQuotes winow
     void slotLoadGraph(const  int iTickerID, const std::time_t tBegin, const std::time_t tEnd);
 
     void slotSaveNewDefaultPath(bool,QString);
-    void slotSaveGeneralOptions(bool,bool,int);
 
+public slots: // for amipipe form
+
+    void slotAmiPipeSaveShowByNamesUnallocated(bool);
+    void slotAmiPipeSaveShowByNamesActive(bool);
+    void slotAmiPipeSaveShowByNamesOff(bool);
+
+    void slotAmiPipeWidthWasChanged(int);
+
+    void slotAmiPipeNewWndStateChanged(int);
+    void slotAmiPipeActiveWndStateChanged(int);
+
+    void slotAmiPipeHideClicked();
+
+    void slotAmiPipeWndowNew();
+    void slotAmiPipeWndowActive();
+
+    void slotAskPipesNames(dataAmiPipeTask::pipes_type &pipesFree);
 
 protected slots: // for main window
     void slotNotImpl    ();
@@ -265,18 +340,42 @@ protected slots: // for main window
     void slotSendSignalToInvalidateGraph(int TickerID, std::time_t dtDegin, std::time_t dtEnd);
     void slotSendSignalToFastShow(int TickerID, std::time_t tBegin, std::time_t tEnd,std::shared_ptr<GraphHolder> ptrHolder);
 
+
     //void slotTestPvBars(std::shared_ptr<std::vector<std::vector<BarTick>>> pvBars); // TODO: delete. for tests
 
     void slotGVFramesVisibilityStateChanged();
 
+    void slotAmiPipeFormWasClosed();
+
     void CheckActivePipes();
     void CheckActiveProcesses();
     void CheckLastPacketTime();
+    void CheckUsedMemory();
 
+    void BuildSessionsTableForFastTasks(FastTasksHolder &);
+
+    void slotSaveTickerConigRef(const Ticker & tT, bool bFull = false);
+    void slotSaveTickerConig(const Ticker tT, const bool bFull);
+
+    std::size_t getPhisicalMemory();
+
+    void ResizingLeftToolBars();
+
+    void slotSendToLog(QString);
+    void slotSendToErrorLog(QString);
 
 private:
     //std::vector<std::vector<Bar>> testPvBars; // TODO: delete. for tests
 
     Ui::MainWindow *ui;
+
+
+    // QWidget interface
+
+
+    // QObject interface
+public:
+    bool eventFilter(QObject *watched, QEvent *event);
+    bool eventTickerBar(QObject *watched, QEvent *event);
 };
 #endif // MAINWINDOW_H

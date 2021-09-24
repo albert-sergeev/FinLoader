@@ -6,6 +6,9 @@
 #include<QHBoxLayout>
 #include<QStandardPaths>
 #include<QProcess>
+#include<QMouseEvent>
+#include<QEvent>
+#include<QTimer>
 
 
 
@@ -15,18 +18,17 @@ using milliseconds=std::chrono::duration<double,
     >;
 
 
-
-
-
 //--------------------------------------------------------------------------------------------------------------------------------
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , lcdN{nullptr}
-    , vMarketsLst{}
+    ,iStoredUsedMemory{0}
+    , vMarketsLst{}   
     , m_MarketLstModel{vMarketsLst,this}
     , vTickersLst{}
     , m_TickerLstModel{vTickersLst,vMarketsLst,mBlinkedState,this}
-    , thrdPoolLoadFinQuotes{(int)std::thread::hardware_concurrency()/2}
+    , pAmiPipeWindow{nullptr}
+    , thrdPoolLoadFinQuotes{(int) (2 * double(std::thread::hardware_concurrency())/3.0)}
     , thrdPoolAmiClient{1}
     , thrdPoolFastDataWork{(int)std::thread::hardware_concurrency()/2}
     , ui(new Ui::MainWindow)
@@ -34,19 +36,26 @@ MainWindow::MainWindow(QWidget *parent)
 
     ui->setupUi(this);
 
+    //==============================================================================================================================
+    // init widgets part
     //-------------------------------------------------------------
+    ui->statusbar->setSizeGripEnabled(false);
+    //
+    lcdN = new QLCDNumber;
+    lcdN->setDigitCount(8);
+    lcdN->setMaximumHeight(16);
+    lcdN->setMinimumWidth(120);
+    lcdN->display(QString("00:00:00"));
+    lcdN->setToolTip(tr("server time of the last packet"));
+    ui->statusbar->addWidget(lcdN);
+    //ui->statusbar->addPermanentWidget(lcdN);
+    //
     wtCombIndicator = new CombIndicator(int(thrdPoolLoadFinQuotes.MaxThreads()+
                                         thrdPoolAmiClient.MaxThreads()+
                                         thrdPoolFastDataWork.MaxThreads())
                                         );
-    ui->statusbar->addWidget(wtCombIndicator);
-
-    lcdN = new QLCDNumber;
-    lcdN->setDigitCount(8);
-    lcdN->setMaximumHeight(16);
-    lcdN->display(QString("00:00:00"));
-    lcdN->setToolTip(tr("server time of the last packet"));
-    ui->statusbar->addWidget(lcdN);
+    //ui->statusbar->addWidget(wtCombIndicator);
+    ui->statusbar->addPermanentWidget(wtCombIndicator);
     //-------------------------------------------------------------
 
     //-------------------------------------------------------------
@@ -77,6 +86,17 @@ MainWindow::MainWindow(QWidget *parent)
     swtShowByName->SetOnColor(QPalette::Window,colorDarkGreen);
     swtShowByName->SetOffColor(QPalette::Window,colorDarkRed);
     //-------------------------------------------------------------
+    ui->dkActiveTickers->setTitleBarWidget(new QWidget());
+//    //ui->lineDragRight->installEventFilter(this);
+    ui->wtTickerBar->installEventFilter(this);
+    ui->wtTickerBar->setAttribute(Qt::WA_Hover, true);
+
+    bInResizingLeftToolbar = false;
+    bLeftToolbarCursorOverriden = false;
+
+
+    //==============================================================================================================================
+    // init data part
 
 
     LoadSettings();
@@ -87,6 +107,12 @@ MainWindow::MainWindow(QWidget *parent)
     InitAction();
 
     LoadDataStorage();
+
+    std::copy(vTickersLst.begin(),vTickersLst.end(),std::back_inserter(vTickersLstEtalon));
+
+    pipesHolder.setCurrentPath(stStore.GetCurrentPath());
+    BuildSessionsTableForFastTasks(fastHolder);
+    iPhisicalMemory = getPhisicalMemory();
 
     InitDockBar();
 
@@ -99,6 +125,9 @@ MainWindow::MainWindow(QWidget *parent)
     connect(swtShowAll,SIGNAL(stateChanged(int)),this,SLOT(slotDocbarShowAllChanged(int)));
     connect(swtShowMarkets,SIGNAL(stateChanged(int)),this,SLOT(slotDocbarShowMarketChanged(int)));
 
+    connect(this,SIGNAL(SendToLog(QString)),this,SLOT(slotSendToLog(QString)));
+    connect(this,SIGNAL(SendToErrorLog(QString)),this,SLOT(slotSendToErrorLog(QString)));
+
 
     ////////////////////////////////////////////////////////////////////
     iTimerID = startTimer(100); // timer to process GUID events
@@ -106,6 +135,7 @@ MainWindow::MainWindow(QWidget *parent)
     InitHolders();
     //
     dtCheckPipesActivity = std::chrono::steady_clock::now();
+    dtCheckMemoryUsage = std::chrono::steady_clock::now();
     CheckActivePipes();
     ////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////
@@ -160,6 +190,7 @@ MainWindow::~MainWindow()
     thrdPoolLoadFinQuotes.Halt();
     thrdPoolAmiClient.Halt();
     thrdPoolFastDataWork.Halt();
+    this_thread_flagInterrup.set();
 
     std::this_thread::yield();
     std::this_thread::sleep_for(milliseconds(100));
@@ -189,6 +220,11 @@ bool MainWindow::event(QEvent *event)
             ThreadFreeCout pcout;
             pcout <<"Received close event\n";
         }
+        if(pAmiPipeWindow != nullptr){
+            pAmiPipeWindow->close();
+            delete pAmiPipeWindow;
+            pAmiPipeWindow = nullptr;
+        }
 
         emit SaveUnsavedConfigs();
 
@@ -197,6 +233,7 @@ bool MainWindow::event(QEvent *event)
                 w->close();
             }
         }
+
 
     }
     return QWidget::event(event);
@@ -262,6 +299,9 @@ void MainWindow::timerEvent(QTimerEvent * event)
                 break;
             case dataAmiPipeAnswer::eAnswerType::FastShowEvent:
                 slotSendSignalToFastShow(data.TickerID(), data.tBegin, data.tEnd, data.ptrHolder);
+                break;
+            case dataAmiPipeAnswer::eAnswerType::AskNameAnswer:
+                emit PipeNameReceived(data.GetBind(),data.GetPipeName());
                 break;
             }
             //////////////////////////////////////////////
@@ -356,19 +396,19 @@ void MainWindow::timerEvent(QTimerEvent * event)
                     else{
                         slotSendSignalToInvalidateGraph(data.TickerID(), data.BeginDate(), data.EndDate());
 
-                        if (data.TickerID() == 9){ // TODO:delete. for test
-                            std::shared_lock lk(mutexMainHolder);
-                            auto hl =  Holders.at(data.TickerID());
-                            size_t tSz = hl->getViewGraphSize(Bar::eInterval::pTick);
-                            ThreadFreeCout pcout;
-                            pcout << "!!!!!!! total graph["<<data.TickerID()<<"] size = {"<<tSz<<"}   !!!!!!!";
+//                        if (data.TickerID() == 9){ // TODO:delete. for test
+//                            std::shared_lock lk(mutexMainHolder);
+//                            auto hl =  Holders.at(data.TickerID());
+//                            size_t tSz = hl->getViewGraphSize(Bar::eInterval::pTick);
+//                            ThreadFreeCout pcout;
+//                            pcout << "!!!!!!! total graph["<<data.TickerID()<<"] size = {"<<tSz<<"}   !!!!!!!";
 
-                            unsigned long iV{0};
-                            for (size_t i = 0; i < hl->getViewGraphSize(Bar::eInterval::pMonth); ++i){
-                                iV += hl->getByIndex<Bar>(Bar::eInterval::pMonth,i).Volume();
-                            }
-                            pcout << "    total volume = {"<<iV<<"}   !!!!!!!\n";
-                        }
+//                            unsigned long iV{0};
+//                            for (size_t i = 0; i < hl->getViewGraphSize(Bar::eInterval::pMonth); ++i){
+//                                iV += hl->getByIndex<Bar>(Bar::eInterval::pMonth,i).Volume();
+//                            }
+//                            pcout << "    total volume = {"<<iV<<"}   !!!!!!!\n";
+//                        }
                     }
                     emit SendToLog(QString::fromStdString(ss.str()));
                 }
@@ -424,6 +464,9 @@ void MainWindow::timerEvent(QTimerEvent * event)
     CheckLastPacketTime();
     CheckActivePipes();
     ListViewActivityTermination();
+    CheckUsedMemory();
+    //
+    emit slotSendSignalToProcessRepaintQueue();
     //
     QWidget::timerEvent(event);
 }
@@ -445,6 +488,29 @@ void MainWindow::CheckActiveProcesses()
 
 }
 //--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::CheckUsedMemory(){
+    milliseconds tActivityCount  = std::chrono::steady_clock::now() - dtCheckMemoryUsage;
+    if (tActivityCount > 1000ms){
+
+        std::size_t iMemory{0};
+        std::size_t iTmpSize{0};
+        for(const auto &hl:Holders){
+            if(!hl.second->GetUsedMemory(iTmpSize)){
+                return;//holder iz buzy
+            }
+            iMemory += iTmpSize;
+        }
+        if (iMemory !=0){
+            double d = iStoredUsedMemory > iMemory ? iStoredUsedMemory - iMemory : iMemory - iStoredUsedMemory;
+            if (iStoredUsedMemory == 0 || d/iMemory > 0.01){
+                iStoredUsedMemory = iMemory;
+                emit UsedMemoryChanged(iStoredUsedMemory,iPhisicalMemory);
+            }
+        }
+        dtCheckMemoryUsage = std::chrono::steady_clock::now();
+    }
+}
+//--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::CheckActivePipes()
 {
     milliseconds tActivityCount  = std::chrono::steady_clock::now() - dtCheckPipesActivity;
@@ -452,10 +518,10 @@ void MainWindow::CheckActivePipes()
         dtCheckPipesActivity = std::chrono::steady_clock::now();
         //
         dataAmiPipeTask taskAmi(dataAmiPipeTask::eTask_type::RefreshPipeList);
-        dataAmiPipeTask::pipes_type FreePipes;
+
         std::vector<int> vUnconnected;
         std::vector<int> vInformants;
-        pipesHolder.CheckPipes(vTickersLst,taskAmi.pipesBindedActive,taskAmi.pipesBindedOff,FreePipes,vUnconnected,vInformants);
+        pipesHolder.CheckPipes(vTickersLst,taskAmi.pipesBindedActive,taskAmi.pipesBindedOff,taskAmi.pipesFree,vUnconnected,vInformants);
         ////////////////////////////
         for (auto &m:mStoredUnconnected) m.second = 0;
         for(const auto &TickerID:vUnconnected){
@@ -495,6 +561,14 @@ void MainWindow::CheckActivePipes()
     }
 }
 //--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotAskPipesNames(dataAmiPipeTask::pipes_type &pipesFree)
+{
+    dataAmiPipeTask task(dataAmiPipeTask::eTask_type::AskPipesNames);
+    task.pipesFree = pipesFree;
+
+    queuePipeTasks.Push(task);
+}
+//--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::slotSendSignalToInvalidateGraph(int TickerID, std::time_t dtDegin, std::time_t dtEnd)
 {
     GraphViewForm * wnd{nullptr};
@@ -507,14 +581,14 @@ void MainWindow::slotSendSignalToInvalidateGraph(int TickerID, std::time_t dtDeg
     }
 }
 //--------------------------------------------------------------------------------------------------------------------------------
-void MainWindow::slotSendSignalToFastShow(int TickerID, std::time_t tBegin, std::time_t tEnd,std::shared_ptr<GraphHolder> ptrHolder)
+void MainWindow::slotSendSignalToFastShow(int TickerID, std::time_t /*tBegin*/, std::time_t /*tEnd*/,std::shared_ptr<GraphHolder> ptrHolder)
 {
     GraphViewForm * wnd{nullptr};
     QList<QMdiSubWindow*> lst = ui->mdiArea->subWindowList();
     for(int i = 0; i < lst.size(); ++i){
         wnd = qobject_cast<GraphViewForm *>(lst[i]->widget());
         if(wnd && wnd->TickerID() == TickerID){
-            wnd->slotFastShowEvent(tBegin, tEnd, ptrHolder);
+            wnd->slotFastShowEvent(ptrHolder);
         }
     }
 }
@@ -553,12 +627,25 @@ void MainWindow::LoadSettings()
             bGrayColorFroNotAutoloadedTickers   = m_settings.value("GrayColorFroNotAutoloadedTickers",false).toBool();
             iDefaultMonthDepth          = m_settings.value("DefaultMonthDepth",1).toInt();
 
+            iCurrentLogfile             = m_settings.value("CurrentLogfile",1).toInt();
+            iCurrentErrorLogfile        = m_settings.value("CurrentErrorLogfile",1).toInt();
         m_settings.endGroup();
 
         m_settings.beginGroup("Configwindow");
             iDefaultTickerMarket    = m_settings.value("DefaultTickerMarket",0).toInt();
             bConfigTickerShowByName = m_settings.value("ConfigTickerShowByName",true).toBool();
             bConfigTickerSortByName = m_settings.value("ConfigTickerSortByName",true).toBool();
+
+            bDefaultSaveLogToFile       = m_settings.value("DefaultSaveLogToFile",false).toBool();
+            iDefaultLogSize             = m_settings.value("DefaultLogSize",10).toInt();
+            iDefaultLogCount            = m_settings.value("DefaultLogCount",4).toInt();
+            bDefaultSaveErrorLogToFile  = m_settings.value("DefaultSaveErrorLogToFile",true).toBool();
+            iDefaultErrorLogSize        = m_settings.value("DefaultErrorLogSize",10).toInt();
+            iDefaultErrorLogCount       = m_settings.value("DefaultErrorLogCount",4).toInt();
+            bDefaultInvertMouseWheel    = m_settings.value("DefaultInvertMouseWheel",true).toBool();
+            bDefaultShowHelpButtons     = m_settings.value("DefaultShowHelpButtons",true).toBool();
+            bDefaultWhiteBackgtound     = m_settings.value("DefaultWhiteBackgtound",true).toBool();
+            bDefaultShowIntroductoryTips= m_settings.value("DefaultShowIntroductoryTips",true).toBool();
         m_settings.endGroup();
 
         m_settings.beginGroup("ImportFinamForm");
@@ -574,6 +661,19 @@ void MainWindow::LoadSettings()
             bGVUpperScOnLoadIsHidden  = !(m_settings.value("GVUpperSc" ,true).toBool());
             bGVLowerScOnLoadIsHidden  = !(m_settings.value("GVLowerSc" ,true).toBool());
             bGVVolumeScOnLoadIsHidden = !(m_settings.value("GVVolumeSc",true).toBool());
+        m_settings.endGroup();
+
+        m_settings.beginGroup("AmiPipeForm");
+            iStoredAmiPipeFormWidth     = m_settings.value("StoredAmiPipeFormWidth",700).toInt();
+            iStoredTickerBarWidth       = m_settings.value("StoredTickerBarWidth",100).toInt();
+
+            bAmiPipesFormShown          = m_settings.value("AmiPipesFormShown",false).toBool();
+            bAmiPipesNewWndShown        = m_settings.value("bAmiPipesNewWndShown",true).toBool();
+            bAmiPipesActiveWndShown     = m_settings.value("bAmiPipesActiveWndShown",true).toBool();
+
+            bAmiPipeShowByNameUnallocated   = m_settings.value("AmiPipeShowByNameUnallocated"   ,false).toBool();
+            bAmiPipeShowByNameActive        = m_settings.value("AmiPipeShowByNameActive"        ,false).toBool();
+            bAmiPipeShowByNameOff           = m_settings.value("AmiPipeShowByNameOff"           ,false).toBool();
         m_settings.endGroup();
 
     m_settings.endGroup();
@@ -606,12 +706,25 @@ void MainWindow::SaveSettings()
             m_settings.setValue("GrayColorFroNotAutoloadedTickers",bGrayColorFroNotAutoloadedTickers);
             m_settings.setValue("DefaultMonthDepth",iDefaultMonthDepth);
 
+            m_settings.setValue("CurrentLogfile",iCurrentLogfile);
+            m_settings.setValue("CurrentErrorLogfile",iCurrentErrorLogfile);
         m_settings.endGroup();
 
         m_settings.beginGroup("Configwindow");
             m_settings.setValue("DefaultTickerMarket",iDefaultTickerMarket);
             m_settings.setValue("ConfigTickerShowByName",bConfigTickerShowByName);
             m_settings.setValue("ConfigTickerSortByName",bConfigTickerSortByName);
+
+            m_settings.setValue("DefaultSaveLogToFile",bDefaultSaveLogToFile);
+            m_settings.setValue("DefaultLogSize",iDefaultLogSize);
+            m_settings.setValue("DefaultLogCount",iDefaultLogCount);
+            m_settings.setValue("DefaultSaveErrorLogToFile",bDefaultSaveErrorLogToFile);
+            m_settings.setValue("DefaultErrorLogSize",iDefaultErrorLogSize);
+            m_settings.setValue("DefaultErrorLogCount",iDefaultErrorLogCount);
+            m_settings.setValue("DefaultInvertMouseWheel",bDefaultInvertMouseWheel);
+            m_settings.setValue("DefaultShowHelpButtons",bDefaultShowHelpButtons);
+            m_settings.setValue("DefaultWhiteBackgtound",bDefaultWhiteBackgtound);
+            m_settings.setValue("DefaultShowIntroductoryTips",bDefaultShowIntroductoryTips);
         m_settings.endGroup();
 
         m_settings.beginGroup("ImportFinamForm");
@@ -629,9 +742,21 @@ void MainWindow::SaveSettings()
             m_settings.setValue("GVVolumeSc",pacGVVolumeSc->isChecked());
         m_settings.endGroup();
 
+        m_settings.beginGroup("AmiPipeForm");
+            m_settings.setValue("StoredAmiPipeFormWidth",iStoredAmiPipeFormWidth);
+            m_settings.setValue("StoredTickerBarWidth",iStoredTickerBarWidth);
+            m_settings.setValue("AmiPipesFormShown",bAmiPipesFormShown);
+            m_settings.setValue("bAmiPipesNewWndShown",bAmiPipesNewWndShown);
+            m_settings.setValue("bAmiPipesActiveWndShown",bAmiPipesActiveWndShown);
+
+            m_settings.setValue("AmiPipeShowByNameUnallocated"  ,bAmiPipeShowByNameUnallocated);
+            m_settings.setValue("AmiPipeShowByNameActive"  ,bAmiPipeShowByNameActive);
+            m_settings.setValue("AmiPipeShowByNameOff"  ,bAmiPipeShowByNameOff);
+        m_settings.endGroup();
+
     m_settings.endGroup();
 
-    m_settings.sync();
+    //m_settings.sync();
 
 }
 //--------------------------------------------------------------------------------------------------------------------------------
@@ -685,7 +810,7 @@ void MainWindow::slotTickerDataStorageUpdate(const QModelIndex & indxL,const QMo
     try{
         //qDebug()<<"store indexes: {"<<indxL.row()<<":"<<indxR.row()<<"}";
         for (int i = indxL.row(); i <= indxR.row(); ++i){
-            stStore.SaveTickerConfig(vTickersLst[i]);
+            slotSaveTickerConigRef(vTickersLst[i]);
         }
     }
     catch (std::exception &e){
@@ -701,7 +826,6 @@ void MainWindow::slotTickerDataStorageRemove(const Ticker & tT)
     try{
         //std::cout<<"remove ticker: {"<<tT.TickerID()<<":"<<tT.TickerSign()<<"}";
         stStore.SaveTickerConfig(tT,Storage::op_type::remove);
-
     }
     catch (std::exception &e){
         //
@@ -710,6 +834,30 @@ void MainWindow::slotTickerDataStorageRemove(const Ticker & tT)
         //
     }
 }
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotSaveTickerConig(const Ticker tT, const bool bFull)
+{
+    slotSaveTickerConigRef(tT, bFull);
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotSaveTickerConigRef(const Ticker & tT, bool bFull)
+{
+    auto It (std::find_if(vTickersLstEtalon.begin(),vTickersLstEtalon.end(),[&](const auto &t){
+                  return t.TickerID() == tT.TickerID();
+                }));
+
+    if (It == vTickersLstEtalon.end()
+            || (bFull && !It->equalFull(tT))
+            || (!bFull && !It->equal(tT))
+            ){
+
+        if (It == vTickersLstEtalon.end())  {vTickersLstEtalon.push_back(tT);}
+        else                                {*It = tT;}
+
+        stStore.SaveTickerConfig(tT);
+    }
+}
+
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::SaveDataStorage()
 {
@@ -731,27 +879,16 @@ void MainWindow::InitAction()
 
     //------------------------------------------------
     QAction * pacNewDoc =new QAction("newdoc");
-    pacNewDoc->setText(tr("&New"));
+    pacNewDoc->setText(tr("&Quotes graph"));
     pacNewDoc->setShortcut(QKeySequence(tr("CTRL+N")));
-    pacNewDoc->setToolTip(tr("New graph"));
-    pacNewDoc->setStatusTip(tr("New graph"));
-    pacNewDoc->setWhatsThis(tr("New graph"));
+    pacNewDoc->setToolTip(tr("Quotes graph"));
+    pacNewDoc->setStatusTip(tr("Quotes graph"));
+    pacNewDoc->setWhatsThis(tr("Quotes graph"));
     pacNewDoc->setIcon(QPixmap(":/store/images/sc_newdoc"));
     connect(pacNewDoc,SIGNAL(triggered()),SLOT(slotGraphViewWindow()));
-
-    //------------------------------------------------
-    QAction * pacAmiPipe =new QAction("AmiPipe");
-    pacAmiPipe->setText(tr("&Import from trade sistem"));
-    pacAmiPipe->setShortcut(QKeySequence(tr("CTRL+I")));
-    pacAmiPipe->setToolTip(tr("Import from trade sistem"));
-    pacAmiPipe->setStatusTip(tr("Import from trade sistem"));
-    pacAmiPipe->setWhatsThis(tr("Import from trade sistem"));
-    pacAmiPipe->setIcon(QPixmap(":/store/images/sc_cut"));
-    connect(pacAmiPipe,SIGNAL(triggered()),SLOT(slotAmiPipeWndow()));
-
     //------------------------------------------------
     QAction * pacOpen =new QAction("Open");
-    pacOpen->setText(tr("&Open"));
+    pacOpen->setText(tr("&Load history data"));
     pacOpen->setShortcut(QKeySequence(tr("CTRL+O")));
     pacOpen->setToolTip(tr("Load history data"));
     pacOpen->setStatusTip(tr("Load history data"));
@@ -759,13 +896,13 @@ void MainWindow::InitAction()
     pacOpen->setIcon(QPixmap(":/store/images/sc_open"));
     connect(pacOpen,SIGNAL(triggered()),SLOT(slotImportFinQuotesWndow()));
     //------------------------------------------------
-    QAction * pacSave =new QAction("Save");
-    pacSave->setText(tr("&Save"));
-    pacSave->setShortcut(QKeySequence(tr("CTRL+S")));
-    pacSave->setToolTip(tr("Save Document"));
-    pacSave->setStatusTip(tr("Save file to disk"));
-    pacSave->setWhatsThis(tr("Save file to disk"));
-    pacSave->setIcon(QPixmap(":/store/images/sc_save"));
+//    QAction * pacSave =new QAction("Save");
+//    pacSave->setText(tr("&Save"));
+//    pacSave->setShortcut(QKeySequence(tr("CTRL+S")));
+//    pacSave->setToolTip(tr("Save Document"));
+//    pacSave->setStatusTip(tr("Save file to disk"));
+//    pacSave->setWhatsThis(tr("Save file to disk"));
+//    pacSave->setIcon(QPixmap(":/store/images/sc_save"));
     //------------------------------------------------
     QAction * pacLogWnd =new QAction("LogWnd");
     pacLogWnd->setText(tr("Lo&g window"));
@@ -794,10 +931,40 @@ void MainWindow::InitAction()
     pacConfig->setIcon(QPixmap(":/store/images/sc_config"));
     connect(pacConfig,SIGNAL(triggered()),SLOT(slotConfigWndow()));
     //------------------------------------------------
+    pacAmiPipe =new QAction("AmiPipe");
+    pacAmiPipe->setText(tr("&Import from trade sistem"));
+    pacAmiPipe->setCheckable(true);
+    pacAmiPipe->setChecked(bAmiPipesFormShown);
+    pacAmiPipe->setShortcut(QKeySequence(tr("CTRL+I")));
+    pacAmiPipe->setToolTip(tr("Import from trade sistem"));
+    pacAmiPipe->setStatusTip(tr("Import from trade sistem"));
+    pacAmiPipe->setWhatsThis(tr("Import from trade sistem"));
+    pacAmiPipe->setIcon(QPixmap(":/store/images/sc_cut"));
+    connect(pacAmiPipe,SIGNAL(triggered()),SLOT(slotAmiPipeWndow()));
+    //------------------------------------------------
+    pacAmiPipeBarNew =new QAction("pacAmiPipeBarNew");
+    pacAmiPipeBarNew->setText(tr("&New found pipes"));
+    pacAmiPipeBarNew->setCheckable(true);
+    pacAmiPipeBarNew->setChecked(bAmiPipesNewWndShown);
+    pacAmiPipeBarNew->setToolTip(tr("New found pipes"));
+    pacAmiPipeBarNew->setStatusTip(tr("New found pipes"));
+    pacAmiPipeBarNew->setWhatsThis(tr("New found pipes"));
+    connect(pacAmiPipeBarNew,SIGNAL(triggered()),SLOT(slotAmiPipeWndowNew()));
+    //------------------------------------------------
+    pacAmiPipeBarActive =new QAction("pacAmiPipeBarActive");
+    pacAmiPipeBarActive->setText(tr("&Active pipes"));
+    pacAmiPipeBarActive->setCheckable(true);
+    pacAmiPipeBarActive->setChecked(bAmiPipesActiveWndShown);
+    pacAmiPipeBarActive->setToolTip(tr("Active pipes"));
+    pacAmiPipeBarActive->setStatusTip(tr("Active pipes"));
+    pacAmiPipeBarActive->setWhatsThis(tr("Active pipes"));
+    connect(pacAmiPipeBarActive,SIGNAL(triggered()),SLOT(slotAmiPipeWndowActive()));
+    //------------------------------------------------
     pacTickersBar =new QAction(tr("Tickers bar"));
     pacTickersBar->setText(tr("Tickers bar"));
     pacTickersBar->setCheckable(true);
     pacTickersBar->setChecked(!bTickerBarOnLoadIsHidden);
+    pacTickersBar->setIcon(QPixmap(":/store/images/sc_save"));
     connect(pacTickersBar,SIGNAL(triggered()),SLOT(slotTickersBarStateChanged()));
     //------------------------------------------------
     pacTickersBarButtonsHide =new QAction(tr("Show tickers bar panel"));
@@ -852,9 +1019,9 @@ void MainWindow::InitAction()
     //
     pmnuFile = new QMenu(tr("&File","menu"));
     pmnuFile->addAction(pacNewDoc);
-    pmnuFile->addAction(pacAmiPipe);
+    //pmnuFile->addAction(pacAmiPipe);
     pmnuFile->addAction(pacOpen);
-    pmnuFile->addAction(pacSave);
+    //pmnuFile->addAction(pacSave);
     pmnuFile->addSeparator();
     pmnuFile->addAction(tr("&Quit"),
                         qApp,
@@ -876,6 +1043,9 @@ void MainWindow::InitAction()
     pmnuSettings = new QMenu(tr("&Settings"));
 
     pmnuSettings->addAction(pacToolBar);
+    m_mnuAmiPipePanels = new QMenu(tr("&Import from trade sistem panel"));
+    pmnuSettings->addMenu(m_mnuAmiPipePanels);
+
     pmnuSettings->addAction(pacTickersBar);
     pmnuSettings->addAction(pacStatusBar);
     pmnuSettings->addAction(pacTickersBarButtonsHide);
@@ -891,6 +1061,10 @@ void MainWindow::InitAction()
     m_mnuGraphViewConfig->addAction(pacGVUpperSc);
     m_mnuGraphViewConfig->addAction(pacGVLowerSc);
     m_mnuGraphViewConfig->addAction(pacGVVolumeSc);
+
+    m_mnuAmiPipePanels->addAction(pacAmiPipe);
+    m_mnuAmiPipePanels->addAction(pacAmiPipeBarNew);
+    m_mnuAmiPipePanels->addAction(pacAmiPipeBarActive);
 
     m_mnuStyles = new QMenu(tr("St&yles"));
     pmnuSettings->addMenu(m_mnuStyles);
@@ -917,9 +1091,10 @@ void MainWindow::InitAction()
     tbrToolBar =new QToolBar("Toolbar");
     tbrToolBar->setObjectName("Toolbar");
     tbrToolBar->addAction(pacNewDoc);
+    tbrToolBar->addAction(pacTickersBar);
     tbrToolBar->addAction(pacAmiPipe);
     tbrToolBar->addAction(pacOpen);
-    tbrToolBar->addAction(pacSave);
+    //tbrToolBar->addAction(pacSave);
     tbrToolBar->addAction(pacConfig);
     tbrToolBar->addAction(pacLogWnd);
     tbrToolBar->addAction(pacErrLogWnd);
@@ -1190,6 +1365,19 @@ void MainWindow::slotSetActiveStyle     (QString s)
         qApp->setStyleSheet(strCSS);
     }
     else{
+        /////////////////////////////////////////
+        ///
+        QPalette  pal  =  this->palette();
+//        pal.setBrush(QPalette::Button, QBrush(Qt::red, Qt::Dense1Pattern));
+//        pal.setBrush(QPalette::Base, QBrush(Qt::red, Qt::Dense1Pattern));
+//!!!!!       pal.setBrush(QPalette::ColorRole::Window, QBrush(Qt::blue, Qt::BrushStyle::SolidPattern));
+//        pal.setColor(QPalette: :ButtonText, Qt: :Ыuе);
+//        pal.setColor(QPalette::Text,  Qt::magenta);
+        //pal.setColor(QPalette::Active, QPalette::Base, Qt::white);
+        //pal.setColor(QPalette::ColorRole::Window, Qt::white);
+//        this->setPalette(pal);
+
+        /////////////////////////////////////////
         QStyle * st=QStyleFactory::create(s);
         //qApp->setStyle(st);
         QApplication::setStyle(st);
@@ -1336,10 +1524,12 @@ void MainWindow::slotGraphViewWindow()
     if (!bWas){
         //TODO: do non blocking floating warning
         QMessageBox::warning(0,tr("Warning"),
-                                   tr("Please, select a ticker in the box at the bottom left to continue!\n"),
+                                   tr("Please, select a ticker in the box at the bottom left to continue!"),
                                    QMessageBox::Ok
                                    );
     }
+    //ui->lstView->clearSelection();
+    //qml->clearSelection();
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::slotConfigWndow()
@@ -1349,7 +1539,17 @@ void MainWindow::slotConfigWndow()
                                         bDefaultStoragePath,qsStorageDirPath,stStore,
                                         bFillNotAutoloadedTickers,
                                         bGrayColorFroNotAutoloadedTickers,
-                                        iDefaultMonthDepth
+                                        iDefaultMonthDepth,
+                                        bDefaultSaveLogToFile,
+                                        iDefaultLogSize,
+                                        iDefaultLogCount,
+                                        bDefaultSaveErrorLogToFile,
+                                        iDefaultErrorLogSize,
+                                        iDefaultErrorLogCount,
+                                        bDefaultInvertMouseWheel,
+                                        bDefaultShowHelpButtons,
+                                        bDefaultWhiteBackgtound,
+                                        bDefaultShowIntroductoryTips
                                         );
     pdoc->setAttribute(Qt::WA_DeleteOnClose);
     pdoc->setWindowTitle(tr("Config"));
@@ -1369,7 +1569,8 @@ void MainWindow::slotConfigWndow()
     connect(this,SIGNAL(SaveUnsavedConfigs()),pdoc,SLOT(slotBtnSaveTickerClicked()));
 
     connect(pdoc,SIGNAL(NeedChangeDefaultPath(bool,QString)),this,SLOT(slotSaveNewDefaultPath(bool,QString)));
-    connect(pdoc,SIGNAL(NeedSaveGeneralOptions(bool,bool,int)),this,SLOT(slotSaveGeneralOptions(bool,bool,int)));
+    connect(pdoc,SIGNAL(NeedSaveGeneralOptions(bool,bool,int, bool,int,int,bool,int,int,bool,bool,bool,bool)),
+              this,SLOT(slotSaveGeneralOptions(bool,bool,int, bool,int,int,bool,int,int,bool,bool,bool,bool)));
 
     pdoc->show();
 }
@@ -1393,6 +1594,10 @@ void MainWindow::slotImportFinQuotesWndow ()
 
     connect(pdoc,SIGNAL(NeedParseImportFinQuotesFile(dataFinLoadTask &)),this,SLOT(slotParseImportFinQuotesFile(dataFinLoadTask &)));
     connect(pdoc,SIGNAL(NeedToStopLoadings()),this,SLOT(slotStopFinQuotesLoadings()));
+
+    connect(this,SIGNAL(ShowHelpButtonsChanged(bool)),pdoc,SLOT(slotShowHelpButtonsChanged(bool)));
+
+    emit ShowHelpButtonsChanged(bDefaultShowHelpButtons);
 
     //
     pdoc->show();
@@ -1463,6 +1668,9 @@ void MainWindow::slotDocbarShowNyNameChanged(int i)
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::InitDockBar()
 {
+    ////////////////////////////////////////////////////////////////////////
+    /// prepare content for tickers bar doc
+
     if (swtShowAll){
         proxyTickerModel.setFilterByActive(!swtShowAll->isChecked());
     }
@@ -1472,7 +1680,75 @@ void MainWindow::InitDockBar()
     ui->lstView->setModel(&proxyTickerModel);
 
     slotDocbarShowMarketChanged(0);
+    ////////////////////////////////////////////////////////////////////////
+    /// prepare dockbar objects
 
+    wtAmiDockbar = new QDockWidget();
+    wtAmiDockbar->setObjectName("wtAmiDockbar");
+    wtAmiDockbar ->setTitleBarWidget(new QWidget());
+    addDockWidget(Qt::LeftDockWidgetArea, wtAmiDockbar);
+    splitDockWidget(wtAmiDockbar,ui->dkActiveTickers,Qt::Horizontal);
+    ////////////////////////////////////////////////////////////////////////
+    /// prepare content for ami pipe docbar doc
+
+    pAmiPipeWindow=new AmiPipesForm (&m_MarketLstModel,iDefaultTickerMarket,&m_TickerLstModel,pipesHolder,vTickersLst,
+                                              bAmiPipeShowByNameUnallocated, bAmiPipeShowByNameActive,bAmiPipeShowByNameOff,
+                                              bAmiPipesNewWndShown, bAmiPipesActiveWndShown);
+
+    pAmiPipeWindow->setWindowTitle(tr("Import from trade sistems"));
+    pAmiPipeWindow->setWindowIcon(QPixmap(":/store/images/sc_cut"));
+    connect(pAmiPipeWindow,SIGNAL(NeedSaveDefaultTickerMarket(int)),this,SLOT(slotStoreDefaultTickerMarket(int)));
+
+    connect(pAmiPipeWindow,SIGNAL(SendToMainLog(QString)),this,SIGNAL(SendToLog(QString)));
+    connect(pAmiPipeWindow,SIGNAL(WasCloseEvent()),this,SLOT(slotAmiPipeFormWasClosed()));
+
+    connect(pAmiPipeWindow,SIGNAL(NeedSaveShowByNamesUnallocated(bool)),this,SLOT(slotAmiPipeSaveShowByNamesUnallocated(bool)));
+    connect(pAmiPipeWindow,SIGNAL(NeedSaveShowByNamesActive(bool)),this,SLOT(slotAmiPipeSaveShowByNamesActive(bool)));
+    connect(pAmiPipeWindow,SIGNAL(NeedSaveShowByNamesOff(bool)),this,SLOT(slotAmiPipeSaveShowByNamesOff(bool)));
+
+    connect(pAmiPipeWindow,SIGNAL(WidthWasChanged(int)),this,SLOT(slotAmiPipeWidthWasChanged(int)));
+
+    connect(pAmiPipeWindow,SIGNAL(NewWndStateChanged(int)),this,SLOT(slotAmiPipeNewWndStateChanged(int)));
+    connect(pAmiPipeWindow,SIGNAL(ActiveWndStateChanged(int)),this,SLOT(slotAmiPipeActiveWndStateChanged(int)));
+
+    connect(pAmiPipeWindow,SIGNAL(buttonHideClicked()),this,SLOT(slotAmiPipeHideClicked()));
+
+    connect(this,SIGNAL(AmiPipeInternalPanelsStateChanged(bool, bool)),pAmiPipeWindow,SLOT(slotInternalPanelsStateChanged(bool, bool)));
+
+    connect(pAmiPipeWindow,SIGNAL(AskPipesNames(dataAmiPipeTask::pipes_type &)),this,SLOT(slotAskPipesNames(dataAmiPipeTask::pipes_type &)));
+
+    connect(this,SIGNAL(PipeNameReceived(std::string,std::string)),pAmiPipeWindow,SLOT(slotPipeNameReceived(std::string,std::string)));
+
+    ///////////////////////////////////////////////////////////////////////
+
+    wtAmiDockbar->setWidget(pAmiPipeWindow);
+    ////////////////////////////////////////////////////////////////////////
+    /// resizing and hiding/showing
+
+    ResizingLeftToolBars();
+
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::ResizingLeftToolBars()
+{
+    if (bAmiPipesFormShown){
+        if (wtAmiDockbar->isHidden()) wtAmiDockbar->show();
+
+        pAmiPipeWindow->setFixedWidth(iStoredAmiPipeFormWidth);
+
+        resizeDocks({wtAmiDockbar,ui->dkActiveTickers},{iStoredAmiPipeFormWidth,iStoredTickerBarWidth},Qt::Orientation::Horizontal);
+
+    }
+    else{
+        if (!wtAmiDockbar->isHidden()) wtAmiDockbar->hide();
+        resizeDocks({ui->dkActiveTickers},{iStoredTickerBarWidth},Qt::Orientation::Horizontal);
+    }
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotAmiPipeWidthWasChanged(int iW)
+{
+    iStoredAmiPipeFormWidth = iW;
+    ResizingLeftToolBars();
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::slotToolBarStateChanged()
@@ -1592,9 +1868,23 @@ void MainWindow::slotSetSelectedTicker(const  int iTickerID)
                   this,SLOT(slotLoadGraph(const  int,const std::time_t,const std::time_t)));
 
         connect(pdoc,SIGNAL(SendToLog(QString)),this,SIGNAL(SendToLog(QString)));
+        connect(this,SIGNAL(slotSendSignalToProcessRepaintQueue()),pdoc,SLOT(slotProcessRepaintQueue()));
+        connect(pdoc,SIGNAL(NeedSaveTickerConig(const Ticker, const bool)),this,SLOT(slotSaveTickerConig(const Ticker, const bool)));
+
+        connect(this,SIGNAL(SaveUnsavedConfigs()),pdoc,SLOT(slotSaveUnsavedConfigs()));
+
+        connect(this,SIGNAL(UsedMemoryChanged(size_t,size_t)),pdoc,SLOT(slotUsedMemoryChanged(size_t,size_t)));
+
+        connect(this,SIGNAL(InvertMouseWheelChanged(bool)),pdoc,SLOT(slotInvertMouseWheelChanged(bool)));
+        connect(this,SIGNAL(ShowHelpButtonsChanged(bool)),pdoc,SLOT(slotShowHelpButtonsChanged(bool)));
+
+        emit InvertMouseWheelChanged(bDefaultInvertMouseWheel);
+        emit ShowHelpButtonsChanged(bDefaultShowHelpButtons);
 
         pdoc->setFramesVisibility(tp);
         pdoc->show();
+
+        emit UsedMemoryChanged(iStoredUsedMemory,iPhisicalMemory);
     }
     else{
         wnd->setFocus();
@@ -1822,31 +2112,357 @@ void MainWindow::slotSaveNewDefaultPath(bool bDef,QString qsPath)
 void MainWindow::slotAmiPipeWndow()
 {
 
-    AmiPiperForm  *pdoc=new AmiPiperForm (&m_MarketLstModel,iDefaultTickerMarket,&m_TickerLstModel,pipesHolder,vTickersLst);
-    pdoc->setAttribute(Qt::WA_DeleteOnClose);
-    pdoc->setWindowTitle(tr("Import from trade sistems"));
-    pdoc->setWindowIcon(QPixmap(":/store/images/sc_cut"));
-    connect(pdoc,SIGNAL(NeedSaveDefaultTickerMarket(int)),this,SLOT(slotStoreDefaultTickerMarket(int)));
+    bAmiPipesFormShown = !bAmiPipesFormShown;
 
-    ui->mdiArea->addSubWindow(pdoc);
+    ResizingLeftToolBars();
 
-    connect(pdoc,SIGNAL(SendToMainLog(QString)),this,SIGNAL(SendToLog(QString)));
 
-    pdoc->show();
+//    if(pAmiPipeWindow == nullptr){
+
+//        pAmiPipeWindow=new AmiPipesForm (&m_MarketLstModel,iDefaultTickerMarket,&m_TickerLstModel,pipesHolder,vTickersLst,
+//                                          bAmiPipeShowByNameUnallocated, bAmiPipeShowByNameActive,bAmiPipeShowByNameOff);
+//        pAmiPipeWindow->setAttribute(Qt::WA_DeleteOnClose);
+//        pAmiPipeWindow->setWindowTitle(tr("Import from trade sistems"));
+//        pAmiPipeWindow->setWindowIcon(QPixmap(":/store/images/sc_cut"));
+//        connect(pAmiPipeWindow,SIGNAL(NeedSaveDefaultTickerMarket(int)),this,SLOT(slotStoreDefaultTickerMarket(int)));
+
+//        //ui->mdiArea->addSubWindow(pdoc);
+
+//        connect(pAmiPipeWindow,SIGNAL(SendToMainLog(QString)),this,SIGNAL(SendToLog(QString)));
+//        connect(pAmiPipeWindow,SIGNAL(WasCloseEvent()),this,SLOT(slotAmiPipeFormWasClosed()));
+
+//        connect(pAmiPipeWindow,SIGNAL(NeedSaveShowByNamesUnallocated(bool)),this,SLOT(slotAmiPipeSaveShowByNamesUnallocated(bool)));
+//        connect(pAmiPipeWindow,SIGNAL(NeedSaveShowByNamesActive(bool)),this,SLOT(slotAmiPipeSaveShowByNamesActive(bool)));
+//        connect(pAmiPipeWindow,SIGNAL(NeedSaveShowByNamesOff(bool)),this,SLOT(slotAmiPipeSaveShowByNamesOff(bool)));
+
+
+//        pAmiPipeWindow->show();
+//    }
+//    else{
+//        pAmiPipeWindow->show();
+//        pAmiPipeWindow->setFocus();
+//    }
 
 }
 //--------------------------------------------------------------------------------------------------------------------------------
-void MainWindow::slotSaveGeneralOptions(bool FillNotAutoloaded,bool GrayColor,int MonthDepth)
+void MainWindow::slotSaveGeneralOptions(bool FillNotAutoloaded,bool GrayColor,int MonthDepth,
+                                        bool bSaveLogToFile,
+                                        int iLogSize,
+                                        int iLogCount,
+                                        bool bSaveErrorLogToFile,
+                                        int iErrorLogSize,
+                                        int iErrorLogCount,
+                                        bool bInvertMouseWheel,
+                                        bool bShowHelpButtons,
+                                        bool bWhiteBackgtound,
+                                        bool bShowIntroductoryTips
+                                        )
 {
     bFillNotAutoloadedTickers           = FillNotAutoloaded;
     bGrayColorFroNotAutoloadedTickers   = GrayColor;
     iDefaultMonthDepth                  = MonthDepth;
+
+    bDefaultSaveLogToFile           = bSaveLogToFile;
+    iDefaultLogSize                 = iLogSize;
+    iDefaultLogCount                = iLogCount;
+    bDefaultSaveErrorLogToFile      = bSaveErrorLogToFile;
+    iDefaultErrorLogSize            = iErrorLogSize;
+    iDefaultErrorLogCount           = iErrorLogCount;
+    bDefaultInvertMouseWheel        = bInvertMouseWheel;
+    bDefaultShowHelpButtons         = bShowHelpButtons;
+    bDefaultWhiteBackgtound         = bWhiteBackgtound;
+    bDefaultShowIntroductoryTips    = bShowIntroductoryTips;
+
     SaveSettings();
 
     m_TickerLstModel.setGrayColorForInformants(bGrayColorFroNotAutoloadedTickers);
 
+    emit InvertMouseWheelChanged(bDefaultInvertMouseWheel);
+    emit ShowHelpButtonsChanged(bDefaultShowHelpButtons);
+
 }
 //--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotAmiPipeFormWasClosed()
+{
+//    resizeDocks({ui->dkActiveTickers},{iStoredTickerBarWidth},Qt::Orientation::Horizontal);
+//    if (pAmiPipeWindow){
+//        ui->gridLayoutDockBarRight->removeWidget(pAmiPipeWindow);
+//        delete pAmiPipeWindow;
+//        pAmiPipeWindow = nullptr;
+//    }
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotAmiPipeSaveShowByNamesUnallocated(bool b)
+{
+    bAmiPipeShowByNameUnallocated = b;
+    SaveSettings();
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotAmiPipeSaveShowByNamesActive(bool b)
+{
+    bAmiPipeShowByNameActive = b;
+    SaveSettings();
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotAmiPipeSaveShowByNamesOff(bool b)
+{
+    bAmiPipeShowByNameOff = b;
+    SaveSettings();
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::BuildSessionsTableForFastTasks(FastTasksHolder & fastHolder)
+{
+    std::map<int,Market::SessionTable_type>  mappedRepoTable;
+
+    for (const auto &t:vTickersLst){
+        auto ItM (std::find_if(vMarketsLst.begin(),vMarketsLst.end(),[&](const Market &m){
+            return m.MarketID() == t.MarketID();
+            }));
+        if (ItM != vMarketsLst.end()){
+            mappedRepoTable[t.TickerID()] = ItM->RepoTable();
+        }
+    }
+    ////
+    fastHolder.setRepoTable(mappedRepoTable);    
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+std::size_t MainWindow::getPhisicalMemory()
+{
+    std::size_t iResult{0};
+
+#ifdef _WIN32
+
+    typedef BOOL (WINAPI *PGMSE)(LPMEMORYSTATUSEX);
+    std::string strModule("kernel32.dll");
+    std::wstring wModule(strModule.begin(), strModule.end());
+
+    PGMSE pGMSE = (PGMSE) GetProcAddress( GetModuleHandle( wModule.data()), "GlobalMemoryStatusEx" );
+    //PGMSE pGMSE = (PGMSE) GetProcAddress( GetModuleHandle( TEXT( "kernel32.dll" ) ), TEXT( "GlobalMemoryStatusEx") );
+    if ( pGMSE != 0 )
+    {
+        MEMORYSTATUSEX mi;
+        memset( &mi, 0, sizeof(MEMORYSTATUSEX) );
+        mi.dwLength = sizeof(MEMORYSTATUSEX);
+        if ( pGMSE( &mi ) == TRUE )
+            iResult = mi.ullTotalPhys;
+        else
+            pGMSE = 0;
+    }
+    if ( pGMSE == 0 )
+    {
+        MEMORYSTATUS mi;
+        memset( &mi, 0, sizeof(MEMORYSTATUS) );
+        mi.dwLength = sizeof(MEMORYSTATUS);
+        GlobalMemoryStatus( &mi );
+        iResult = mi.dwTotalPhys;
+    }
+
+#elif __linux__
+
+    //read /proc/meminfo
+    QProcess p;
+    p.start("awk", QStringList() << "/MemTotal/ { print $2 }" << "/proc/meminfo");
+    p.waitForFinished();
+    QString memory = p.readAllStandardOutput();
+
+    QProcess p1;
+    p1.start("awk", QStringList() << "/MemTotal/ { print $3 }" << "/proc/meminfo");
+    p1.waitForFinished();
+    QString sizing = p1.readAllStandardOutput().trimmed();
+
+    int iScale{1};
+    if(sizing.toUpper() == "KB")        {   iScale = 1024;      }
+    else if(sizing.toUpper() == "MB")   {   iScale = 1048576;   }
+    else if(sizing.toUpper() == "GB")   {   iScale = 1073741824;}
+
+
+    iResult = memory.toLong() * iScale;
+    p.close();
+
+#elif defined(__APPLE__) && defined(__MACH__)
+
+    // read sysctl
+    QProcess p;
+    p.start("sysctl", QStringList() << "kern.version" << "hw.physmem");
+    p.waitForFinished();
+    QString system_info = p.readAllStandardOutput();
+    iResult = system_info.toLong();
+    p.close();
+
+#else
+
+    iResult = 0;
+
+#endif
+
+    return iResult;
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+bool MainWindow::eventFilter(QObject *watched, QEvent *event)
+{
+    if (watched == ui->wtTickerBar){
+        eventTickerBar(watched, event);
+    }
+    return QObject::eventFilter(watched, event);
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+bool MainWindow::eventTickerBar(QObject */*watched*/, QEvent *event)
+{
+
+    const int iLineWidth{3};
+
+    if (event->type() == QEvent::HoverMove){
+        QMouseEvent *pe = (QMouseEvent *)event;
+        QPoint pt = pe->pos();
+        if (pt.x() + iLineWidth > ui->wtTickerBar->width()){
+            if (!bLeftToolbarCursorOverriden){
+                QApplication::setOverrideCursor(Qt::CursorShape::SizeHorCursor);
+                bLeftToolbarCursorOverriden = true;
+            }
+        }
+        else{
+            if (bLeftToolbarCursorOverriden && !bInResizingLeftToolbar) {
+                QApplication::restoreOverrideCursor();
+                bLeftToolbarCursorOverriden = false;
+            }
+        }
+        if (bInResizingLeftToolbar){
+
+            int iStoped = pe->pos().x();
+            int iNewWidth = iStoredLeftDocbarWidth + (iStoped - iStoredLeftDocbarRightPos);
+
+            if (ui->dkActiveTickers->minimumWidth() < iNewWidth){
+                iStoredTickerBarWidth = iNewWidth;
+                //resizeDocks({ui->dkActiveTickers},{iNewWidth},Qt::Orientation::Horizontal);
+                ResizingLeftToolBars();
+            }
+        }
+    }
+    else if (event->type() == QEvent::MouseButtonPress){
+        QMouseEvent *pe = (QMouseEvent *)event;
+        QPoint pt = pe->pos();
+        if (pt.x() + iLineWidth > ui->wtTickerBar->width()){
+            bInResizingLeftToolbar = true;
+            if (!bLeftToolbarCursorOverriden){
+                QApplication::setOverrideCursor(Qt::CursorShape::SizeHorCursor);
+                bLeftToolbarCursorOverriden = true;
+            }
+
+            QMouseEvent *pe = (QMouseEvent *)event;
+            iStoredLeftDocbarRightPos = pe->pos().x();
+            iStoredLeftDocbarWidth = ui->dkActiveTickers->width();
+        }
+    }
+    else if (event->type() == QEvent::MouseButtonRelease){
+
+        if (bLeftToolbarCursorOverriden){
+            QApplication::restoreOverrideCursor();
+            bLeftToolbarCursorOverriden = false;
+        }
+        if (bInResizingLeftToolbar){
+                bInResizingLeftToolbar = false;
+
+                QMouseEvent *pe = (QMouseEvent *)event;
+                int iStoped = pe->pos().x();
+                int iNewWidth = iStoredLeftDocbarWidth + (iStoped - iStoredLeftDocbarRightPos);
+
+                if (ui->dkActiveTickers->minimumWidth() < iNewWidth){
+
+                    iStoredTickerBarWidth = iNewWidth;
+                    //resizeDocks({ui->dkActiveTickers},{iNewWidth},Qt::Orientation::Horizontal);
+                    ResizingLeftToolBars();
+
+                }
+        }
+    }
+    else if (event->type() == QEvent::HoverEnter){
+        QMouseEvent *pe = (QMouseEvent *)event;
+        QPoint pt = pe->pos();
+        if (pt.x() + iLineWidth > ui->wtTickerBar->width()){
+            if (!bLeftToolbarCursorOverriden){
+                QApplication::setOverrideCursor(Qt::CursorShape::SizeHorCursor);
+                bLeftToolbarCursorOverriden = true;
+            }
+        }
+    }
+    else if (event->type() == QEvent::HoverLeave){
+        if (bLeftToolbarCursorOverriden) {
+            QApplication::restoreOverrideCursor();
+            bLeftToolbarCursorOverriden = false;
+        }
+    }
+    return true;
+}
+
+//--------------------------------------------------------------------------------------------------------------------------------
+void  MainWindow::slotAmiPipeNewWndStateChanged(int iS)
+{
+    if (iS != 0)    bAmiPipesNewWndShown = true;
+    else            bAmiPipesNewWndShown = false;
+    pacAmiPipeBarNew->setChecked(bAmiPipesNewWndShown);
+
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void  MainWindow::slotAmiPipeActiveWndStateChanged(int iS)
+{
+    if (iS != 0)    bAmiPipesActiveWndShown = true;
+    else            bAmiPipesActiveWndShown = false;
+    pacAmiPipeBarActive->setChecked(bAmiPipesActiveWndShown);
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void  MainWindow::slotAmiPipeHideClicked()
+{
+    bAmiPipesFormShown = false;
+    ResizingLeftToolBars();
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void  MainWindow::slotAmiPipeWndowNew()
+{
+    bAmiPipesNewWndShown = pacAmiPipeBarNew->isChecked();
+    if (!bAmiPipesNewWndShown){
+        bAmiPipesActiveWndShown = true;
+        pacAmiPipeBarActive->setChecked(true);
+    }
+    AmiPipeInternalPanelsStateChanged(bAmiPipesNewWndShown,bAmiPipesActiveWndShown);
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void  MainWindow::slotAmiPipeWndowActive()
+{
+    bAmiPipesActiveWndShown = pacAmiPipeBarActive->isChecked();
+    if (!bAmiPipesActiveWndShown){
+        bAmiPipesNewWndShown = true;
+        pacAmiPipeBarNew->setChecked(true);
+    }
+    AmiPipeInternalPanelsStateChanged(bAmiPipesNewWndShown,bAmiPipesActiveWndShown);
+
+    //slotInternalPanelsStateChanged(bool bLeft, bool bRight)
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotSendToLog(QString str)
+{
+    if (bDefaultSaveLogToFile){
+        std::stringstream ss;
+        std::time_t t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+        ss << threadfree_gmtime_to_str(&t)<<": ";
+        ss << str.toStdString();
+
+        iCurrentLogfile = stStore.SaveToLogfile(ss.str(), "logfile", iCurrentLogfile,iDefaultLogSize, iDefaultLogCount);
+        SaveSettings();
+    }
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotSendToErrorLog(QString str)
+{
+    if (bDefaultSaveErrorLogToFile){
+        std::stringstream ss;
+        std::time_t t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+        ss << threadfree_gmtime_to_str(&t)<<": ";
+        ss << str.toStdString();
+
+        iCurrentErrorLogfile = stStore.SaveToLogfile(ss.str(), "errorlog", iCurrentErrorLogfile,iDefaultErrorLogSize, iDefaultErrorLogCount);
+        SaveSettings();
+    }
+}
 //--------------------------------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------------------------------
 

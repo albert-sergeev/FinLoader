@@ -19,7 +19,7 @@ CONFIG += c++1z
 
 SOURCES += \
     amipipeholder.cpp \
-    amipiperform.cpp \
+    amipipesform.cpp \
     bar.cpp \
     bargraphicsitem.cpp \
     bartick.cpp \
@@ -33,6 +33,7 @@ SOURCES += \
     datafastloadtask.cpp \
     datafinloadtask.cpp \
     datafinquotesparse.cpp \
+    dateitemdelegate.cpp \
     fasttasksholder.cpp \
     graph.cpp \
     graphholder.cpp \
@@ -41,7 +42,9 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     market.cpp \
+    memometer.cpp \
     modelmarketslist.cpp \
+    modelsessions.cpp \
     modeltickerslist.cpp \
     oneofkindprotector.cpp \
     plusbutton.cpp \
@@ -51,13 +54,14 @@ SOURCES += \
     threadfreelocaltime.cpp \
     threadpool.cpp \
     ticker.cpp \
-    trimutils.cpp \
+    transparentbutton.cpp \
+    utilites.cpp \
     win32namedpipe.cpp \
     workerloader.cpp
 
 HEADERS += \
     amipipeholder.h \
-    amipiperform.h \
+    amipipesform.h \
     bar.h \
     bargraphicsitem.h \
     bartick.h \
@@ -71,6 +75,7 @@ HEADERS += \
     datafastloadtask.h \
     datafinloadtask.h \
     datafinquotesparse.h \
+    dateitemdelegate.h \
     fasttasksholder.h \
     graph.h \
     graphholder.h \
@@ -78,7 +83,9 @@ HEADERS += \
     importfinqotesform.h \
     mainwindow.h \
     market.h \
+    memometer.h \
     modelmarketslist.h \
+    modelsessions.h \
     modeltickerslist.h \
     oneofkindprotector.h \
     plusbutton.h \
@@ -88,12 +95,13 @@ HEADERS += \
     threadfreelocaltime.h \
     threadpool.h \
     ticker.h \
-    trimutils.h \
+    transparentbutton.h \
+    utilites.h \
     win32namedpipe.h \
     workerloader.h
 
 FORMS += \
-    amipiperform.ui \
+    amipipesform.ui \
     configwindow.ui \
     graphviewform.ui \
     importfinqotesform.ui \

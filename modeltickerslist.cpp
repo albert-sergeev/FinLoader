@@ -149,7 +149,14 @@ QString modelTickersList::getMarketNameByID(const int ID) const
 const Ticker & modelTickersList::getTicker(const QModelIndex &index)
 {
     if(index.row() < 0    || index.row() >= (int)vTickersLst->size()) {
-        throw std::invalid_argument("Index out of range {MarketsListModel::getMarket}");
+        {
+            ThreadFreeCout pcout;
+            pcout << "Index out of range {modelTickersList::getTicker}\n";
+            pcout << "index.row(): "<<index.row()<<"\n";
+            pcout << "vTickersLst->size(): "<<vTickersLst->size()<<"\n";
+
+        }
+        throw std::invalid_argument("Index out of range {modelTickersList::getTicker}");
     }
     return vTickersLst->at(index.row());
 }
@@ -309,7 +316,7 @@ void modelTickersList::setGrayColorForInformants(bool b)
 
         QVector<int> vV {Qt::BackgroundColorRole};
         QModelIndex indexBeg = this->index(0,0);
-        QModelIndex indexEnd = this->index(vTickersLst->size()-1,4);
+        QModelIndex indexEnd = this->index((int)vTickersLst->size()-1,4);
 
         emit dataChanged(indexBeg,indexEnd,vV);
     }

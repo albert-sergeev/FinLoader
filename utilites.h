@@ -1,7 +1,8 @@
-#ifndef TRIMUTILS_H
-#define TRIMUTILS_H
+#ifndef UTILITES_H
+#define UTILITES_H
 
 #include <algorithm>
+#include <numeric>
 #include <string>
 
 //--------------------------------------------------------------------------------------------------------
@@ -33,6 +34,28 @@ static inline std::string & trim(std::string &s){
 //
 static inline std::string & trim(std::string &&s){ return  trim(s);}
 //
+static inline std::string & filter(std::string &s){
+
+    auto ItBeg(s.begin());
+
+    auto ItEnd = std::accumulate(s.begin(),s.end(),ItBeg,[&](auto &It,const auto &c){
+        if (c != ','){
+            if (&(*It) != &c){
+                *It = c;
+            }
+            ++It;
+        }
+        return It;
+        });
+
+    s.resize(std::distance(s.begin(),ItEnd));
+
+    return s;
+}
+
+
+
+//
 //static inline std::string ltrim_copy(std::string s) {
 //    ltrim(s);
 //    return s;
@@ -49,4 +72,4 @@ static inline std::string & trim(std::string &&s){ return  trim(s);}
 //}
 
 
-#endif // TRIMUTILS_H
+#endif // UTILITES_H

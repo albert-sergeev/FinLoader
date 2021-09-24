@@ -23,6 +23,7 @@ class AmiPipeHolder
 {
 public:
     //typedef std::map<std::string,std::pair<int,std::tuple<std::string,std::string,std::string,int,int>>> pipes_type;    
+    enum ePipeMode_type:int {Byte_Nonblocking = 1,Message_Nonblocking = 2};
 protected:
 
     std::time_t t1971_01_01_00_00_00;
@@ -37,6 +38,8 @@ protected:
 
     internal_pipes_type mPipesConnected;
     internal_pipes_type mPipesHalted;
+
+    internal_pipes_type mPipesFree;
 
     //////////////////////////////////////////////////////////////////////
     /// \brief utility maps
@@ -55,6 +58,13 @@ protected:
     std::map<int,long> mTask;
     std::map<int,long long> mPacketsCounter;
 
+    std::map<std::string,std::string> mPaperName;
+    std::map<std::string,std::chrono::time_point<std::chrono::steady_clock>> mCheckTime;
+
+    ePipeMode_type iMode {Byte_Nonblocking};
+
+    std::filesystem::path pathCurr;
+
     //////////////////////////////////////////////////////////////////////
     std::atomic<long> aiTaskCounter;
     //////////////////////////////////////////////////////////////////////
@@ -62,6 +72,8 @@ protected:
 
 public:
     AmiPipeHolder();
+
+    inline void setCurrentPath(std::filesystem::path path) {pathCurr = path;};
 
     static void CheckPipes(std::vector<Ticker> &vT,
                            dataAmiPipeTask::pipes_type & mBindedPipes,
@@ -77,20 +89,85 @@ public:
     void ReadConnectedPipes(BlockFreeQueue<dataFastLoadTask>                    &queueFastTasks,
                             BlockFreeQueue<dataAmiPipeAnswer>                   &queuePipeAnswers,
                             BlockFreeQueue<dataBuckgroundThreadAnswer>          &queueTrdAnswers,
-                            size_t & BytesRead,
+                            bool bCheckMode,
+                            int & BytesRead,
                             bool & bWasFullBuffers
                             );
+
+    void AskPipesNames(dataAmiPipeTask::pipes_type &pFree, BlockFreeQueue<dataAmiPipeAnswer> & queuePipeAnswers);
 
 protected:
 
     void AddUtilityMapEntry(int iTickerID, std::string sBind);
-    void RemoveUtilityMapEntry(int iTickerID, std::string sBind);
+    void RemoveUtilityMapEntry(int iTickerID, std::string sBind,bool bCheckMode = false);
 
 
     static dataAmiPipeTask::pipes_type ScanActivePipes();
+    static std::string getSignFromBind(std::string sBind);
+    static std::string getNameFromRaw(std::string sRaw);
 
     void initStartConst();
 
+    void SendToLog      (BlockFreeQueue<dataAmiPipeAnswer> &queuePipeAnswers, const int iTickerID, const std::string &s);
+    void SendToErrorLog (BlockFreeQueue<dataAmiPipeAnswer> &queuePipeAnswers, const int iTickerID, const std::string &s);
+    void dumpToFile     (BlockFreeQueue<dataAmiPipeAnswer> &queuePipeAnswers, const int iTickerID, const std::string &sFileName, const  char * cBuff, const size_t bytes, const int iReadStart, const bool  bWriteHeader = true);
+
+    //------------------------------------------------------------------------------------------------
+
+    int ProcessReceivedBuffer(BlockFreeQueue<dataFastLoadTask>              &queueFastTasks,
+                              BlockFreeQueue<dataAmiPipeAnswer>             &queuePipeAnswers,
+                              BlockFreeQueue<dataBuckgroundThreadAnswer>    &queueTrdAnswers,
+                              const int iTickerID,
+                              const std::string strBind,
+                              bool bCheckMode,
+                              dataFastLoadTask &task,
+                              char *buff,
+                              int &ptrToRead,
+                              int &ptrToWrite
+                              );
+protected:
+#ifdef _WIN32
+    void ReadConnectedPipes_bytemode_win32(BlockFreeQueue<dataFastLoadTask>     &queueFastTasks,
+                            BlockFreeQueue<dataAmiPipeAnswer>                   &queuePipeAnswers,
+                            BlockFreeQueue<dataBuckgroundThreadAnswer>          &queueTrdAnswers,
+                            bool bCheckMode,
+                            int & BytesRead,
+                            bool & bWasFullBuffers
+                            );
+    void ReadConnectedPipes_messagemode_win32(BlockFreeQueue<dataFastLoadTask>        &queueFastTasks,
+                            BlockFreeQueue<dataAmiPipeAnswer>                   &queuePipeAnswers,
+                            BlockFreeQueue<dataBuckgroundThreadAnswer>          &queueTrdAnswers,
+                            bool bCheckMode,
+                            int & BytesRead,
+                            bool & bWasFullBuffers
+                            );
+
+    bool ReadPipe_bytemode_win32(Win32NamedPipe &pip,
+                                 bool bCheckMode,
+                                 const int iTickerID,
+                                 const std::string sBind,
+                                 BlockFreeQueue<dataFastLoadTask>                    &queueFastTasks,
+                                 BlockFreeQueue<dataAmiPipeAnswer>                   &queuePipeAnswers,
+                                 BlockFreeQueue<dataBuckgroundThreadAnswer>          &queueTrdAnswers,
+                                 int & BytesRead,
+                                 bool & bWasFullBuffers);
+#else
+    void ReadConnectedPipes_bytemode_linux(BlockFreeQueue<dataFastLoadTask>     &queueFastTasks,
+                            BlockFreeQueue<dataAmiPipeAnswer>                   &queuePipeAnswers,
+                            BlockFreeQueue<dataBuckgroundThreadAnswer>          &queueTrdAnswers,
+                            bool bCheckMode,
+                            int & BytesRead,
+                            bool & bWasFullBuffers
+                            );
+    void ReadConnectedPipes_messagemode_linux(BlockFreeQueue<dataFastLoadTask>        &queueFastTasks,
+                            BlockFreeQueue<dataAmiPipeAnswer>                   &queuePipeAnswers,
+                            BlockFreeQueue<dataBuckgroundThreadAnswer>          &queueTrdAnswers,
+                            bool bCheckMode,
+                            int & BytesRead,
+                            bool & bWasFullBuffers
+                            );
+#endif
+    //------------------------------------------------------------------------------------------------
 };
 
 #endif // AMIPIPEHOLDER_H

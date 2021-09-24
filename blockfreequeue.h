@@ -242,6 +242,8 @@ public:
     /// \return
     ///
     bool empty(){
+        InPushFlag flg(&inDeleteSec);
+
         Node* cur_node = head.load();
         if (cur_node->next == nullptr){
             return true;

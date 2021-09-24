@@ -61,7 +61,25 @@ GraphHolder::GraphHolder(GraphHolder && o):
 {
 
 }
+//------------------------------------------------------------------------------------------------------
+bool GraphHolder::shrink_extras_left(std::time_t dtEnd)
+{
+    std::unique_lock lk(mutexHolder);
 
+    bool bRet = graphTick.shrink_extras_left(dtEnd);
+    if (bRet) bRet = graph1.shrink_extras_left(dtEnd);
+    if (bRet) bRet = graph5.shrink_extras_left(dtEnd);
+    if (bRet) bRet = graph10.shrink_extras_left(dtEnd);
+    if (bRet) bRet = graph15.shrink_extras_left(dtEnd);
+    if (bRet) bRet = graph30.shrink_extras_left(dtEnd);
+    if (bRet) bRet = graph60.shrink_extras_left(dtEnd);
+    if (bRet) bRet = graph120.shrink_extras_left(dtEnd);
+    if (bRet) bRet = graph180.shrink_extras_left(dtEnd);
+    if (bRet) bRet = graphDay.shrink_extras_left(dtEnd);
+    if (bRet) bRet = graphMonth.shrink_extras_left(dtEnd);
+
+    return bRet;
+}
 //------------------------------------------------------------------------------------------------------
 bool GraphHolder::AddBarsLists(std::vector<std::vector<BarTick>> &v, std::time_t dtStart,std::time_t dtEnd)
 {
@@ -115,6 +133,22 @@ bool GraphHolder::BuildUpperList(std::time_t dtStart,std::time_t dtEnd, bool bCo
     graphWeek.BuildFromLowerList(graphDay, dtStart,dtEnd,bCopyToDst,grDest.graphWeek);
     graphMonth.BuildFromLowerList(graphDay, dtStart,dtEnd,bCopyToDst,grDest.graphMonth);
 
+    return true;
+}
+//-----------------------------------------------------------------------------------------------------------------------------------
+bool GraphHolder::CloneHolder(std::shared_ptr<GraphHolder>  &hlNew, const Bar::eInterval it, const size_t iStart,const size_t iEnd, const size_t LetShift)
+{
+    std::shared_lock lk(mutexHolder,std::defer_lock);
+    if(!lk.try_lock()) return false;
+
+    hlNew = std::make_shared<GraphHolder>(GraphHolder{iTickerID});
+
+    if (it == Bar::eInterval::pTick){
+        graphTick.CloneGraph(hlNew->graphTick,iStart, iEnd,LetShift);
+    }
+    else{
+        mpGraphs.at(it).CloneGraph(hlNew->mpGraphs.at(it),iStart, iEnd,LetShift);
+    }
     return true;
 }
 //------------------------------------------------------------------------------------------------------
@@ -222,6 +256,29 @@ std::time_t GraphHolder::getTimeByIndex(const Bar::eInterval it,const size_t ind
     }
 }
 //------------------------------------------------------------------------------------------------------
+bool GraphHolder::GetUsedMemory(std::size_t &iSize) const
+{
+    iSize = 0;
+    std::shared_lock lk(mutexHolder,std::defer_lock);
+    if(lk.try_lock()){
+        iSize += graphTick.GetUsedMemory();
+        iSize += graph1.GetUsedMemory();
+        iSize += graph5.GetUsedMemory();
+        iSize += graph10.GetUsedMemory();
+        iSize += graph15.GetUsedMemory();
+        iSize += graph30.GetUsedMemory();
+        iSize += graph60.GetUsedMemory();
+        iSize += graph120.GetUsedMemory();
+        iSize += graph180.GetUsedMemory();
+        iSize += graphDay.GetUsedMemory();
+        iSize += graphWeek.GetUsedMemory();
+        iSize += graphMonth.GetUsedMemory();
+        return true;
+    }
+    else{
+        return false;
+    }
+}
 //------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------

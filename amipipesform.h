@@ -11,11 +11,15 @@
 #include "modeltickerslist.h"
 #include "amipipeholder.h"
 
+#include "styledswitcher.h"
+#include "transparentbutton.h"
+
+
 namespace Ui {
-class AmiPiperForm;
+class AmiPipesForm;
 }
 
-class AmiPiperForm : public QWidget
+class AmiPipesForm : public QWidget
 {
     Q_OBJECT
 
@@ -31,23 +35,68 @@ protected:
 
     QStringListModel    *modelNew;
     dataAmiPipeTask::pipes_type mFreePipes;
+    dataAmiPipeTask::pipes_type mFreePipesAsked;
 
     AmiPipeHolder &pipes;
 
     std::vector<Ticker> &vTickersLst;
 
+    StyledSwitcher *swtShowByNameUnallocated;
+    StyledSwitcher *swtShowByNameActive;
+    StyledSwitcher *swtShowByNameOff;
+
+    bool bShowByNameUnallocated;
+    bool bShowByNameActive;
+    bool bShowByNameOff;
+
+    TransparentButton *trbtnLeft;
+    TransparentButton *trbtnRight;
+
+    int iStoredWidthLeft{0};
+    int iStoredWidthRight{0};
+    int iStoredMousePos{0};
+
+    bool bInResizingLeftLine;    
+    bool bCursorOverrided;
+
+    int iStoredWidthNew{0};
+    int iStoredWidthActive{0};
+
 public:
-    explicit AmiPiperForm(modelMarketsList *modelM, int DefaultTickerMarket,
+    explicit AmiPipesForm(modelMarketsList *modelM, int DefaultTickerMarket,
                           modelTickersList *modelT,
                           AmiPipeHolder & p,
                           std::vector<Ticker> &v,
+                          bool ShowByNameUnallocated,
+                          bool ShowByNameActive,
+                          bool ShowByNameOff,
+                          bool bAmiPipesNewWndShown,
+                          bool bAmiPipesActiveWndShown,
                           QWidget *parent = nullptr);
-    ~AmiPiperForm();
+    ~AmiPipesForm();
 
 public:
 signals:
     void SendToMainLog(QString);
     void NeedSaveDefaultTickerMarket(int);
+    void WasCloseEvent();
+
+    void NeedSaveShowByNamesUnallocated(bool);
+    void NeedSaveShowByNamesActive(bool);
+    void NeedSaveShowByNamesOff(bool);
+
+    void WidthWasChanged(int);
+
+    void NewWndStateChanged(int);
+    void ActiveWndStateChanged(int);
+
+    void buttonHideClicked();
+
+    void AskPipesNames(dataAmiPipeTask::pipes_type &pipesFree);
+
+public slots:
+    void slotInternalPanelsStateChanged(bool bLeft, bool bRight);
+    void slotPipeNameReceived(std::string,std::string);
 
 protected:
     void SetMarketModel();
@@ -85,13 +134,30 @@ protected slots:
 
     void slotSelectNewTicker(const  QModelIndex&);
     void slotBindClicked();
+    void slotBindAllClicked();
+
+    void slotShowByNamesUnallocatedChecked(int Checked);
+    void slotShowByNamesActiveChecked(int Checked);
+    void slotShowByNamesOffChecked(int Checked);
+
+    void slotBtnQuitClicked();
+    void RepositionTransparentButtons();
+
+    void slotTransparentBtnLeftStateChanged(int);
+    void slotTransparentBtnRightStateChanged(int);
+
+    int CalculatedMimimum();
 
 private:
-    Ui::AmiPiperForm *ui;
+    Ui::AmiPipesForm *ui;
 
     // QWidget interface
 protected:
     void showEvent(QShowEvent *event);
+    void resizeEvent(QResizeEvent *event);
+    void closeEvent(QCloseEvent *event);
+
+    bool eventFilter(QObject *watched, QEvent *event);
 };
 
 #endif // AMIPIPERFORM_H

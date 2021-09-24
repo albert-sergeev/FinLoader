@@ -5,6 +5,10 @@
 #include<chrono>
 #include<shared_mutex>
 #include<string>
+#include <QDate>
+#include <QTime>
+
+
 
 inline thread_local std::tm tmTmp{};
 inline std::shared_mutex  mutexLocalTime;
@@ -110,7 +114,38 @@ inline time_t mktime_gm(struct tm * t)
     return (result);
 }
 //---------------------------------------------------------------------------------
+inline QDate stdTimeToQDate(std::time_t& t)
+{
+    std::tm* tmSt=threadfree_gmtime(&t);
+    return QDate(tmSt->tm_year+1900,tmSt->tm_mon+1,tmSt->tm_mday);
+}
+//---------------------------------------------------------------------------------
+inline QTime stdTimeToQTime(std::time_t& t)
+{
+    std::tm* tmSt=threadfree_gmtime(&t);
+    return QTime(tmSt->tm_hour,tmSt->tm_min,tmSt->tm_sec);
+}
+//---------------------------------------------------------------------------------
+inline std::time_t QDateToStdTime(QDate dt)
+{
+    std::tm tmSt;
+    {
+        tmSt.tm_year   = dt.year() - 1900;
+        tmSt.tm_mon    = dt.month() - 1;
+        tmSt.tm_mday   = dt.day();
+        tmSt.tm_hour   = 0;
+        tmSt.tm_min    = 0;
+        tmSt.tm_sec    = 0;
+        tmSt.tm_isdst  = 0;
+    }
+    return (mktime_gm(&tmSt));
+}
+//---------------------------------------------------------------------------------
 
+/*
+ * const QTime tmS(ui->dateTimeStart->time());
+
+*/
 
 //////////////
 ///// the standard localtime points to a static pointer to tm, which is not safe

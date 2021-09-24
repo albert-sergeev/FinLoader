@@ -63,6 +63,7 @@ public:
        ,iShiftIndex{o.iShiftIndex}{;}
     //--------------------------------------------------------------------------------------------------------
     T & operator[](const size_t i)  {if (/*i<0 ||*/ i>= vContainer.size()) {throw std::out_of_range("");} return vContainer[i];}
+    const T & operator[](const size_t i) const  {if (/*i<0 ||*/ i>= vContainer.size()) {throw std::out_of_range("");} return vContainer[i];}
     //--------------------------------------------------------------------------------------------------------
 //    void Add (Bar &b, bool bReplaceIfExists = true);
 //    void AddTick (Bar &b, bool bNewSec);
@@ -87,6 +88,11 @@ public:
     std::string ToString();
     std::string ToStringPeriods();
     std::size_t GetShiftIndex()  const {return iShiftIndex;};
+
+    std::size_t GetUsedMemory() const;
+
+    void CloneGraph(Graph<T> &grNew,const size_t Start, const size_t End, const size_t LetShift);
+    bool shrink_extras_left(std::time_t dtEnd);
     //
 private:
     static size_t GetMoreThenIndex(std::vector<T> & v, std::time_t tT);
@@ -614,6 +620,26 @@ size_t Graph<T>::GetMoreThenIndex(std::vector<T> & v, std::time_t tT)
 }
 //------------------------------------------------------------------------------------------------------------
 template<typename T>
+void Graph<T>::CloneGraph(Graph<T> &grNew,const size_t Start, const size_t End, const size_t LetShift)
+{
+    grNew.clear();
+    size_t iBeg = Start > LetShift ? Start - LetShift : 0;
+
+    if (iBeg >= vContainer.size()) return;
+
+    auto ItBeg(std::next(vContainer.begin(),iBeg));
+    auto ItEnd(vContainer.end());
+    if(End < vContainer.size()-1){
+        ItEnd = std::next(vContainer.begin(),End + 1);
+    }
+
+    grNew.vContainer.reserve(std::distance(ItBeg,ItEnd));
+
+    std::copy(ItBeg,ItEnd,std::back_inserter(grNew.vContainer));
+    grNew.iShiftIndex = iBeg;
+}
+//------------------------------------------------------------------------------------------------------------
+template<typename T>
 std::string Graph<T>::ToString()
 {
     std::stringstream ss;
@@ -663,7 +689,25 @@ size_t Graph<T>::getIndex(const std::time_t t) const
     }
 }
 //------------------------------------------------------------------------------------------------------------
+template<typename T>
+bool Graph<T>::shrink_extras_left(std::time_t dtEnd)
+{
+    auto It = mDictionary.lower_bound(dtEnd);
+    if(It == mDictionary.end()) {return true;}
 
+    auto ItContEnd = std::next(vContainer.begin(),It->second);
+
+    vContainer.erase(vContainer.begin(),ItContEnd);
+    mDictionary.erase(mDictionary.begin(),It);
+
+    size_t iDelta = It->second;
+    while(It != mDictionary.end()){
+        It->second += iDelta;
+        ++It;
+    }
+    return true;
+}
+//------------------------------------------------------------------------------------------------------------
 template<typename T> template<typename T_SRC>
 //bool Graph<T>::BuildFromLowerList(Graph<BarTick> &grSrc, std::time_t dtStart,std::time_t dtEnd)
 bool Graph<T>::BuildFromLowerList(Graph<T_SRC> &grSrc, std::time_t dtStart,std::time_t dtEnd,
@@ -752,11 +796,22 @@ bool Graph<T>::BuildFromLowerList(Graph<T_SRC> &grSrc, std::time_t dtStart,std::
     if(bCopyToDst){
         grDst.clear();
         (void)grDst.AddBarsList(v,dtAccStart,dtAccEndLower);
-        grDst.iShiftIndex = mDictionary.lower_bound(dtAccStart)->second;
+        auto It (mDictionary.lower_bound(dtAccStart));
+        if(It != mDictionary.end()){
+            grDst.iShiftIndex = It->second;
+        }
+        else{
+            grDst.iShiftIndex = vContainer.size();
+        }
     }
     return bRes;
 }
 //------------------------------------------------------------------------------------------------------------
+template<typename T>
+std::size_t Graph<T>::GetUsedMemory() const
+{
+    return vContainer.size() * sizeof(T) + mDictionary.size() * (sizeof(std::time_t) + sizeof(size_t));
+}
 //------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------

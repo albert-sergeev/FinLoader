@@ -130,6 +130,8 @@ public:
 
 public:
     //--------------------------------------------------------------------------------------------------------
+    // base settings interface
+
     void Initialize(std::string sPath);
 
     void LoadMarketConfig(std::vector<Market> & vMarketsLst);
@@ -143,6 +145,11 @@ public:
     void SaveTickerConfig(Ticker && /*tT*/, op_type tp = op_type::update) ;
 
 
+    //--------------------------------------------------------------------------------------------------------
+    // log files interface
+
+    int SaveToLogfile(const std::string &str,const  std::string & strLogFileName,
+                      const int iCurrentLogfileNumb, const int iMasLogfileSize, const int iMaxLogfiles);
 
     //--------------------------------------------------------------------------------------------------------
     // stock quotes storage interface
