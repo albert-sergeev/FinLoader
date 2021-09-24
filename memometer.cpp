@@ -2,7 +2,7 @@
 
 #include<QPainter>
 
-Memometer::Memometer(QWidget *parent) : QWidget(parent)
+Memometer::Memometer(QWidget *parent) : QWidget(parent),dPercent{0}
 {
     font.setPixelSize(12);
     font.setBold(false);

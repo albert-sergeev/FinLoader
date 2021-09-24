@@ -23,6 +23,7 @@ AmiPipesForm::AmiPipesForm(modelMarketsList *modelM, int DefaultTickerMarket,
     bShowByNameUnallocated{ShowByNameUnallocated},
     bShowByNameActive{ShowByNameActive},
     bShowByNameOff{ShowByNameOff},
+    bCursorOverrided{false},
     ui(new Ui::AmiPipesForm)
 {
     ui->setupUi(this);

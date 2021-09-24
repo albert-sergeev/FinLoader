@@ -2264,7 +2264,19 @@ std::size_t MainWindow::getPhisicalMemory()
     p.start("awk", QStringList() << "/MemTotal/ { print $2 }" << "/proc/meminfo");
     p.waitForFinished();
     QString memory = p.readAllStandardOutput();
-    iResult = memory.toLong();
+
+    QProcess p1;
+    p1.start("awk", QStringList() << "/MemTotal/ { print $3 }" << "/proc/meminfo");
+    p1.waitForFinished();
+    QString sizing = p1.readAllStandardOutput().trimmed();
+
+    int iScale{1};
+    if(sizing.toUpper() == "KB")        {   iScale = 1024;      }
+    else if(sizing.toUpper() == "MB")   {   iScale = 1048576;   }
+    else if(sizing.toUpper() == "GB")   {   iScale = 1073741824;}
+
+
+    iResult = memory.toLong() * iScale;
     p.close();
 
 #elif defined(__APPLE__) && defined(__MACH__)

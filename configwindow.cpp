@@ -238,11 +238,11 @@ ConfigWindow::ConfigWindow(modelMarketsList *modelM,int DefaultTickerMarket,
 //    sessionTable = Market::buildDefaultRepoTable();
 //    modelSessionTable.setSessionTable(sessionTable);
 
-    ui->treeviewSessions->setItemDelegate(new DateItemDelegate);
+    ui->treeviewSessions->setItemDelegate(new DateItemDelegate(this));
     ui->treeviewSessions->setModel(&modelSessionTable);
     ui->treeviewSessions->expandAll();
 
-    ui->treeviewRepo->setItemDelegate(new DateItemDelegate);
+    ui->treeviewRepo->setItemDelegate(new DateItemDelegate(this));
     ui->treeviewRepo->setModel(&modelSessionTableRepo);
     ui->treeviewRepo->expandAll();
 

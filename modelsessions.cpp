@@ -53,7 +53,7 @@ void modelSessions::setSessionTable(const Market::SessionTable_type &Table)  {
         insertRows(0,(int)It->second.second.size(),indx);
         insertColumns(0,2,indx);
 
-        for(int j = 0; j < It->second.second.size(); ++j){
+        for(int j = 0; j < (int)It->second.second.size(); ++j){
             sSubB = threadfree_gmtime_time_to_str(&It->second.second[j].first);
             sSubE = threadfree_gmtime_time_to_str(&It->second.second[j].second);
 

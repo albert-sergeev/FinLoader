@@ -367,10 +367,10 @@ void AmiPipeHolder::ReadConnectedPipes(BlockFreeQueue<dataFastLoadTask>         
     }
 #else
     if (iMode == AmiPipeHolder::ePipeMode_type::Byte_Nonblocking){
-        return ReadConnectedPipes_bytemode_linux<PIPES_MAP>(queueFastTasks,queuePipeAnswers,queueTrdAnswers,bCheckMode,BytesRead,bWasFullBuffers);
+        return ReadConnectedPipes_bytemode_linux(queueFastTasks,queuePipeAnswers,queueTrdAnswers,bCheckMode,BytesRead,bWasFullBuffers);
     }
     else{
-        return ReadConnectedPipes_messagemode_linux<PIPES_MAP>(queueFastTasks,queuePipeAnswers,queueTrdAnswers,bCheckMode,BytesRead,bWasFullBuffers);
+        return ReadConnectedPipes_messagemode_linux(queueFastTasks,queuePipeAnswers,queueTrdAnswers,bCheckMode,BytesRead,bWasFullBuffers);
     }
 #endif
 }
@@ -807,11 +807,11 @@ void AmiPipeHolder::ReadConnectedPipes_messagemode_win32(BlockFreeQueue<dataFast
 #else
 //-------------------------------------------------------------------------------------------------
 void AmiPipeHolder::ReadConnectedPipes_bytemode_linux(BlockFreeQueue<dataFastLoadTask>     &queueFastTasks,
-                            BlockFreeQueue<dataAmiPipeAnswer>                   &queuePipeAnswers,
-                            BlockFreeQueue<dataBuckgroundThreadAnswer>          &queueTrdAnswers,
-                            bool bCheckMode,
-                            size_t & BytesRead,
-                            bool & bWasFullBuffers
+                                                      BlockFreeQueue<dataAmiPipeAnswer>                   &queuePipeAnswers,
+                                                      BlockFreeQueue<dataBuckgroundThreadAnswer>          &queueTrdAnswers,
+                                                      bool /*bCheckMode*/,
+                                                      int & BytesRead,
+                                                      bool & bWasFullBuffers
                             )
 {
     milliseconds tActivityCount;
@@ -825,11 +825,11 @@ void AmiPipeHolder::ReadConnectedPipes_bytemode_linux(BlockFreeQueue<dataFastLoa
     int iBytesToRead{0};
     int iTotalBytesRead{0};
     int iWriteStart{0};
-    int iReadCount{0};
+    //int iReadCount{0};
 
-    const int iMaxReadCounts {30};
+    //const int iMaxReadCounts {30};
     //const int iMaxReadCounts {1};
-    bool bLastReadMoreData;
+    //bool bLastReadMoreData;
 
     bool bInStream{false};
 
@@ -854,7 +854,7 @@ void AmiPipeHolder::ReadConnectedPipes_bytemode_linux(BlockFreeQueue<dataFastLoa
         if (ItConnected->second.second.second.good()){
 
 #ifdef _WIN32
-
+            if(true){
 #else
             int filesize{0};
             ItConnected->second.second.second.seekg(0,std::ios::end);
@@ -862,7 +862,7 @@ void AmiPipeHolder::ReadConnectedPipes_bytemode_linux(BlockFreeQueue<dataFastLoa
             ItConnected->second.second.second.seekg(0, std::ios::cur);
             if (filesize > 0){
 #endif
-            if(true){
+
                 iWriteStart = mPointerToWrite[strBind];
                 iBytesToRead = iBlockMaxSize  - iWriteStart;
 
@@ -1075,11 +1075,11 @@ void AmiPipeHolder::ReadConnectedPipes_bytemode_linux(BlockFreeQueue<dataFastLoa
 
 //-------------------------------------------------------------------------------------------------
 void AmiPipeHolder::ReadConnectedPipes_messagemode_linux(BlockFreeQueue<dataFastLoadTask>        &/*queueFastTasks*/,
-                            BlockFreeQueue<dataAmiPipeAnswer>                   &/*queuePipeAnswers*/,
-                            BlockFreeQueue<dataBuckgroundThreadAnswer>          &/*queueTrdAnswers*/,
-                            bool bCheckMode,
-                            size_t & BytesRead,
-                            bool & bWasFullBuffers
+                                                         BlockFreeQueue<dataAmiPipeAnswer>                   &/*queuePipeAnswers*/,
+                                                         BlockFreeQueue<dataBuckgroundThreadAnswer>          &/*queueTrdAnswers*/,
+                                                         bool /*bCheckMode*/,
+                                                         int & BytesRead,
+                                                         bool & bWasFullBuffers
                             )
 {
     BytesRead = 0;
