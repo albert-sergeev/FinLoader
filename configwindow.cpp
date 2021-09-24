@@ -7,7 +7,9 @@
 #include<QFileDialog>
 #include <QKeyEvent>
 #include <iostream>
+#include <QTableView>
 
+#include "dateitemdelegate.h"
 
 //--------------------------------------------------------------------------------------------------------
 ConfigWindow::ConfigWindow(modelMarketsList *modelM,int DefaultTickerMarket,
@@ -54,6 +56,8 @@ ConfigWindow::ConfigWindow(modelMarketsList *modelM,int DefaultTickerMarket,
     ,iDefaultTickerMarket{DefaultTickerMarket}
     , modelMarket{modelM}
     , modelTicker{modelT}
+    , modelSessionTable {sessionTable}
+    , modelSessionTableRepo {sessionTableRepo}
     , ui(new Ui::ConfigWindow)
 {
     ui->setupUi(this);
@@ -226,8 +230,22 @@ ConfigWindow::ConfigWindow(modelMarketsList *modelM,int DefaultTickerMarket,
 
     connect(swtAutoLoadWholeMarket,SIGNAL(stateChanged(int)),this,SLOT(slotMarketDataChanged(int)));
     connect(swtUpToSysWholeMarket,SIGNAL(stateChanged(int)),this,SLOT(slotMarketDataChanged(int)));
-    connect(ui->dateTimeStart,SIGNAL(timeChanged(const QTime &)),this,SLOT(slotMarketTimeChanged(const QTime &)));
-    connect(ui->dateTimeEnd,SIGNAL(timeChanged(const QTime &)),this,SLOT(slotMarketTimeChanged(const QTime &)));
+//    connect(ui->dateTimeStart,SIGNAL(timeChanged(const QTime &)),this,SLOT(slotMarketTimeChanged(const QTime &)));
+//    connect(ui->dateTimeEnd,SIGNAL(timeChanged(const QTime &)),this,SLOT(slotMarketTimeChanged(const QTime &)));
+
+
+
+//    sessionTable = Market::buildDefaultRepoTable();
+//    modelSessionTable.setSessionTable(sessionTable);
+
+    ui->treeviewSessions->setItemDelegate(new DateItemDelegate);
+    ui->treeviewSessions->setModel(&modelSessionTable);
+    ui->treeviewSessions->expandAll();
+
+    ui->treeviewRepo->setItemDelegate(new DateItemDelegate);
+    ui->treeviewRepo->setModel(&modelSessionTableRepo);
+    ui->treeviewRepo->expandAll();
+
 
     ///////////////////////////////////////////////////////////////////////
     // ticker-tab work
@@ -477,8 +495,11 @@ void ConfigWindow::ClearMarketWidgetsValues()
     const QTime tmS(0,0,0);
     const QTime tmE(0,0,0);
 
-    ui->dateTimeStart->setTime(tmS);
-    ui->dateTimeEnd->setTime(tmE);
+//    ui->dateTimeStart->setTime(tmS);
+//    ui->dateTimeEnd->setTime(tmE);
+
+    modelSessionTable.clear();
+    modelSessionTableRepo.clear();
 }
 
 //--------------------------------------------------------------------------------------------------------
@@ -509,28 +530,28 @@ void ConfigWindow::slotBtnSaveMarketClicked()
                   m.SetAutoLoad(swtAutoLoadWholeMarket->isChecked()? true:false);
                   m.SetUpToSys(swtUpToSysWholeMarket->isChecked()? true:false);
                   //
-                  const QTime tmS(ui->dateTimeStart->time());
-                  std::tm tmSt;
-                  {
-                      tmSt.tm_year   = 2000 - 1900;
-                      tmSt.tm_mon    = 1;
-                      tmSt.tm_mday   = 1;
-                      tmSt.tm_hour   = tmS.hour();
-                      tmSt.tm_min    = tmS.minute();
-                      tmSt.tm_sec    = tmS.second();
-                      tmSt.tm_isdst  = 0;
-                  }
-                  std::time_t tS (mktime_gm(&tmSt));
-                  m.SetStartTime(tS);
+//                  const QTime tmS(ui->dateTimeStart->time());
+//                  std::tm tmSt;
+//                  {
+//                      tmSt.tm_year   = 2000 - 1900;
+//                      tmSt.tm_mon    = 1;
+//                      tmSt.tm_mday   = 1;
+//                      tmSt.tm_hour   = tmS.hour();
+//                      tmSt.tm_min    = tmS.minute();
+//                      tmSt.tm_sec    = tmS.second();
+//                      tmSt.tm_isdst  = 0;
+//                  }
+//                  std::time_t tS (mktime_gm(&tmSt));
+//                  m.SetStartTime(tS);
                   //
-                  const QTime tmE(ui->dateTimeEnd->time());
-                  {
-                      tmSt.tm_hour   = tmE.hour();
-                      tmSt.tm_min    = tmE.minute();
-                      tmSt.tm_sec    = tmE.second();
-                  }
-                  std::time_t tE (mktime_gm(&tmSt));
-                  m.SetEndTime(tE);
+//                  const QTime tmE(ui->dateTimeEnd->time());
+//                  {
+//                      tmSt.tm_hour   = tmE.hour();
+//                      tmSt.tm_min    = tmE.minute();
+//                      tmSt.tm_sec    = tmE.second();
+//                  }
+//                  std::time_t tE (mktime_gm(&tmSt));
+//                  m.SetEndTime(tE);
                   ///
                   emit NeedSaveMarketsChanges();
                   emit modelMarket->dataChanged(lst[0],lst[0]);
@@ -689,8 +710,14 @@ void ConfigWindow::slotSetSelectedMarket(const  QModelIndex& indx)
         const QTime tmE(tmEn->tm_hour,tmEn->tm_min,0);
 
 
-        ui->dateTimeStart->setTime(tmS);
-        ui->dateTimeEnd->setTime(tmE);
+//        ui->dateTimeStart->setTime(tmS);
+//        ui->dateTimeEnd->setTime(tmE);
+
+        modelSessionTable.setSessionTable(m.SessionTable());
+        modelSessionTableRepo.setSessionTable(m.RepoTable());
+
+        ui->treeviewSessions->expandAll();
+        ui->treeviewRepo->expandAll();
 
         bIsAboutMarkerChanged=false;
 

@@ -33,6 +33,7 @@ SOURCES += \
     datafastloadtask.cpp \
     datafinloadtask.cpp \
     datafinquotesparse.cpp \
+    dateitemdelegate.cpp \
     fasttasksholder.cpp \
     graph.cpp \
     graphholder.cpp \
@@ -43,6 +44,7 @@ SOURCES += \
     market.cpp \
     memometer.cpp \
     modelmarketslist.cpp \
+    modelsessions.cpp \
     modeltickerslist.cpp \
     oneofkindprotector.cpp \
     plusbutton.cpp \
@@ -53,7 +55,7 @@ SOURCES += \
     threadpool.cpp \
     ticker.cpp \
     transparentbutton.cpp \
-    trimutils.cpp \
+    utilites.cpp \
     win32namedpipe.cpp \
     workerloader.cpp
 
@@ -73,6 +75,7 @@ HEADERS += \
     datafastloadtask.h \
     datafinloadtask.h \
     datafinquotesparse.h \
+    dateitemdelegate.h \
     fasttasksholder.h \
     graph.h \
     graphholder.h \
@@ -82,6 +85,7 @@ HEADERS += \
     market.h \
     memometer.h \
     modelmarketslist.h \
+    modelsessions.h \
     modeltickerslist.h \
     oneofkindprotector.h \
     plusbutton.h \
@@ -92,7 +96,7 @@ HEADERS += \
     threadpool.h \
     ticker.h \
     transparentbutton.h \
-    trimutils.h \
+    utilites.h \
     win32namedpipe.h \
     workerloader.h
 

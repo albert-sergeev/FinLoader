@@ -5,7 +5,7 @@
 #include <QAbstractTableModel>
 #include <QSortFilterProxyModel>
 #include "ticker.h"
-#include "trimutils.h"
+#include "utilites.h"
 
 class modelTickersList : public QAbstractTableModel
 {

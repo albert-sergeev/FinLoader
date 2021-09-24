@@ -63,8 +63,8 @@ public:
     inline void SetStartTime    (const std::time_t  StartTime)  {tStartTime     = StartTime;};
     inline void SetEndTime      (const std::time_t  EndTime)    {tEndTime       = EndTime;};
 
-    SessionTable_type SessionTable()  {return vSessionTable;};
-    SessionTable_type RepoTable()     {return vRepoTable;};
+    const SessionTable_type& SessionTable() const {return vSessionTable;};
+    const SessionTable_type& RepoTable()    const {return vRepoTable;};
 
 public:
     //--------------------------------------------------------------------------------------------------------

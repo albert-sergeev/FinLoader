@@ -10,6 +10,7 @@
 #include "modeltickerslist.h"
 #include "storage.h"
 #include "styledswitcher.h"
+#include "modelsessions.h"
 
 namespace Ui {
 class ConfigWindow;
@@ -107,6 +108,13 @@ private:
     modelMarketsList *modelMarket;
     modelTickersList *modelTicker;
     TickerProxyListModel proxyTickerModel;
+
+
+    Market::SessionTable_type sessionTable;
+    modelSessions modelSessionTable;
+
+    Market::SessionTable_type sessionTableRepo;
+    modelSessions modelSessionTableRepo;
 
 
 //////////////////////////////////////////

@@ -396,19 +396,19 @@ void MainWindow::timerEvent(QTimerEvent * event)
                     else{
                         slotSendSignalToInvalidateGraph(data.TickerID(), data.BeginDate(), data.EndDate());
 
-                        if (data.TickerID() == 9){ // TODO:delete. for test
-                            std::shared_lock lk(mutexMainHolder);
-                            auto hl =  Holders.at(data.TickerID());
-                            size_t tSz = hl->getViewGraphSize(Bar::eInterval::pTick);
-                            ThreadFreeCout pcout;
-                            pcout << "!!!!!!! total graph["<<data.TickerID()<<"] size = {"<<tSz<<"}   !!!!!!!";
+//                        if (data.TickerID() == 9){ // TODO:delete. for test
+//                            std::shared_lock lk(mutexMainHolder);
+//                            auto hl =  Holders.at(data.TickerID());
+//                            size_t tSz = hl->getViewGraphSize(Bar::eInterval::pTick);
+//                            ThreadFreeCout pcout;
+//                            pcout << "!!!!!!! total graph["<<data.TickerID()<<"] size = {"<<tSz<<"}   !!!!!!!";
 
-                            unsigned long iV{0};
-                            for (size_t i = 0; i < hl->getViewGraphSize(Bar::eInterval::pMonth); ++i){
-                                iV += hl->getByIndex<Bar>(Bar::eInterval::pMonth,i).Volume();
-                            }
-                            pcout << "    total volume = {"<<iV<<"}   !!!!!!!\n";
-                        }
+//                            unsigned long iV{0};
+//                            for (size_t i = 0; i < hl->getViewGraphSize(Bar::eInterval::pMonth); ++i){
+//                                iV += hl->getByIndex<Bar>(Bar::eInterval::pMonth,i).Volume();
+//                            }
+//                            pcout << "    total volume = {"<<iV<<"}   !!!!!!!\n";
+//                        }
                     }
                     emit SendToLog(QString::fromStdString(ss.str()));
                 }

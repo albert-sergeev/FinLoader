@@ -1,5 +1,5 @@
-#ifndef TRIMUTILS_H
-#define TRIMUTILS_H
+#ifndef UTILITES_H
+#define UTILITES_H
 
 #include <algorithm>
 #include <numeric>
@@ -72,4 +72,4 @@ static inline std::string & filter(std::string &s){
 //}
 
 
-#endif // TRIMUTILS_H
+#endif // UTILITES_H
