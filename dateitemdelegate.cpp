@@ -70,6 +70,7 @@ QWidget * DateItemDelegate::createEditor(QWidget *parent, const QStyleOptionView
     }
     else if (index.data().canConvert<QTime>()) {
         QTimeEdit * editor = new QTimeEdit(parent);
+        //editor->setDisplayFormat("HH:mm:ss");
         editor->setCalendarPopup(false);
         connect(editor, &QTimeEdit::editingFinished,
                 this, &DateItemDelegate::commitAndCloseTimeEditor);

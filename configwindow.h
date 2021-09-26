@@ -111,10 +111,12 @@ private:
 
 
     Market::SessionTable_type sessionTable;
-    modelSessions modelSessionTable;
+    modelSessions       modelSessionTable;
+    modelSessionsProxy  modelSessionTableProxy;
 
     Market::SessionTable_type sessionTableRepo;
-    modelSessions modelSessionTableRepo;
+    modelSessions       modelSessionTableRepo;
+    modelSessionsProxy  modelSessionTableRepoProxy;
 
 
 //////////////////////////////////////////
@@ -138,8 +140,27 @@ protected slots:
     void slotMarketDataChanged(int)               {slotMarketDataChanged(true);};
     void slotMarketDataChanged(const QString &)   {slotMarketDataChanged(true);};
     void slotMarketTimeChanged(const QTime &)     {slotMarketDataChanged(true);};
+    void slotMarketDataChanged(const QModelIndex &,const QModelIndex &,const QVector<int>&);
     void ClearMarketWidgetsValues();
     void slotAboutQuit();
+
+    void slotBtnSessionAddPeriodClicked();
+    void slotBtnSessionInsertPeriodClicked();
+    void slotBtnSessionDeletePeriodClicked();
+    void slotBtnSessionAddTimeRangeClicked();
+    void slotBtnSessionInsertTimeRangeClicked();
+    void slotBtnSessionDeleteTimeRangeClicked();
+    void slotBtnSessionSetDefaultClicked();
+
+    void slotBtnRepoAddPeriodClicked();
+    void slotBtnRepoInsertPeriodClicked();
+    void slotBtnRepoDeletePeriodClicked();
+    void slotBtnRepoAddTimeRangeClicked();
+    void slotBtnRepoInsertTimeRangeClicked();
+    void slotBtnRepoDeleteTimeRangeClicked();
+    void slotBtnRepoSetDefaultClicked();
+
+
 
 //////////////////////////////////////////
 /// Ticker work part

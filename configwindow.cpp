@@ -230,22 +230,50 @@ ConfigWindow::ConfigWindow(modelMarketsList *modelM,int DefaultTickerMarket,
 
     connect(swtAutoLoadWholeMarket,SIGNAL(stateChanged(int)),this,SLOT(slotMarketDataChanged(int)));
     connect(swtUpToSysWholeMarket,SIGNAL(stateChanged(int)),this,SLOT(slotMarketDataChanged(int)));
-//    connect(ui->dateTimeStart,SIGNAL(timeChanged(const QTime &)),this,SLOT(slotMarketTimeChanged(const QTime &)));
-//    connect(ui->dateTimeEnd,SIGNAL(timeChanged(const QTime &)),this,SLOT(slotMarketTimeChanged(const QTime &)));
 
 
-
-//    sessionTable = Market::buildDefaultRepoTable();
-//    modelSessionTable.setSessionTable(sessionTable);
+    QItemSelectionModel  *qml;
+    modelSessionTableProxy.setSourceModel(&modelSessionTable);
+    modelSessionTableRepoProxy.setSourceModel(&modelSessionTableRepo);
 
     ui->treeviewSessions->setItemDelegate(new DateItemDelegate(this));
-    ui->treeviewSessions->setModel(&modelSessionTable);
+    //ui->treeviewSessions->setModel(&modelSessionTable);
+    ui->treeviewSessions->setModel(&modelSessionTableProxy);
+    qml =new QItemSelectionModel(&modelSessionTableProxy);
+    modelSessionTableProxy.sort(0);
+    ui->treeviewSessions->setSelectionModel(qml);
     ui->treeviewSessions->expandAll();
 
     ui->treeviewRepo->setItemDelegate(new DateItemDelegate(this));
-    ui->treeviewRepo->setModel(&modelSessionTableRepo);
+    //ui->treeviewRepo->setModel(&modelSessionTableRepo);
+    ui->treeviewRepo->setModel(&modelSessionTableRepoProxy);
+    qml =new QItemSelectionModel(&modelSessionTableRepoProxy);
+    modelSessionTableRepoProxy.sort(0);
+    ui->treeviewRepo->setSelectionModel(qml);
     ui->treeviewRepo->expandAll();
 
+    QObject::connect(&modelSessionTable,SIGNAL(dataChanged(const QModelIndex &,const QModelIndex &,const QVector<int>&)),
+                         this,SLOT(slotMarketDataChanged(const QModelIndex &,const QModelIndex &,const QVector<int>&)));
+
+    QObject::connect(&modelSessionTableRepo,SIGNAL(dataChanged(const QModelIndex &,const QModelIndex &,const QVector<int>&)),
+                         this,SLOT(slotMarketDataChanged(const QModelIndex &,const QModelIndex &,const QVector<int>&)));
+
+
+    connect(ui->btnSessionAddPeriod,        SIGNAL(clicked()),  this,SLOT(slotBtnSessionAddPeriodClicked()));
+    connect(ui->btnSessionInsertPeriod,     SIGNAL(clicked()),  this,SLOT(slotBtnSessionInsertPeriodClicked()));
+    connect(ui->btnSessionDeletePeriod,     SIGNAL(clicked()),  this,SLOT(slotBtnSessionDeletePeriodClicked()));
+    connect(ui->btnSessionAddTimeRange,     SIGNAL(clicked()),  this,SLOT(slotBtnSessionAddTimeRangeClicked()));
+    connect(ui->btnSessionInsertTimeRange,  SIGNAL(clicked()),  this,SLOT(slotBtnSessionInsertTimeRangeClicked()));
+    connect(ui->btnSessionDeleteTimeRange,  SIGNAL(clicked()),  this,SLOT(slotBtnSessionDeleteTimeRangeClicked()));
+    connect(ui->btnSessionDefaults,         SIGNAL(clicked()),  this,SLOT(slotBtnSessionSetDefaultClicked()));
+
+    connect(ui->btnRepoAddPeriod,           SIGNAL(clicked()),  this,SLOT(slotBtnRepoAddPeriodClicked()));
+    connect(ui->btnRepoInsertPeriod,        SIGNAL(clicked()),  this,SLOT(slotBtnRepoInsertPeriodClicked()));
+    connect(ui->btnRepoDeletePeriod,        SIGNAL(clicked()),  this,SLOT(slotBtnRepoDeletePeriodClicked()));
+    connect(ui->btnRepoAddTimeRange,        SIGNAL(clicked()),  this,SLOT(slotBtnRepoAddTimeRangeClicked()));
+    connect(ui->btnRepoInsertTimeRange,     SIGNAL(clicked()),  this,SLOT(slotBtnRepoInsertTimeRangeClicked()));
+    connect(ui->btnRepoDeleteTimeRange,     SIGNAL(clicked()),  this,SLOT(slotBtnRepoDeleteTimeRangeClicked()));
+    connect(ui->btnRepoDefaults,            SIGNAL(clicked()),  this,SLOT(slotBtnRepoSetDefaultClicked()));
 
     ///////////////////////////////////////////////////////////////////////
     // ticker-tab work
@@ -1321,7 +1349,57 @@ void ConfigWindow::slotGeneralOptionChenged(int)
     ui->btnGeneralCancel ->setEnabled(true);
 }
 //--------------------------------------------------------------------------------------------------------
+void ConfigWindow::slotMarketDataChanged(const QModelIndex &,const QModelIndex &,const QVector<int>&)
+{
+    slotMarketDataChanged(true);
+}
 //--------------------------------------------------------------------------------------------------------
+void ConfigWindow::slotBtnSessionAddPeriodClicked()
+{
+    modelSessionTable.addNewPeriod();//const QModelIndex& indx
+    ui->treeviewSessions->expandAll();
+}
+//--------------------------------------------------------------------------------------------------------
+void ConfigWindow::slotBtnSessionInsertPeriodClicked()
+{
+
+}
+void ConfigWindow::slotBtnSessionDeletePeriodClicked()
+{}
+void ConfigWindow::slotBtnSessionAddTimeRangeClicked()
+{}
+void ConfigWindow::slotBtnSessionInsertTimeRangeClicked()
+{}
+void ConfigWindow::slotBtnSessionDeleteTimeRangeClicked()
+{}
+//--------------------------------------------------------------------------------------------------------
+void ConfigWindow::slotBtnSessionSetDefaultClicked()
+{
+    modelSessionTable.setSessionTable(Market::buildDefaultSessionsTable());
+    ui->treeviewSessions->expandAll();
+}
+//--------------------------------------------------------------------------------------------------------
+void ConfigWindow::slotBtnRepoAddPeriodClicked()
+{
+    //modelSessionTableRepo.addNewTimeRange();//const QModelIndex& indx
+    ui->treeviewRepo->expandAll();
+}
+void ConfigWindow::slotBtnRepoInsertPeriodClicked()
+{}
+void ConfigWindow::slotBtnRepoDeletePeriodClicked()
+{}
+void ConfigWindow::slotBtnRepoAddTimeRangeClicked()
+{}
+void ConfigWindow::slotBtnRepoInsertTimeRangeClicked()
+{}
+void ConfigWindow::slotBtnRepoDeleteTimeRangeClicked()
+{}
+//--------------------------------------------------------------------------------------------------------
+void ConfigWindow::slotBtnRepoSetDefaultClicked()
+{
+    modelSessionTableRepo.setSessionTable(Market::buildDefaultRepoTable());
+    ui->treeviewRepo->expandAll();
+}
 //--------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------
