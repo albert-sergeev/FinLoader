@@ -57,6 +57,7 @@ private:
     bool bDataMarketChanged;
     bool bAddingMarketRow;
     bool bIsAboutMarkerChanged;
+    bool bDataMarketSessionTablesChanged;
 
     bool bDataTickerChanged;
     bool bAddingTickerRow;

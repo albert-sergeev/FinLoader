@@ -23,7 +23,7 @@
    <item row="0" column="0">
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>1</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="tabTicker">
       <attribute name="title">
@@ -99,7 +99,7 @@
          <item>
           <layout class="QGridLayout" name="gridLayout_4">
            <item row="5" column="0" colspan="3">
-            <widget class="QLabel" name="label_10">
+            <widget class="QLabel" name="labelTickerUpload">
              <property name="text">
               <string>Выгрузка в систему</string>
              </property>

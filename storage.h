@@ -187,6 +187,9 @@ private:
     void SaveMarketConfigV_1(std::vector<Market> & vMarketsLst);
     void ParsMarketConfigV_1(std::vector<Market> & vMarketsLst, std::ifstream &file);
 
+    void SaveMarketConfigV_2(std::vector<Market> & vMarketsLst);
+    void ParsMarketConfigV_2(std::vector<Market> & vMarketsLst, std::ifstream &file);
+
     void SaveTickerConfigLocal(const Ticker & /*tT*/, op_type tp) ;
     void FormatTickerConfigV_1();
     void SaveTickerConfigV_1(std::filesystem::path  /*pathFile*/,const Ticker & /*tT*/, op_type tp = op_type::update, int iForceMark = 0);
