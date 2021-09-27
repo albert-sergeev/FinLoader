@@ -589,6 +589,10 @@ void ConfigWindow::slotBtnSaveMarketClicked()
 
                   ui->listViewMarket->setFocus();
 
+                  if (bDataMarketSessionTablesChanged){
+                      emit NeedToReboot();
+                  }
+
                   //qDebug() << "choiceSave";
             }
         }

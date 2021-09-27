@@ -149,7 +149,7 @@ public:
     // log files interface
 
     int SaveToLogfile(const std::string &str,const  std::string & strLogFileName,
-                      const int iCurrentLogfileNumb, const int iMasLogfileSize, const int iMaxLogfiles);
+                      const int iCurrentLogfileNumb, const size_t iMasLogfileSize, const int iMaxLogfiles);
 
     //--------------------------------------------------------------------------------------------------------
     // stock quotes storage interface

@@ -1571,6 +1571,9 @@ void MainWindow::slotConfigWndow()
     connect(pdoc,SIGNAL(NeedChangeDefaultPath(bool,QString)),this,SLOT(slotSaveNewDefaultPath(bool,QString)));
     connect(pdoc,SIGNAL(NeedSaveGeneralOptions(bool,bool,int, bool,int,int,bool,int,int,bool,bool,bool,bool)),
               this,SLOT(slotSaveGeneralOptions(bool,bool,int, bool,int,int,bool,int,int,bool,bool,bool,bool)));
+    connect(pdoc,SIGNAL(NeedToReboot()),this,SLOT(slotNeedToReboot()));
+
+
 
     pdoc->show();
 }
@@ -2464,6 +2467,12 @@ void MainWindow::slotSendToErrorLog(QString str)
     }
 }
 //--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotNeedToReboot()
+{
+    SaveSettings();
+    qApp->quit();
+    QProcess::startDetached(qApp->arguments()[0], qApp->arguments());
+}
 //--------------------------------------------------------------------------------------------------------------------------------
 
 

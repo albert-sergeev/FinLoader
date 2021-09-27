@@ -129,6 +129,7 @@ public:
 signals:
     void SendToMainLog(QString);
     void NeedSaveMarketsChanges();
+    void NeedToReboot();
 public slots:
     void slotBtnAddMarketClicked();
     void slotBtnRemoveMarketClicked();

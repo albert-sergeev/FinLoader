@@ -270,6 +270,8 @@ public slots: // for config window
 
     void slotSaveGeneralOptions(bool,bool,int, bool,int,int,bool,int,int,bool,bool,bool,bool);
 
+    void slotNeedToReboot();
+
 public slots: // for import FinQuotes winow
     void slotDefaultOpenDirChanged(QString & s) {qsDefaultOpenDir = s;};
     void slotImportDelimiterChanged(char c)     {cImportDelimiter = c;};
