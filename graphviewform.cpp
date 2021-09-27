@@ -2418,7 +2418,7 @@ void GraphViewForm::ResizeMemometer()
         if (indicatorMemo->isHidden()){
             indicatorMemo->show();
         }
-        indicatorMemo->setGeometry(pU.x() + rU.width() - 10, pU.y() ,10,ui->grViewR1->height());
+        indicatorMemo->setGeometry(pU.x() + rU.width() - 12, pU.y() ,10,ui->grViewR1->height());
     }
     else{
         indicatorMemo->hide();
