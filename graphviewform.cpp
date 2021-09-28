@@ -2313,7 +2313,8 @@ void GraphViewForm::checkFastShowAverages(int iStart, int iEnd){
             stFastShowAverages.insert(i);
         }
     }
-    if (stFastShowAverages.size() > 1 || (stFastShowAverages.size() > 0 && mLast.count() > 500)){
+    if (    (stFastShowAverages.size() > 1 && mLast.count() > 500)
+         || (stFastShowAverages.size() > 0 && mLast.count() > 10000)){
         dtFastShowAverageActivity = std::chrono::steady_clock::now();
 
         RepainTask task(0,0,0,false);
@@ -2327,7 +2328,12 @@ void GraphViewForm::checkFastShowAverages(int iStart, int iEnd){
         task.bRecalculateAverages = true;
 
         queueRepaint.Push(task);
-        stFastShowAverages.clear();
+        if(stFastShowAverages.size() > 2){
+            auto It (stFastShowAverages.end());
+            It--;
+            It--;
+            stFastShowAverages.erase(stFastShowAverages.begin(),It);
+        }
     }
 }
 //---------------------------------------------------------------------------------------------------------------
