@@ -15,6 +15,13 @@
 #include "threadfreecout.h"
 #include "plusbutton.h"
 
+using namespace std::chrono_literals;
+using seconds=std::chrono::duration<double>;
+using milliseconds=std::chrono::duration<double,
+    std::ratio_multiply<seconds::period,std::milli>
+    >;
+
+
 //---------------------------------------------------------------------------------------------------------------
 GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::shared_ptr<GraphHolder> hldr, QWidget *parent) :
     QWidget(parent),
@@ -290,6 +297,8 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
 
     ui->grViewL1->installEventFilter(this);
 
+    dtFastShowAverageActivity = std::chrono::steady_clock::now();
+
    // {ThreadFreeCout pcout; pcout<<"const out\n";}
 
 //    connect(ui->btnTestLoad,SIGNAL(clicked()),this,SLOT(slotLoadGraphButton()));
@@ -347,6 +356,9 @@ void GraphViewForm::slotProcessRepaintQueue()
             }
             if(bSuccess && (data.Type & RepainTask::eRepaintType::FastFrames)){
                 bSuccess = FastPaintFrames(data);
+            }
+            if(bSuccess && (data.Type & RepainTask::eRepaintType::FastAverages)){
+                bSuccess = FastPaintAverages(data);
             }
         }
         ///////
@@ -1042,6 +1054,8 @@ void GraphViewForm::Erase()
     EraseMovingAverages();
     EraseVolumes();
     EraseTimeScale();
+
+    stFastShowAverages.clear();
 }
 //---------------------------------------------------------------------------------------------------------------
 void GraphViewForm::EraseTimeScale(){
@@ -1328,6 +1342,7 @@ void GraphViewForm::slotPeriodButtonChanged()
          }
          if (bBars){
              task.Type |=  RepainTask::eRepaintType::FastBars;
+             task.Type |=  RepainTask::eRepaintType::FastAverages;
          }
          if (bVolumes){
              task.Type |= RepainTask::eRepaintType::FastVolumes;
@@ -1351,6 +1366,7 @@ void GraphViewForm::slotPeriodButtonChanged()
          }
          if (bBars){
              task.Type |=  RepainTask::eRepaintType::FastBars;
+             task.Type |=  RepainTask::eRepaintType::FastAverages;
          }
          if (bVolumes){
              task.Type |= RepainTask::eRepaintType::FastVolumes;
@@ -1423,10 +1439,17 @@ void GraphViewForm::slotPeriodButtonChanged()
          bSuccess = PaintBars<Bar>(data.holder, data.iStart, data.iEnd , bPaintBars, bPaintVolumes, data.bStoreRightPos,data.bReplacementMode);
      }
      /////
-     if (bSuccess){
-         bSuccess = PaintMovingAverages (data.holder, data.iStart, data.iEnd,data.bReplacementMode);
-     }
      return bSuccess;
+ }
+ //---------------------------------------------------------------------------------------------------------------
+ bool GraphViewForm::FastPaintAverages(RepainTask & data)
+ {
+     if(!data.holder){
+         if(!FastLoadHolder(data)){
+             return false;
+         }
+     }
+     return PaintMovingAverages (data.holder, data.iStart, data.iEnd,data.bReplacementMode);
  }
  //---------------------------------------------------------------------------------------------------------------
  bool GraphViewForm::FastLoadHolder(RepainTask &data)
@@ -1434,7 +1457,8 @@ void GraphViewForm::slotPeriodButtonChanged()
      return holder->CloneHolder(data.holder,iSelectedInterval,
                                 data.iStart > 0     ? data.iStart       : 0,
                                 data.iEnd > 0       ? data.iEnd         : 0,
-                                data.iLetShift > 0  ? data.iLetShift    : 0);
+                                data.iLetShift > 0  ? data.iLetShift    : 0,
+                                data.bRecalculateAverages);
  }
  //---------------------------------------------------------------------------------------------------------------
  template<typename T>
@@ -2270,74 +2294,42 @@ void GraphViewForm::slotFastShowEvent(std::shared_ptr<GraphHolder> ptrHolder)
              task.holder = ptrHolder;
 
              queueRepaint.Push(task);
+
+             checkFastShowAverages(iShBeg, iShEnd);
          }
      }
      ////////////////////////////////////////////////////////////////
      slotProcessRepaintQueue();
      ////////////////////////////////////////////////////////////////
-//          if (iSelectedInterval == Bar::eInterval::pTick){
-//              PaintBarsFastT<BarTick>(0, 0, ptrHolder);
-//          }
-//          else{
-//              PaintBarsFastT<Bar>(0, 0, ptrHolder);
-//          }
 }
 //---------------------------------------------------------------------------------------------------------------
-// template<typename T>
-// void GraphViewForm::PaintBarsFastT(std::time_t /*tBegin*/, std::time_t /*tEnd*/,std::shared_ptr<GraphHolder> ptrHolder)
-// {
-//     std::pair<int,int> pViewPortRange = getViewPortRangeToHolder();
+// paint averages only if there are more then 1 bar or more then 500ms passed
+void GraphViewForm::checkFastShowAverages(int iStart, int iEnd){
 
-//     const int iShift = (int)ptrHolder->getShiftIndex(iSelectedInterval);
-//     int iShBeg = iShift;
-//     int iShEnd = iShBeg + (int)ptrHolder->getViewGraphSize(iSelectedInterval);
+    milliseconds mLast = std::chrono::steady_clock::now() - dtFastShowAverageActivity;
 
-//     if(!(pViewPortRange.first > iShEnd ||
-//          pViewPortRange.second < iShBeg
-//          )){
-//         //
-//         if (iShBeg < pViewPortRange.first)  iShBeg = pViewPortRange.first;
-//         if (iShEnd > pViewPortRange.second) iShEnd = pViewPortRange.second;
-//         //
-//         int i = iShBeg;
+    for (int i = iStart; i <= iEnd; ++i){
+        if (stFastShowAverages.find(i) == stFastShowAverages.end()){
+            stFastShowAverages.insert(i);
+        }
+    }
+    if (stFastShowAverages.size() > 1 || (stFastShowAverages.size() > 0 && mLast.count() > 500)){
+        dtFastShowAverageActivity = std::chrono::steady_clock::now();
 
-//         while(i < iShEnd){
-//             qreal xCur = (i + iLeftShift)     * BarGraphicsItem::BarWidth * dHScale;
+        RepainTask task(0,0,0,false);
+        task.Type |= RepainTask::eRepaintType::FastAverages;
 
-//             const T &b = ptrHolder->getByIndex<T>(iSelectedInterval, i - iShift);
+        task.bReplacementMode = true;
 
-//             auto ItFound = mShowedGraphicsBars.find(i);
+        task.iStart =  *stFastShowAverages.begin();
+        task.iEnd   =  *stFastShowAverages.rbegin() + 8;
 
-//             if (ItFound == mShowedGraphicsBars.end())
-//             {
-//                 BarGraphicsItem *item = new BarGraphicsItem(b,i,3,mVScale[iSelectedInterval]);
-//                 mShowedGraphicsBars[i].push_back(item);
-//                 ui->grViewQuotes->scene()->addItem(item);
-//                 item->setPos(xCur , -realYtoSceneY(b.Close()));
-//             }
-//             else{
-//                 //TODO: do by invalidate, not by removing
-//                 for (auto & item:mShowedGraphicsBars[i]){
-//                     ui->grViewQuotes->scene()->removeItem(item);
-//                     delete item;
-//                     item = nullptr;
-//                 }
-//                 mShowedGraphicsBars.erase(ItFound);
-//                 //
-//                 BarGraphicsItem *item = new BarGraphicsItem(b,i,3,mVScale[iSelectedInterval]);
-//                 mShowedGraphicsBars[i].push_back(item);
-//                 ui->grViewQuotes->scene()->addItem(item);
-//                 item->setPos(xCur , -realYtoSceneY(b.Close()));
+        task.bRecalculateAverages = true;
 
-////                 ItFound->second[0]->setBar(b);
-////                 ui->grViewQuotes->invalidateScene(ItFound->second[0]->sceneBoundingRect());
-//             }
-//             /////////////////////////////////////////////////
-//             ++i;
-//         }
-//     }
-// }
-
+        queueRepaint.Push(task);
+        stFastShowAverages.clear();
+    }
+}
 //---------------------------------------------------------------------------------------------------------------
 void GraphViewForm::init_const(){
 
@@ -2550,12 +2542,11 @@ bool GraphViewForm::PaintMovingAverages (std::shared_ptr<GraphHolder> local_hold
     if (iSelectedInterval == Bar::eInterval::pTick) return true;
     //
     InvalidateCounterDefender def(aiInvalidateCounter);
-    {
-         ThreadFreeCout pcout;
-         pcout << "PaintMovings <"<<iStartI<<":"<<iEndI<<">\n";
-         pcout << "mMovingBlue.size() <"<<mMovingBlue.size()<<">\n";
-
-    }
+//    {
+//         ThreadFreeCout pcout;
+//         pcout << "PaintMovings <"<<iStartI<<":"<<iEndI<<">\n";
+//         pcout << "mMovingBlue.size() <"<<mMovingBlue.size()<<">\n";
+//    }
     /////////////////////////////////////////////////////////////////////////////////////////
     if (!local_holder) return true;
     bool bSuccess;
@@ -2565,14 +2556,6 @@ bool GraphViewForm::PaintMovingAverages (std::shared_ptr<GraphHolder> local_hold
     int iMaxBlueSize = (int)local_holder->getMovingBlueSize(iSelectedInterval);
     int iMaxRedSize = (int)local_holder->getMovingRedSize(iSelectedInterval);
     int iMaxGreenSize = (int)local_holder->getMovingGreenSize(iSelectedInterval);
-
-//    {
-//         ThreadFreeCout pcout;
-//         pcout << "iMaxBlueSize: "<<iMaxBlueSize<<"\n";
-//         pcout << "iMaxRedSize: "<<iMaxRedSize<<"\n";
-//         pcout << "iMaxGreenSize: "<<iMaxGreenSize<<"\n";
-//    }
-
 
     const Graph<Bar>& graph = local_holder->getGraph<Bar>(iSelectedInterval);
     const int iShift {(int)graph.GetShiftIndex()};
@@ -2608,9 +2591,12 @@ bool GraphViewForm::PaintMovingAverages (std::shared_ptr<GraphHolder> local_hold
     }
     else{
 
-        EraseLinesMid(mMovingBlue, iBeg + iShift,iEndBlue  + iShift, ui->grViewQuotes->scene());
-        EraseLinesMid(mMovingRed,  iBeg + iShift,iEndRed   + iShift, ui->grViewQuotes->scene());
-        EraseLinesMid(mMovingGreen,iBeg + iShift,iEndGreen + iShift, ui->grViewQuotes->scene());
+//        EraseLinesMid(mMovingBlue, iBeg + iShift,iEndBlue  + iShift, ui->grViewQuotes->scene());
+//        EraseLinesMid(mMovingRed,  iBeg + iShift,iEndRed   + iShift, ui->grViewQuotes->scene());
+//        EraseLinesMid(mMovingGreen,iBeg + iShift,iEndGreen + iShift, ui->grViewQuotes->scene());
+        EraseLinesLower(mMovingBlue,  iBeg    + iShift, ui->grViewQuotes->scene());
+        EraseLinesLower(mMovingRed,   iBeg     + iShift, ui->grViewQuotes->scene());
+        EraseLinesLower(mMovingGreen, iBeg   + iShift, ui->grViewQuotes->scene());
     }
     /////////////////////////////////////////////////////////////////
     std::stringstream ss;

@@ -24,7 +24,7 @@ struct RepainTask{
 
     typedef unsigned int Type_type;
 
-    enum eRepaintType:Type_type {InvalidateRepaint = 1, FastBars = 2, FastVolumes = 4, FastFrames = 8, PaintViewport = 16};
+    enum eRepaintType:Type_type {InvalidateRepaint = 1, FastBars = 2, FastVolumes = 4, FastFrames = 8, FastAverages = 16, PaintViewport = 32};
 
     RepainTask(){;}
     RepainTask(std::time_t Start,std::time_t End,bool NeedToRescale){
@@ -54,6 +54,7 @@ struct RepainTask{
         bNeedToRescale  = o.bNeedToRescale;
         bReplacementMode= o.bReplacementMode;
         bInvalidate     = o.bInvalidate;
+        bRecalculateAverages = o.bRecalculateAverages;
     }
 
     Type_type Type{eRepaintType::InvalidateRepaint};
@@ -65,6 +66,7 @@ struct RepainTask{
     int         iLetShift{0};
     bool        bReplacementMode{false};
     bool        bInvalidate{false};
+    bool        bRecalculateAverages{false};
 
     bool bStoreRightPos{false};
 
@@ -153,12 +155,12 @@ private:
     std::map<int,std::vector<BarGraphicsItem *>>    mShowedGraphicsBars;
     std::map<int,std::vector<QGraphicsItem *>>      mShowedVolumes;
 
-//    std::map<int,std::vector<QGraphicsItem *>>      mShowedMovingBlue;
-//    std::map<int,std::vector<QGraphicsItem *>>      mShowedMovingRed;
-//    std::map<int,std::vector<QGraphicsItem *>>      mShowedMovingGreen;
     std::map<int,QPointF>      mMovingBlue;
     std::map<int,QPointF>      mMovingRed;
     std::map<int,QPointF>      mMovingGreen;
+
+    std::chrono::time_point<std::chrono::steady_clock> dtFastShowAverageActivity;
+    std::set<int> stFastShowAverages;
 
     QGraphicsPathItem *pathBlue;
     QGraphicsPathItem *pathRed;
@@ -311,6 +313,9 @@ protected:
     bool FastLoadHolder(RepainTask &);
     bool FastPaintBars(RepainTask &);
     bool FastPaintFrames(RepainTask &);
+    bool FastPaintAverages(RepainTask &);
+
+    void checkFastShowAverages(int iStart, int iEnd);
 
     template<typename T>
     bool PaintBars       (std::shared_ptr<GraphHolder> holder, int iStart, int iEnd,

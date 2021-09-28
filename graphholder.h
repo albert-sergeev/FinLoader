@@ -259,14 +259,14 @@ public:
     template<typename T>
     const Graph<T>& getGraph(Bar::eInterval it) const;
 
-    bool CloneHolder(std::shared_ptr<GraphHolder>  &hlNew, const Bar::eInterval it, const size_t iStart,const size_t iEnd, const size_t LetShift);
+    bool CloneHolder(std::shared_ptr<GraphHolder>  &hlNew, const Bar::eInterval it, const size_t iStart,const size_t iEnd, const size_t LetShift,bool bRecalculateAverages);
 
 
     bool GetUsedMemory(std::size_t &iSize) const;
 
 protected:
 
-    bool BuildUpperList(std::time_t dtStart,std::time_t dtEnd, bool bCopyToDst,GraphHolder &grDest);
+    bool BuildUpperList(std::time_t dtStart,std::time_t dtEnd, bool bCopyToDst,GraphHolder &grDest,bool bRecalculateAverages);
 
 };
 //-----------------------------------------------------------------------------------------------------------------------------------

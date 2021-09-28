@@ -86,11 +86,11 @@ public:
             {if (/*i<0 ||*/ i>= vMovingGreen.size()) {throw std::out_of_range("");} return vMovingGreen[i];}
         else{return 0;}}
     //--------------------------------------------------------------------------------------------------------
-    bool AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,std::time_t dtEnd);
+    bool AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,std::time_t dtEnd,bool bRecalculateAverages = true);
     bool AddBarsListsFast(std::vector<T> &v, std::set<std::time_t>   & stHolderTimeSet,std::pair<std::time_t,std::time_t> &pairRange,Graph<T> &grDst);
 
     template<typename T_SRC>
-    bool BuildFromLowerList(Graph<T_SRC> &grSrc, std::time_t dtStart,std::time_t dtEnd,bool bCopyToDst,Graph<T> &grDst);
+    bool BuildFromLowerList(Graph<T_SRC> &grSrc, std::time_t dtStart,std::time_t dtEnd,bool bCopyToDst,Graph<T> &grDst,bool bRecalculateAverages);
 
     inline std::time_t GetDateMin() const  {return  vContainer.size()>0? vContainer.front().Period():0;};
     inline std::time_t GetDateMax() const  {return  vContainer.size()>0? vContainer.back().Period():0;};
@@ -111,7 +111,7 @@ public:
 
     std::size_t GetUsedMemory() const;
 
-    void CloneGraph(Graph<T> &grNew,const size_t Start, const size_t End, const size_t LetShift);
+    void CloneGraph(Graph<T> &grNew,const size_t Start, const size_t End, const size_t LetShift,bool bRecalculateAverages);
     bool shrink_extras_left(std::time_t dtEnd);
     //
 private:
@@ -130,7 +130,7 @@ private:
 //------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------
 template<typename T>
-bool Graph<T>::AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,std::time_t dtEnd)
+bool Graph<T>::AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,std::time_t dtEnd, bool bRecalculateAverages)
 {
 
     ///
@@ -278,10 +278,18 @@ bool Graph<T>::AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,s
     }
     //////////////////////////////////////////////////////////////////////////
     if constexpr (std::is_same_v<T, Bar>){
-        if (vContainer.size() + 8 >  vMovingBlue.size())    vMovingBlue.resize  (vContainer.size() + 8);
-        if (vContainer.size() + 5 >  vMovingRed.size())     vMovingRed.resize   (vContainer.size() + 5);
-        if (vContainer.size() + 3 >  vMovingGreen.size())   vMovingGreen.resize (vContainer.size() + 3);
-        calculateMovingAverages(iStart);
+        if (vContainer.size() + 10 > vMovingBlue.capacity()){
+            vMovingBlue.reserve(vContainer.size() + 100);
+            vMovingRed.reserve(vContainer.size() + 100);
+            vMovingGreen.reserve(vContainer.size() + 100);
+        }
+
+        if (bRecalculateAverages){
+            if (vContainer.size() + 8 >  vMovingBlue.size())    vMovingBlue.resize  (vContainer.size() + 8);
+            if (vContainer.size() + 5 >  vMovingRed.size())     vMovingRed.resize   (vContainer.size() + 5);
+            if (vContainer.size() + 3 >  vMovingGreen.size())   vMovingGreen.resize (vContainer.size() + 3);
+            calculateMovingAverages(iStart);
+        }
     }
     //////////////////////////////////////////////////////////////////////////
     return true;;
@@ -515,11 +523,13 @@ bool Graph<T>::AddBarsListsFast(std::vector<T>                      &vV,
     }
 
     //////////////////////////////////////////////////////////////////////////
-    if constexpr (std::is_same_v<T, Bar>){
-        if (vContainer.size() + 8 >  vMovingBlue.size())    vMovingBlue.resize  (vContainer.size() + 8);
-        if (vContainer.size() + 5 >  vMovingRed.size())     vMovingRed.resize   (vContainer.size() + 5);
-        if (vContainer.size() + 3 >  vMovingGreen.size())   vMovingGreen.resize (vContainer.size() + 3);
-        calculateMovingAverages(iStart);
+    if constexpr (std::is_same_v<T, Bar>){ // never!!!
+//        if (vContainer.size() + 8 >  vMovingBlue.size())    vMovingBlue.resize  (vContainer.size() + 8);
+//        if (vContainer.size() + 5 >  vMovingRed.size())     vMovingRed.resize   (vContainer.size() + 5);
+//        if (vContainer.size() + 3 >  vMovingGreen.size())   vMovingGreen.resize (vContainer.size() + 3);
+//        //calculateMovingAverages(iStart);
+//        size_t iRecalc = iStart >= 8 ? iStart - 8: 0;
+//        calculateMovingAverages(iRecalc);
     }
     //////////////////////////////////////////////////////////////////////////
     return true;
@@ -597,7 +607,7 @@ size_t Graph<T>::GetMoreThenIndex(std::vector<T> & v, std::time_t tT)
 }
 //------------------------------------------------------------------------------------------------------------
 template<typename T>
-void Graph<T>::CloneGraph(Graph<T> &grNew,const size_t Start, const size_t End, const size_t LetShift)
+void Graph<T>::CloneGraph(Graph<T> &grNew,const size_t Start, const size_t End, const size_t LetShift,bool bRecalculateAverages)
 {
     grNew.clear();
     size_t iBeg = Start > LetShift ? Start - LetShift : 0;
@@ -617,29 +627,43 @@ void Graph<T>::CloneGraph(Graph<T> &grNew,const size_t Start, const size_t End, 
 
     ////////////////////////////////////////////////////////////////////
     if constexpr (std::is_same_v<T, Bar>){
-        auto ItBlueBeg(std::next(vMovingBlue.begin(),iBeg));
-        auto ItBlueEnd(vMovingBlue.end());
-        if(End < vMovingBlue.size()-1){
-            ItBlueEnd = std::next(vMovingBlue.begin(),End + 1);
+        if (bRecalculateAverages){
+            if (vContainer.size() + 8 >  vMovingBlue.size())    vMovingBlue.resize  (vContainer.size() + 8);
+            if (vContainer.size() + 5 >  vMovingRed.size())     vMovingRed.resize   (vContainer.size() + 5);
+            if (vContainer.size() + 3 >  vMovingGreen.size())   vMovingGreen.resize (vContainer.size() + 3);
+            calculateMovingAverages(iBeg);
         }
-        grNew.vMovingBlue.reserve(std::distance(ItBlueBeg,ItBlueEnd));
-        std::copy(ItBlueBeg,ItBlueEnd,std::back_inserter(grNew.vMovingBlue));
+
         //////////////////////////////////
-        auto ItRedBeg(std::next(vMovingRed.begin(),iBeg));
-        auto ItRedEnd(vMovingRed.end());
-        if(End < vMovingRed.size()-1){
-            ItRedEnd = std::next(vMovingRed.begin(),End + 1);
+        if (vMovingBlue.size() > iBeg){
+            auto ItBlueBeg(std::next(vMovingBlue.begin(),iBeg));
+            auto ItBlueEnd(vMovingBlue.end());
+            if(End < vMovingBlue.size()-1){
+                ItBlueEnd = std::next(vMovingBlue.begin(),End + 1);
+            }
+            grNew.vMovingBlue.reserve(std::distance(ItBlueBeg,ItBlueEnd));
+            std::copy(ItBlueBeg,ItBlueEnd,std::back_inserter(grNew.vMovingBlue));
         }
-        grNew.vMovingRed.reserve(std::distance(ItRedBeg,ItRedEnd));
-        std::copy(ItRedBeg,ItRedEnd,std::back_inserter(grNew.vMovingRed));
         //////////////////////////////////
-        auto ItGreenBeg(std::next(vMovingGreen.begin(),iBeg));
-        auto ItGreenEnd(vMovingGreen.end());
-        if(End < vMovingGreen.size()-1){
-            ItGreenEnd = std::next(vMovingGreen.begin(),End + 1);
+        if (vMovingRed.size() > iBeg){
+            auto ItRedBeg(std::next(vMovingRed.begin(),iBeg));
+            auto ItRedEnd(vMovingRed.end());
+            if(End < vMovingRed.size()-1){
+                ItRedEnd = std::next(vMovingRed.begin(),End + 1);
+            }
+            grNew.vMovingRed.reserve(std::distance(ItRedBeg,ItRedEnd));
+            std::copy(ItRedBeg,ItRedEnd,std::back_inserter(grNew.vMovingRed));
         }
-        grNew.vMovingGreen.reserve(std::distance(ItGreenBeg,ItGreenEnd));
-        std::copy(ItGreenBeg,ItGreenEnd,std::back_inserter(grNew.vMovingGreen));
+        //////////////////////////////////
+        if (vMovingGreen.size() > iBeg){
+            auto ItGreenBeg(std::next(vMovingGreen.begin(),iBeg));
+            auto ItGreenEnd(vMovingGreen.end());
+            if(End < vMovingGreen.size()-1){
+                ItGreenEnd = std::next(vMovingGreen.begin(),End + 1);
+            }
+            grNew.vMovingGreen.reserve(std::distance(ItGreenBeg,ItGreenEnd));
+            std::copy(ItGreenBeg,ItGreenEnd,std::back_inserter(grNew.vMovingGreen));
+        }
     }
     ////////////////////////////////////////////////////////////////////
 }
@@ -727,7 +751,7 @@ bool Graph<T>::shrink_extras_left(std::time_t dtEnd)
 template<typename T> template<typename T_SRC>
 //bool Graph<T>::BuildFromLowerList(Graph<BarTick> &grSrc, std::time_t dtStart,std::time_t dtEnd)
 bool Graph<T>::BuildFromLowerList(Graph<T_SRC> &grSrc, std::time_t dtStart,std::time_t dtEnd,
-                                  bool bCopyToDst,Graph<T> &grDst)
+                                  bool bCopyToDst,Graph<T> &grDst,bool bRecalculateAverages)
 {
 
 
@@ -807,7 +831,7 @@ bool Graph<T>::BuildFromLowerList(Graph<T_SRC> &grSrc, std::time_t dtStart,std::
 
     }
     /////
-    bool bRes = AddBarsList(v,dtAccStart,dtAccEndLower);
+    bool bRes = AddBarsList(v,dtAccStart,dtAccEndLower,bRecalculateAverages);
     size_t iStart{vContainer.size()};
 
     if(bCopyToDst){
@@ -816,18 +840,48 @@ bool Graph<T>::BuildFromLowerList(Graph<T_SRC> &grSrc, std::time_t dtStart,std::
         auto It (mDictionary.lower_bound(dtAccStart));
         if(It != mDictionary.end()){
             grDst.iShiftIndex = It->second;
-            iStart = It->second;
         }
         else{
             grDst.iShiftIndex = vContainer.size();
         }
+        iStart = grDst.iShiftIndex;
     }
     //////////////////////////////////////////////////////////////////////////
     if constexpr (std::is_same_v<T, Bar>){
-        if (vContainer.size() + 8 >  vMovingBlue.size())    vMovingBlue.resize  (vContainer.size() + 8);
-        if (vContainer.size() + 5 >  vMovingRed.size())     vMovingRed.resize   (vContainer.size() + 5);
-        if (vContainer.size() + 3 >  vMovingGreen.size())   vMovingGreen.resize (vContainer.size() + 3);
-        calculateMovingAverages(iStart);
+//        if (vContainer.size() + 8 >  vMovingBlue.size())    vMovingBlue.resize  (vContainer.size() + 8);
+//        if (vContainer.size() + 5 >  vMovingRed.size())     vMovingRed.resize   (vContainer.size() + 5);
+//        if (vContainer.size() + 3 >  vMovingGreen.size())   vMovingGreen.resize (vContainer.size() + 3);
+//        size_t iRecalc = iStart >= 8 ? iStart - 8: 0;
+//        calculateMovingAverages(iRecalc);
+
+        if(bCopyToDst){
+            if (vMovingBlue.size() > iStart){
+                auto ItBlueBeg(std::next(vMovingBlue.begin(),iStart));
+                auto ItBlueEnd(vMovingBlue.end());
+                grDst.vMovingBlue.clear();
+
+                grDst.vMovingBlue.reserve(std::distance(ItBlueBeg,ItBlueEnd));
+                std::copy(ItBlueBeg,ItBlueEnd,std::back_inserter(grDst.vMovingBlue));
+            }
+            //////////////////////////////////
+            if (vMovingRed.size() > iStart){
+                auto ItRedBeg(std::next(vMovingRed.begin(),iStart));
+                auto ItRedEnd(vMovingRed.end());
+                grDst.vMovingRed.clear();
+
+                grDst.vMovingRed.reserve(std::distance(ItRedBeg,ItRedEnd));
+                std::copy(ItRedBeg,ItRedEnd,std::back_inserter(grDst.vMovingRed));
+            }
+            //////////////////////////////////
+            if (vMovingGreen.size() > iStart){
+                auto ItGreenBeg(std::next(vMovingGreen.begin(),iStart));
+                auto ItGreenEnd(vMovingGreen.end());
+                grDst.vMovingGreen.clear();
+
+                grDst.vMovingGreen.reserve(std::distance(ItGreenBeg,ItGreenEnd));
+                std::copy(ItGreenBeg,ItGreenEnd,std::back_inserter(grDst.vMovingGreen));
+            }
+        }
     }
     //////////////////////////////////////////////////////////////////////////
 
@@ -859,7 +913,7 @@ void Graph<T>::calculateMovingAverages(size_t iStart)
         double dGreenLeft{0};
         //------------------------------------------
 
-        if(iStart > 0 && iStart + 8 < vMovingBlue.size() && vMovingBlue[iStart + 8] == 0){
+        if(/*iStart >= 0 &&*/ iStart + 8 < vMovingBlue.size() && vMovingBlue[iStart + 8] != 0){
             dBlueLeft   = vMovingBlue[iStart + 8];
             dRedLeft    = vMovingRed[iStart + 5];
             dGreenLeft  = vMovingGreen[iStart + 3];
@@ -872,17 +926,17 @@ void Graph<T>::calculateMovingAverages(size_t iStart)
         //------------------------------------------
         iStart++;
         //------------------------------------------
-        for (size_t i = iStart; i < vMovingBlue.size() - 8; ++i){
+        for (size_t i = iStart; i < vMovingBlue.size() - 8 && i < vContainer.size(); ++i){
             vMovingBlue[i + 8] = dBlueLeft * (1 - dBluePeriod) + dBluePeriod * (vContainer[i].High() + vContainer[i].Low())/2.0;
             dBlueLeft = vMovingBlue[i + 8];
         }
         //--
-        for (size_t i = iStart; i < vMovingRed.size() - 5; ++i){
+        for (size_t i = iStart; i < vMovingRed.size() - 5 && i < vContainer.size(); ++i){
             vMovingRed[i + 5] = dRedLeft * (1 - dRedPeriod) + dRedPeriod * (vContainer[i].High() + vContainer[i].Low())/2.0;
             dRedLeft = vMovingRed[i + 5];
         }
         //--
-        for (size_t i = iStart; i < vMovingGreen.size() - 3; ++i){
+        for (size_t i = iStart; i < vMovingGreen.size() - 3 && i < vContainer.size(); ++i){
             vMovingGreen[i + 3] = dGreenLeft * (1 - dGreenPeriod) + dGreenPeriod * (vContainer[i].High() + vContainer[i].Low())/2.0;
             dGreenLeft = vMovingGreen[i + 3];
         }
