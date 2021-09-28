@@ -280,6 +280,78 @@ bool GraphHolder::GetUsedMemory(std::size_t &iSize) const
     }
 }
 //------------------------------------------------------------------------------------------------------
+const double GraphHolder::getMovingBlueByIndex(const Bar::eInterval it,const size_t indx) const
+{
+    if(it == Bar::eInterval::pTick){
+        std::stringstream ss;
+        ss <<"getMovingBlueByIndex invalid argument. Wrong interval: {"<< it<<"}";
+        throw std::invalid_argument(ss.str());
+    }
+    else{
+        return  mpGraphs.at(it).movingBlue(indx);
+    }
+}
+//------------------------------------------------------------------------------------------------------
+const double GraphHolder::getMovingRedByIndex(const Bar::eInterval it,const size_t indx) const
+{
+    if(it == Bar::eInterval::pTick){
+        std::stringstream ss;
+        ss <<"getMovingRedByIndex invalid argument. Wrong interval: {"<< it<<"}";
+        throw std::invalid_argument(ss.str());
+    }
+    else{
+        return  mpGraphs.at(it).movingRed(indx);
+    }
+}
+//------------------------------------------------------------------------------------------------------
+const double GraphHolder::getMovingGreenByIndex(const Bar::eInterval it,const size_t indx) const
+{
+    if(it == Bar::eInterval::pTick){
+        std::stringstream ss;
+        ss <<"getMovingGreenByIndex invalid argument. Wrong interval: {"<< it <<"}";
+        throw std::invalid_argument(ss.str());
+    }
+    else{
+        return  mpGraphs.at(it).movingGreen(indx);
+    }
+}
+//------------------------------------------------------------------------------------------------------
+const double GraphHolder::getMovingBlueSize(const Bar::eInterval it) const
+{
+    if(it == Bar::eInterval::pTick){
+        std::stringstream ss;
+        ss <<"getMovingBlueByIndex invalid argument. Wrong interval: {"<< it<<"}";
+        throw std::invalid_argument(ss.str());
+    }
+    else{
+        return  mpGraphs.at(it).getMovingBlueSize();
+    }
+}
+//------------------------------------------------------------------------------------------------------
+const double GraphHolder::getMovingRedSize(const Bar::eInterval it) const
+{
+    if(it == Bar::eInterval::pTick){
+        std::stringstream ss;
+        ss <<"getMovingBlueByIndex invalid argument. Wrong interval: {"<< it<<"}";
+        throw std::invalid_argument(ss.str());
+    }
+    else{
+        return  mpGraphs.at(it).getMovingRedSize();
+    }
+}
+//------------------------------------------------------------------------------------------------------
+const double GraphHolder::getMovingGreenSize(const Bar::eInterval it) const
+{
+    if(it == Bar::eInterval::pTick){
+        std::stringstream ss;
+        ss <<"getMovingBlueByIndex invalid argument. Wrong interval: {"<< it<<"}";
+        throw std::invalid_argument(ss.str());
+    }
+    else{
+        return  mpGraphs.at(it).getMovingGreenSize();
+    }
+}
+//------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------
 

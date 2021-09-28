@@ -153,6 +153,17 @@ private:
     std::map<int,std::vector<BarGraphicsItem *>>    mShowedGraphicsBars;
     std::map<int,std::vector<QGraphicsItem *>>      mShowedVolumes;
 
+//    std::map<int,std::vector<QGraphicsItem *>>      mShowedMovingBlue;
+//    std::map<int,std::vector<QGraphicsItem *>>      mShowedMovingRed;
+//    std::map<int,std::vector<QGraphicsItem *>>      mShowedMovingGreen;
+    std::map<int,QPointF>      mMovingBlue;
+    std::map<int,QPointF>      mMovingRed;
+    std::map<int,QPointF>      mMovingGreen;
+
+    QGraphicsPathItem *pathBlue;
+    QGraphicsPathItem *pathRed;
+    QGraphicsPathItem *pathGreen;
+
     std::map<int,std::vector<QGraphicsItem *>>      mVFramesViewQuotes;
     std::map<int,std::vector<QGraphicsItem *>>      mVFramesScaleUpper;
     std::map<int,std::vector<QGraphicsItem *>>      mVFramesVolume;
@@ -306,6 +317,10 @@ protected:
                                     bool bPaintBars, bool bPaintVolumes,
                                     bool bStoreRightPos, bool bReplacementMode);
 
+    bool PaintMovingAverages (std::shared_ptr<GraphHolder> local_holder,
+                                                int iStartI, int iEndI,
+                                                bool bReplacementMode);
+
     bool PaintHorizontalScales       ();
     bool PaintHorizontalFrames       ();
     bool PaintVerticalSideScales     ();
@@ -325,10 +340,10 @@ protected:
     template<typename T>
     void EraseLinesMid(T& mM, int iStart,int iEnd, QGraphicsScene *);
 
-
     void Erase();
     void EraseTimeScale();
     void EraseBars();
+    void EraseMovingAverages();
     void EraseVolumes();
     void EraseFrames();
 
@@ -357,6 +372,14 @@ protected:
                                         std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QFont & font, const qreal zvalue = 0);
     void DrawDoubleToScene(const int idx,const  qreal x ,const  qreal y,const double n, Qt::AlignmentFlag alignH, Qt::AlignmentFlag alignV,
                            std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QFont & font, const qreal zvalue = 0);
+
+    //-----------------------------------------------------------------------------------------------
+    // curve line functions
+
+    float distance(const QPointF& pt1, const QPointF& pt2);
+    QPointF getLineStart(const QPointF& pt1, const QPointF& pt2);
+    QPointF getLineEnd(const QPointF& pt1, const QPointF& pt2);
+    QPainterPath smoothOut(const std::map<int,QPointF> &map, const float& factor);
 
     //-----------------------------------------------------------------------------------------------
     // utility functions

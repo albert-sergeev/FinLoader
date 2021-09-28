@@ -21,6 +21,9 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
     iTickerID{TickerID},
     tTicker{0,"","",1},
     vTickersLst{v},
+    pathBlue{nullptr},
+    pathRed{nullptr},
+    pathGreen{nullptr},
     aiInvalidateCounter{0},
     defInit{aiInvalidateCounter},
     tStoredRightPointPosition{0},
@@ -521,12 +524,6 @@ bool GraphViewForm::RepainInvalidRange(RepainTask & data)
             PaintViewPort   (true,true,true, false,true);
         }
     }
-    {
-        if (!bSuccess){
-            ThreadFreeCout pcout;
-            pcout <<"!invalidate {"<<tTicker.TickerSign()<<"}\n";
-        }
-    }
     return bSuccess;
 }
 
@@ -834,6 +831,11 @@ void GraphViewForm::EraseLinesMid(T& mM, int iStart,int iEnd, QGraphicsScene *sc
         auto ItEnd  (mM.upper_bound(iEnd));
         mM.erase(It,ItEnd);
     }
+    else if constexpr (std::is_same_v<T, std::map<int,QPointF>>){
+        auto It     (mM.lower_bound(iStart));
+        auto ItEnd  (mM.upper_bound(iEnd));
+        mM.erase(It,ItEnd);
+    }
     else{
         auto It     (mM.lower_bound(iStart));
         auto ItCp   (It);
@@ -860,6 +862,10 @@ void GraphViewForm::EraseLinesLower(T& mM, int iStart, QGraphicsScene * scene)
         auto It (mM.lower_bound(iStart));
         mM.erase(It,mM.end());
     }
+    else if constexpr (std::is_same_v<T, std::map<int,QPointF>>){
+        auto It (mM.lower_bound(iStart));
+        mM.erase(It,mM.end());
+    }
     else{
         auto It (mM.lower_bound(iStart));
         if (It == mM.end()) return;
@@ -882,6 +888,10 @@ void GraphViewForm::EraseLinesUpper(T& mM, int iEnd, QGraphicsScene *scene)
 //void GraphViewForm::EraseLinesUpper(std::map<int,std::vector<QGraphicsItem *>>& mM, int iEnd, QGraphicsScene *scene)
 {
     if constexpr (std::is_same_v<T, std::map<int,std::pair<std::time_t,bool>>>){
+        auto ItEnd (mM.upper_bound(iEnd));
+        mM.erase(mM.begin(),ItEnd);
+    }
+    else if constexpr (std::is_same_v<T, std::map<int,QPointF>>){
         auto ItEnd (mM.upper_bound(iEnd));
         mM.erase(mM.begin(),ItEnd);
     }
@@ -1022,6 +1032,7 @@ void GraphViewForm::Erase()
 {
     EraseFrames();
     EraseBars();
+    EraseMovingAverages();
     EraseVolumes();
     EraseTimeScale();
 }
@@ -1033,6 +1044,13 @@ void GraphViewForm::EraseTimeScale(){
 void GraphViewForm::EraseBars()
 {
     EraseLinesLower(mShowedGraphicsBars,  0, ui->grViewQuotes->scene());
+}
+//---------------------------------------------------------------------------------------------------------------
+void GraphViewForm::EraseMovingAverages()
+{
+    mMovingBlue.clear();
+    mMovingRed.clear();
+    mMovingGreen.clear();
 }
 //---------------------------------------------------------------------------------------------------------------
 void GraphViewForm::EraseVolumes()
@@ -1365,12 +1383,18 @@ void GraphViewForm::slotPeriodButtonChanged()
      bool bPaintVolumes = (data.Type & RepainTask::eRepaintType::FastVolumes) > 0 ? true: false;
 
 
+     bool bSuccess {false};
      if (iSelectedInterval == Bar::eInterval::pTick){
-         return PaintBars<BarTick>(data.holder, data.iStart, data.iEnd , bPaintBars, bPaintVolumes, data.bStoreRightPos,data.bReplacementMode);
+         bSuccess = PaintBars<BarTick>(data.holder, data.iStart, data.iEnd , bPaintBars, bPaintVolumes, data.bStoreRightPos,data.bReplacementMode);
      }
      else{
-         return PaintBars<Bar>(data.holder, data.iStart, data.iEnd , bPaintBars, bPaintVolumes, data.bStoreRightPos,data.bReplacementMode);
+         bSuccess = PaintBars<Bar>(data.holder, data.iStart, data.iEnd , bPaintBars, bPaintVolumes, data.bStoreRightPos,data.bReplacementMode);
      }
+     /////
+     if (bSuccess){
+         bSuccess = PaintMovingAverages (data.holder, data.iStart, data.iEnd,data.bReplacementMode);
+     }
+     return bSuccess;
  }
  //---------------------------------------------------------------------------------------------------------------
  bool GraphViewForm::FastLoadHolder(RepainTask &data)
@@ -2484,5 +2508,190 @@ void GraphViewForm::slotShowHelpButtonsChanged(bool b)
 {
     btnHelp->setVisible(b);
     btnHelpR->setVisible(b);
+}
+//---------------------------------------------------------------------------------------------------------------
+bool GraphViewForm::PaintMovingAverages (std::shared_ptr<GraphHolder> local_holder,
+                                            int iStartI, int iEndI,
+                                            bool bReplacementMode)
+{
+    if (iSelectedInterval == Bar::eInterval::pTick) return true;
+    //
+    InvalidateCounterDefender def(aiInvalidateCounter);
+//    {
+//         ThreadFreeCout pcout;
+//         pcout << "PaintMovings <"<<iStartI<<":"<<iEndI<<">\n";
+//    }
+    /////////////////////////////////////////////////////////////////////////////////////////
+    if (!local_holder) return true;
+    bool bSuccess;
+    auto ItDefender = local_holder->beginIteratorByDate<Bar>(iSelectedInterval,0,bSuccess);
+    if (!bSuccess) return false;
+    //
+    int iMaxBlueSize = (int)local_holder->getMovingBlueSize(iSelectedInterval);
+    int iMaxRedSize = (int)local_holder->getMovingRedSize(iSelectedInterval);
+    int iMaxGreenSize = (int)local_holder->getMovingGreenSize(iSelectedInterval);
+
+//    {
+//         ThreadFreeCout pcout;
+//         pcout << "iMaxBlueSize: "<<iMaxBlueSize<<"\n";
+//         pcout << "iMaxRedSize: "<<iMaxRedSize<<"\n";
+//         pcout << "iMaxGreenSize: "<<iMaxGreenSize<<"\n";
+//    }
+
+
+    const Graph<Bar>& graph = local_holder->getGraph<Bar>(iSelectedInterval);
+    const int iShift {(int)graph.GetShiftIndex()};
+    /////////////////////////////////////////////////////////////////////////////////////////
+
+    int iBeg     = iStartI - iShift - 1 >= 0    ? iStartI - iShift - 1 : 0 ;
+
+
+    int iEndBlue =  iEndI >= 0               ? iEndI             : 0 ;
+    int iEndRed     {iEndBlue};
+    int iEndGreen   {iEndBlue};
+
+    iEndBlue     = iEndBlue  - iShift < iMaxBlueSize  ? iEndBlue  - iShift     : iMaxBlueSize  - 1;
+    iEndRed      = iEndRed   - iShift < iMaxRedSize   ? iEndRed   - iShift     : iMaxRedSize   - 1;
+    iEndGreen    = iEndGreen - iShift < iMaxGreenSize ? iEndGreen - iShift     : iMaxGreenSize - 1;
+
+    /////////////////////////////////////////////////////////////////
+
+//    mMovingBlue;
+//    mMovingRed;
+//    mMovingGreen;
+
+    if (!bReplacementMode)
+    {
+        EraseLinesUpper(mMovingBlue,  iBeg        + iShift, ui->grViewQuotes->scene());
+        EraseLinesLower(mMovingBlue,  iEndBlue    + iShift, ui->grViewQuotes->scene());
+
+        EraseLinesUpper(mMovingRed,   iBeg        + iShift, ui->grViewQuotes->scene());
+        EraseLinesLower(mMovingRed,   iEndRed     + iShift, ui->grViewQuotes->scene());
+
+        EraseLinesUpper(mMovingGreen, iBeg        + iShift, ui->grViewQuotes->scene());
+        EraseLinesLower(mMovingGreen, iEndGreen   + iShift, ui->grViewQuotes->scene());
+    }
+    else{
+
+        EraseLinesMid(mMovingBlue, iBeg + iShift,iEndBlue  + iShift, ui->grViewQuotes->scene());
+        EraseLinesMid(mMovingRed,  iBeg + iShift,iEndRed   + iShift, ui->grViewQuotes->scene());
+        EraseLinesMid(mMovingGreen,iBeg + iShift,iEndGreen + iShift, ui->grViewQuotes->scene());
+    }
+    /////////////////////////////////////////////////////////////////
+    std::stringstream ss;
+    QPen bluePen(Qt::blue,1,Qt::SolidLine);
+    QPen redPen(Qt::red,1,Qt::SolidLine);
+    QPen greenPen(Qt::green,1,Qt::SolidLine);
+
+    double dCurr{0};
+    qreal xCur{0};
+
+    /////////////////////////////////////////////////////////////////
+    for (int i = iBeg ; i <= iEndBlue; ++i){
+        auto ItFound = mMovingBlue.find(i + iShift);
+        if (ItFound == mMovingBlue.end())
+        {
+            xCur = (i + iShift + iLeftShift)     * BarGraphicsItem::BarWidth * dHScale;
+            dCurr = local_holder->getMovingBlueByIndex(iSelectedInterval,i);
+            if (dCurr > 0){
+                mMovingBlue[i + iShift] = {xCur,-realYtoSceneY(dCurr)};
+            }
+        }
+    }
+    /////////////////////////////////////////////////////////////////
+    for (int i = iBeg ; i <= iEndRed; ++i){
+        auto ItFound = mMovingRed.find(i + iShift);
+        if (ItFound == mMovingRed.end())
+        {
+            xCur = (i + iShift + iLeftShift)     * BarGraphicsItem::BarWidth * dHScale;
+            dCurr = local_holder->getMovingRedByIndex(iSelectedInterval,i);
+            if (dCurr > 0){
+                mMovingRed[i + iShift] = {xCur,-realYtoSceneY(dCurr)};
+            }
+        }
+    }
+    /////////////////////////////////////////////////////////////////
+    for (int i = iBeg ; i <= iEndGreen; ++i){
+        auto ItFound = mMovingGreen.find(i + iShift);
+        if (ItFound == mMovingGreen.end())
+        {
+            xCur = (i + iShift + iLeftShift)     * BarGraphicsItem::BarWidth * dHScale;
+            dCurr = local_holder->getMovingGreenByIndex(iSelectedInterval,i);
+            if (dCurr > 0){
+                mMovingGreen[i + iShift] = {xCur,-realYtoSceneY(dCurr)};
+            }
+        }
+    }
+    /////////////////////////////////////////////////////////////////
+
+    if (pathBlue)   grScene->removeItem(pathBlue);
+    if (pathRed)    grScene->removeItem(pathRed);
+    if (pathGreen)  grScene->removeItem(pathGreen);
+
+    QPainterPath blue   = smoothOut(mMovingBlue, 3);
+    QPainterPath red    = smoothOut(mMovingRed, 3);
+    QPainterPath green  = smoothOut(mMovingGreen, 3);
+
+    pathBlue    = grScene->addPath(blue,bluePen);
+    pathRed     = grScene->addPath(red,redPen);
+    pathGreen   = grScene->addPath(green,greenPen);
+
+
+    /////////////////////////////////////////////////////////////////
+    return true;
+}
+//---------------------------------------------------------------------------------------------------------------
+float GraphViewForm::distance(const QPointF& pt1, const QPointF& pt2)
+{
+    float hd = (pt1.x() - pt2.x()) * (pt1.x() - pt2.x());
+    float vd = (pt1.y() - pt2.y()) * (pt1.y() - pt2.y());
+    return std::sqrt(hd + vd);
+}
+//---------------------------------------------------------------------------------------------------------------
+QPointF GraphViewForm::getLineStart(const QPointF& pt1, const QPointF& pt2)
+{
+    QPointF pt;
+    float rat = 10.0 / distance(pt1, pt2);
+    if (rat > 0.5) {
+        rat = 0.5;
+    }
+    pt.setX((1.0 - rat) * pt1.x() + rat * pt2.x());
+    pt.setY((1.0 - rat) * pt1.y() + rat * pt2.y());
+    return pt;
+}
+//---------------------------------------------------------------------------------------------------------------
+QPointF GraphViewForm::getLineEnd(const QPointF& pt1, const QPointF& pt2)
+{
+    QPointF pt;
+    float rat = 10.0 / distance(pt1, pt2);
+    if (rat > 0.5) {
+        rat = 0.5;
+    }
+    pt.setX(rat * pt1.x() + (1.0 - rat)*pt2.x());
+    pt.setY(rat * pt1.y() + (1.0 - rat)*pt2.y());
+    return pt;
+}
+//---------------------------------------------------------------------------------------------------------------
+QPainterPath GraphViewForm::smoothOut(const std::map<int,QPointF> &map, const float& /*factor*/)
+{
+    QPainterPath path;
+    if (map.size() < 3) {
+        return path;
+    }
+
+    QPointF pt1;
+    QPointF pt2;
+
+    for (int i = 0; i < (int)map.size() - 1; i++) {
+        pt1 = getLineStart(map.at(i), map.at(i + 1));
+        if (i == 0) {
+            path.moveTo(pt1);
+        } else {
+            path.quadTo(map.at(i), pt1);
+        }
+        pt2 = getLineEnd(map.at(i), map.at(i + 1));
+        path.lineTo(pt2);
+    }
+    return path;
 }
 //---------------------------------------------------------------------------------------------------------------

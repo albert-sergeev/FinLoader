@@ -215,6 +215,15 @@ public:
     std::time_t getTimeByIndex(const Bar::eInterval it,const size_t indx);
     template<typename T>
     T & getByIndex(const Bar::eInterval it,const size_t indx);
+
+    const double getMovingBlueByIndex(const Bar::eInterval it,const size_t indx) const;
+    const double getMovingRedByIndex(const Bar::eInterval it,const size_t indx) const;
+    const double getMovingGreenByIndex(const Bar::eInterval it,const size_t indx) const;
+
+    const double getMovingBlueSize(const Bar::eInterval it) const;
+    const double getMovingRedSize(const Bar::eInterval it) const;
+    const double getMovingGreenSize(const Bar::eInterval it) const;
+
     //------------------------------------------------------------
 
 
