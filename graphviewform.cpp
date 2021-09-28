@@ -359,7 +359,11 @@ bool GraphViewForm::RepainInvalidRange(RepainTask & data)
     if (bSuccess){
         auto ItEnd (holder->beginIteratorByDate<T>(iSelectedInterval,Bar::DateAccommodate(data.dtEnd,iSelectedInterval),bSuccess));
         if (bSuccess){
-            {   ThreadFreeCout pcout; pcout <<"do invalidate {"<<data.Type<<"}\n";
+            {
+                ThreadFreeCout pcout;
+                pcout <<"do invalidate {"<<data.Type<<"} ";
+                pcout <<"sign {"<<tTicker.TickerSign()<<"}\n";
+
 
 //                pcout <<"data.dtStart: "<<threadfree_gmtime_to_str(&data.dtStart)<<"\n";
 //                pcout <<"data.dtEnd: "<<threadfree_gmtime_to_str(&data.dtEnd)<<"\n";
@@ -515,6 +519,12 @@ bool GraphViewForm::RepainInvalidRange(RepainTask & data)
                 SetSliderToVertPos(dStoredVValue);
             }
             PaintViewPort   (true,true,true, false,true);
+        }
+    }
+    {
+        if (!bSuccess){
+            ThreadFreeCout pcout;
+            pcout <<"!invalidate {"<<tTicker.TickerSign()<<"}\n";
         }
     }
     return bSuccess;
@@ -1296,7 +1306,7 @@ void GraphViewForm::slotPeriodButtonChanged()
              task.Type |= RepainTask::eRepaintType::FastVolumes;
          }
 
-         if (bBars || bVolumes){
+         if (bBars || bVolumes || bFrames){
 
              task.iLetShift = 100;
              queueRepaint.Push(task);
@@ -2156,16 +2166,17 @@ std::pair<int,int> GraphViewForm::getViewPortRangeToHolder()
      int iBeg = ui->grViewQuotes->horizontalScrollBar()->value();
      int iEnd = iBeg + ui->grViewQuotes->horizontalScrollBar()->pageStep();
 
-     if (ui->grViewQuotes->horizontalScrollBar()->maximum() > 0 ) { // if slider range was espanded
-         iBeg = ((iBeg/dHScale)/(double)BarGraphicsItem::BarWidth);
-         iEnd = ((iEnd/dHScale)/(double)BarGraphicsItem::BarWidth);
+     QRectF rS = ui->grViewQuotes->scene()->sceneRect();
+
+     if (ui->grViewQuotes->horizontalScrollBar()->maximum() > rS.width() ) { // if slider range was expanded and exceeds viewport
+
+         iBeg = ((((double)iBeg)/dHScale)/(double)BarGraphicsItem::BarWidth);
+         iEnd = ((((double)iEnd)/dHScale)/(double)BarGraphicsItem::BarWidth);
 
          iBeg = iBeg - iLeftShift;
          iEnd = iEnd - iLeftShift;
      }
      else{
-         QRectF rS = ui->grViewQuotes->scene()->sceneRect();
-
          iBeg = -iLeftShift;
          iEnd = ((rS.width()/dHScale)/(double)BarGraphicsItem::BarWidth) - iLeftShift;
      }
