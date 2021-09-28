@@ -335,6 +335,12 @@ void GraphViewForm::slotProcessRepaintQueue()
                 bSuccess = RepainInvalidRange<Bar>(data);
             }
         }
+        else if (bSuccess && data.Type & RepainTask::eRepaintType::PaintViewport){
+            bool bFrames    = data.Type & RepainTask::eRepaintType::FastFrames;
+            bool bBars      = data.Type & RepainTask::eRepaintType::FastBars;
+            bool bVolumes   = data.Type & RepainTask::eRepaintType::FastVolumes;
+            bSuccess = PaintViewPort(bFrames,bBars,bVolumes,data.bStoreRightPos,data.bInvalidate);
+        }
         else{
             if(bSuccess && (data.Type &(RepainTask::eRepaintType::FastBars | RepainTask::eRepaintType::FastVolumes))){
                 bSuccess = FastPaintBars(data);
@@ -970,6 +976,7 @@ void GraphViewForm::slotVScaleQuotesClicked(bool bPlus)
 
         EraseFrames();
         EraseBars();
+        EraseMovingAverages();
         RefreshHLines();
 
         ui->grViewL1->scene()->invalidate(ui->grViewL1->sceneRect());
@@ -991,11 +998,11 @@ void GraphViewForm::slotVScaleQuotesClicked(bool bPlus)
 
 
 
+        def.free();
         PaintViewPort(true,true,false,false,false);
 
         ui->grViewQuotes->scene()->invalidate(ui->grViewQuotes->sceneRect());
 
-        def.free();
         SetSliderToVertPos(dStoredVValue);
     }
 }
@@ -1048,9 +1055,16 @@ void GraphViewForm::EraseBars()
 //---------------------------------------------------------------------------------------------------------------
 void GraphViewForm::EraseMovingAverages()
 {
+//    EraseLinesLower(mMovingBlue,    0, ui->grViewQuotes->scene());
+//    EraseLinesLower(mMovingRed,     0, ui->grViewQuotes->scene());
+//    EraseLinesLower(mMovingGreen,   0, ui->grViewQuotes->scene());
     mMovingBlue.clear();
     mMovingRed.clear();
     mMovingGreen.clear();
+
+    if (pathBlue) {grScene->removeItem(pathBlue); pathBlue = nullptr;}
+    if (pathRed)  {grScene->removeItem(pathRed); pathRed = nullptr;}
+    if (pathGreen){grScene->removeItem(pathGreen); pathGreen = nullptr;}
 }
 //---------------------------------------------------------------------------------------------------------------
 void GraphViewForm::EraseVolumes()
@@ -1299,11 +1313,30 @@ void GraphViewForm::slotPeriodButtonChanged()
  }
 //---------------------------------------------------------------------------------------------------------------
 //---------------------------------------------------------------------------------------------------------------
- void GraphViewForm::PaintViewPort   (bool bFrames ,bool bBars ,bool bVolumes, bool bStoreRightPos, bool bInvalidate)
+ bool GraphViewForm::PaintViewPort   (bool bFrames ,bool bBars ,bool bVolumes, bool bStoreRightPos, bool bInvalidate)
  {
-     auto iRange = getViewPortRangeToHolder();
-
-     PaintViewPort   (iRange.first/*iBeg*/,iRange.second/* iEnd*/, bFrames, bBars, bVolumes,bStoreRightPos,bInvalidate);
+     if (aiInvalidateCounter == 0){
+         auto iRange = getViewPortRangeToHolder();
+         PaintViewPort   (iRange.first/*iBeg*/,iRange.second/* iEnd*/, bFrames, bBars, bVolumes,bStoreRightPos,bInvalidate);
+         return true;
+     }
+     else{
+         RepainTask task;
+         task.Type = RepainTask::eRepaintType::PaintViewport;
+         if (bFrames){
+             task.Type |=  RepainTask::eRepaintType::FastFrames;
+         }
+         if (bBars){
+             task.Type |=  RepainTask::eRepaintType::FastBars;
+         }
+         if (bVolumes){
+             task.Type |= RepainTask::eRepaintType::FastVolumes;
+         }
+         task.bInvalidate = bInvalidate;
+         task.bStoreRightPos = bStoreRightPos;
+         queueRepaint.Push(task);
+         return false;
+     }
  }
  //---------------------------------------------------------------------------------------------------------------
  void GraphViewForm::PaintViewPort   (int iStart, int iEnd,bool bFrames,bool bBars,bool bVolumes, bool bStoreRightPos, bool bInvalidate)
@@ -1316,7 +1349,6 @@ void GraphViewForm::slotPeriodButtonChanged()
          if (bFrames){
              task.Type |=  RepainTask::eRepaintType::FastFrames;
          }
-
          if (bBars){
              task.Type |=  RepainTask::eRepaintType::FastBars;
          }
@@ -2191,8 +2223,9 @@ std::pair<int,int> GraphViewForm::getViewPortRangeToHolder()
      int iEnd = iBeg + ui->grViewQuotes->horizontalScrollBar()->pageStep();
 
      QRectF rS = ui->grViewQuotes->scene()->sceneRect();
+     QRectF viewportS = ui->grViewQuotes->sceneRect();
 
-     if (ui->grViewQuotes->horizontalScrollBar()->maximum() > rS.width() ) { // if slider range was expanded and exceeds viewport
+     if (ui->grViewQuotes->horizontalScrollBar()->maximum() > 0) { // if slider range was expanded and exceeds viewport
 
          iBeg = ((((double)iBeg)/dHScale)/(double)BarGraphicsItem::BarWidth);
          iEnd = ((((double)iEnd)/dHScale)/(double)BarGraphicsItem::BarWidth);
@@ -2517,10 +2550,12 @@ bool GraphViewForm::PaintMovingAverages (std::shared_ptr<GraphHolder> local_hold
     if (iSelectedInterval == Bar::eInterval::pTick) return true;
     //
     InvalidateCounterDefender def(aiInvalidateCounter);
-//    {
-//         ThreadFreeCout pcout;
-//         pcout << "PaintMovings <"<<iStartI<<":"<<iEndI<<">\n";
-//    }
+    {
+         ThreadFreeCout pcout;
+         pcout << "PaintMovings <"<<iStartI<<":"<<iEndI<<">\n";
+         pcout << "mMovingBlue.size() <"<<mMovingBlue.size()<<">\n";
+
+    }
     /////////////////////////////////////////////////////////////////////////////////////////
     if (!local_holder) return true;
     bool bSuccess;
@@ -2636,6 +2671,9 @@ bool GraphViewForm::PaintMovingAverages (std::shared_ptr<GraphHolder> local_hold
     pathRed     = grScene->addPath(red,redPen);
     pathGreen   = grScene->addPath(green,greenPen);
 
+    pathBlue->setZValue(7);
+    pathRed->setZValue(7);
+    pathGreen->setZValue(7);
 
     /////////////////////////////////////////////////////////////////
     return true;
@@ -2678,18 +2716,23 @@ QPainterPath GraphViewForm::smoothOut(const std::map<int,QPointF> &map, const fl
     if (map.size() < 3) {
         return path;
     }
+    std::vector<QPointF> vV;
+    vV.reserve(map.size());
+    for (const auto &p:map){
+        vV.push_back(p.second);
+    }
 
     QPointF pt1;
     QPointF pt2;
 
-    for (int i = 0; i < (int)map.size() - 1; i++) {
-        pt1 = getLineStart(map.at(i), map.at(i + 1));
+    for (int i = 0; i < (int)vV.size() - 1; i++) {
+        pt1 = getLineStart(vV[i], vV[i + 1]);
         if (i == 0) {
             path.moveTo(pt1);
         } else {
-            path.quadTo(map.at(i), pt1);
+            path.quadTo(vV[i], pt1);
         }
-        pt2 = getLineEnd(map.at(i), map.at(i + 1));
+        pt2 = getLineEnd(vV[i], vV[i + 1]);
         path.lineTo(pt2);
     }
     return path;

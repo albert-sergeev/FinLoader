@@ -24,7 +24,7 @@ struct RepainTask{
 
     typedef unsigned int Type_type;
 
-    enum eRepaintType:Type_type {InvalidateRepaint = 1, FastBars = 2, FastVolumes = 4, FastFrames = 8};
+    enum eRepaintType:Type_type {InvalidateRepaint = 1, FastBars = 2, FastVolumes = 4, FastFrames = 8, PaintViewport = 16};
 
     RepainTask(){;}
     RepainTask(std::time_t Start,std::time_t End,bool NeedToRescale){
@@ -305,7 +305,7 @@ protected:
 
     std::pair<int,int> getViewPortRangeToHolder();
 
-    void PaintViewPort               (bool bFrames,bool bBars,bool bVolumes, bool bStoreRightPos, bool bInvalidate);
+    bool PaintViewPort               (bool bFrames,bool bBars,bool bVolumes, bool bStoreRightPos, bool bInvalidate);
     void PaintViewPort               (int iStart, int iEnd,bool bFrames ,bool bBars,bool bVolumes, bool bStoreRightPos, bool bInvalidate);
 
     bool FastLoadHolder(RepainTask &);

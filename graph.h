@@ -841,40 +841,49 @@ template<typename T>
 void Graph<T>::calculateMovingAverages(size_t iStart)
 {
     if constexpr (std::is_same_v<T, Bar>){
+
+        //------------------------------------------
+        if (iStart > 0) iStart--;
+        //------------------------------------------
+
+        const double dBluePeriod  {2.0/(25.0 + 1.0)};
+        const double dRedPeriod   {2.0/(15.0 + 1.0)};
+        const double dGreenPeriod {2.0/(9.0 + 1.0)};
+
         double dBlueLeft{0};
         double dRedLeft{0};
         double dGreenLeft{0};
-        for (size_t i = iStart; i < vMovingBlue.size(); ++i){
-            if (i < vContainer.size()){
-                vMovingBlue[i] = vContainer[i].High();
-                dBlueLeft = vMovingBlue[i];
-            }
-            else{
-                vMovingBlue[i] = dBlueLeft;
-            }
-        }
-        //
-        for (size_t i = iStart; i < vMovingRed.size(); ++i){
-            if (i < vContainer.size()){
-                vMovingRed[i] = vContainer[i].Close();
-                dRedLeft = vMovingRed[i];
-            }
-            else{
-                vMovingRed[i] = dRedLeft;
-            }
-        }
-        //
-        for (size_t i = iStart; i < vMovingGreen.size(); ++i){
-            if (i < vContainer.size()){
-                vMovingGreen[i] = vContainer[i].Low();
-                dGreenLeft = vMovingGreen[i];
-            }
-            else{
-                vMovingGreen[i] = dGreenLeft;
-            }
-        }
-    }
+        //------------------------------------------
 
+        if(iStart > 0 && iStart + 8 < vMovingBlue.size() && vMovingBlue[iStart + 8] == 0){
+            dBlueLeft   = vMovingBlue[iStart + 8];
+            dRedLeft    = vMovingRed[iStart + 5];
+            dGreenLeft  = vMovingGreen[iStart + 3];
+        }
+        else{
+            dBlueLeft   = (vContainer[iStart].High() + vContainer[iStart].Low())/2.0;
+            dRedLeft    = dBlueLeft;
+            dGreenLeft  = dBlueLeft;
+        }
+        //------------------------------------------
+        iStart++;
+        //------------------------------------------
+        for (size_t i = iStart; i < vMovingBlue.size() - 8; ++i){
+            vMovingBlue[i + 8] = dBlueLeft * (1 - dBluePeriod) + dBluePeriod * (vContainer[i].High() + vContainer[i].Low())/2.0;
+            dBlueLeft = vMovingBlue[i + 8];
+        }
+        //--
+        for (size_t i = iStart; i < vMovingRed.size() - 5; ++i){
+            vMovingRed[i + 5] = dRedLeft * (1 - dRedPeriod) + dRedPeriod * (vContainer[i].High() + vContainer[i].Low())/2.0;
+            dRedLeft = vMovingRed[i + 5];
+        }
+        //--
+        for (size_t i = iStart; i < vMovingGreen.size() - 3; ++i){
+            vMovingGreen[i + 3] = dGreenLeft * (1 - dGreenPeriod) + dGreenPeriod * (vContainer[i].High() + vContainer[i].Low())/2.0;
+            dGreenLeft = vMovingGreen[i + 3];
+        }
+        //--
+    }
 }
 //------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------
