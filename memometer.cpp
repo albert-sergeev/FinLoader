@@ -20,7 +20,7 @@ Memometer::Memometer(QWidget *parent) : QWidget(parent),dPercent{0}
 
 void Memometer::paintEvent(QPaintEvent */*event*/)
 {
-    //QPen blackSolidPen(Qt::black,1,Qt::SolidLine);
+    QPen blackSolidPen(Qt::black,1,Qt::SolidLine);
     //QPen circlePen(Qt::gray,0.5,Qt::SolidLine);
     QPen blackPen(Qt::black,0.5,Qt::SolidLine);
     //QPen circlePen(Qt::black,1,Qt::SolidLine);
@@ -66,14 +66,16 @@ void Memometer::paintEvent(QPaintEvent */*event*/)
     ////-------------------------------------------------
     painter.begin(&sourceHatImage);
     painter.setRenderHint(QPainter::Antialiasing, true);
-    painter.setPen(blackPen);
+    //painter.setPen(blackPen);
+    painter.setPen(blackSolidPen);
     painter.drawEllipse(rectHat);
     painter.end();
     ////-------------------------------------------------
     painter.begin(&resultHatImage);
     painter.setRenderHint(QPainter::Antialiasing, true);
     painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
-    painter.setPen(blackPen);
+    //painter.setPen(blackPen);
+    painter.setPen(blackSolidPen);
     painter.setBrush(Qt::green);
     painter.drawRect(rectHatRazor);
     painter.setCompositionMode(QPainter::CompositionMode_SourceOut);
