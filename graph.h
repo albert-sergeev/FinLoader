@@ -614,32 +614,34 @@ void Graph<T>::CloneGraph(Graph<T> &grNew,const size_t Start, const size_t End, 
 
     std::copy(ItBeg,ItEnd,std::back_inserter(grNew.vContainer));
     grNew.iShiftIndex = iBeg;
-    //////////////////////////////////
-    auto ItBlueBeg(vMovingBlue.begin());
-    auto ItBlueEnd(vMovingBlue.end());
-    if(End < vMovingBlue.size()-1){
-        ItBlueEnd = std::next(vMovingBlue.begin(),End + 1);
-    }
-    grNew.vMovingBlue.reserve(std::distance(ItBlueBeg,ItBlueEnd));
-    std::copy(ItBlueBeg,ItBlueEnd,std::back_inserter(grNew.vMovingBlue));
-    //////////////////////////////////
-    auto ItRedBeg(vMovingRed.begin());
-    auto ItRedEnd(vMovingRed.end());
-    if(End < vMovingRed.size()-1){
-        ItRedEnd = std::next(vMovingRed.begin(),End + 1);
-    }
-    grNew.vMovingRed.reserve(std::distance(ItRedBeg,ItRedEnd));
-    std::copy(ItRedBeg,ItRedEnd,std::back_inserter(grNew.vMovingRed));
-    //////////////////////////////////
-    auto ItGreenBeg(vMovingGreen.begin());
-    auto ItGreenEnd(vMovingGreen.end());
-    if(End < vMovingGreen.size()-1){
-        ItGreenEnd = std::next(vMovingGreen.begin(),End + 1);
-    }
-    grNew.vMovingGreen.reserve(std::distance(ItGreenBeg,ItGreenEnd));
-    std::copy(ItGreenBeg,ItGreenEnd,std::back_inserter(grNew.vMovingGreen));
-    //////////////////////////////////
 
+    ////////////////////////////////////////////////////////////////////
+    if constexpr (std::is_same_v<T, Bar>){
+        auto ItBlueBeg(std::next(vMovingBlue.begin(),iBeg));
+        auto ItBlueEnd(vMovingBlue.end());
+        if(End < vMovingBlue.size()-1){
+            ItBlueEnd = std::next(vMovingBlue.begin(),End + 1);
+        }
+        grNew.vMovingBlue.reserve(std::distance(ItBlueBeg,ItBlueEnd));
+        std::copy(ItBlueBeg,ItBlueEnd,std::back_inserter(grNew.vMovingBlue));
+        //////////////////////////////////
+        auto ItRedBeg(std::next(vMovingRed.begin(),iBeg));
+        auto ItRedEnd(vMovingRed.end());
+        if(End < vMovingRed.size()-1){
+            ItRedEnd = std::next(vMovingRed.begin(),End + 1);
+        }
+        grNew.vMovingRed.reserve(std::distance(ItRedBeg,ItRedEnd));
+        std::copy(ItRedBeg,ItRedEnd,std::back_inserter(grNew.vMovingRed));
+        //////////////////////////////////
+        auto ItGreenBeg(std::next(vMovingGreen.begin(),iBeg));
+        auto ItGreenEnd(vMovingGreen.end());
+        if(End < vMovingGreen.size()-1){
+            ItGreenEnd = std::next(vMovingGreen.begin(),End + 1);
+        }
+        grNew.vMovingGreen.reserve(std::distance(ItGreenBeg,ItGreenEnd));
+        std::copy(ItGreenBeg,ItGreenEnd,std::back_inserter(grNew.vMovingGreen));
+    }
+    ////////////////////////////////////////////////////////////////////
 }
 //------------------------------------------------------------------------------------------------------------
 template<typename T>
@@ -699,17 +701,19 @@ bool Graph<T>::shrink_extras_left(std::time_t dtEnd)
     if(It == mDictionary.end()) {return true;}
 
     auto ItContEnd  = std::next(vContainer.begin(),It->second);
-    auto ItBlueEnd  = std::next(vMovingBlue.begin(),It->second);
-    auto ItRedEnd   = std::next(vMovingRed.begin(),It->second);
-    auto ItGreenEnd = std::next(vMovingGreen.begin(),It->second);
 
+    if constexpr (std::is_same_v<T, Bar>){
+        auto ItBlueEnd  = std::next(vMovingBlue.begin(),It->second);
+        auto ItRedEnd   = std::next(vMovingRed.begin(),It->second);
+        auto ItGreenEnd = std::next(vMovingGreen.begin(),It->second);
+
+        vMovingBlue.erase   (vMovingBlue.begin(),ItBlueEnd);
+        vMovingRed.erase    (vMovingRed.begin(),ItRedEnd);
+        vMovingGreen.erase  (vMovingGreen.begin(),ItGreenEnd);
+    }
 
     vContainer.erase(vContainer.begin(),ItContEnd);
     mDictionary.erase(mDictionary.begin(),It);
-
-    vMovingBlue.erase   (vMovingBlue.begin(),ItBlueEnd);
-    vMovingRed.erase    (vMovingRed.begin(),ItRedEnd);
-    vMovingGreen.erase  (vMovingGreen.begin(),ItGreenEnd);
 
     size_t iDelta = It->second;
     while(It != mDictionary.end()){
