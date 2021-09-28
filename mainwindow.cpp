@@ -2062,7 +2062,7 @@ void MainWindow::InitHolders()
             dataTask.taskType       = dataFinLoadTask::TaskType::finQuotesLoadFromStorage;
             dataTask.TickerID       = t.TickerID();
             dataTask.dtBegin        = tBegin;
-            dataTask.dtEnd          = tNow;
+            dataTask.dtEnd          = tNow + 86400;//to pass localtime
             dataTask.holder         = Holders[t.TickerID()];
             lk.unlock();
 

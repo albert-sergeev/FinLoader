@@ -1457,8 +1457,8 @@ void GraphViewForm::slotPeriodButtonChanged()
      return holder->CloneHolder(data.holder,iSelectedInterval,
                                 data.iStart > 0     ? data.iStart       : 0,
                                 data.iEnd > 0       ? data.iEnd         : 0,
-                                data.iLetShift > 0  ? data.iLetShift    : 0,
-                                data.bRecalculateAverages);
+                                data.iLetShift > 0  ? data.iLetShift    : 0
+                                );
  }
  //---------------------------------------------------------------------------------------------------------------
  template<typename T>
@@ -2328,9 +2328,8 @@ void GraphViewForm::checkFastShowAverages(int iStart, int iEnd){
         task.bRecalculateAverages = true;
 
         queueRepaint.Push(task);
-        if(stFastShowAverages.size() > 2){
+        if(stFastShowAverages.size() > 1){
             auto It (stFastShowAverages.end());
-            It--;
             It--;
             stFastShowAverages.erase(stFastShowAverages.begin(),It);
         }

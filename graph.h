@@ -38,6 +38,8 @@ private:
     std::vector<double> vMovingRed;
     std::vector<double> vMovingGreen;
 
+    size_t iLastCalculatedMovingAverage;
+
 
     const Bar::eInterval iInterval;
     const int iTickerID;
@@ -57,15 +59,24 @@ public:
     Graph(Graph&) = delete;
     Graph& operator=(Graph&) = delete;
     //--------------------------------------------------------------------------------------------------------
-    void clear()            {mDictionary.clear(); vContainer.clear(); vMovingBlue.clear(); vMovingRed.clear(); vMovingGreen.clear();};
+    void clear(){
+        mDictionary.clear();
+        vContainer.clear();
+        vMovingBlue.clear();
+
+        vMovingRed.clear();
+        vMovingGreen.clear();
+        iLastCalculatedMovingAverage = 0;
+    };
     //--------------------------------------------------------------------------------------------------------
-    explicit Graph(int TickerID, Bar::eInterval Interval):iInterval{Interval},iTickerID{TickerID},iShiftIndex{0}{;}
+    explicit Graph(int TickerID, Bar::eInterval Interval):iLastCalculatedMovingAverage{0},iInterval{Interval},iTickerID{TickerID},iShiftIndex{0}{;}
     explicit Graph(Graph&& o):
         vContainer{std::move(o.vContainer)}
        ,mDictionary{std::move(o.mDictionary)}
        ,vMovingBlue{std::move(o.vMovingBlue)}
        ,vMovingRed{std::move(o.vMovingRed)}
        ,vMovingGreen{std::move(o.vMovingGreen)}
+       ,iLastCalculatedMovingAverage{o.iLastCalculatedMovingAverage}
        ,iInterval{o.iInterval}
        ,iTickerID{o.iTickerID}
        ,iShiftIndex{o.iShiftIndex}{;}
@@ -86,11 +97,11 @@ public:
             {if (/*i<0 ||*/ i>= vMovingGreen.size()) {throw std::out_of_range("");} return vMovingGreen[i];}
         else{return 0;}}
     //--------------------------------------------------------------------------------------------------------
-    bool AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,std::time_t dtEnd,bool bRecalculateAverages = true);
+    bool AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,std::time_t dtEnd);
     bool AddBarsListsFast(std::vector<T> &v, std::set<std::time_t>   & stHolderTimeSet,std::pair<std::time_t,std::time_t> &pairRange,Graph<T> &grDst);
 
     template<typename T_SRC>
-    bool BuildFromLowerList(Graph<T_SRC> &grSrc, std::time_t dtStart,std::time_t dtEnd,bool bCopyToDst,Graph<T> &grDst,bool bRecalculateAverages);
+    bool BuildFromLowerList(Graph<T_SRC> &grSrc, std::time_t dtStart,std::time_t dtEnd,bool bCopyToDst,Graph<T> &grDst);
 
     inline std::time_t GetDateMin() const  {return  vContainer.size()>0? vContainer.front().Period():0;};
     inline std::time_t GetDateMax() const  {return  vContainer.size()>0? vContainer.back().Period():0;};
@@ -111,7 +122,7 @@ public:
 
     std::size_t GetUsedMemory() const;
 
-    void CloneGraph(Graph<T> &grNew,const size_t Start, const size_t End, const size_t LetShift,bool bRecalculateAverages);
+    void CloneGraph(Graph<T> &grNew,const size_t Start, const size_t End, const size_t LetShift);
     bool shrink_extras_left(std::time_t dtEnd);
     //
 private:
@@ -130,7 +141,7 @@ private:
 //------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------
 template<typename T>
-bool Graph<T>::AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,std::time_t dtEnd, bool bRecalculateAverages)
+bool Graph<T>::AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,std::time_t dtEnd)
 {
 
     ///
@@ -284,11 +295,14 @@ bool Graph<T>::AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,s
             vMovingGreen.reserve(vContainer.size() + 100);
         }
 
-        if (bRecalculateAverages){
-            if (vContainer.size() + 8 >  vMovingBlue.size())    vMovingBlue.resize  (vContainer.size() + 8);
-            if (vContainer.size() + 5 >  vMovingRed.size())     vMovingRed.resize   (vContainer.size() + 5);
-            if (vContainer.size() + 3 >  vMovingGreen.size())   vMovingGreen.resize (vContainer.size() + 3);
+        vMovingBlue.resize  (vContainer.size() + 8);
+        vMovingRed.resize   (vContainer.size() + 5);
+        vMovingGreen.resize (vContainer.size() + 3);
+
+        if (iLastCalculatedMovingAverage + 1 < vContainer.size() || iStart + 1 < vContainer.size()){
+            iStart = iLastCalculatedMovingAverage > iStart ? iStart : iLastCalculatedMovingAverage;
             calculateMovingAverages(iStart);
+            iLastCalculatedMovingAverage = vContainer.size() - 1;
         }
     }
     //////////////////////////////////////////////////////////////////////////
@@ -607,7 +621,7 @@ size_t Graph<T>::GetMoreThenIndex(std::vector<T> & v, std::time_t tT)
 }
 //------------------------------------------------------------------------------------------------------------
 template<typename T>
-void Graph<T>::CloneGraph(Graph<T> &grNew,const size_t Start, const size_t End, const size_t LetShift,bool bRecalculateAverages)
+void Graph<T>::CloneGraph(Graph<T> &grNew,const size_t Start, const size_t End, const size_t LetShift)
 {
     grNew.clear();
     size_t iBeg = Start > LetShift ? Start - LetShift : 0;
@@ -627,12 +641,12 @@ void Graph<T>::CloneGraph(Graph<T> &grNew,const size_t Start, const size_t End, 
 
     ////////////////////////////////////////////////////////////////////
     if constexpr (std::is_same_v<T, Bar>){
-        if (bRecalculateAverages){
-            if (vContainer.size() + 8 >  vMovingBlue.size())    vMovingBlue.resize  (vContainer.size() + 8);
-            if (vContainer.size() + 5 >  vMovingRed.size())     vMovingRed.resize   (vContainer.size() + 5);
-            if (vContainer.size() + 3 >  vMovingGreen.size())   vMovingGreen.resize (vContainer.size() + 3);
-            calculateMovingAverages(iBeg);
-        }
+//        if (bRecalculateAverages){
+//            if (vContainer.size() + 8 >  vMovingBlue.size())    vMovingBlue.resize  (vContainer.size() + 8);
+//            if (vContainer.size() + 5 >  vMovingRed.size())     vMovingRed.resize   (vContainer.size() + 5);
+//            if (vContainer.size() + 3 >  vMovingGreen.size())   vMovingGreen.resize (vContainer.size() + 3);
+//            calculateMovingAverages(iBeg);
+//        }
 
         //////////////////////////////////
         if (vMovingBlue.size() > iBeg){
@@ -744,6 +758,7 @@ bool Graph<T>::shrink_extras_left(std::time_t dtEnd)
         It->second += iDelta;
         ++It;
     }
+    iLastCalculatedMovingAverage += iDelta;
     return true;
 
 }
@@ -751,7 +766,7 @@ bool Graph<T>::shrink_extras_left(std::time_t dtEnd)
 template<typename T> template<typename T_SRC>
 //bool Graph<T>::BuildFromLowerList(Graph<BarTick> &grSrc, std::time_t dtStart,std::time_t dtEnd)
 bool Graph<T>::BuildFromLowerList(Graph<T_SRC> &grSrc, std::time_t dtStart,std::time_t dtEnd,
-                                  bool bCopyToDst,Graph<T> &grDst,bool bRecalculateAverages)
+                                  bool bCopyToDst,Graph<T> &grDst)
 {
 
 
@@ -831,7 +846,7 @@ bool Graph<T>::BuildFromLowerList(Graph<T_SRC> &grSrc, std::time_t dtStart,std::
 
     }
     /////
-    bool bRes = AddBarsList(v,dtAccStart,dtAccEndLower,bRecalculateAverages);
+    bool bRes = AddBarsList(v,dtAccStart,dtAccEndLower);
     size_t iStart{vContainer.size()};
 
     if(bCopyToDst){
@@ -926,17 +941,17 @@ void Graph<T>::calculateMovingAverages(size_t iStart)
         //------------------------------------------
         iStart++;
         //------------------------------------------
-        for (size_t i = iStart; i < vMovingBlue.size() - 8 && i < vContainer.size(); ++i){
+        for (size_t i = iStart; i < vMovingBlue.size() - 8 /*&& i < vContainer.size()*/; ++i){
             vMovingBlue[i + 8] = dBlueLeft * (1 - dBluePeriod) + dBluePeriod * (vContainer[i].High() + vContainer[i].Low())/2.0;
             dBlueLeft = vMovingBlue[i + 8];
         }
         //--
-        for (size_t i = iStart; i < vMovingRed.size() - 5 && i < vContainer.size(); ++i){
+        for (size_t i = iStart; i < vMovingRed.size() - 5 /*&& i < vContainer.size()*/; ++i){
             vMovingRed[i + 5] = dRedLeft * (1 - dRedPeriod) + dRedPeriod * (vContainer[i].High() + vContainer[i].Low())/2.0;
             dRedLeft = vMovingRed[i + 5];
         }
         //--
-        for (size_t i = iStart; i < vMovingGreen.size() - 3 && i < vContainer.size(); ++i){
+        for (size_t i = iStart; i < vMovingGreen.size() - 3 /*&& i < vContainer.size()*/; ++i){
             vMovingGreen[i + 3] = dGreenLeft * (1 - dGreenPeriod) + dGreenPeriod * (vContainer[i].High() + vContainer[i].Low())/2.0;
             dGreenLeft = vMovingGreen[i + 3];
         }

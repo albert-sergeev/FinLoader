@@ -88,7 +88,7 @@ bool GraphHolder::AddBarsLists(std::vector<std::vector<BarTick>> &v, std::time_t
     bool bRet = graphTick.AddBarsList(v,dtStart,dtEnd);
     if (bRet){
         GraphHolder hlTmp(iTickerID);
-        bRet = BuildUpperList(dtStart,dtEnd,false,hlTmp,true);
+        bRet = BuildUpperList(dtStart,dtEnd,false,hlTmp);
     }
     return bRet;
 }
@@ -112,31 +112,31 @@ bool GraphHolder::AddBarsListsFast(std::vector<BarTick> &v,
     if (!v.empty()){
         bRet = graphTick.AddBarsListsFast(v,stHolderTimeSet,pairRange,grDest.graphTick);
         if (bRet){
-            bRet = BuildUpperList(v.front().Period(),v.back().Period(),true,grDest,false);
+            bRet = BuildUpperList(v.front().Period(),v.back().Period(),true,grDest);
         }
     }
 
     return bRet;
 }
 //------------------------------------------------------------------------------------------------------
-bool GraphHolder::BuildUpperList(std::time_t dtStart,std::time_t dtEnd, bool bCopyToDst,GraphHolder &grDest, bool bRecalculateAverages)
+bool GraphHolder::BuildUpperList(std::time_t dtStart,std::time_t dtEnd, bool bCopyToDst,GraphHolder &grDest)
 {
-    graph1.BuildFromLowerList(graphTick, dtStart,dtEnd,bCopyToDst,grDest.graph1,bRecalculateAverages);
-    graph5.BuildFromLowerList(graph1, dtStart,dtEnd,bCopyToDst,grDest.graph5,bRecalculateAverages);
-    graph10.BuildFromLowerList(graph5, dtStart,dtEnd,bCopyToDst,grDest.graph10,bRecalculateAverages);
-    graph15.BuildFromLowerList(graph5, dtStart,dtEnd,bCopyToDst,grDest.graph15,bRecalculateAverages);
-    graph30.BuildFromLowerList(graph15, dtStart,dtEnd,bCopyToDst,grDest.graph30,bRecalculateAverages);
-    graph60.BuildFromLowerList(graph30, dtStart,dtEnd,bCopyToDst,grDest.graph60,bRecalculateAverages);
-    graph120.BuildFromLowerList(graph60, dtStart,dtEnd,bCopyToDst,grDest.graph120,bRecalculateAverages);
-    graph180.BuildFromLowerList(graph60, dtStart,dtEnd,bCopyToDst,grDest.graph180,bRecalculateAverages);
-    graphDay.BuildFromLowerList(graph60, dtStart,dtEnd,bCopyToDst,grDest.graphDay,bRecalculateAverages);
-    graphWeek.BuildFromLowerList(graphDay, dtStart,dtEnd,bCopyToDst,grDest.graphWeek,bRecalculateAverages);
-    graphMonth.BuildFromLowerList(graphDay, dtStart,dtEnd,bCopyToDst,grDest.graphMonth,bRecalculateAverages);
+    graph1.BuildFromLowerList(graphTick, dtStart,dtEnd,bCopyToDst,grDest.graph1);
+    graph5.BuildFromLowerList(graph1, dtStart,dtEnd,bCopyToDst,grDest.graph5);
+    graph10.BuildFromLowerList(graph5, dtStart,dtEnd,bCopyToDst,grDest.graph10);
+    graph15.BuildFromLowerList(graph5, dtStart,dtEnd,bCopyToDst,grDest.graph15);
+    graph30.BuildFromLowerList(graph15, dtStart,dtEnd,bCopyToDst,grDest.graph30);
+    graph60.BuildFromLowerList(graph30, dtStart,dtEnd,bCopyToDst,grDest.graph60);
+    graph120.BuildFromLowerList(graph60, dtStart,dtEnd,bCopyToDst,grDest.graph120);
+    graph180.BuildFromLowerList(graph60, dtStart,dtEnd,bCopyToDst,grDest.graph180);
+    graphDay.BuildFromLowerList(graph60, dtStart,dtEnd,bCopyToDst,grDest.graphDay);
+    graphWeek.BuildFromLowerList(graphDay, dtStart,dtEnd,bCopyToDst,grDest.graphWeek);
+    graphMonth.BuildFromLowerList(graphDay, dtStart,dtEnd,bCopyToDst,grDest.graphMonth);
 
     return true;
 }
 //-----------------------------------------------------------------------------------------------------------------------------------
-bool GraphHolder::CloneHolder(std::shared_ptr<GraphHolder>  &hlNew, const Bar::eInterval it, const size_t iStart,const size_t iEnd, const size_t LetShift,bool bRecalculateAverages)
+bool GraphHolder::CloneHolder(std::shared_ptr<GraphHolder>  &hlNew, const Bar::eInterval it, const size_t iStart,const size_t iEnd, const size_t LetShift)
 {
     std::shared_lock lk(mutexHolder,std::defer_lock);
     if(!lk.try_lock()) return false;
@@ -144,10 +144,10 @@ bool GraphHolder::CloneHolder(std::shared_ptr<GraphHolder>  &hlNew, const Bar::e
     hlNew = std::make_shared<GraphHolder>(GraphHolder{iTickerID});
 
     if (it == Bar::eInterval::pTick){
-        graphTick.CloneGraph(hlNew->graphTick,iStart, iEnd,LetShift,bRecalculateAverages);
+        graphTick.CloneGraph(hlNew->graphTick,iStart, iEnd,LetShift);
     }
     else{
-        mpGraphs.at(it).CloneGraph(hlNew->mpGraphs.at(it),iStart, iEnd,LetShift,bRecalculateAverages);
+        mpGraphs.at(it).CloneGraph(hlNew->mpGraphs.at(it),iStart, iEnd,LetShift);
     }
     return true;
 }
