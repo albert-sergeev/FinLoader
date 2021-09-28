@@ -2247,7 +2247,7 @@ std::pair<int,int> GraphViewForm::getViewPortRangeToHolder()
      int iEnd = iBeg + ui->grViewQuotes->horizontalScrollBar()->pageStep();
 
      QRectF rS = ui->grViewQuotes->scene()->sceneRect();
-     QRectF viewportS = ui->grViewQuotes->sceneRect();
+     //QRectF viewportS = ui->grViewQuotes->sceneRect();
 
      if (ui->grViewQuotes->horizontalScrollBar()->maximum() > 0) { // if slider range was expanded and exceeds viewport
 
