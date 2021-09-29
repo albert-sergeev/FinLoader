@@ -84,15 +84,15 @@ public:
     T & operator[](const size_t i)  {if (/*i<0 ||*/ i>= vContainer.size()) {throw std::out_of_range("");} return vContainer[i];}
     const T & operator[](const size_t i) const  {if (/*i<0 ||*/ i>= vContainer.size()) {throw std::out_of_range("");} return vContainer[i];}
     //--------------------------------------------------------------------------------------------------------
-    const double movingBlue (const size_t i) const {
+    double movingBlue (const size_t i) const {
         if constexpr (std::is_same_v<T, Bar>)
             {if (/*i<0 ||*/ i>= vMovingBlue.size())  {throw std::out_of_range("");} return vMovingBlue[i];}
         else{return -10;}}
-    const double movingRed  (const size_t i) const {
+    double movingRed  (const size_t i) const {
         if constexpr (std::is_same_v<T, Bar>)
             {if (/*i<0 ||*/ i>= vMovingRed.size())   {throw std::out_of_range("");} return vMovingRed[i];}
         else{return 0;}}
-    const double movingGreen(const size_t i) const {
+    double movingGreen(const size_t i) const {
         if constexpr (std::is_same_v<T, Bar>)
             {if (/*i<0 ||*/ i>= vMovingGreen.size()) {throw std::out_of_range("");} return vMovingGreen[i];}
         else{return 0;}}
@@ -111,9 +111,9 @@ public:
 
     size_t getIndex(const std::time_t t) const;
 
-    const size_t getMovingBlueSize() const {return vMovingBlue.size();};
-    const size_t getMovingRedSize() const {return vMovingRed.size();};
-    const size_t getMovingGreenSize() const {return vMovingGreen.size();};
+    size_t getMovingBlueSize() const {return vMovingBlue.size();};
+    size_t getMovingRedSize() const {return vMovingRed.size();};
+    size_t getMovingGreenSize() const {return vMovingGreen.size();};
     //--------------------------------------------------------------------------------------------------------
     bool CheckMap();
     std::string ToString();
@@ -502,7 +502,7 @@ bool Graph<T>::AddBarsListsFast(std::vector<T>                      &vV,
     /////////////////////////
     /// make affected range
     pairRange = {mNew.begin()->first,mNew.rbegin()->first};
-    size_t iStart{0};
+    //size_t iStart{0};
 
     /////////////////////////
     /// copy data chunk for fast load
@@ -533,7 +533,7 @@ bool Graph<T>::AddBarsListsFast(std::vector<T>                      &vV,
         }
 
         grDst.iShiftIndex = ItDictRangeBegin->second;
-        iStart =  ItDictRangeBegin->second;
+        //iStart =  ItDictRangeBegin->second;
     }
 
     //////////////////////////////////////////////////////////////////////////
