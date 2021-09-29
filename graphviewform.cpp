@@ -105,6 +105,9 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
     btnHelpR->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     ltViewR2->addWidget(btnHelpR);
     //btnHelp->setVisible(false);
+
+    btnHelp->setToolTip(tr("To panic :)"));
+    btnHelpR->setToolTip(tr("To panic a little ;)"));
     //-------------------------------------------------------------
     indicatorMemo = new Memometer(this);
     indicatorMemo->setValue(0);

@@ -491,6 +491,9 @@
                  <height>16777215</height>
                 </size>
                </property>
+               <property name="toolTip">
+                <string>10 minute time period</string>
+               </property>
                <property name="text">
                 <string>10</string>
                </property>
@@ -509,6 +512,9 @@
                  <width>35</width>
                  <height>16777215</height>
                 </size>
+               </property>
+               <property name="toolTip">
+                <string>120 minute time period</string>
                </property>
                <property name="text">
                 <string>120</string>
@@ -529,6 +535,9 @@
                  <height>16777215</height>
                 </size>
                </property>
+               <property name="toolTip">
+                <string>15 minute time period</string>
+               </property>
                <property name="text">
                 <string>15</string>
                </property>
@@ -547,6 +556,9 @@
                  <width>40</width>
                  <height>0</height>
                 </size>
+               </property>
+               <property name="toolTip">
+                <string>Day time period</string>
                </property>
                <property name="text">
                 <string>Day</string>
@@ -573,6 +585,9 @@
                  <height>16777215</height>
                 </size>
                </property>
+               <property name="toolTip">
+                <string>Tick time period</string>
+               </property>
                <property name="text">
                 <string>Tick</string>
                </property>
@@ -591,6 +606,9 @@
                  <width>40</width>
                  <height>0</height>
                 </size>
+               </property>
+               <property name="toolTip">
+                <string>Week time period</string>
                </property>
                <property name="text">
                 <string>Week</string>
@@ -611,6 +629,9 @@
                  <height>16777215</height>
                 </size>
                </property>
+               <property name="toolTip">
+                <string>60 minute time period</string>
+               </property>
                <property name="text">
                 <string>60</string>
                </property>
@@ -629,6 +650,9 @@
                  <width>30</width>
                  <height>16777215</height>
                 </size>
+               </property>
+               <property name="toolTip">
+                <string>1 minute time period</string>
                </property>
                <property name="text">
                 <string>1</string>
@@ -652,6 +676,9 @@
                  <height>16777215</height>
                 </size>
                </property>
+               <property name="toolTip">
+                <string>180 minute time period</string>
+               </property>
                <property name="text">
                 <string>180</string>
                </property>
@@ -670,6 +697,9 @@
                  <width>30</width>
                  <height>16777215</height>
                 </size>
+               </property>
+               <property name="toolTip">
+                <string>5 minute time period</string>
                </property>
                <property name="text">
                 <string>5</string>
@@ -690,6 +720,9 @@
                  <height>16777215</height>
                 </size>
                </property>
+               <property name="toolTip">
+                <string>30 minute time period</string>
+               </property>
                <property name="text">
                 <string>30</string>
                </property>
@@ -708,6 +741,9 @@
                  <width>40</width>
                  <height>0</height>
                 </size>
+               </property>
+               <property name="toolTip">
+                <string>Month time period</string>
                </property>
                <property name="text">
                 <string>Month</string>
@@ -733,6 +769,9 @@
             <height>0</height>
            </size>
           </property>
+          <property name="toolTip">
+           <string>Toggles the type of display of a trading bar</string>
+          </property>
           <property name="frameShape">
            <enum>QFrame::NoFrame</enum>
           </property>
@@ -743,6 +782,9 @@
         </item>
         <item>
          <widget class="QDateTimeEdit" name="dtBeginDate">
+          <property name="toolTip">
+           <string>Begin date of loaded graph</string>
+          </property>
           <property name="displayFormat">
            <string>dd.MM.yyyy</string>
           </property>
@@ -753,6 +795,9 @@
         </item>
         <item>
          <widget class="QDateTimeEdit" name="dtEndDate">
+          <property name="toolTip">
+           <string>End date of loaded graph</string>
+          </property>
           <property name="displayFormat">
            <string>dd.MM.yyyy</string>
           </property>
