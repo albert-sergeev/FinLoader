@@ -2544,16 +2544,18 @@ void MainWindow::slotProcessesContextMenuRequested(const QPoint & pos)
 
     QAction *pStop{nullptr};
     QAction *pOff{nullptr};
+    QAction *pHide{nullptr};
 
     QLCDNumber *lcd = dynamic_cast<QLCDNumber *>(sender());
     CombIndicator *cm = dynamic_cast<CombIndicator *>(sender());
     if (lcd != nullptr) {
-        item = lcd->mapToGlobal(pos);
-        pOff = submenu.addAction(tr("Turn off autoloads for all tickers"));
+        item  = lcd->mapToGlobal(pos);
+        pOff  = submenu.addAction(tr("Turn off autoloads for all tickers"));
+        pHide = submenu.addAction(tr("Hide all activity indicztors"));
     }
     else if (cm != nullptr){
-        item = cm->mapToGlobal(pos);
-        pOff = submenu.addAction(tr("Turn off autoloads for all tickers"));
+        item  = cm->mapToGlobal(pos);
+        //pOff  = submenu.addAction(tr("Turn off autoloads for all tickers"));
         pStop = submenu.addAction(tr("Stop all history import"));
     }
     else{
@@ -2582,6 +2584,25 @@ void MainWindow::slotProcessesContextMenuRequested(const QPoint & pos)
         int n=QMessageBox::warning(0,tr("Warning"),sQuestion,QMessageBox::Yes | QMessageBox::No);
         if (n==QMessageBox::Yes){
             slotStopFinQuotesLoadings();
+        }
+    }
+    else if (rightClickItem && rightClickItem == pHide){
+        QString sQuestion = tr("Do you want to hide all activity indicators?");
+        int n=QMessageBox::warning(0,tr("Warning"),sQuestion,QMessageBox::Yes | QMessageBox::No);
+        if (n==QMessageBox::Yes){
+            QModelIndex indx;
+            Ticker t{0,"","",1};
+            for (int iRow = 0; iRow < m_TickerLstModel.rowCount(); ++iRow){
+                indx = m_TickerLstModel.index(iRow,0);
+                if(indx.isValid()){
+                    t = m_TickerLstModel.getTicker(indx);
+                    if (t.Bulbululator()){
+                        t.SetBulbululator(false);
+                        m_TickerLstModel.setData(indx,t,Qt::EditRole);
+                        BulbululatorRemoveActive(t.TickerID());
+                    }
+                }
+            }
         }
     }
 }
