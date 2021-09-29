@@ -24,5 +24,8 @@
         <file>images/pipes2.png</file>
         <file>images/scroll.png</file>
         <file>images/open.png</file>
+        <file>images/open4.png</file>
+        <file>images/open3.png</file>
+        <file>images/open2.png</file>
     </qresource>
 </RCC>

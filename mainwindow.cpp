@@ -900,7 +900,8 @@ void MainWindow::InitAction()
     pacOpen->setStatusTip(tr("Load history data"));
     pacOpen->setWhatsThis(tr("Load history data"));
     //pacOpen->setIcon(QPixmap(":/store/images/sc_open"));
-    pacOpen->setIcon(QPixmap(":/store/images/open"));
+    //pacOpen->setIcon(QPixmap(":/store/images/open"));
+    pacOpen->setIcon(QPixmap(":/store/images/open3"));
     connect(pacOpen,SIGNAL(triggered()),SLOT(slotImportFinQuotesWndow()));
     //------------------------------------------------
 //    QAction * pacSave =new QAction("Save");
@@ -1605,7 +1606,7 @@ void MainWindow::slotImportFinQuotesWndow ()
     pdoc->setAttribute(Qt::WA_DeleteOnClose);
     pdoc->setWindowTitle(tr("Import"));
     //pdoc->setWindowIcon(QPixmap(":/store/images/sc_open"));
-    pdoc->setWindowIcon(QPixmap(":/store/images/open"));
+    pdoc->setWindowIcon(QPixmap(":/store/images/open3"));
     pdoc->SetDefaultOpenDir(qsDefaultOpenDir);
     pdoc->SetDelimiter(cImportDelimiter);
 
