@@ -1699,6 +1699,8 @@ void MainWindow::InitDockBar()
     proxyTickerModel.setSourceModel(&m_TickerLstModel);
     proxyTickerModel.sort(2);
     ui->lstView->setModel(&proxyTickerModel);
+    ui->lstView->setContextMenuPolicy(Qt::ContextMenuPolicy::CustomContextMenu);
+    connect(ui->lstView,SIGNAL(customContextMenuRequested(const QPoint &)),this,SLOT(slotTickerBarMenuRequested(const QPoint &)));
 
     slotDocbarShowMarketChanged(0);
     ////////////////////////////////////////////////////////////////////////
@@ -2506,7 +2508,9 @@ void MainWindow::slotBulbululatorContextMenuRequested(const QPoint & pos)
         QModelIndex indx;
         Ticker t{0,"","",1};
         if(m_TickerLstModel.searchTickerByTickerID(bulb->TickerID(),indx)){
-            t = m_TickerLstModel.getTicker(indx);
+            if(indx.isValid()){
+                t = m_TickerLstModel.getTicker(indx);
+            }
         }
 
         if (rightClickItem && rightClickItem == pHide){
@@ -2565,8 +2569,8 @@ void MainWindow::slotProcessesContextMenuRequested(const QPoint & pos)
             Ticker t{0,"","",1};
             for (int iRow = 0; iRow < m_TickerLstModel.rowCount(); ++iRow){
                 indx = m_TickerLstModel.index(iRow,0);
-                t = m_TickerLstModel.getTicker(indx);
                 if(indx.isValid()){
+                    t = m_TickerLstModel.getTicker(indx);
                     t.SetAutoLoad(false);
                     m_TickerLstModel.setData(indx,t,Qt::EditRole);
                 }
@@ -2578,6 +2582,103 @@ void MainWindow::slotProcessesContextMenuRequested(const QPoint & pos)
         int n=QMessageBox::warning(0,tr("Warning"),sQuestion,QMessageBox::Yes | QMessageBox::No);
         if (n==QMessageBox::Yes){
             slotStopFinQuotesLoadings();
+        }
+    }
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotTickerBarMenuRequested(const QPoint & pos)
+{
+    auto qml(ui->lstView->selectionModel());
+    if (!qml) return;
+    auto lst (qml->selectedIndexes());
+    if (lst.size() > 0){
+        //QModelIndex indx;
+        Ticker t{0,"","",1};
+        bool bWasActive{false};
+        bool bWasOff{false};
+        bool bWasShowedIndicator{false};
+        bool bWasHiddenIndicator{false};
+        //
+        for (int i = 0; i < lst.size(); ++i){
+            if (lst[i].isValid()){
+                t = proxyTickerModel.getTicker(lst[i]);
+                if (t.AutoLoad())       { bWasActive            = true;}
+                else                    { bWasOff               = true;}
+
+                if (t.Bulbululator())   { bWasShowedIndicator   = true;}
+                else                    { bWasHiddenIndicator   = true;}
+            }
+        }
+        ///////////////////////////////
+        QPoint item = ui->lstView->mapToGlobal(pos);
+        QMenu submenu(this);
+        QAction *pGraph{nullptr};
+        QAction *pOn{nullptr};
+        QAction *pOff{nullptr};
+        QAction *pShow{nullptr};
+        QAction *pHide{nullptr};
+
+        pGraph  = submenu.addAction(tr("Quotes graph"));
+        pOn     = submenu.addAction(tr("On autoloads"));
+        pOff    = submenu.addAction(tr("Off autoloads"));
+        pShow   = submenu.addAction(tr("Show activity indicators"));
+        pHide   = submenu.addAction(tr("Hide activity indicators"));
+
+        if(!bWasOff)             {pOn->setEnabled(false);}
+        if(!bWasActive)          {pOff->setEnabled(false);}
+
+        if(!bWasHiddenIndicator) {pShow->setEnabled(false);}
+        if(!bWasShowedIndicator) {pHide->setEnabled(false);}
+
+        QAction* rightClickItem = submenu.exec(item);
+        if (rightClickItem && rightClickItem == pGraph){
+            slotGraphViewWindow();
+        }
+        else if (rightClickItem && rightClickItem == pOff){
+            for (int i = 0; i < lst.size(); ++i){
+                if (lst[i].isValid()){
+                    t = proxyTickerModel.getTicker(lst[i]);
+                    if (t.AutoLoad()){
+                        t.SetAutoLoad(false);
+                        proxyTickerModel.setData(lst[i],t,Qt::EditRole);
+                    }
+                }
+            }
+        }
+        else if (rightClickItem && rightClickItem == pOn){
+            for (int i = 0; i < lst.size(); ++i){
+                if (lst[i].isValid()){
+                    t = proxyTickerModel.getTicker(lst[i]);
+                    if (!t.AutoLoad()){
+                        t.SetAutoLoad(true);
+                        proxyTickerModel.setData(lst[i],t,Qt::EditRole);
+                    }
+                }
+            }
+        }
+        else if (rightClickItem && rightClickItem == pShow){
+            for (int i = 0; i < lst.size(); ++i){
+                if (lst[i].isValid()){
+                    t = proxyTickerModel.getTicker(lst[i]);
+                    if (!t.Bulbululator()){
+                        t.SetBulbululator(true);
+                        proxyTickerModel.setData(lst[i],t,Qt::EditRole);
+                        BulbululatorAddActive(t.TickerID());
+                    }
+                }
+            }
+        }
+        else if (rightClickItem && rightClickItem == pHide){
+            for (int i = 0; i < lst.size(); ++i){
+                if (lst[i].isValid()){
+                    t = proxyTickerModel.getTicker(lst[i]);
+                    if (t.Bulbululator()){
+                        t.SetBulbululator(false);
+                        proxyTickerModel.setData(lst[i],t,Qt::EditRole);
+                        BulbululatorRemoveActive(t.TickerID());
+                    }
+                }
+            }
         }
     }
 }

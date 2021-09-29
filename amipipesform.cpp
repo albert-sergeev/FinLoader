@@ -369,10 +369,10 @@ void AmiPipesForm::slotOffAllClicked()
     ui->lstTickersActive->selectAll();
     auto lst (qml->selectedIndexes());
 
-    {
-        ThreadFreeCout pcout;
-        pcout <<"lst.size()"<<lst.size()<<"\n";
-    }
+//    {
+//        ThreadFreeCout pcout;
+//        pcout <<"lst.size()"<<lst.size()<<"\n";
+//    }
 
     while(lst.size() > 0){
         Ticker t = proxyTickerModelActive.getTicker(lst[0]);
@@ -403,10 +403,10 @@ void AmiPipesForm::slotOnAllClicked()
     ui->lstTickersOff->selectAll();
     auto lst (qml->selectedIndexes());
 
-    {
-        ThreadFreeCout pcout;
-        pcout <<"lst.size()"<<lst.size()<<"\n";
-    }
+//    {
+//        ThreadFreeCout pcout;
+//        pcout <<"lst.size()"<<lst.size()<<"\n";
+//    }
 
     while(lst.size() > 0){
         Ticker t = proxyTickerModelOff.getTicker(lst[0]);
@@ -1055,35 +1055,35 @@ bool AmiPipesForm::eventFilter(QObject *watched, QEvent *event)
 //--------------------------------------------------------------------------------------------------------------------
 void AmiPipesForm::slotInternalPanelsStateChanged(bool bLeft, bool bRight)
 {
-    {
-        ThreadFreeCout pcout;
-        pcout <<"receive: {"<<bLeft<<":"<<bRight<<"}\n";
-    }
+//    {
+//        ThreadFreeCout pcout;
+//        pcout <<"receive: {"<<bLeft<<":"<<bRight<<"}\n";
+//    }
     if (bLeft && bRight){
-        {
-            ThreadFreeCout pcout;
-            pcout <<"do show all\n";
-        }
+//        {
+//            ThreadFreeCout pcout;
+//            pcout <<"do show all\n";
+//        }
         if (ui->wtNew->isHidden()){
-            {
-                ThreadFreeCout pcout;
-                pcout <<"restore left\n";
-            }
+//            {
+//                ThreadFreeCout pcout;
+//                pcout <<"restore left\n";
+//            }
             slotTransparentBtnRightStateChanged(0);
         }
         else if (ui->wtActivities->isHidden()){
-            {
-                ThreadFreeCout pcout;
-                pcout <<"restore right\n";
-            }
+//            {
+//                ThreadFreeCout pcout;
+//                pcout <<"restore right\n";
+//            }
             slotTransparentBtnLeftStateChanged(0);
         }
     }
     else if (!bLeft){
-        {
-            ThreadFreeCout pcout;
-            pcout <<"do hide left\n";
-        }
+//        {
+//            ThreadFreeCout pcout;
+//            pcout <<"do hide left\n";
+//        }
         if (!ui->wtNew->isHidden() && !ui->wtActivities->isHidden()){
             slotTransparentBtnLeftStateChanged(0);
         }
@@ -1093,10 +1093,10 @@ void AmiPipesForm::slotInternalPanelsStateChanged(bool bLeft, bool bRight)
         }
     }
     else if (!bRight){
-        {
-            ThreadFreeCout pcout;
-            pcout <<"do hide right\n";
-        }
+//        {
+//            ThreadFreeCout pcout;
+//            pcout <<"do hide right\n";
+//        }
         if (!ui->wtNew->isHidden() && !ui->wtActivities->isHidden()){
             slotTransparentBtnRightStateChanged(0);
         }
