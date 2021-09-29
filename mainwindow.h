@@ -366,6 +366,9 @@ protected slots: // for main window
     void slotSendToLog(QString);
     void slotSendToErrorLog(QString);
 
+    void slotBulbululatorContextMenuRequested(const QPoint &);
+    void slotProcessesContextMenuRequested(const QPoint & pos);
+
 private:
     //std::vector<std::vector<Bar>> testPvBars; // TODO: delete. for tests
 

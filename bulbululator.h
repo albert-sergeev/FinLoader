@@ -78,6 +78,7 @@ public:
 signals:
 
     void DoubleClicked(const int TickerID);
+    void ContextMenuRequested(const int TickerID, const QPoint);
 
 private:
     void timerEvent(QTimerEvent * event) override;

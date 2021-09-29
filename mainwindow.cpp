@@ -48,14 +48,19 @@ MainWindow::MainWindow(QWidget *parent)
     lcdN->display(QString("00:00:00"));
     lcdN->setToolTip(tr("server time of the last packet"));
     ui->statusbar->addWidget(lcdN);
+    lcdN->setContextMenuPolicy(Qt::ContextMenuPolicy::CustomContextMenu);
     //ui->statusbar->addPermanentWidget(lcdN);
     //
     wtCombIndicator = new CombIndicator(int(thrdPoolLoadFinQuotes.MaxThreads()+
                                         thrdPoolAmiClient.MaxThreads()+
                                         thrdPoolFastDataWork.MaxThreads())
                                         );
+    wtCombIndicator->setContextMenuPolicy(Qt::ContextMenuPolicy::CustomContextMenu);
     //ui->statusbar->addWidget(wtCombIndicator);
     ui->statusbar->addPermanentWidget(wtCombIndicator);
+
+    connect(lcdN,SIGNAL(customContextMenuRequested(const QPoint &)),this,SLOT(slotProcessesContextMenuRequested(const QPoint &)));
+    connect(wtCombIndicator,SIGNAL(customContextMenuRequested(const QPoint &)),this,SLOT(slotProcessesContextMenuRequested(const QPoint &)));
     //-------------------------------------------------------------
 
     //-------------------------------------------------------------
@@ -1174,6 +1179,8 @@ void MainWindow::BulbululatorRemoveActive   (int TickerID)
     if (bFound && iCurrInstanses == 0){
         vBulbululators[i]->close();
         disconnect(vBulbululators[i],SIGNAL(DoubleClicked(const int)),this,SLOT(slotSetSelectedTicker(const  int)));
+
+        disconnect(vBulbululators[i],SIGNAL(customContextMenuRequested(const QPoint &)),this,SLOT(slotBulbululatorContextMenuRequested(const QPoint &)));
         ui->statusbar->removeWidget(vBulbululators[i]);
         //statusBarTickers->removeWidget(vBulbululators[i]);
         vBulbululators.erase(std::next(vBulbululators.begin(),i));
@@ -1215,9 +1222,13 @@ void MainWindow::BulbululatorAddActive      (int TickerID)
     }
     if (!bFound){
         Bulbululator * blbl = new Bulbululator();
-        connect(blbl,SIGNAL(DoubleClicked(const int)),this,SLOT(slotSetSelectedTicker(const  int)));
 
         if(blbl){
+
+            blbl->setContextMenuPolicy(Qt::ContextMenuPolicy::CustomContextMenu);
+
+            connect(blbl,SIGNAL(DoubleClicked(const int)),this,SLOT(slotSetSelectedTicker(const  int)));
+            connect(blbl,SIGNAL(customContextMenuRequested(const QPoint &)),this,SLOT(slotBulbululatorContextMenuRequested(const QPoint &)));
 
             for(auto const & b:vBulbululators){
                 ui->statusbar->removeWidget(b);
@@ -1227,6 +1238,8 @@ void MainWindow::BulbululatorAddActive      (int TickerID)
             blbl->SetText(str);
             blbl->SetTickerID(TickerID);
             blbl->SetTickerName(strName);
+            //blbl->installEventFilter(this);
+
             vBulbululators.push_back(blbl);
 
             std::sort(vBulbululators.begin(),vBulbululators.end(),[]( Bulbululator * const l,Bulbululator * const r){
@@ -2479,6 +2492,94 @@ void MainWindow::slotNeedToReboot()
     QProcess::startDetached(qApp->arguments()[0], qApp->arguments());
 }
 //--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotBulbululatorContextMenuRequested(const QPoint & pos)
+{
+    Bulbululator *bulb = qobject_cast<Bulbululator *>(sender());
+    if (bulb){
+        QPoint item = bulb->mapToGlobal(pos);
+        QMenu submenu(this);
+        QAction *pHide = submenu.addAction(tr("Hide indicator"));
+        QAction *pOff = submenu.addAction(tr("Off autoload for ")+bulb->Text());
+        QAction *pStop = submenu.addAction(tr("Stop all history import"));
+        QAction* rightClickItem = submenu.exec(item);
 
+        QModelIndex indx;
+        Ticker t{0,"","",1};
+        if(m_TickerLstModel.searchTickerByTickerID(bulb->TickerID(),indx)){
+            t = m_TickerLstModel.getTicker(indx);
+        }
 
+        if (rightClickItem && rightClickItem == pHide){
+            if(indx.isValid()){
+                t.SetBulbululator(false);
+                m_TickerLstModel.setData(indx,t,Qt::EditRole);
+                BulbululatorRemoveActive(bulb->TickerID());
+            }
+        }
+        else if (rightClickItem && rightClickItem == pOff){
+            if(indx.isValid()){
+                t.SetAutoLoad(false);
+                m_TickerLstModel.setData(indx,t,Qt::EditRole);
+            }
+        }
+        else if (rightClickItem && rightClickItem == pStop){
+            QString sQuestion = tr("Do you want to stop loading process?\n Warning: will be stopped all loadings from files!");
+            int n=QMessageBox::warning(0,tr("Warning"),sQuestion,QMessageBox::Yes | QMessageBox::No);
+            if (n==QMessageBox::Yes){
+                slotStopFinQuotesLoadings();
+            }
+        }
+
+    }
+}
+//--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::slotProcessesContextMenuRequested(const QPoint & pos)
+{
+    QPoint item;
+    QMenu submenu(this);
+
+    QAction *pStop{nullptr};
+    QAction *pOff{nullptr};
+
+    QLCDNumber *lcd = dynamic_cast<QLCDNumber *>(sender());
+    CombIndicator *cm = dynamic_cast<CombIndicator *>(sender());
+    if (lcd != nullptr) {
+        item = lcd->mapToGlobal(pos);
+        pOff = submenu.addAction(tr("Turn off autoloads for all tickers"));
+    }
+    else if (cm != nullptr){
+        item = cm->mapToGlobal(pos);
+        pOff = submenu.addAction(tr("Turn off autoloads for all tickers"));
+        pStop = submenu.addAction(tr("Stop all history import"));
+    }
+    else{
+        return;
+    }
+    /////////////////////////////////
+    QAction* rightClickItem = submenu.exec(item);
+    if (rightClickItem && rightClickItem == pOff){
+        QString sQuestion = tr("Do you want to close all data source pipes from trade systems?");
+        int n=QMessageBox::warning(0,tr("Warning"),sQuestion,QMessageBox::Yes | QMessageBox::No);
+        if (n==QMessageBox::Yes){
+            QModelIndex indx;
+            Ticker t{0,"","",1};
+            for (int iRow = 0; iRow < m_TickerLstModel.rowCount(); ++iRow){
+                indx = m_TickerLstModel.index(iRow,0);
+                t = m_TickerLstModel.getTicker(indx);
+                if(indx.isValid()){
+                    t.SetAutoLoad(false);
+                    m_TickerLstModel.setData(indx,t,Qt::EditRole);
+                }
+            }
+        }
+    }
+    else if (rightClickItem && rightClickItem == pStop){
+        QString sQuestion = tr("Do you want to stop loading process?\n Warning: will be stopped all loadings from files!");
+        int n=QMessageBox::warning(0,tr("Warning"),sQuestion,QMessageBox::Yes | QMessageBox::No);
+        if (n==QMessageBox::Yes){
+            slotStopFinQuotesLoadings();
+        }
+    }
+}
+//--------------------------------------------------------------------------------------------------------------------------------
 
