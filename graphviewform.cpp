@@ -157,9 +157,10 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
     btnScaleVVolumePlus->setToolTip(tr("increase the vertical scale of the volume graph"));
     btnScaleVVolumeMinus->setToolTip(tr("reduce the vertical scale of the volume graph"));
 
-    btnScaleHViewDefault->setToolTip(tr("Set default the horizontal scale of the graph"));
-    btnScaleVViewDefault->setToolTip(tr("Set default the vertical scale of the graph"));
-    btnScaleVVolumeDefault->setToolTip(tr("Set default the vertical scale of the volume graph"));
+
+    btnScaleHViewDefault->setToolTip(tr("Set default horizontal scale of the graph"));
+    btnScaleVViewDefault->setToolTip(tr("Set default vertical scale of the graph"));
+    btnScaleVVolumeDefault->setToolTip(tr("Set default vertical scale of the volume graph"));
 
     connect(btnScaleHViewDefault,SIGNAL(clicked()),this,SLOT(slotScaleHViewDefaultClicked()));
     connect(btnScaleVViewDefault,SIGNAL(clicked()),this,SLOT(slotScaleVViewDefaultClicked()));

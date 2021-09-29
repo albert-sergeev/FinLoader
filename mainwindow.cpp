@@ -1185,11 +1185,13 @@ void MainWindow::BulbululatorAddActive      (int TickerID)
 {
     bool bFound{false};
     QString str;
+    QString strName;
     bool bBulbulator{false};
 
     for(const auto& t:vTickersLst){
         if(t.TickerID() == TickerID){
             str = QString::fromStdString(t.TickerSign());
+            strName = QString::fromStdString(t.TickerName());
             bFound = true;
             bBulbulator = t.Bulbululator();
             break;
@@ -1224,6 +1226,7 @@ void MainWindow::BulbululatorAddActive      (int TickerID)
 
             blbl->SetText(str);
             blbl->SetTickerID(TickerID);
+            blbl->SetTickerName(strName);
             vBulbululators.push_back(blbl);
 
             std::sort(vBulbululators.begin(),vBulbululators.end(),[]( Bulbululator * const l,Bulbululator * const r){
@@ -1233,6 +1236,8 @@ void MainWindow::BulbululatorAddActive      (int TickerID)
             for(auto & b:vBulbululators){
                 ui->statusbar->addWidget(b);
                 //statusBarTickers->addWidget(b);
+                if (b->TickerName().size()>0)
+                    b->setToolTip(b->TickerName());
                 b->show();
             }
             //ui->statusbar->addWidget(blbl);
