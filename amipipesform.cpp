@@ -130,7 +130,7 @@ AmiPipesForm::AmiPipesForm(modelMarketsList *modelM, int DefaultTickerMarket,
     swtShowByNameOff->setChecked(bShowByNameOff);
 
 
-    connect(ui->btnQuit,SIGNAL(clicked()),this,SLOT(slotBtnQuitClicked()));
+    //connect(ui->btnQuit,SIGNAL(clicked()),this,SLOT(slotBtnQuitClicked()));
 
 
 }

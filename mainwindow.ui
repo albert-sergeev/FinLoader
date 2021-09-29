@@ -198,6 +198,9 @@
                  <height>15</height>
                 </size>
                </property>
+               <property name="toolTip">
+                <string>Toggle ticker display by name / by sign</string>
+               </property>
               </widget>
              </item>
              <item>
@@ -208,6 +211,9 @@
                  <height>15</height>
                 </size>
                </property>
+               <property name="toolTip">
+                <string>Toggle ticker display all tickers or only with active autoloading of trade data</string>
+               </property>
               </widget>
              </item>
              <item>
@@ -217,6 +223,9 @@
                  <width>0</width>
                  <height>15</height>
                 </size>
+               </property>
+               <property name="toolTip">
+                <string>Toggle display market on/off</string>
                </property>
               </widget>
              </item>
