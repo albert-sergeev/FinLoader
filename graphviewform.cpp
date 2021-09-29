@@ -120,6 +120,23 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
     btnScaleVVolumePlus     = new PlusButton(true,this);
     btnScaleVVolumeMinus    = new PlusButton(false,this);
 
+    QFont fontDef;
+    fontDef.setPixelSize(8);
+    fontDef.setBold(false);
+    fontDef.setFamily("Times New Roman");
+
+    btnScaleHViewDefault    = new TransparentButton(tr("DEFAULT"),this);
+    btnScaleVViewDefault    = new TransparentButton(tr("DEFAULT"),this);
+    btnScaleVVolumeDefault  = new TransparentButton(tr("DEFAULT"),this);
+
+    btnScaleHViewDefault->setFont(fontDef);
+    btnScaleVViewDefault->setFont(fontDef);
+    btnScaleVVolumeDefault->setFont(fontDef);
+
+    btnScaleHViewDefault->installEventFilter(this);
+    btnScaleVViewDefault->installEventFilter(this);
+    btnScaleVVolumeDefault->installEventFilter(this);
+
 
     connect(btnScaleHViewPlus,SIGNAL(clicked(bool)),this,SLOT(slotHScaleQuotesClicked(bool)));
     connect(btnScaleHViewMinus,SIGNAL(clicked(bool)),this,SLOT(slotHScaleQuotesClicked(bool)));
@@ -140,6 +157,15 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
     btnScaleVVolumePlus->setToolTip(tr("increase the vertical scale of the volume graph"));
     btnScaleVVolumeMinus->setToolTip(tr("reduce the vertical scale of the volume graph"));
 
+    btnScaleHViewDefault->setToolTip(tr("Set default the horizontal scale of the graph"));
+    btnScaleVViewDefault->setToolTip(tr("Set default the vertical scale of the graph"));
+    btnScaleVVolumeDefault->setToolTip(tr("Set default the vertical scale of the volume graph"));
+
+    connect(btnScaleHViewDefault,SIGNAL(clicked()),this,SLOT(slotScaleHViewDefaultClicked()));
+    connect(btnScaleVViewDefault,SIGNAL(clicked()),this,SLOT(slotScaleVViewDefaultClicked()));
+    connect(btnScaleVVolumeDefault,SIGNAL(clicked()),this,SLOT(slotScaleVVolumeDefaultClicked()));
+
+
     //-------------------------------------------------------------
     holder = hldr;
     //
@@ -156,13 +182,14 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
     lblSign->setText(QString::fromStdString(tTicker.TickerSign()));
     lblSignR->setText(QString::fromStdString(tTicker.TickerSign()));
     //-------------------------------------------------------------------------------------
-    // TODO: save default selected interval other settings
-
     iSelectedInterval   = tTicker.StoredSelectedInterval();
     dStoredVValue       = tTicker.StoredVValue();
     dHScale             = tTicker.StoredHScale() == 0 ? 1 : tTicker.StoredHScale();
     bOHLC               = tTicker.OHLC();
     swtCandle->setChecked(bOHLC);
+
+    if (dHScale == 1) btnScaleHViewDefault->hide();
+    else btnScaleHViewDefault->show();
 
     tStoredRightPointPosition           = tTicker.StoredTimePosition();
     iStoredRightAggregate               = tTicker.StoredRightAggregate();
@@ -946,86 +973,138 @@ void GraphViewForm::slotHScaleQuotesClicked(bool bPlus)
         if (bPlus) dHScale *= 1.1;
         else dHScale *= 0.9;
 
-        Erase();
+        slotSetNewHScaleQuotes(dHScale);
 
-        int iNewWidth =  (iStoredMaxSize + iLeftShift + iRightShift) * BarGraphicsItem::BarWidth * dHScale;
+//        Erase();
 
-        QRectF newRec(0,ui->grViewQuotes->scene()->sceneRect().y(),
-                      iNewWidth  ,
-                      ui->grViewQuotes->scene()->sceneRect().height()
-                      );
-        disconnect(ui->grHorizScroll->horizontalScrollBar(),SIGNAL(valueChanged(int)),this,SLOT(slotHorizontalScrollBarValueChanged(int)));
-        grScene->setSceneRect(newRec);
-        connect(ui->grHorizScroll->horizontalScrollBar(),SIGNAL(valueChanged(int)),this,SLOT(slotHorizontalScrollBarValueChanged(int)));
+//        int iNewWidth =  (iStoredMaxSize + iLeftShift + iRightShift) * BarGraphicsItem::BarWidth * dHScale;
 
-        PaintViewPort(true,true,true,false,false);
+//        QRectF newRec(0,ui->grViewQuotes->scene()->sceneRect().y(),
+//                      iNewWidth  ,
+//                      ui->grViewQuotes->scene()->sceneRect().height()
+//                      );
+//        disconnect(ui->grHorizScroll->horizontalScrollBar(),SIGNAL(valueChanged(int)),this,SLOT(slotHorizontalScrollBarValueChanged(int)));
+//        grScene->setSceneRect(newRec);
+//        connect(ui->grHorizScroll->horizontalScrollBar(),SIGNAL(valueChanged(int)),this,SLOT(slotHorizontalScrollBarValueChanged(int)));
 
-        if (tStoredRightPointPosition != 0){
-            SetSliderToPos(tStoredRightPointPosition, iStoredRightAggregate);
-        }
-        else{
-            SetSliderToPos(tStoredMaxDate, iRightShift);
-        }
+//        PaintViewPort(true,true,true,false,false);
+
+//        if (tStoredRightPointPosition != 0){
+//            SetSliderToPos(tStoredRightPointPosition, iStoredRightAggregate);
+//        }
+//        else{
+//            SetSliderToPos(tStoredMaxDate, iRightShift);
+//        }
 
 
-        ui->grViewQuotes->scene()->invalidate(ui->grViewQuotes->sceneRect());
-        ui->grViewVolume->scene()->invalidate(ui->grViewVolume->sceneRect());
+//        ui->grViewQuotes->scene()->invalidate(ui->grViewQuotes->sceneRect());
+//        ui->grViewVolume->scene()->invalidate(ui->grViewVolume->sceneRect());
     }
+}
+//---------------------------------------------------------------------------------------------------------------
+
+void GraphViewForm::slotSetNewHScaleQuotes(double dNewScale)
+{
+    dHScale = dNewScale;
+
+    Erase();
+
+    int iNewWidth =  (iStoredMaxSize + iLeftShift + iRightShift) * BarGraphicsItem::BarWidth * dHScale;
+
+    QRectF newRec(0,ui->grViewQuotes->scene()->sceneRect().y(),
+                  iNewWidth  ,
+                  ui->grViewQuotes->scene()->sceneRect().height()
+                  );
+    disconnect(ui->grHorizScroll->horizontalScrollBar(),SIGNAL(valueChanged(int)),this,SLOT(slotHorizontalScrollBarValueChanged(int)));
+    grScene->setSceneRect(newRec);
+    connect(ui->grHorizScroll->horizontalScrollBar(),SIGNAL(valueChanged(int)),this,SLOT(slotHorizontalScrollBarValueChanged(int)));
+
+    PaintViewPort(true,true,true,false,false);
+
+    if (tStoredRightPointPosition != 0){
+        SetSliderToPos(tStoredRightPointPosition, iStoredRightAggregate);
+    }
+    else{
+        SetSliderToPos(tStoredMaxDate, iRightShift);
+    }
+
+
+    ui->grViewQuotes->scene()->invalidate(ui->grViewQuotes->sceneRect());
+    ui->grViewVolume->scene()->invalidate(ui->grViewVolume->sceneRect());
+
+    if (dHScale == 1) btnScaleHViewDefault->hide();
+    else btnScaleHViewDefault->show();
 }
 //---------------------------------------------------------------------------------------------------------------
 void GraphViewForm::slotVScaleQuotesClicked(bool bPlus)
 {
+    int iNewViewPortH = (mVScale.at(iSelectedInterval) * (dStoredHighMax - dStoredLowMin)  + iViewPortLowStrip + iViewPortHighStrip );
+    double dNewScale = mVScale[iSelectedInterval];
+    if (dNewScale == 0) dNewScale = 1.0;
 
+    if (iViewPortHeight < iNewViewPortH || bPlus){
+        if (bPlus) dNewScale *= 1.1;
+        else dNewScale *= 0.9;
+
+        slotSetNewVScaleQuotes(dNewScale);
+    }
+}
+//---------------------------------------------------------------------------------------------------------------
+void GraphViewForm::slotSetNewVScaleQuotes(double dNewScale)
+{
     InvalidateCounterDefender def(aiInvalidateCounter);
+
+    mVScale[iSelectedInterval] = dNewScale;
+
+    //int iNewViewPortH = (mVScale.at(iSelectedInterval) * (dStoredHighMax - dStoredLowMin)  + iViewPortLowStrip + iViewPortHighStrip );
+
+    EraseFrames();
+    EraseBars();
+    EraseMovingAverages();
+    RefreshHLines();
+
+    ui->grViewL1->scene()->invalidate(ui->grViewL1->sceneRect());
+    ui->grViewR1->scene()->invalidate(ui->grViewR1->sceneRect());
 
     int iNewViewPortH = (mVScale.at(iSelectedInterval) * (dStoredHighMax - dStoredLowMin)  + iViewPortLowStrip + iViewPortHighStrip );
 
-    if (mVScale[iSelectedInterval] == 0) mVScale[iSelectedInterval] = 1.0;
-
-    if (iViewPortHeight < iNewViewPortH || bPlus){
-        if (bPlus) mVScale[iSelectedInterval] *= 1.1;
-        else mVScale[iSelectedInterval] *= 0.9;
-
-        EraseFrames();
-        EraseBars();
-        EraseMovingAverages();
-        RefreshHLines();
-
-        ui->grViewL1->scene()->invalidate(ui->grViewL1->sceneRect());
-        ui->grViewR1->scene()->invalidate(ui->grViewR1->sceneRect());
-
-        iNewViewPortH = (mVScale.at(iSelectedInterval) * (dStoredHighMax - dStoredLowMin)  + iViewPortLowStrip + iViewPortHighStrip );
-
-        if ( iViewPortHeight > iNewViewPortH){
-            iNewViewPortH = iViewPortHeight;
-        }
-
-        QRectF newRec(0,-iNewViewPortH,
-                      ui->grViewQuotes->scene()->sceneRect().width()  ,
-                      iNewViewPortH
-                      );
-        disconnect(ui->grHorizScroll->horizontalScrollBar(),SIGNAL(valueChanged(int)),this,SLOT(slotHorizontalScrollBarValueChanged(int)));
-        grScene->setSceneRect(newRec);
-        connect(ui->grHorizScroll->horizontalScrollBar(),SIGNAL(valueChanged(int)),this,SLOT(slotHorizontalScrollBarValueChanged(int)));
-
-
-
-        def.free();
-        PaintViewPort(true,true,false,false,false);
-
-        ui->grViewQuotes->scene()->invalidate(ui->grViewQuotes->sceneRect());
-
-        SetSliderToVertPos(dStoredVValue);
+    if ( iViewPortHeight > iNewViewPortH){
+        iNewViewPortH = iViewPortHeight;
     }
+
+    QRectF newRec(0,-iNewViewPortH,
+                  ui->grViewQuotes->scene()->sceneRect().width()  ,
+                  iNewViewPortH
+                  );
+    disconnect(ui->grHorizScroll->horizontalScrollBar(),SIGNAL(valueChanged(int)),this,SLOT(slotHorizontalScrollBarValueChanged(int)));
+    grScene->setSceneRect(newRec);
+    connect(ui->grHorizScroll->horizontalScrollBar(),SIGNAL(valueChanged(int)),this,SLOT(slotHorizontalScrollBarValueChanged(int)));
+
+
+
+    def.free();
+    PaintViewPort(true,true,false,false,false);
+
+    ui->grViewQuotes->scene()->invalidate(ui->grViewQuotes->sceneRect());
+
+    SetSliderToVertPos(dStoredVValue);
 }
 //---------------------------------------------------------------------------------------------------------------
 void GraphViewForm::slotVScaleVolumeClicked(bool bPlus)
 {
 
+    double dNewScale = mVVolumeScale[iSelectedInterval];
 
-    if (mVVolumeScale[iSelectedInterval] ==0) mVVolumeScale[iSelectedInterval] = 1.0;
-    if (bPlus) mVVolumeScale[iSelectedInterval] *= 1.1;
-    else mVVolumeScale[iSelectedInterval] *= 0.9;
+    if ( dNewScale == 0) dNewScale = 1.0;
+    if (bPlus) dNewScale *= 1.1;
+    else dNewScale *= 0.9;
+
+    slotSetNewVScaleVolume(dNewScale);
+}
+//---------------------------------------------------------------------------------------------------------------
+void GraphViewForm::slotSetNewVScaleVolume(double dNewScale){
+
+    mVVolumeScale[iSelectedInterval] = dNewScale;
 
     EraseLinesLower(mShowedVolumes,        0, ui->grViewVolume->scene());
 
@@ -1044,7 +1123,6 @@ void GraphViewForm::slotVScaleVolumeClicked(bool bPlus)
     PaintViewPort(false,false,true,false,false);
 
     ui->grViewVolume->scene()->invalidate(ui->grViewVolume->sceneRect());
-
 }
 //---------------------------------------------------------------------------------------------------------------
 void GraphViewForm::Erase()
@@ -1261,12 +1339,16 @@ void GraphViewForm::RepositionPlusMinusButtons()
 
     btnScaleVViewPlus->move     (rX - 15, pQ.y() + 10 );
     btnScaleVViewMinus->move    (rX - 15, pQ.y() + 30 );
+    btnScaleVViewDefault->move    (rX - btnScaleVViewDefault->width()  + 1, pQ.y() + 50 );
 
     btnScaleHViewPlus->move     (rX - 30, pT.y() - 20 );
     btnScaleHViewMinus->move    (rX - 15, pT.y() - 20 );
+    btnScaleHViewDefault->move    (rX - btnScaleHViewDefault->width()  + 1, pT.y() - 40 );
 
     btnScaleVVolumePlus->move   (rX - 15, pV.y() + 10 );
     btnScaleVVolumeMinus->move  (rX - 15, pV.y() + 30 );
+    //btnScaleVVolumeDefault->move  (rX - btnScaleVVolumeDefault->width() + 1, pV.y() + 50 );
+    btnScaleVVolumeDefault->move  (rX - btnScaleVVolumeDefault->width() - 15 - 5 + 1, pV.y() + 10 );
 }
 //---------------------------------------------------------------------------------------------------------------
 void GraphViewForm::slotPeriodButtonChanged()
@@ -2432,6 +2514,11 @@ bool GraphViewForm::eventFilter(QObject *watched, QEvent *event)
              RepositionPlusMinusButtons();
          }
      }
+     if (watched == btnScaleHViewDefault || watched == btnScaleVViewDefault || watched ==btnScaleVVolumeDefault){
+         if(event->type() == QEvent::Resize){
+             RepositionPlusMinusButtons();
+         }
+     }
      return QObject::eventFilter(watched, event);
 }
 //---------------------------------------------------------------------------------------------------------------
@@ -2727,5 +2814,26 @@ QPainterPath GraphViewForm::smoothOut(const std::map<int,QPointF> &map, const fl
         path.lineTo(pt2);
     }
     return path;
+}
+//---------------------------------------------------------------------------------------------------------------
+void GraphViewForm::slotScaleHViewDefaultClicked()
+{
+    slotSetNewHScaleQuotes(1);
+}
+//---------------------------------------------------------------------------------------------------------------
+void GraphViewForm::slotScaleVViewDefaultClicked()
+{
+    double dNewScale {1.0};
+    if ((dStoredHighMax - dStoredLowMin) > 0){
+        dNewScale = (iViewPortHeight - iViewPortHighStrip - iViewPortLowStrip)/(dStoredHighMax - dStoredLowMin);
+    }
+    slotSetNewVScaleQuotes(dNewScale);
+}
+//---------------------------------------------------------------------------------------------------------------
+void GraphViewForm::slotScaleVVolumeDefaultClicked()
+{
+    double dNewScale = (ui->grViewVolume->maximumHeight() - iVolumeViewPortHighStrip * 2)/(dStoredVolumeHighMax /*- dStoredVolumeLowMin*/);
+    if (dNewScale <=0 ) dNewScale = 1;
+    slotSetNewVScaleVolume(dNewScale);
 }
 //---------------------------------------------------------------------------------------------------------------

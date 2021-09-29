@@ -11,6 +11,7 @@
 #include "styledswitcher.h"
 #include "plusbutton.h"
 #include "memometer.h"
+#include "transparentbutton.h"
 
 namespace Ui {
 class GraphViewForm;
@@ -133,7 +134,9 @@ private:
     QPushButton  *btnHelp;
     QPushButton  *btnHelpR;
 
-
+    TransparentButton *btnScaleHViewDefault;
+    TransparentButton *btnScaleVViewDefault;
+    TransparentButton *btnScaleVVolumeDefault;
 
     const int iTickerID;
     Ticker tTicker;
@@ -279,6 +282,14 @@ protected slots:
     void slotPeriodButtonChanged();
 
     void slotCandleStateChanged(int);
+
+    void slotScaleHViewDefaultClicked();
+    void slotScaleVViewDefaultClicked();
+    void slotScaleVVolumeDefaultClicked();
+
+    void slotSetNewHScaleQuotes(double dNewScale);
+    void slotSetNewVScaleQuotes(double dNewScale);
+    void slotSetNewVScaleVolume(double dNewScale);
 
 private:
     Ui::GraphViewForm *ui;
