@@ -2501,7 +2501,7 @@ void MainWindow::slotBulbululatorContextMenuRequested(const QPoint & pos)
         QPoint item = bulb->mapToGlobal(pos);
         QMenu submenu(this);
         QAction *pHide = submenu.addAction(tr("Hide indicator"));
-        QAction *pOff = submenu.addAction(tr("Off autoload for ")+bulb->Text());
+        QAction *pOff = submenu.addAction(tr("Turn off autoload for ")+bulb->Text());
         QAction *pStop = submenu.addAction(tr("Stop all history import"));
         QAction* rightClickItem = submenu.exec(item);
 
@@ -2640,8 +2640,8 @@ void MainWindow::slotTickerBarMenuRequested(const QPoint & pos)
         QAction *pHide{nullptr};
 
         pGraph  = submenu.addAction(tr("Quotes graph"));
-        pOn     = submenu.addAction(tr("On autoloads"));
-        pOff    = submenu.addAction(tr("Off autoloads"));
+        pOn     = submenu.addAction(tr("Turn on autoloads"));
+        pOff    = submenu.addAction(tr("Turn off autoloads"));
         pShow   = submenu.addAction(tr("Show activity indicators"));
         pHide   = submenu.addAction(tr("Hide activity indicators"));
 
