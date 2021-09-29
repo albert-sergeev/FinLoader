@@ -128,8 +128,11 @@
              <height>40</height>
             </size>
            </property>
+           <property name="toolTip">
+            <string>You know... to panic 8)</string>
+           </property>
            <property name="text">
-            <string>Debug</string>
+            <string>Help</string>
            </property>
            <property name="default">
             <bool>false</bool>

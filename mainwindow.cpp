@@ -889,7 +889,8 @@ void MainWindow::InitAction()
     pacNewDoc->setToolTip(tr("Quotes graph"));
     pacNewDoc->setStatusTip(tr("Quotes graph"));
     pacNewDoc->setWhatsThis(tr("Quotes graph"));
-    pacNewDoc->setIcon(QPixmap(":/store/images/sc_newdoc"));
+    //pacNewDoc->setIcon(QPixmap(":/store/images/sc_newdoc"));
+    pacNewDoc->setIcon(QPixmap(":/store/images/graph"));
     connect(pacNewDoc,SIGNAL(triggered()),SLOT(slotGraphViewWindow()));
     //------------------------------------------------
     QAction * pacOpen =new QAction("Open");
@@ -898,7 +899,8 @@ void MainWindow::InitAction()
     pacOpen->setToolTip(tr("Load history data"));
     pacOpen->setStatusTip(tr("Load history data"));
     pacOpen->setWhatsThis(tr("Load history data"));
-    pacOpen->setIcon(QPixmap(":/store/images/sc_open"));
+    //pacOpen->setIcon(QPixmap(":/store/images/sc_open"));
+    pacOpen->setIcon(QPixmap(":/store/images/open"));
     connect(pacOpen,SIGNAL(triggered()),SLOT(slotImportFinQuotesWndow()));
     //------------------------------------------------
 //    QAction * pacSave =new QAction("Save");
@@ -944,7 +946,7 @@ void MainWindow::InitAction()
     pacAmiPipe->setToolTip(tr("Import from trade sistem"));
     pacAmiPipe->setStatusTip(tr("Import from trade sistem"));
     pacAmiPipe->setWhatsThis(tr("Import from trade sistem"));
-    pacAmiPipe->setIcon(QPixmap(":/store/images/sc_cut"));
+    pacAmiPipe->setIcon(QPixmap(":/store/images/pipes2"));
     connect(pacAmiPipe,SIGNAL(triggered()),SLOT(slotAmiPipeWndow()));
     //------------------------------------------------
     pacAmiPipeBarNew =new QAction("pacAmiPipeBarNew");
@@ -969,7 +971,7 @@ void MainWindow::InitAction()
     pacTickersBar->setText(tr("Tickers bar"));
     pacTickersBar->setCheckable(true);
     pacTickersBar->setChecked(!bTickerBarOnLoadIsHidden);
-    pacTickersBar->setIcon(QPixmap(":/store/images/sc_save"));
+    pacTickersBar->setIcon(QPixmap(":/store/images/scroll"));
     connect(pacTickersBar,SIGNAL(triggered()),SLOT(slotTickersBarStateChanged()));
     //------------------------------------------------
     pacTickersBarButtonsHide =new QAction(tr("Show tickers bar panel"));
@@ -1096,13 +1098,13 @@ void MainWindow::InitAction()
     tbrToolBar =new QToolBar("Toolbar");
     tbrToolBar->setObjectName("Toolbar");
     tbrToolBar->addAction(pacNewDoc);
-    tbrToolBar->addAction(pacTickersBar);
     tbrToolBar->addAction(pacAmiPipe);
+    tbrToolBar->addAction(pacTickersBar);
     tbrToolBar->addAction(pacOpen);
     //tbrToolBar->addAction(pacSave);
     tbrToolBar->addAction(pacConfig);
-    tbrToolBar->addAction(pacLogWnd);
-    tbrToolBar->addAction(pacErrLogWnd);
+//    tbrToolBar->addAction(pacLogWnd);
+//    tbrToolBar->addAction(pacErrLogWnd);
 
         this->addToolBar(tbrToolBar);
         if (bToolBarOnLoadIsHidden){
@@ -1602,7 +1604,8 @@ void MainWindow::slotImportFinQuotesWndow ()
     ImportFinQuotesForm *pdoc=new ImportFinQuotesForm (&m_MarketLstModel,iDefaultTickerMarket,&m_TickerLstModel/*,bConfigTickerShowByName,bConfigTickerSortByName*/);
     pdoc->setAttribute(Qt::WA_DeleteOnClose);
     pdoc->setWindowTitle(tr("Import"));
-    pdoc->setWindowIcon(QPixmap(":/store/images/sc_open"));
+    //pdoc->setWindowIcon(QPixmap(":/store/images/sc_open"));
+    pdoc->setWindowIcon(QPixmap(":/store/images/open"));
     pdoc->SetDefaultOpenDir(qsDefaultOpenDir);
     pdoc->SetDelimiter(cImportDelimiter);
 
@@ -1719,7 +1722,7 @@ void MainWindow::InitDockBar()
                                               bAmiPipesNewWndShown, bAmiPipesActiveWndShown);
 
     pAmiPipeWindow->setWindowTitle(tr("Import from trade sistems"));
-    pAmiPipeWindow->setWindowIcon(QPixmap(":/store/images/sc_cut"));
+    pAmiPipeWindow->setWindowIcon(QPixmap(":/store/images/pipes2"));
     connect(pAmiPipeWindow,SIGNAL(NeedSaveDefaultTickerMarket(int)),this,SLOT(slotStoreDefaultTickerMarket(int)));
 
     connect(pAmiPipeWindow,SIGNAL(SendToMainLog(QString)),this,SIGNAL(SendToLog(QString)));
@@ -1883,7 +1886,8 @@ void MainWindow::slotSetSelectedTicker(const  int iTickerID)
         GraphViewForm *pdoc=new GraphViewForm(iTickerID,vTickersLst,Holders[iTickerID]);
         lk.unlock();
         pdoc->setAttribute(Qt::WA_DeleteOnClose);
-        pdoc->setWindowIcon(QPixmap(":/store/images/sc_newdoc"));
+        //pdoc->setWindowIcon(QPixmap(":/store/images/sc_newdoc"));
+        pdoc->setWindowIcon(QPixmap(":/store/images/graph"));
 
         ui->mdiArea->addSubWindow(pdoc);
 

@@ -19,5 +19,10 @@
         <file>FinLoader_ru_RU.qm</file>
         <file>FinLoader_en_US.qm</file>
         <file>images/sc_err_log.png</file>
+        <file>images/graph.png</file>
+        <file>images/pipes.png</file>
+        <file>images/pipes2.png</file>
+        <file>images/scroll.png</file>
+        <file>images/open.png</file>
     </qresource>
 </RCC>
