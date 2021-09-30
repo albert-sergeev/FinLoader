@@ -1744,9 +1744,9 @@ void GraphViewForm::slotPeriodButtonChanged()
                  iStoredRightAggregate  = 0;
              }
              else{
-                 if(mTimesScale.find(iEnd) != mTimesScale.end()){
-                     tStoredRightPointPosition = Bar::DateAccommodate(mTimesScale[iEnd].first,iSelectedInterval,true);
-                     iStoredRightAggregate  = iEndI > iEnd ? iEndI - iEnd : 0;
+                 if(mTimesScale.find(iEnd + iShift) != mTimesScale.end()){
+                     tStoredRightPointPosition = Bar::DateAccommodate(mTimesScale[iEnd + iShift].first,iSelectedInterval,true);
+                     iStoredRightAggregate  = iEndI > iEnd + iShift ? iEndI - iEnd - iShift : 0;
                  }
              }
          }
@@ -2307,14 +2307,16 @@ void GraphViewForm::SetSliderToPos(std::time_t tRightPos, int iRightAggregate)
      auto ItEnd (holder->end<T>());
      if (bSuccess ){
          int xCur{0};
+         int iPos{0};
 
          if (It != ItEnd){
-             xCur = (It.realPosition() + iLeftShift - 1) * BarGraphicsItem::BarWidth * dHScale - ui->grViewQuotes->horizontalScrollBar()->pageStep();
+             iPos = (int)It.realPosition();
+             xCur = (iPos + iLeftShift - 1) * BarGraphicsItem::BarWidth * dHScale - ui->grViewQuotes->horizontalScrollBar()->pageStep();
              xCur += iRightAggregate * BarGraphicsItem::BarWidth * dHScale;
          }
          else{
-             int iSize = (int)holder->getViewGraphSize(iSelectedInterval);
-             xCur = (iSize + iLeftShift - 1) * BarGraphicsItem::BarWidth * dHScale - ui->grViewQuotes->horizontalScrollBar()->pageStep();
+             iPos = (int)holder->getViewGraphSize(iSelectedInterval);
+             xCur = (iPos + iLeftShift - 1) * BarGraphicsItem::BarWidth * dHScale - ui->grViewQuotes->horizontalScrollBar()->pageStep();
              xCur += iRightAggregate * BarGraphicsItem::BarWidth * dHScale;
          }
 
