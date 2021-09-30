@@ -3,6 +3,7 @@
 #include<thread>
 #include <QApplication>
 #include "oneofkindprotector.h"
+#include "splashwindow.h"
 
 int main(int argc, char *argv[])
 {
@@ -11,13 +12,16 @@ int main(int argc, char *argv[])
     QCoreApplication::setOrganizationName("Albert's Programming");
     QCoreApplication::setApplicationName("FinLoader");
     //------------------------------------------------------
-
+    SplashWindow splash;
+    splash.show();
+    //------------------------------------------------------
     int iCount{0};
     while(iCount < 5){ // wait for 5 second if it was reboot
         OneOfKindProtector one;
         if (one.TheOne()){
             /////////////////////////
             MainWindow w;
+            //splash.finish(&w);
             w.show();
             return a.exec();
             /////////////////////////

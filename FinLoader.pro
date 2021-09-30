@@ -48,6 +48,7 @@ SOURCES += \
     modeltickerslist.cpp \
     oneofkindprotector.cpp \
     plusbutton.cpp \
+    splashwindow.cpp \
     storage.cpp \
     styledswitcher.cpp \
     threadfreecout.cpp \
@@ -89,6 +90,7 @@ HEADERS += \
     modeltickerslist.h \
     oneofkindprotector.h \
     plusbutton.h \
+    splashwindow.h \
     storage.h \
     styledswitcher.h \
     threadfreecout.h \

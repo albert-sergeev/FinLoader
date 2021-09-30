@@ -27,5 +27,6 @@
         <file>images/open4.png</file>
         <file>images/open3.png</file>
         <file>images/open2.png</file>
+        <file>images/splashT.png</file>
     </qresource>
 </RCC>
