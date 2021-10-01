@@ -15,7 +15,7 @@
 #include "threadfreecout.h"
 #include "plusbutton.h"
 
-using namespace std::chrono_literals;
+//using namespace std::chrono_literals;
 using seconds=std::chrono::duration<double>;
 using milliseconds=std::chrono::duration<double,
     std::ratio_multiply<seconds::period,std::milli>
@@ -104,10 +104,8 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
     btnHelpR = new QPushButton(tr("Help"));
     btnHelpR->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     ltViewR2->addWidget(btnHelpR);
-    //btnHelp->setVisible(false);
-
-    btnHelp->setToolTip(tr("To panic :)"));
-    btnHelpR->setToolTip(tr("To panic a little ;)"));
+//    btnHelp->setToolTip(tr("To panic :)"));
+//    btnHelpR->setToolTip(tr("To panic a little ;)"));
     //-------------------------------------------------------------
     indicatorMemo = new Memometer(this);
     indicatorMemo->setValue(0);
@@ -1277,7 +1275,30 @@ void GraphViewForm::dateTimeBeginChanged(const QDateTime&)
 //---------------------------------------------------------------------------------------------------------------
 void GraphViewForm::dateTimeEndChanged(const QDateTime&)
 {
-    SetMinMaxDateToControls(); // keep old value
+    const QDate tmD(ui->dtEndDate->date());
+    std::tm tmSt;
+    {
+        tmSt.tm_year   = tmD.year() - 1900;
+        tmSt.tm_mon    = tmD.month() - 1;
+        tmSt.tm_mday   = tmD.day();
+        tmSt.tm_hour   = 23;
+        tmSt.tm_min    = 59;
+        tmSt.tm_sec    = 59;
+        tmSt.tm_isdst  = 0;
+    }
+    std::time_t tS (mktime_gm(&tmSt));
+    if (tS > tStoredMaxDate){
+        emit NeedLoadGraph(iTickerID, tStoredMinDate, tS);
+        ThreadFreeCout pcout;
+        pcout << "{"<<threadfree_gmtime_to_str(&tStoredMinDate)<<" : "<<threadfree_gmtime_to_str(&tS)<<"}\n";
+        pcout << "{"<<tmD.year() <<"/"<<tmD.month() <<"/"<<tmD.day() <<"}\n";
+        pcout <<tmD.toString().toStdString()<<"}\n";
+        //SetMinMaxDateToControls(); // keep old value
+    }
+    else{
+
+        SetMinMaxDateToControls(); // keep old value
+    }
 }
 //---------------------------------------------------------------------------------------------------------------
 void GraphViewForm::setFramesVisibility(std::tuple<bool,bool,bool,bool,bool> tp)
@@ -2122,11 +2143,10 @@ bool GraphViewForm::PainVerticalFramesT(std::shared_ptr<GraphHolder> local_holde
                              DrawIntToScene(indx + iShift, xCur, iLineH/2 ,tmCur.tm_mday,Qt::AlignmentFlag::AlignLeft, Qt::AlignmentFlag::AlignCenter,
                                             mVFramesScaleUpper, ui->grViewScaleUpper->scene(), fontNumb);
                          }
-                         else{
-                             DrawIntToScene(indx + iShift, xCur, iLineH/2 ,0, Qt::AlignmentFlag::AlignLeft, Qt::AlignmentFlag::AlignCenter,
-                                            mVFramesScaleUpper, ui->grViewScaleUpper->scene(), fontNumb);
-
-                         }
+//                         else{
+//                             DrawIntToScene(indx + iShift, xCur, iLineH/2 ,0, Qt::AlignmentFlag::AlignLeft, Qt::AlignmentFlag::AlignCenter,
+//                                            mVFramesScaleUpper, ui->grViewScaleUpper->scene(), fontNumb);
+//                         }
 
                      }
                      if (iFCount > 0){

@@ -15,7 +15,7 @@
 
 
 
-using namespace std::chrono_literals;
+//using namespace std::chrono_literals;
 using seconds=std::chrono::duration<double>;
 using milliseconds=std::chrono::duration<double,
     std::ratio_multiply<seconds::period,std::milli>
@@ -991,7 +991,7 @@ void AmiPipeHolder::ReadConnectedPipes_bytemode_linux(BlockFreeQueue<dataFastLoa
                         conditionFastData.notify_one();
 
                         tActivityCount = std::chrono::steady_clock::now() - mDtActivity[iTickerID];
-                        if (tActivityCount > 1800ms){
+                        if (tActivityCount > milliseconds(1800)){//1800ms
                             mDtActivity[iTickerID] = std::chrono::steady_clock::now();
                             dataBuckgroundThreadAnswer dt(iTickerID,dataBuckgroundThreadAnswer::eAnswerType::LoadActivity,nullptr);
                             queueTrdAnswers.Push(dt);

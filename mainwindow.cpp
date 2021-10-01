@@ -495,7 +495,7 @@ void MainWindow::CheckActiveProcesses()
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::CheckUsedMemory(){
     milliseconds tActivityCount  = std::chrono::steady_clock::now() - dtCheckMemoryUsage;
-    if (tActivityCount > 1000ms){
+    if (tActivityCount > milliseconds(1000)){//1000ms
 
         std::size_t iMemory{0};
         std::size_t iTmpSize{0};
@@ -519,7 +519,7 @@ void MainWindow::CheckUsedMemory(){
 void MainWindow::CheckActivePipes()
 {
     milliseconds tActivityCount  = std::chrono::steady_clock::now() - dtCheckPipesActivity;
-    if (tActivityCount > 5000ms){
+    if (tActivityCount > milliseconds(5000)){//5000ms
         dtCheckPipesActivity = std::chrono::steady_clock::now();
         //
         dataAmiPipeTask taskAmi(dataAmiPipeTask::eTask_type::RefreshPipeList);

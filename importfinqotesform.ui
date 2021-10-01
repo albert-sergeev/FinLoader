@@ -129,7 +129,7 @@
             </size>
            </property>
            <property name="toolTip">
-            <string>You know... to panic 8)</string>
+            <string/>
            </property>
            <property name="text">
             <string>Help</string>

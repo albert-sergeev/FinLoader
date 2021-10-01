@@ -12,7 +12,6 @@
 #include "threadfreelocaltime.h"
 #include "utilites.h"
 
-//using namespace std::filesystem;
 
 ////////////////////////////////////////////////////////////////////
 // file switch stages:
