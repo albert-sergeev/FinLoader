@@ -595,7 +595,7 @@ int AmiPipeHolder::ProcessReceivedBuffer(BlockFreeQueue<dataFastLoadTask>       
 
 
             milliseconds tActivityCount = std::chrono::steady_clock::now() - mDtActivity[iTickerID];
-            if (tActivityCount > 1800ms){
+            if (tActivityCount > milliseconds(1800)/*ms*/){
                 mDtActivity[iTickerID] = std::chrono::steady_clock::now();
                 dataBuckgroundThreadAnswer dt(iTickerID,dataBuckgroundThreadAnswer::eAnswerType::LoadActivity,nullptr);
                 queueTrdAnswers.Push(dt);
@@ -709,7 +709,7 @@ void AmiPipeHolder::ReadConnectedPipes_bytemode_win32(BlockFreeQueue<dataFastLoa
                                                        bWasFullBuffers);
             if(bCheckMode){
                 tActivityCount = std::chrono::steady_clock::now() - mCheckTime[strBind];
-                if (mPaperName[strBind].size() > 0 || tActivityCount > 2000ms){
+                if (mPaperName[strBind].size() > 0 || tActivityCount > milliseconds(2000)){//2000ms
 
                     dataAmiPipeAnswer answ;
                     answ.SetType(dataAmiPipeAnswer::AskNameAnswer);

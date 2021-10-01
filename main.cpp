@@ -30,6 +30,7 @@ int main(int argc, char *argv[])
         std::this_thread::sleep_for(milliseconds(1000));//1000ms
         ++iCount;
     }
+    splash.close();
 
     (void)QMessageBox::critical(0,"Warning",
                                "Only one instance of the application can be runing at a time!",
