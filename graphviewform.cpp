@@ -1289,10 +1289,6 @@ void GraphViewForm::dateTimeEndChanged(const QDateTime&)
     std::time_t tS (mktime_gm(&tmSt));
     if (tS > tStoredMaxDate){
         emit NeedLoadGraph(iTickerID, tStoredMinDate, tS);
-        ThreadFreeCout pcout;
-        pcout << "{"<<threadfree_gmtime_to_str(&tStoredMinDate)<<" : "<<threadfree_gmtime_to_str(&tS)<<"}\n";
-        pcout << "{"<<tmD.year() <<"/"<<tmD.month() <<"/"<<tmD.day() <<"}\n";
-        pcout <<tmD.toString().toStdString()<<"}\n";
         //SetMinMaxDateToControls(); // keep old value
     }
     else{

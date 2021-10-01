@@ -28,5 +28,7 @@
         <file>images/open3.png</file>
         <file>images/open2.png</file>
         <file>images/splashT.png</file>
+        <file>images/SplashScreen.png</file>
+        <file>images/SplashScreen2.png</file>
     </qresource>
 </RCC>

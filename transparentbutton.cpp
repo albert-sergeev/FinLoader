@@ -80,7 +80,10 @@ void TransparentButton::paintEvent(QPaintEvent */*event*/)
 
     QRectF drawRect;
     QRectF drawTextRect;
-    if (!bPushed){
+
+    if ((modeMode != eMode::CheckBox && !bPushed) ||
+        (modeMode == eMode::CheckBox && !bState)
+            ){
         drawRect     = QRectF {1,1,boundRect.width() + 4,boundRect.height() + 1};
         drawTextRect = QRectF {3,2,boundRect.width(),boundRect.height()};
     }
