@@ -122,6 +122,10 @@ private:
     bool bFillNotAutoloadedTickers;
     bool bGrayColorFroNotAutoloadedTickers;
     int iDefaultMonthDepth;
+
+    bool bShowByName;
+    bool bShowAll;
+    bool bShowMarkets;
     //------------------------------------------------
     std::map<int,std::shared_ptr<GraphHolder>> Holders;
     std::queue<std::pair<int,std::chrono::time_point<std::chrono::steady_clock>>> qActivityQueue;

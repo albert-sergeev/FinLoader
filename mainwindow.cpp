@@ -39,6 +39,13 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
 
     //==============================================================================================================================
+    // general settings part
+
+    LoadSettings();
+    slotSetActiveLang (m_Language);
+    slotSetActiveStyle(m_sStyleName);
+
+    //==============================================================================================================================
     // init widgets part
     //-------------------------------------------------------------
     ui->statusbar->setSizeGripEnabled(false);
@@ -76,6 +83,7 @@ MainWindow::MainWindow(QWidget *parent)
     lt1->addWidget(swtShowAll);
     swtShowAll->SetOnColor(QPalette::Window,colorDarkGreen);
     swtShowAll->SetOffColor(QPalette::Window,colorDarkRed);
+    swtShowAll->setChecked(bShowAll);
     //-------------------------------------------------------------
     QHBoxLayout *lt2 = new QHBoxLayout();
     lt2->setMargin(0);
@@ -84,14 +92,17 @@ MainWindow::MainWindow(QWidget *parent)
     lt2->addWidget(swtShowMarkets);
     swtShowMarkets->SetOnColor(QPalette::Window,colorDarkGreen);
     swtShowMarkets->SetOffColor(QPalette::Window,colorDarkRed);
+    swtShowMarkets->setChecked(bShowMarkets);
     //-------------------------------------------------------------
     QHBoxLayout *lt3 = new QHBoxLayout();
     lt3->setMargin(0);
+    lt3->setAlignment(Qt::AlignmentFlag::AlignHCenter);
     ui->wtShowByName->setLayout(lt3);
     swtShowByName = new StyledSwitcher(tr("Show name "),tr(" Show ticker"),true,10,this);
     lt3->addWidget(swtShowByName);
     swtShowByName->SetOnColor(QPalette::Window,colorDarkGreen);
     swtShowByName->SetOffColor(QPalette::Window,colorDarkRed);
+    swtShowByName->setChecked(bShowByName);
     //-------------------------------------------------------------
     ui->dkActiveTickers->setTitleBarWidget(new QWidget());
 //    //ui->lineDragRight->installEventFilter(this);
@@ -100,15 +111,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     bInResizingLeftToolbar = false;
     bLeftToolbarCursorOverriden = false;
-
-
     //==============================================================================================================================
     // init data part
 
-
-    LoadSettings();
-    slotSetActiveLang (m_Language);
-    slotSetActiveStyle(m_sStyleName);
     m_TickerLstModel.setGrayColorForInformants(bGrayColorFroNotAutoloadedTickers);
 
     InitAction();
@@ -623,9 +628,12 @@ void MainWindow::LoadSettings()
             bStatusBarOnLoadIsHidden    = m_settings.value("StatusBarIsHidden",false).toBool();
             bTickerBarButtonsHidden     = m_settings.value("TickerBarButtonsIsHidden",false).toBool();
 
-            swtShowByName->setChecked(m_settings.value("docShowByName",false).toBool());
-            swtShowAll->setChecked(m_settings.value("docShowAll",true).toBool());
-            swtShowMarkets->setChecked(m_settings.value("docShowMarkets",false).toBool());
+//            swtShowByName->setChecked(m_settings.value("docShowByName",false).toBool());
+//            swtShowAll->setChecked(m_settings.value("docShowAll",true).toBool());
+//            swtShowMarkets->setChecked(m_settings.value("docShowMarkets",false).toBool());
+            bShowByName                 = m_settings.value("docShowByName",false).toBool();
+            bShowAll                    = m_settings.value("docShowAll",true).toBool();
+            bShowMarkets                = m_settings.value("docShowMarkets",false).toBool();
 
             qsStorageDirPath            = m_settings.value("StorageDirPath","").toString();
             bDefaultStoragePath         = m_settings.value("DefaultStoragePath",true).toBool();

@@ -1,5 +1,8 @@
 #include "splashwindow.h"
 #include<QTextEdit>
+#include<QLocale>
+
+#include "threadfreecout.h"
 
 //------------------------------------------------------------------------------------------------------------------------
 SplashWindow::SplashWindow():QSplashScreen(QPixmap(":/store/images/SplashScreen2")/*,Qt::WindowStaysOnTopHint */)
@@ -37,6 +40,13 @@ SplashWindow::SplashWindow():QSplashScreen(QPixmap(":/store/images/SplashScreen2
     connect(btnEn,SIGNAL(stateChanged(int)),this,SLOT(slotLanguageEngChanged(int)));
     connect(btnRu,SIGNAL(stateChanged(int)),this,SLOT(slotLanguageRuChanged(int)));
 
+
+    QString sLc = QLocale::system().name();
+    if (sLc == "ru_RU"){
+        btnRu->setChecked(true);
+        btnEn->setChecked(false);
+        edText->setText(strRu);
+    }
 
 
     // for multiplatform Qt::WindowStaysOnTopHint

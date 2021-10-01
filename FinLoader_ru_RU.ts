@@ -1239,7 +1239,7 @@ If all is well, then to load the data into the database, click the import button
         <translation type="vanished">&amp;Новое окно с инструментом</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="890"/>
+        <location filename="mainwindow.cpp" line="898"/>
         <source>CTRL+N</source>
         <translation></translation>
     </message>
@@ -1252,73 +1252,73 @@ If all is well, then to load the data into the database, click the import button
         <translation type="vanished">&amp;Открыть</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="909"/>
+        <location filename="mainwindow.cpp" line="917"/>
         <source>CTRL+L</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="900"/>
-        <location filename="mainwindow.cpp" line="901"/>
-        <location filename="mainwindow.cpp" line="902"/>
+        <location filename="mainwindow.cpp" line="908"/>
+        <location filename="mainwindow.cpp" line="909"/>
+        <location filename="mainwindow.cpp" line="910"/>
         <source>Load history data</source>
         <translation>Открыть файл с сохраненными историческими данными</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="51"/>
+        <location filename="mainwindow.cpp" line="58"/>
         <source>server time of the last packet</source>
         <translation>серверное время котировок с последнего полученного пакета данных</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="75"/>
+        <location filename="mainwindow.cpp" line="82"/>
         <source>Show all</source>
         <translation>Показать все</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="75"/>
+        <location filename="mainwindow.cpp" line="82"/>
         <source> Active</source>
         <translation> Активные</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="83"/>
+        <location filename="mainwindow.cpp" line="91"/>
         <source>Show market </source>
         <translation>Показать рынок </translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="83"/>
+        <location filename="mainwindow.cpp" line="91"/>
         <source> Hide market</source>
         <translation> Спрятать рынок</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="91"/>
+        <location filename="mainwindow.cpp" line="101"/>
         <source>Show name </source>
         <oldsource>Show by name </oldsource>
         <translation>Наименование </translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="91"/>
+        <location filename="mainwindow.cpp" line="101"/>
         <source> Show ticker</source>
-        <translation> Код</translation>
+        <translation> Код                    </translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="372"/>
-        <location filename="mainwindow.cpp" line="430"/>
+        <location filename="mainwindow.cpp" line="377"/>
+        <location filename="mainwindow.cpp" line="435"/>
         <source>Critical error</source>
         <translation>Критическая ошибка</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="796"/>
+        <location filename="mainwindow.cpp" line="804"/>
         <source>Error during initialising data dir!</source>
         <translation>Ошибка при инициализации директории с данными!</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="809"/>
-        <location filename="mainwindow.cpp" line="825"/>
-        <location filename="mainwindow.cpp" line="839"/>
+        <location filename="mainwindow.cpp" line="817"/>
+        <location filename="mainwindow.cpp" line="833"/>
+        <location filename="mainwindow.cpp" line="847"/>
         <source>Error during saving markets config!</source>
         <translation>Ошибка при сохранении настроек рынка!</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="885"/>
+        <location filename="mainwindow.cpp" line="893"/>
         <source>FinLoader</source>
         <translation></translation>
     </message>
@@ -1327,7 +1327,7 @@ If all is well, then to load the data into the database, click the import button
         <translation type="vanished">График котировок</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="899"/>
+        <location filename="mainwindow.cpp" line="907"/>
         <source>CTRL+O</source>
         <translation></translation>
     </message>
@@ -1344,312 +1344,312 @@ If all is well, then to load the data into the database, click the import button
         <translation type="vanished">Сохранить документ на диск</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="889"/>
+        <location filename="mainwindow.cpp" line="897"/>
         <source>&amp;Quotes graph</source>
         <translation>&amp;График котировок</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="891"/>
-        <location filename="mainwindow.cpp" line="892"/>
-        <location filename="mainwindow.cpp" line="893"/>
-        <location filename="mainwindow.cpp" line="2639"/>
+        <location filename="mainwindow.cpp" line="899"/>
+        <location filename="mainwindow.cpp" line="900"/>
+        <location filename="mainwindow.cpp" line="901"/>
+        <location filename="mainwindow.cpp" line="2647"/>
         <source>Quotes graph</source>
         <translation>График котировок</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="898"/>
+        <location filename="mainwindow.cpp" line="906"/>
         <source>&amp;Load history data</source>
         <translation>&amp;Загрузка исторических данных</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="908"/>
+        <location filename="mainwindow.cpp" line="916"/>
         <source>Lo&amp;g window</source>
         <translation>&amp;Журнал событий</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="910"/>
-        <location filename="mainwindow.cpp" line="911"/>
-        <location filename="mainwindow.cpp" line="912"/>
-        <location filename="mainwindow.cpp" line="1424"/>
+        <location filename="mainwindow.cpp" line="918"/>
+        <location filename="mainwindow.cpp" line="919"/>
+        <location filename="mainwindow.cpp" line="920"/>
+        <location filename="mainwindow.cpp" line="1432"/>
         <source>Log window</source>
         <translation>Журнал событий</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="917"/>
+        <location filename="mainwindow.cpp" line="925"/>
         <source>&amp;Error log window</source>
         <translation>&amp;Журнал ошибок</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="918"/>
+        <location filename="mainwindow.cpp" line="926"/>
         <source>CTRL+E</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="919"/>
-        <location filename="mainwindow.cpp" line="920"/>
-        <location filename="mainwindow.cpp" line="921"/>
-        <location filename="mainwindow.cpp" line="1446"/>
+        <location filename="mainwindow.cpp" line="927"/>
+        <location filename="mainwindow.cpp" line="928"/>
+        <location filename="mainwindow.cpp" line="929"/>
+        <location filename="mainwindow.cpp" line="1454"/>
         <source>Error log window</source>
         <translation>Журнал ошибок</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="926"/>
+        <location filename="mainwindow.cpp" line="934"/>
         <source>Confi&amp;g</source>
         <translation>Конфи&amp;гурация</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="927"/>
+        <location filename="mainwindow.cpp" line="935"/>
         <source>CTRL+G</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="928"/>
-        <location filename="mainwindow.cpp" line="929"/>
-        <location filename="mainwindow.cpp" line="930"/>
-        <location filename="mainwindow.cpp" line="1568"/>
+        <location filename="mainwindow.cpp" line="936"/>
+        <location filename="mainwindow.cpp" line="937"/>
+        <location filename="mainwindow.cpp" line="938"/>
+        <location filename="mainwindow.cpp" line="1576"/>
         <source>Config</source>
         <translation>Конфигурация</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="935"/>
+        <location filename="mainwindow.cpp" line="943"/>
         <source>&amp;Import from trade sistem</source>
         <translation>&amp;Импорт из торговой системы</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="938"/>
+        <location filename="mainwindow.cpp" line="946"/>
         <source>CTRL+I</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="939"/>
-        <location filename="mainwindow.cpp" line="940"/>
-        <location filename="mainwindow.cpp" line="941"/>
+        <location filename="mainwindow.cpp" line="947"/>
+        <location filename="mainwindow.cpp" line="948"/>
+        <location filename="mainwindow.cpp" line="949"/>
         <source>Import from trade sistem</source>
         <translation>Импорт из торговой системы</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="946"/>
+        <location filename="mainwindow.cpp" line="954"/>
         <source>&amp;New found pipes</source>
         <translation>&amp;Вновь найденные</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="949"/>
-        <location filename="mainwindow.cpp" line="950"/>
-        <location filename="mainwindow.cpp" line="951"/>
+        <location filename="mainwindow.cpp" line="957"/>
+        <location filename="mainwindow.cpp" line="958"/>
+        <location filename="mainwindow.cpp" line="959"/>
         <source>New found pipes</source>
         <translation>Вновь найденные</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="955"/>
+        <location filename="mainwindow.cpp" line="963"/>
         <source>&amp;Active pipes</source>
         <translation>&amp;Активные источники</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="958"/>
-        <location filename="mainwindow.cpp" line="959"/>
-        <location filename="mainwindow.cpp" line="960"/>
+        <location filename="mainwindow.cpp" line="966"/>
+        <location filename="mainwindow.cpp" line="967"/>
+        <location filename="mainwindow.cpp" line="968"/>
         <source>Active pipes</source>
         <translation>Активные источники</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="963"/>
-        <location filename="mainwindow.cpp" line="964"/>
+        <location filename="mainwindow.cpp" line="971"/>
+        <location filename="mainwindow.cpp" line="972"/>
         <source>Tickers bar</source>
         <translation>Панель бумаг</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="970"/>
-        <location filename="mainwindow.cpp" line="971"/>
+        <location filename="mainwindow.cpp" line="978"/>
+        <location filename="mainwindow.cpp" line="979"/>
         <source>Show tickers bar panel</source>
-        <translation>Показать панель бумаг</translation>
+        <translation type="unfinished">Показать настройки панели бумаг</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="976"/>
-        <location filename="mainwindow.cpp" line="977"/>
+        <location filename="mainwindow.cpp" line="984"/>
+        <location filename="mainwindow.cpp" line="985"/>
         <source>Status bar</source>
         <translation>Панель состояния</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="982"/>
-        <location filename="mainwindow.cpp" line="983"/>
+        <location filename="mainwindow.cpp" line="990"/>
+        <location filename="mainwindow.cpp" line="991"/>
         <source>Toolbar</source>
         <translation>Панель инструментов</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="988"/>
-        <location filename="mainwindow.cpp" line="989"/>
+        <location filename="mainwindow.cpp" line="996"/>
+        <location filename="mainwindow.cpp" line="997"/>
         <source>Left scale</source>
         <translation>Левая шкала</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="994"/>
-        <location filename="mainwindow.cpp" line="995"/>
+        <location filename="mainwindow.cpp" line="1002"/>
+        <location filename="mainwindow.cpp" line="1003"/>
         <source>Right scale</source>
         <translation>Правая шкала</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="1000"/>
-        <location filename="mainwindow.cpp" line="1001"/>
+        <location filename="mainwindow.cpp" line="1008"/>
+        <location filename="mainwindow.cpp" line="1009"/>
         <source>Upper horizontal scale</source>
         <translation>Верхняя горизонтальная шкала</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="1006"/>
-        <location filename="mainwindow.cpp" line="1007"/>
+        <location filename="mainwindow.cpp" line="1014"/>
+        <location filename="mainwindow.cpp" line="1015"/>
         <source>Lower horizontal scale</source>
         <translation>Нижняя горизонтальная шкала</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="1012"/>
-        <location filename="mainwindow.cpp" line="1013"/>
+        <location filename="mainwindow.cpp" line="1020"/>
+        <location filename="mainwindow.cpp" line="1021"/>
         <source>Volume scale</source>
         <translation>Экран объема</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="1020"/>
+        <location filename="mainwindow.cpp" line="1028"/>
         <source>&amp;File</source>
         <comment>menu</comment>
         <translation>&amp;Файл</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="1024"/>
+        <location filename="mainwindow.cpp" line="1032"/>
         <source>&amp;Quit</source>
         <translation>&amp;Выход</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="1027"/>
+        <location filename="mainwindow.cpp" line="1035"/>
         <source>CTRL+Q</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="1031"/>
+        <location filename="mainwindow.cpp" line="1039"/>
         <source>&amp;Windows</source>
         <translation>&amp;Окна</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="1036"/>
+        <location filename="mainwindow.cpp" line="1044"/>
         <source>&amp;Tools</source>
         <translation>&amp;Инструменты</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="1041"/>
+        <location filename="mainwindow.cpp" line="1049"/>
         <source>&amp;Settings</source>
         <translation>&amp;Настройки</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="1044"/>
+        <location filename="mainwindow.cpp" line="1052"/>
         <source>&amp;Import from trade sistem panel</source>
         <translation>&amp;Панель импорта из торговой системы</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="1051"/>
+        <location filename="mainwindow.cpp" line="1059"/>
         <source>&amp;Graphics view settings</source>
         <translation>&amp;Настройка окна графиков</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="1067"/>
+        <location filename="mainwindow.cpp" line="1075"/>
         <source>St&amp;yles</source>
         <translation>Ст&amp;или</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="1070"/>
+        <location filename="mainwindow.cpp" line="1078"/>
         <source>&amp;Language</source>
         <translation>&amp;Языки</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="1076"/>
+        <location filename="mainwindow.cpp" line="1084"/>
         <source>&amp;Help</source>
         <translation>&amp;Помощь</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="1077"/>
+        <location filename="mainwindow.cpp" line="1085"/>
         <source>&amp;About</source>
         <translation>&amp;О программе</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="1337"/>
+        <location filename="mainwindow.cpp" line="1345"/>
         <source>About FinLoader</source>
         <translation>О программе</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="1539"/>
-        <location filename="mainwindow.cpp" line="2528"/>
-        <location filename="mainwindow.cpp" line="2565"/>
-        <location filename="mainwindow.cpp" line="2581"/>
-        <location filename="mainwindow.cpp" line="2588"/>
+        <location filename="mainwindow.cpp" line="1547"/>
+        <location filename="mainwindow.cpp" line="2536"/>
+        <location filename="mainwindow.cpp" line="2573"/>
+        <location filename="mainwindow.cpp" line="2589"/>
+        <location filename="mainwindow.cpp" line="2596"/>
         <source>Warning</source>
         <translation>Предупреждение</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="1540"/>
+        <location filename="mainwindow.cpp" line="1548"/>
         <source>Please, select a ticker in the box at the bottom left to continue!</source>
         <translation>Пожалуйста, выберите бумагу из списка в панели ниже левее,  чтобы продолжить!</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="1717"/>
+        <location filename="mainwindow.cpp" line="1725"/>
         <source>Import from trade sistems</source>
         <translation>Импорт из торговых систем</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="2500"/>
+        <location filename="mainwindow.cpp" line="2508"/>
         <source>Hide indicator</source>
         <translation>Спрятать индикатор</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="2501"/>
+        <location filename="mainwindow.cpp" line="2509"/>
         <source>Turn off autoload for </source>
         <translation>Выключить автозагрузку для </translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="2502"/>
-        <location filename="mainwindow.cpp" line="2556"/>
+        <location filename="mainwindow.cpp" line="2510"/>
+        <location filename="mainwindow.cpp" line="2564"/>
         <source>Stop all history import</source>
         <translation>Остановить импорт всех исторических данных</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="2527"/>
-        <location filename="mainwindow.cpp" line="2580"/>
+        <location filename="mainwindow.cpp" line="2535"/>
+        <location filename="mainwindow.cpp" line="2588"/>
         <source>Do you want to stop loading process?
  Warning: will be stopped all loadings from files!</source>
         <translation>Вы хотите прервать процесс загрузки?\n Предупреждение: действие прервет все идущие загрузки из фалов!</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="2550"/>
+        <location filename="mainwindow.cpp" line="2558"/>
         <source>Turn off autoloads for all tickers</source>
         <translation>Выключить автозагрузку для всех бумаг</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="2551"/>
+        <location filename="mainwindow.cpp" line="2559"/>
         <source>Hide all activity indicztors</source>
         <translation>Скрыть все индикаторы активности</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="2564"/>
+        <location filename="mainwindow.cpp" line="2572"/>
         <source>Do you want to close all data source pipes from trade systems?</source>
         <translation>Вы хотите остановить импорт для всех источников данных из торговых систем?</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="2587"/>
+        <location filename="mainwindow.cpp" line="2595"/>
         <source>Do you want to hide all activity indicators?</source>
         <translation>Вы хотите скрыть все индикаторы активности?</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="2640"/>
+        <location filename="mainwindow.cpp" line="2648"/>
         <source>Turn on autoloads</source>
         <translation>Включить автозагрузку</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="2641"/>
+        <location filename="mainwindow.cpp" line="2649"/>
         <source>Turn off autoloads</source>
         <translation>Выключить автозагрузку</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="2642"/>
+        <location filename="mainwindow.cpp" line="2650"/>
         <source>Show activity indicators</source>
         <translation>Показать индикаторы активности</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="2643"/>
+        <location filename="mainwindow.cpp" line="2651"/>
         <source>Hide activity indicators</source>
         <translation>Спрятать индикаторы активности</translation>
     </message>
@@ -1659,7 +1659,7 @@ If all is well, then to load the data into the database, click the import button
         <translation type="vanished">Пожалуйста, выберите бумагу на панели левее-ниже, чтобы продолжить.</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="1599"/>
+        <location filename="mainwindow.cpp" line="1607"/>
         <source>Import</source>
         <translation>Импорт</translation>
     </message>
@@ -1688,12 +1688,12 @@ If all is well, then to load the data into the database, click the import button
         <translation type="vanished">Второй элемент</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="1295"/>
+        <location filename="mainwindow.cpp" line="1303"/>
         <source>&amp;Cascade</source>
         <translation>&amp;Каскад</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="1298"/>
+        <location filename="mainwindow.cpp" line="1306"/>
         <source>&amp;Tile</source>
         <translation>&amp;Плитка</translation>
     </message>
@@ -1702,22 +1702,22 @@ If all is well, then to load the data into the database, click the import button
         <translation type="vanished">О программе</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="1401"/>
+        <location filename="mainwindow.cpp" line="1409"/>
         <source>style change</source>
         <translation>Изменение стиля</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="1402"/>
+        <location filename="mainwindow.cpp" line="1410"/>
         <source>For style change app needed to be reloaded. Do it?</source>
         <translation>Для изменения стиля необходимо завершить работу приложения. Перезапустить?</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="1489"/>
+        <location filename="mainwindow.cpp" line="1497"/>
         <source>Language change</source>
         <translation>Смена языка</translation>
     </message>
     <message>
-        <location filename="mainwindow.cpp" line="1490"/>
+        <location filename="mainwindow.cpp" line="1498"/>
         <source>For language change app needed to be reloaded. Do it?</source>
         <translation>Для смены языка необходимо завершить работу приложения. Перезапустить?</translation>
     </message>
