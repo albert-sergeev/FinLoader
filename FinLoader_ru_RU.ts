@@ -1292,12 +1292,12 @@ If all is well, then to load the data into the database, click the import button
         <location filename="mainwindow.cpp" line="101"/>
         <source>Show name </source>
         <oldsource>Show by name </oldsource>
-        <translation>Наименование </translation>
+        <translation>По имени  </translation>
     </message>
     <message>
         <location filename="mainwindow.cpp" line="101"/>
         <source> Show ticker</source>
-        <translation> Код                    </translation>
+        <translation> По коду</translation>
     </message>
     <message>
         <location filename="mainwindow.cpp" line="377"/>
@@ -1461,7 +1461,7 @@ If all is well, then to load the data into the database, click the import button
         <location filename="mainwindow.cpp" line="978"/>
         <location filename="mainwindow.cpp" line="979"/>
         <source>Show tickers bar panel</source>
-        <translation type="unfinished">Показать настройки панели бумаг</translation>
+        <translation>Показать настройки панели бумаг</translation>
     </message>
     <message>
         <location filename="mainwindow.cpp" line="984"/>
