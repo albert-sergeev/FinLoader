@@ -10,12 +10,13 @@ SplashWindow::SplashWindow():QSplashScreen(QPixmap(":/store/images/SplashScreen2
             "Программа предназначена для загрузки и отображения данных котировок рынков ценных бумаг из файлов и/или источников данных в формате AmiBrocker (например из Quik).\r\n"
             "Программа создана, как демонстратор способности автора работать с многопоточными задачами, STL, создавать хранилища данных на базе  LSM  - деревьев, использовать среду  Qt и пр.\r\n"
             "Если вам понравилось и вы хотите чтобы автор сделал для вас больше - пишите на e-mail.\r\n\r\n"
-            "Программа была разработана под LGPL (GNU Lesser General Public License) версии 3.";
+            "Программа была разработана под GNU GPL (GNU General Public License) версии 3.";
     strEn = "Welcome to FinLoader.\r\n\r\n"
             "The program is designed to download and display data of stock market quotes from files and/or data sources in the AmiBrocker format (for example, from Quik).\r\n"
             "The program was created as a demonstration of the author's ability to work with multithreaded tasks, STL, create data warehouses based on an LSM tree, use the Qt environment etс.\r\n"
             "If you liked what you saw and want the author to do more for you - write to e-mail.\r\n\r\n"
-            "Programm was developed under LGPL (GNU Lesser General Public License) version 3.";
+            "Programm was developed under GNU GPL (GNU General Public License) version 3.";
+
 
 
     edText = new QTextEdit(this);

@@ -10,6 +10,8 @@
 #include<QEvent>
 #include<QTimer>
 
+#include "aboutform.h"
+
 
 
 using seconds=std::chrono::duration<double>;
@@ -889,7 +891,6 @@ void MainWindow::InitAction()
     pacNewDoc->setToolTip(tr("Quotes graph"));
     pacNewDoc->setStatusTip(tr("Quotes graph"));
     pacNewDoc->setWhatsThis(tr("Quotes graph"));
-    //pacNewDoc->setIcon(QPixmap(":/store/images/sc_newdoc"));
     pacNewDoc->setIcon(QPixmap(":/store/images/graph"));
     connect(pacNewDoc,SIGNAL(triggered()),SLOT(slotGraphViewWindow()));
     //------------------------------------------------
@@ -899,18 +900,9 @@ void MainWindow::InitAction()
     pacOpen->setToolTip(tr("Load history data"));
     pacOpen->setStatusTip(tr("Load history data"));
     pacOpen->setWhatsThis(tr("Load history data"));
-    //pacOpen->setIcon(QPixmap(":/store/images/sc_open"));
     //pacOpen->setIcon(QPixmap(":/store/images/open"));
     pacOpen->setIcon(QPixmap(":/store/images/open3"));
     connect(pacOpen,SIGNAL(triggered()),SLOT(slotImportFinQuotesWndow()));
-    //------------------------------------------------
-//    QAction * pacSave =new QAction("Save");
-//    pacSave->setText(tr("&Save"));
-//    pacSave->setShortcut(QKeySequence(tr("CTRL+S")));
-//    pacSave->setToolTip(tr("Save Document"));
-//    pacSave->setStatusTip(tr("Save file to disk"));
-//    pacSave->setWhatsThis(tr("Save file to disk"));
-//    pacSave->setIcon(QPixmap(":/store/images/sc_save"));
     //------------------------------------------------
     QAction * pacLogWnd =new QAction("LogWnd");
     pacLogWnd->setText(tr("Lo&g window"));
@@ -918,7 +910,7 @@ void MainWindow::InitAction()
     pacLogWnd->setToolTip(tr("Log window"));
     pacLogWnd->setStatusTip(tr("Log window"));
     pacLogWnd->setWhatsThis(tr("Log window"));
-    pacLogWnd->setIcon(QPixmap(":/store/images/sc_move"));
+    pacLogWnd->setIcon(QPixmap(":/store/images/logs"));
     connect(pacLogWnd,SIGNAL(triggered()),SLOT(slotNewLogWnd()));
     //------------------------------------------------
     QAction * pacErrLogWnd =new QAction("ErrLogWnd");
@@ -927,7 +919,7 @@ void MainWindow::InitAction()
     pacErrLogWnd->setToolTip(tr("Error log window"));
     pacErrLogWnd->setStatusTip(tr("Error log window"));
     pacErrLogWnd->setWhatsThis(tr("Error log window"));
-    pacErrLogWnd->setIcon(QPixmap(":/store/images/sc_err_log"));
+    pacErrLogWnd->setIcon(QPixmap(":/store/images/err_log"));
     connect(pacErrLogWnd,SIGNAL(triggered()),SLOT(slotNewErrLogWnd()));
     //------------------------------------------------
     QAction * pacConfig =new QAction("Config");
@@ -936,7 +928,7 @@ void MainWindow::InitAction()
     pacConfig->setToolTip(tr("Config"));
     pacConfig->setStatusTip(tr("Config"));
     pacConfig->setWhatsThis(tr("Config"));
-    pacConfig->setIcon(QPixmap(":/store/images/sc_config"));
+    pacConfig->setIcon(QPixmap(":/store/images/config"));
     connect(pacConfig,SIGNAL(triggered()),SLOT(slotConfigWndow()));
     //------------------------------------------------
     pacAmiPipe =new QAction("AmiPipe");
@@ -1027,9 +1019,7 @@ void MainWindow::InitAction()
     //
     pmnuFile = new QMenu(tr("&File","menu"));
     pmnuFile->addAction(pacNewDoc);
-    //pmnuFile->addAction(pacAmiPipe);
     pmnuFile->addAction(pacOpen);
-    //pmnuFile->addAction(pacSave);
     pmnuFile->addSeparator();
     pmnuFile->addAction(tr("&Quit"),
                         qApp,
@@ -1102,26 +1092,20 @@ void MainWindow::InitAction()
     tbrToolBar->addAction(pacAmiPipe);
     tbrToolBar->addAction(pacTickersBar);
     tbrToolBar->addAction(pacOpen);
-    //tbrToolBar->addAction(pacSave);
     tbrToolBar->addAction(pacConfig);
 //    tbrToolBar->addAction(pacLogWnd);
 //    tbrToolBar->addAction(pacErrLogWnd);
-
-        this->addToolBar(tbrToolBar);
-        if (bToolBarOnLoadIsHidden){
-            tbrToolBar->hide();
-        }
-        //------------------------------------------------
-        if (bStatusBarOnLoadIsHidden)
-            ui->statusbar->hide();
-        if (bTickerBarButtonsHidden)
-            ui->widgetTickerButtonBar->hide();
-
-
-
-
-        //------------------------------------------------
-        connect(ui->lstView,SIGNAL(doubleClicked(const QModelIndex&)),this,SLOT(slotSetSelectedTicker(const  QModelIndex&)));    
+    this->addToolBar(tbrToolBar);
+    if (bToolBarOnLoadIsHidden){
+        tbrToolBar->hide();
+    }
+    //------------------------------------------------
+    if (bStatusBarOnLoadIsHidden)
+        ui->statusbar->hide();
+    if (bTickerBarButtonsHidden)
+        ui->widgetTickerButtonBar->hide();
+    //------------------------------------------------
+    connect(ui->lstView,SIGNAL(doubleClicked(const QModelIndex&)),this,SLOT(slotSetSelectedTicker(const  QModelIndex&)));
 }
 //--------------------------------------------------------------------------------------------------------------------------------
 void MainWindow::BulbululatorShowActivity   (int TickerID)
@@ -1345,7 +1329,15 @@ void MainWindow::slotSetActiveSubWindow (QWidget* pwg)
 ///
 void MainWindow::slotAbout   ()
 {
-    QMessageBox::about(0,tr("About"),"FinLoader v.0.0.1");
+    //QMessageBox::about(0,tr("About"),"FinLoader v.0.0.1");
+
+    AboutForm *pdoc=new AboutForm(this,Qt::SplashScreen);//Qt::Window
+    //AboutForm *pdoc=new AboutForm(this,Qt::Window);
+    pdoc->setAttribute(Qt::WA_DeleteOnClose);
+    pdoc->setWindowTitle(tr("About FinLoader"));
+    pdoc->setWindowIcon(QPixmap(":/store/images/graph"));
+
+    pdoc->show();
 
 };
 //--------------------------------------------------------------------------------------------------------------------------------
@@ -1430,7 +1422,7 @@ void MainWindow::slotNewLogWnd()
     QWidget *pdoc=new QWidget;
     pdoc->setAttribute(Qt::WA_DeleteOnClose);
     pdoc->setWindowTitle(tr("Log window"));
-    pdoc->setWindowIcon(QPixmap(":/store/images/sc_move"));
+    pdoc->setWindowIcon(QPixmap(":/store/images/logs"));
 
 
     QGridLayout *lt=new QGridLayout();
@@ -1452,7 +1444,7 @@ void MainWindow::slotNewErrLogWnd()
     QWidget *pdoc=new QWidget;
     pdoc->setAttribute(Qt::WA_DeleteOnClose);
     pdoc->setWindowTitle(tr("Error log window"));
-    pdoc->setWindowIcon(QPixmap(":/store/images/sc_err_log"));
+    pdoc->setWindowIcon(QPixmap(":/store/images/err_log"));
 
 
     QGridLayout *lt=new QGridLayout();
@@ -1574,7 +1566,7 @@ void MainWindow::slotConfigWndow()
                                         );
     pdoc->setAttribute(Qt::WA_DeleteOnClose);
     pdoc->setWindowTitle(tr("Config"));
-    pdoc->setWindowIcon(QPixmap(":/store/images/sc_config"));
+    pdoc->setWindowIcon(QPixmap(":/store/images/config"));
 
    ui->mdiArea->addSubWindow(pdoc);
 
