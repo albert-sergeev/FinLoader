@@ -822,6 +822,10 @@ void ImportFinQuotesForm::slotBtnImportClicked()
                             qml->select(indx,QItemSelectionModel::SelectionFlag::ClearAndSelect | QItemSelectionModel::Rows) ;
                             slotSetSelectedTicker(indx);
                             }
+                        iFoundTickerId = t.TickerID();
+                        iSelectedTickerId = iFoundTickerId;
+                        bFoundTicker = true;
+                        bFoundTickerFinam = true;
                     }
                     else{return;}
                 }
@@ -837,6 +841,11 @@ void ImportFinQuotesForm::slotBtnImportClicked()
                         if (n==QMessageBox::Yes){
                             t.SetTickerSignFinam(sFoundTickerSignFinam);
                             proxyTickerModel.setData(lst[0],t,Qt::EditRole);
+
+                            iFoundTickerId = t.TickerID();
+                            iSelectedTickerId = iFoundTickerId;
+                            bFoundTicker = true;
+                            bFoundTickerFinam = true;
                         }
                         else{return;}
                     }
@@ -859,6 +868,11 @@ void ImportFinQuotesForm::slotBtnImportClicked()
                         if (n==QMessageBox::Yes){
                             t.SetTickerSignFinam(sFoundTickerSignFinam);
                             proxyTickerModel.setData(lst[0],t,Qt::EditRole);
+
+                            iFoundTickerId = t.TickerID();
+                            iSelectedTickerId = iFoundTickerId;
+                            bFoundTicker = true;
+                            bFoundTickerFinam = true;
                         }
                         else{return;}
                 }

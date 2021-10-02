@@ -990,7 +990,7 @@ If all is well, then to load the data into the database, click the import button
         <location filename="importfinqotesform.cpp" line="130"/>
         <location filename="importfinqotesform.cpp" line="1023"/>
         <source>Check in memory</source>
-        <translation>Проверка в памяти</translation>
+        <translation>Пр.в памяти</translation>
     </message>
     <message>
         <location filename="importfinqotesform.cpp" line="797"/>
