@@ -138,6 +138,7 @@ private:
     QList<QString> lstStyles;
     QString m_sStyleName;
     QString m_Language;
+    QString sStarterLanguage;
     QTranslator m_translator;
 
     std::chrono::time_point<std::chrono::steady_clock> dtCheckMemoryUsage;
@@ -260,6 +261,7 @@ protected:
     void SaveDataStorage();
     void InitDockBar();
     void InitHolders();
+    void GetStarterLocale();
 
     bool event(QEvent *event) override;
     void timerEvent(QTimerEvent * event) override;
@@ -347,8 +349,6 @@ protected slots: // for main window
     void slotSendSignalToFastShow(int TickerID, std::time_t tBegin, std::time_t tEnd,std::shared_ptr<GraphHolder> ptrHolder);
 
 
-    //void slotTestPvBars(std::shared_ptr<std::vector<std::vector<BarTick>>> pvBars); // TODO: delete. for tests
-
     void slotGVFramesVisibilityStateChanged();
 
     void slotAmiPipeFormWasClosed();
@@ -375,14 +375,8 @@ protected slots: // for main window
     void slotTickerBarMenuRequested(const QPoint & pos);
 
 private:
-    //std::vector<std::vector<Bar>> testPvBars; // TODO: delete. for tests
 
     Ui::MainWindow *ui;
-
-
-    // QWidget interface
-
-
     // QObject interface
 public:
     bool eventFilter(QObject *watched, QEvent *event);

@@ -1,6 +1,7 @@
 #include "splashwindow.h"
 #include<QTextEdit>
 #include<QLocale>
+#include<QSettings>
 
 #include "threadfreecout.h"
 
@@ -42,7 +43,20 @@ SplashWindow::SplashWindow():QSplashScreen(QPixmap(":/store/images/SplashScreen2
 
 
     QString sLc = QLocale::system().name();
+    QString  sStarterLanguage = "English";
     if (sLc == "ru_RU"){
+        sStarterLanguage = "Русский";
+    }
+    QString  sLanguage = "English";
+    {
+        QSettings m_settings;
+        m_settings.beginGroup("Settings");
+            sLanguage   = m_settings.value("Language",sStarterLanguage).toString();
+        m_settings.endGroup();
+    }
+
+    if (sLanguage == "Русский")
+    {
         btnRu->setChecked(true);
         btnEn->setChecked(false);
         edText->setText(strRu);

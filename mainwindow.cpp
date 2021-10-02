@@ -41,6 +41,7 @@ MainWindow::MainWindow(QWidget *parent)
     //==============================================================================================================================
     // general settings part
 
+    GetStarterLocale();
     LoadSettings();
     slotSetActiveLang (m_Language);
     slotSetActiveStyle(m_sStyleName);
@@ -616,7 +617,7 @@ void MainWindow::slotNotImpl(){};
 void MainWindow::LoadSettings()
 {
     m_settings.beginGroup("Settings");
-        m_Language   = m_settings.value("Language","English").toString();
+        m_Language   = m_settings.value("Language",sStarterLanguage).toString();//"English"
 
         m_settings.beginGroup("Mainwindow");
             restoreGeometry(m_settings.value("geometry").toByteArray());
@@ -1521,6 +1522,7 @@ void MainWindow::slotSetActiveLang      (QString sL)
         if(n == QMessageBox::Yes){
             //qDebug()<<"reboot!!!";
             SaveSettings();
+            m_settings.sync();// becouse splash starts earler than an instance protector
             qApp->quit();
             QProcess::startDetached(qApp->arguments()[0], qApp->arguments());
         }
@@ -2709,4 +2711,13 @@ void MainWindow::slotTickerBarMenuRequested(const QPoint & pos)
     }
 }
 //--------------------------------------------------------------------------------------------------------------------------------
+void MainWindow::GetStarterLocale()
+{
+    sStarterLanguage = "English";
+    QString sLc = QLocale::system().name();
+    if (sLc == "ru_RU"){
+        sStarterLanguage = "Русский";
+    }
 
+}
+//--------------------------------------------------------------------------------------------------------------------------------
