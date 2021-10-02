@@ -1,22 +1,46 @@
+/****************************************************************************
+*  This is part of FinLoader
+*  Copyright (C) 2021  Albert Sergeyev
+*  Contact: albert.s.sergeev@mail.ru
+*
+*  This program is free software: you can redistribute it and/or modify
+*  it under the terms of the GNU General Public License as published by
+*  the Free Software Foundation, either version 3 of the License, or
+*  (at your option) any later version.
+*
+*  This program is distributed in the hope that it will be useful,
+*  but WITHOUT ANY WARRANTY; without even the implied warranty of
+*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+*  GNU General Public License for more details.
+*
+*  You should have received a copy of the GNU General Public License
+*  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+****************************************************************************/
+
 #ifndef Ticker_H
 #define Ticker_H
 
 #include<string>
 #include<memory>
-#include<QVariant>
 
 #include "bar.h"
 #include "market.h"
 
 
-//REDO: warning. in multithread redo to atomic tipe.
+// Counter for primary index of ticker (iTickerID)
+// !Warning! depend on area of visibility type declaration may demand redezign
+// carefully use namspaces and multythread environment or you will have strange effectes
+// and consistency of your data will be wasted!
 static int iTickerCounter {1};
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// \brief Class for store paper data
+/// \brief Class for storing security paper(i.e. ticker's) data
+/// Store data for table of tickers
+/// provides an interface for get/set properties and for use in container classes
+/// uses iTickerID as uniquie primary index
+/// refers to Marker::MarketID by MarketID member
+/// sTickerSign must never be null
 ///
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 class Ticker
 {
 private:
@@ -55,6 +79,8 @@ private:
 
 
 public:
+    //--------------------------------------------------------------------------------------------------------
+    /// property-like get/set interface:
 
     inline std::string              TickerName()        const   {return sTickerName;};
     inline std::string              TickerSign()        const   {return sTickerSign;};
@@ -99,12 +125,17 @@ public:
     inline void SetVScale                   (const std::map<int,double>&m)            {mVScale = m; };
     inline void SetVVolumeScale             (const std::map<int,double>&m)            {mVVolumeScale = m; };
 
+    //--------------------------------------------------------------------------------------------------------
 
 public:
     //--------------------------------------------------------------------------------------------------------
-    // use only explicit constructor. Copy constructor by default is acceptable;
+    /// constructors and procedures for use in container classes:
+
+    //--------------------------------------------------------------------------------------------------------
+    // use only explicit constructors.
     Ticker() = delete ;
     //--------------------------------------------------------------------------------------------------------
+    // base used constructor
     Ticker(int TickerID, std::string TickerName,std::string TickerSign, int MarketID)
     {
         if(MarketID <= 0){
@@ -168,6 +199,7 @@ public:
     //
     Ticker(std::string TickerName,std::string TickerSign, int MarketID):Ticker(iTickerCounter++,TickerName,TickerSign, MarketID){};
     //--------------------------------------------------------------------------------------------------------
+    // copy constructor
     Ticker (const Ticker & t){
         sTickerName = t.sTickerName;
         sTickerSign = t.sTickerSign;
@@ -195,6 +227,7 @@ public:
         mVVolumeScale           = t.mVVolumeScale;
     }
     //--------------------------------------------------------------------------------------------------------
+    // copy constructor
     Ticker & operator= (const Ticker & t){
         sTickerName = t.sTickerName;
         sTickerSign = t.sTickerSign;
@@ -224,6 +257,7 @@ public:
         return  *this;
     }
     //--------------------------------------------------------------------------------------------------------
+    // comparison used to store ticker changes to database. That is in order not to waste resources for not impotant updates
     bool equal (const Ticker & t){
         if (sTickerName == t.sTickerName &&
             sTickerSign == t.sTickerSign &&
@@ -264,6 +298,7 @@ public:
 
     }
     //--------------------------------------------------------------------------------------------------------
+    // full data comparison
     bool equalFull (const Ticker & t){
         if (sTickerName == t.sTickerName &&
             sTickerSign == t.sTickerSign &&

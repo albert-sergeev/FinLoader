@@ -1,3 +1,22 @@
+/****************************************************************************
+*  This is part of FinLoader
+*  Copyright (C) 2021  Albert Sergeyev
+*  Contact: albert.s.sergeev@mail.ru
+*
+*  This program is free software: you can redistribute it and/or modify
+*  it under the terms of the GNU General Public License as published by
+*  the Free Software Foundation, either version 3 of the License, or
+*  (at your option) any later version.
+*
+*  This program is distributed in the hope that it will be useful,
+*  but WITHOUT ANY WARRANTY; without even the implied warranty of
+*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+*  GNU General Public License for more details.
+*
+*  You should have received a copy of the GNU General Public License
+*  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+****************************************************************************/
+
 #ifndef THREADPOOL_H
 #define THREADPOOL_H
 
@@ -13,9 +32,15 @@
 #include<queue>
 #include<chrono>
 
-//using namespace std::chrono_literals;
-
 #include "threadfreecout.h"
+
+/////////////////////////////////////////////////////////////////////////////////////////
+/// ThreadPool class and its demanded classes
+/// Class used to manage multythread tasks. Controls their lifetime, creates new, deletes etc.
+/// see below
+/////////////////////////////////////////////////////////////////////////////////////////
+
+
 
 /////////////////////////////////////////////////////////////////////////////////////////
 /// \brief The flagInterrupt class
