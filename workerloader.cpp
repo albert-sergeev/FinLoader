@@ -1,3 +1,22 @@
+/****************************************************************************
+*  This is part of FinLoader
+*  Copyright (C) 2021  Albert Sergeyev
+*  Contact: albert.s.sergeev@mail.ru
+*
+*  This program is free software: you can redistribute it and/or modify
+*  it under the terms of the GNU General Public License as published by
+*  the Free Software Foundation, either version 3 of the License, or
+*  (at your option) any later version.
+*
+*  This program is distributed in the hope that it will be useful,
+*  but WITHOUT ANY WARRANTY; without even the implied warranty of
+*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+*  GNU General Public License for more details.
+*
+*  You should have received a copy of the GNU General Public License
+*  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+****************************************************************************/
+
 #include "workerloader.h"
 #include "threadfreecout.h"
 #include "threadpool.h"
@@ -17,26 +36,19 @@ using milliseconds=std::chrono::duration<double,
     std::ratio_multiply<seconds::period,std::milli>
     >;
 
-//------------------------------------------------------------------------------------------------------------------------------------------
-workerLoader::workerLoader()
-{
-
-}
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 /////////////////////////////////////////////////////////////////////////////////////////////////
-/// \brief Main thread - dispatcher for database work
-/// \param queueFilLoad
-/// \param queueTrdAnswers
-/// \param stStore
+/// \brief workerDataBaseWork Base process for database works like importing/check/optimisation data tasks.
+/// Process have limited lifetime (until complite all tasks). If needed so, environment must run more instances of the process
+/// \param queueFinQuotesLoad queue for task from wich process pull next task until queue will become empty, then exit.
+/// \param queueTrdAnswers queue answer results
+/// \param stStore partal threadsafe class for work with database
+///
 void workerLoader::workerDataBaseWork(BlockFreeQueue<dataFinLoadTask> & queueTasks,
                                       BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
                                        Storage & stStore)
 {
-
-//    int iID = WorkerThreadCounter.load();
-//    while (!WorkerThreadCounter.compare_exchange_weak(iID,iID + 1)) {;}
-//    WorkerThreadID = iID;
 
     try{
         bool bSuccess{false};
@@ -44,12 +56,14 @@ void workerLoader::workerDataBaseWork(BlockFreeQueue<dataFinLoadTask> & queueTas
         while(bSuccess){
             ActiveProcessCounter counter;
 
+            // pop next task to process
             dataFinLoadTask data(*pdata.get());
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             /// one task start
 
+            // select function to process data
             switch (data.taskType) {
             case dataFinLoadTask::TaskType::finQuotesImport:
                 workerFinQuotesLoad(queueTasks,queueTrdAnswers,stStore,data);
@@ -90,11 +104,16 @@ void workerLoader::workerDataBaseWork(BlockFreeQueue<dataFinLoadTask> & queueTas
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
+/////////////////
+/// \brief workerEtalon typical structure of process function (for develop purpouse)
+///
 void workerLoader::workerEtalon(BlockFreeQueue<dataFinLoadTask> & queueFilLoad,
                                BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers)
 {
-    //ThreadFreeCout fout;
-    //fout<<"workerLoaderFinam in\n";
+    {
+        ThreadFreeCout pcout;
+        pcout<<"workerEtalon in\n";
+    }
 
     bool bWasBreaked{false};
     bool bSuccess{false};
@@ -161,16 +180,18 @@ void workerLoader::workerEtalon(BlockFreeQueue<dataFinLoadTask> & queueFilLoad,
         }
         //----------------------------------
     }
-    //fout<<"workerLoaderFinam out\n";
+    {
+        ThreadFreeCout pcout;
+        pcout<<"workerEtalon out\n";
+    }
 }
-
-
 //------------------------------------------------------------------------------------------------------------------------------------------
 /////////////////////////////////////////////////////////////////////////////////////////////////
-/// \brief Thread task for upload fin quotes data from file
-/// \param queueFilLoad
-/// \param queueTrdAnswers
-/// \param stStore
+/// \brief workerFinQuotesLoad process to load history data from file. Used by workerDataBaseWork
+/// \param queueTasks queue of tasks
+/// \param queueTrdAnswers queue for answers
+/// \param stStore partal threadsafe class for work with database
+/// \param data data task
 ///
 void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTasks,
                                 BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
@@ -178,12 +199,23 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
                                 dataFinLoadTask & data)
 
 {
+    // algorithm:
+    // 1. check if all correct with database
+    // 2. open file to import
+    // 3. read and parse file line by line
+    // 4. push data line (i.e. trade Bar) to buffer with control chunks if needed:
+    //     a. clear import range
+    //     b. check current month (SS-tables divided by month)
+    //     c. since the primary index in the SS table is <second interval> and the data arrives at millisecond intervals, we create new_second escape sequences
+    // !uses MutexDefender class to correctly set mutex on SS-table
+    // 5. write buffer to SS-table when it is full or month changed or tail at the end
+    // 6. sending activity events wherever possible
 
-    {
+    {//activity event
         dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportBegin,data.GetParentWnd());
         queueTrdAnswers.Push(dt);
     }
-    {
+    {//activity event
         dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportCurrent,data.GetParentWnd());
         dt.SetPercent(0);
         queueTrdAnswers.Push(dt);
@@ -195,6 +227,7 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
     bool bWasSuccessfull{false};
 
     ////////////////////////////////////////////////////////////
+    //activity event
     dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage,data.GetParentWnd());
     std::stringstream ss;
     char buffer[100];
@@ -214,6 +247,8 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
     dt.SetTextInfo(ss.str());
     queueTrdAnswers.Push(dt);
     ////////////////////////////////////////////////////////////
+    /// 1. check if all correct with database
+
     std::stringstream ssErr;
     if (Bar::castInterval(data.iInterval)  != Bar::eInterval::pTick){
         dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportEnd,data.GetParentWnd());
@@ -231,12 +266,13 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
         queueTrdAnswers.Push(dt);
     }
     else{
-        if (ssErr.str().size()>0){
+        if (ssErr.str().size()>0){ //activity event
             dataBuckgroundThreadAnswer dtT (data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage,data.GetParentWnd());
             dtT.SetTextInfo(ssErr.str());
             queueTrdAnswers.Push(dtT);
         }
         ///////////////////////////////////////////////////////////////////////////
+        /// 2. open file to import
 
         std::istringstream issTmp;
         std::ostringstream ossErr;
@@ -285,19 +321,13 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
                 int iProgressSent{0};
                 int iCurrProgress{0};
                 file.seekg(0, std::ios::beg);
-                {
+                {//activity event
                     std::stringstream ss;
                     ss << "filesize: " << filesize<<"\n";
                     dataBuckgroundThreadAnswer dt (data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage,data.GetParentWnd());
                     dt.SetTextInfo(ss.str());
                     queueTrdAnswers.Push(dt);
                 }
-                /////////////////////////////
-
-//                    std::vector<char> vBigBuff(filesize+1);
-//                    fileR.read(vBigBuff.data(), filesize);
-//                    std::istringstream file(vBigBuff.data());
-
                 /////////////////////////////
                 std::string sBuff;
                 std::istringstream iss;
@@ -307,15 +337,18 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
 
                 bWasSuccessfull = true;
 
+                ///////////////////////////////////////////////////////////////////////////
+                /// 3. read and parse file line by line
+
                 if (parseDt.HasHeader()){ // skip header
                     std::getline(file,sBuff);
-                }
-
+                }                
                 while (std::getline(file,sBuff)) {
                     // link stringstream
                     iss.clear();
                     iss.str(sBuff);
                     ////////////
+                    // 3.1 parse line
                     if (!Storage::slotParseLine(parseDt, iss, bb)){
                         dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportEnd,data.GetParentWnd());
                         dt.SetSuccessfull(false);
@@ -333,7 +366,10 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
                     tMonth  = Storage::dateCastToMonth(bb.Period());
                     tSec    = bb.Period();
 
-                    /// init new storage file or buffer is full
+                    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                    /// 5. write buffer to SS-table when it is full or month changed
+
+                    /// 5.1  write buffer if month changed
                     if (tMonth !=  tCurrentMonth){
                         if (iOutBuffPointer >0){
                             // do write
@@ -348,8 +384,11 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
                             }
                         }
                         tCurrentMonth   = tMonth;
+
+                        /// 4.a. clear import range (on start too, becouse tCurrentMonth on start is 0)
                         iOutBuffPointer = createCleanUpHeader(tCurrentMonth, cOutBuff,data.dtBegin, data.dtEnd);
                     }
+                    /// 5.1  write buffer if is full
                     else if( iOutBuffPointer + iBlockSize*4 > iOutBuffMax){ // do write to iSecChangedPointer
 
                         if(!stStore.WriteMemblockToStore(defSlk,defUlk,data.TickerID, tMonth, cOutBuff,iOutBuffPointer/*iSecChangedPointer*/, ssErr)){
@@ -364,7 +403,9 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
 
                         iOutBuffPointer = 0;
                     }
-                    //
+                    //////////////
+                    /// 4.c. since the primary index in the SS table is <second interval> and the data arrives at millisecond intervals,
+                    ///      we create new_second escape sequences
                     if (tSec != tCurrentSec){
                         iState = Storage::data_type::new_sec;
                         tCurrentSec = tSec;
@@ -373,9 +414,8 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
                         iState = Storage::data_type::usual;
                     }
 
-//                    if (Market::IsInSessionTabe(data.vSessionTable,bb.Period()) ||
-//                        Market::IsInSessionTabe(data.vRepoTable,bb.Period())
-//                            )
+                    //////////////
+                    /// 4. push data line (i.e. trade Bar) to buffer:
                     {
                         memcpy(cOutBuff + iOutBuffPointer,&iState,   sizeof (Storage::data_type));      iOutBuffPointer += sizeof (Storage::data_type);
                         memcpy(cOutBuff + iOutBuffPointer,&bM.Close(),  sizeof (bM.Close()));           iOutBuffPointer += sizeof (bM.Close());
@@ -388,7 +428,7 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
                     ///
                     currsize = file.tellg();
                     iCurrProgress = int(100*(currsize/(double)filesize));
-                    if(iProgressSent < iCurrProgress){
+                    if(iProgressSent < iCurrProgress){ //activity event
                         dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportCurrent,data.GetParentWnd());
                         dt.SetPercent(iCurrProgress);
                         queueTrdAnswers.Push(dt);
@@ -397,13 +437,12 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
                     //// send every 0.5 sec activity
                     ///
                     tActivityCount = std::chrono::steady_clock::now() - dtActivity;
-                    if (tActivityCount > milliseconds(500)){//500ms
+                    if (tActivityCount > milliseconds(500)){ //activity event
                         dtActivity = std::chrono::steady_clock::now();
                         dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::LoadActivity,data.GetParentWnd());
                         queueTrdAnswers.Push(dt);
                     }
 
-                    //}
                     //// check thread interrupt
                     ///
                     if(this_thread_flagInterrup.isSet()){
@@ -419,7 +458,7 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
                 }
                 if (bWasSuccessfull && iOutBuffPointer>0){
                     ////////////////////////
-                    /// write tail
+                    /// 5.1  write tail of buffer
                     if(!stStore.WriteMemblockToStore(defSlk,defUlk,data.TickerID, tMonth, cOutBuff,iOutBuffPointer, ssErr)){
                         dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportEnd,data.GetParentWnd());
                         dt.SetSuccessfull(false);
@@ -433,7 +472,7 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
             }
         }
         /////
-        if (!bFileOpened){
+        if (!bFileOpened){ //activity event
             dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportEnd,data.GetParentWnd());
             dt.SetSuccessfull(false);
             ssErr<<"\n\rcannot open file :"<<data.pathFileName<<"\n";
@@ -446,7 +485,7 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
             std::chrono::time_point dtStop(std::chrono::steady_clock::now());
             //milliseconds tCount = dtStop - dtStart;
             seconds tCount = dtStop - dtStart;
-            {
+            { //activity event
                 std::stringstream ss;
                 ss << "Import time: "<<tCount.count()<<" seconds\n";
                 dataBuckgroundThreadAnswer dt (data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage,data.GetParentWnd());
@@ -454,6 +493,7 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
                 queueTrdAnswers.Push(dt);
             }
 
+            //activity event
             dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportEnd,data.GetParentWnd());
             dt.SetSuccessfull(true);
             queueTrdAnswers.Push(dt);
@@ -469,12 +509,12 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
             dataFinLoadTask optTask(data);// copying data range and tickerID
             optTask.taskType = dataFinLoadTask::TaskType::storageOptimisation;
             queueTasks.Push(optTask);
-            //
-            {
+
+            { // order the application to create new worker thread if needed
                 dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::cloneThread,data.GetParentWnd());
                 queueTrdAnswers.Push(dt);
             }
-            {
+            { // order the application to create new worker thread if needed
                 dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::cloneThread,data.GetParentWnd());
                 queueTrdAnswers.Push(dt);
             }
@@ -483,8 +523,16 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
 
 }
 //------------------------------------------------------------------------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief createCleanUpHeader Utility to form control title packet in SS-table. Used by workerFinQuotesLoad
+///
 int workerLoader::createCleanUpHeader(std::time_t tMonth, char* cBuff,std::time_t tBegin, std::time_t tEnd)
 {
+    // algorithm
+    // uses two consecutive bars to store start and end of deleted range
+    // the time range cut to the current month
+    // return new buffer shift
+
     if (tBegin > tEnd) return 0;
     if (tBegin < tMonth){
         tBegin = tMonth;
@@ -528,17 +576,26 @@ int workerLoader::createCleanUpHeader(std::time_t tMonth, char* cBuff,std::time_
     return iBuffPointer;
 }
 //------------------------------------------------------------------------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief workerLoadFromStorage  process to load data from SS-table part of database. Used by workerDataBaseWork
+/// \param queueTasks queue of tasks
+/// \param queueTrdAnswers queue for answers
+/// \param stStore partal threadsafe class for work with database
+/// \param data data task
+///
 void workerLoader::workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & queueTasks,
                                 BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
                                 Storage & stStore,
                                 dataFinLoadTask & data)
 
 {
-//                if (data.TickerID == 1){
-//                ThreadFreeCout pcout;
-//                pcout << "load from base task for TickerID: " << data.TickerID<<"\n";
-//                }
-    {
+    // algorithm
+    // 1. init data storage
+    // 2. calculate month sequence (time range can has more then one)
+    // 3. consistently load data, month by month
+    // 4. form tasks to make LSM-tree or merge and seal SS-tables
+    // 5. sending activity events wherever possible
+    { //activity event
         dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::storagLoadFromStorageGraphBegin,data.GetParentWnd());
         queueTrdAnswers.Push(dt);
     }
@@ -547,6 +604,8 @@ void workerLoader::workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & queue
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     bool bSuccessfull{true};
 
+    ///////////////////////////////////
+    // 1. init data storage
     std::stringstream ssErr;
     if (!stStore.InitializeTicker(data.TickerID,ssErr)){
         dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportEnd,data.GetParentWnd());
@@ -556,6 +615,9 @@ void workerLoader::workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & queue
         queueTrdAnswers.Push(dt);
     }
     else{
+
+        ///////////////////////////////////
+        // 2. calculate month sequence (time range can has more then one)
 
         std::vector<std::time_t> vMonthToLoad;
 
@@ -572,6 +634,8 @@ void workerLoader::workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & queue
 
         std::shared_ptr<std::vector<std::vector<BarTick>>> pvBars{std::make_shared<std::vector<std::vector<BarTick>>>()};
 
+        ///////////////////////////////////
+        // 3. consistently load data, month by month
         for (const std::time_t &t:vMonthToLoad){
             ssOut.str("");
             ssOut.clear();
@@ -590,12 +654,15 @@ void workerLoader::workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & queue
                 break;
             }
             else{
-                if (ssOut.str().size()>0){
+                if (ssOut.str().size()>0){ //activity event
                     dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::logText,data.GetParentWnd());
                     dt.SetTextInfo(ssOut.str());
                     queueTrdAnswers.Push(dt);
                 }
                 if(iCollisionsCount > 1000){
+
+                    ///////////////////////////////////
+                    // 4.1 form tasks to  merge and seal SS-tables
 
                     /// if too many collisions - do optimisations
                     dataFinLoadTask optTask(data);// copying data range and tickerID
@@ -604,7 +671,7 @@ void workerLoader::workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & queue
                     optTask.dtEnd = t;
                     queueTasks.Push(optTask);
 
-                    // send info
+                    //activity event
                     dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::logText,data.GetParentWnd());
                     std::stringstream ss;
                     ss <<"{"<< data.TickerID<<"} ";
@@ -612,11 +679,6 @@ void workerLoader::workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & queue
                     ss << " Request optimisation for: "<<threadfree_gmtime_to_str(&t)<<"\n";
                     dt.SetTextInfo(ss.str());
                     queueTrdAnswers.Push(dt);
-
-//                    {
-//                        ThreadFreeCout pcout;
-//                        pcout << ss.str();
-//                    }
                 }
             }
             if(this_thread_flagInterrup.isSet()){
@@ -629,21 +691,13 @@ void workerLoader::workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & queue
                 break;
             }
         }
-        /////
-        {
-            // TODO: remove
-            //for tests
-//            if (data.TickerID == 9){
-//                dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::testPvBars,data.GetParentWnd());
-//                dt.pvBars = pvBars;
-//                queueTrdAnswers.Push(dt);
-//            }
-        }
+        ///////////////////////////////////
+        // 4.2 form tasks to make LSM-tree
         dataFinLoadTask optTask(data);// copying data range and tickerID
         optTask.taskType = dataFinLoadTask::TaskType::LoadIntoGraph;
         optTask.pvBars =pvBars;
         queueTasks.Push(optTask);
-        {
+        { // ordering the application to create a new worker process
             dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::cloneThread,data.GetParentWnd());
             queueTrdAnswers.Push(dt);
         }
@@ -653,7 +707,7 @@ void workerLoader::workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & queue
         std::chrono::time_point dtStop(std::chrono::steady_clock::now());
         //milliseconds tCount = dtStop - dtStart;
         seconds tCount = dtStop - dtStart;
-        {
+        { //activity event
             std::stringstream ss;
             ss <<"{"<< data.TickerID<<"} ";
             ss << "Import time: "<<tCount.count()<<" seconds\n";
@@ -661,40 +715,50 @@ void workerLoader::workerLoadFromStorage(BlockFreeQueue<dataFinLoadTask> & queue
             dt.SetTextInfo(ss.str());
             queueTrdAnswers.Push(dt);
         }
-        //
+        //activity event
         dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::storagLoadFromStorageGraphEnd,data.GetParentWnd());
         dt.SetSuccessfull(true);
         queueTrdAnswers.Push(dt);
     }
-
-//    if (data.TickerID == 1){
-//    ThreadFreeCout pcout;
-//    pcout << "out load from base {" << data.TickerID<<"}\n";
-//    }
-
 }
 //------------------------------------------------------------------------------------------------------------------------------------------
+///////////////
+/// \brief workerLoadIntoGraph process the data read from the SS-table by the workerLoadFromStorage and form correct LSM-tree.  Used by workerDataBaseWork
+/// \param queueTrdAnswers queue for answers
+/// \param data data task
+///
 void workerLoader::workerLoadIntoGraph(BlockFreeQueue<dataFinLoadTask> & /*queueTasks*/,
                                 BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
                                 Storage & /*stStore*/,
                                 dataFinLoadTask & data)
 {
-//    if (data.TickerID == 1){
-//        ThreadFreeCout pcout;
-//        pcout << "in load into Graph for TickerID: " << data.TickerID<<"\n";
-//    }
+    // algorithm
+    // 1.take data task and check if all fields filled correctly
+    // 2. run AddBarsLists from GraphHolder object
+    // 3. for tests - run CheckMap
+    // 4. emit event with result
+
     {
         dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::storagLoadToGraphBegin,data.GetParentWnd());
         queueTrdAnswers.Push(dt);
     }
     std::chrono::time_point dtStart(std::chrono::steady_clock::now());
     bool bSuccessfull{true};
+
     //////////////////////////////////////////////////////////////////////////////////
+    // 1.take data task and check if all fields filled correctly
+
     if (data.holder != std::shared_ptr<GraphHolder>{}){
 
         if(std::shared_ptr<std::vector<std::vector<BarTick>>>{} != data.pvBars){
 
+            //////////////////////////////////////////////
+            // 2. run AddBarsLists from GraphHolder object
+
             if(data.holder->AddBarsLists(*data.pvBars.get(),data.dtBegin,data.dtEnd)){
+                ////////////////////////////////////////////////
+                //  3. for tests - run CheckMap
+                //
                 //                if (data.holder->CheckMap()){
                 //                    dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::logText,data.GetParentWnd());
                 //                    dt.SetTextInfo("map consistensy is good");
@@ -732,6 +796,8 @@ void workerLoader::workerLoadIntoGraph(BlockFreeQueue<dataFinLoadTask> & /*queue
         bSuccessfull = false;
     }
     //////////////////////////////////////////////////////////////////////////////////
+    // 4. emit event with result
+
     if (bSuccessfull){
         std::chrono::time_point dtStop(std::chrono::steady_clock::now());
         //milliseconds tCount = dtStop - dtStart;
@@ -751,32 +817,37 @@ void workerLoader::workerLoadIntoGraph(BlockFreeQueue<dataFinLoadTask> & /*queue
         dt.SetSuccessfull(true);
         queueTrdAnswers.Push(dt);
     }
-//    if (data.TickerID == 1){
-//        ThreadFreeCout pcout;
-//        pcout << "out load into Graph {" << data.TickerID<<"}\n";
-//    }
 }
 //------------------------------------------------------------------------------------------------------------------------------------------
 ////////////////////////////////////////////////////////////////////////
+/// \brief workerOptimizeStorage optimise phisical structure of SS-tables (merge and seal process). Used by workerDataBaseWork
+/// \param queueTasks queue of tasks
+/// \param queueTrdAnswers queue for answers
+/// \param stStore partal threadsafe class for work with database
+/// \param data task
+///
 void workerLoader::workerOptimizeStorage(BlockFreeQueue<dataFinLoadTask> & queueTasks,
                                 BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
                                 Storage & stStore,
                                 dataFinLoadTask & data)
 {
-//        {
+    // algorithm
+    // 1. check if all correct with database
+    // 2. calculate month sequence (time range can has more then one)
+    // 3. consistently run optimizing task, month by month
+    // 3.1 if needed, order next shift of SS-files
+    // 4. sending activity events wherever possible
 
-//            ThreadFreeCout pcout;
-//            pcout << "storage optimization task for TickerID: " << data.TickerID<<"\n";
-//        }
-        {
+        { //activity event
             dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::storageOptimisationBegin,data.GetParentWnd());
             queueTrdAnswers.Push(dt);
         }
         //
         std::chrono::time_point dtStart(std::chrono::steady_clock::now());
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        bool bSuccessfull{true};
+        // 1. check if all correct with database
 
+        bool bSuccessfull{true};
         std::stringstream ssErr;
         if (!stStore.InitializeTicker(data.TickerID,ssErr)){
             dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportEnd,data.GetParentWnd());
@@ -787,6 +858,9 @@ void workerLoader::workerOptimizeStorage(BlockFreeQueue<dataFinLoadTask> & queue
         }
         else{
             std::vector<std::time_t> vMonthToLoad;
+
+            //////////////////////////////////////////////////////////////////
+            // 2. calculate month sequence (time range can has more then one)
 
             std::time_t dtMonthBegin = Storage::dateCastToMonth(data.dtBegin);
             std::time_t dtMonthEnd   = Storage::dateAddMonth(data.dtEnd);
@@ -799,6 +873,9 @@ void workerLoader::workerOptimizeStorage(BlockFreeQueue<dataFinLoadTask> & queue
             std::stringstream ssOut;
 
             bool bToPlanNextShift{false};
+
+            //////////////////////////////////////////////////////////////////
+            // 3. consistently run optimizing task, month by month
 
             for (const std::time_t &t:vMonthToLoad){
                 ssOut.str("");
@@ -817,6 +894,9 @@ void workerLoader::workerOptimizeStorage(BlockFreeQueue<dataFinLoadTask> & queue
                     break;
                 }
                 else{
+                    //////////////////////////////////////////////////////////////////
+                    // 3.1 if needed, order next shift of SS-files
+
                     if (bToPlanNextShift){// plan next optimization task
                         dataFinLoadTask optTask(data);// copying data range and tickerID
                         optTask.dtBegin = t;    // only current month
@@ -824,7 +904,7 @@ void workerLoader::workerOptimizeStorage(BlockFreeQueue<dataFinLoadTask> & queue
                         optTask.taskType = dataFinLoadTask::TaskType::storageOptimisation;
                         queueTasks.Push(optTask);
                     }
-                    if (ssOut.str().size()>0){
+                    if (ssOut.str().size()>0){ //activity event
                         dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::logText,data.GetParentWnd());
                         dt.SetTextInfo(ssOut.str());
                         queueTrdAnswers.Push(dt);
@@ -846,30 +926,25 @@ void workerLoader::workerOptimizeStorage(BlockFreeQueue<dataFinLoadTask> & queue
             std::chrono::time_point dtStop(std::chrono::steady_clock::now());
             //milliseconds tCount = dtStop - dtStart;
             seconds tCount = dtStop - dtStart;
-            {
+            { //activity event
                 std::stringstream ss;
                 ss << "Optimization time: "<<tCount.count()<<" seconds\n";
                 dataBuckgroundThreadAnswer dt (data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::logText,data.GetParentWnd());
                 dt.SetTextInfo(ss.str());
                 queueTrdAnswers.Push(dt);
             }
-            //
+            //activity event
             dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::storageOptimisationEnd,data.GetParentWnd());
             dt.SetSuccessfull(true);
             queueTrdAnswers.Push(dt);
         }
-
-//        {
-
-//            ThreadFreeCout pcout;
-//            pcout << "storage optimization task out {" << data.TickerID<<"}\n";
-//        }
 }
 //------------------------------------------------------------------------------------------------------------------------------------------
-/// \brief Thread task for check fin quotes data from file
-/// \param queueFilLoad
-/// \param queueTrdAnswers
-/// \param stStore
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief workerFinQuotesCheck  process to check history data from file whith database. Used by workerDataBaseWork
+/// \param queueTrdAnswers queue for answers
+/// \param stStore partal threadsafe class for work with database
+/// \param data task
 ///
 void workerLoader::workerFinQuotesCheck(BlockFreeQueue<dataFinLoadTask> & /*queueTasks*/,
                                 BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
@@ -877,12 +952,21 @@ void workerLoader::workerFinQuotesCheck(BlockFreeQueue<dataFinLoadTask> & /*queu
                                 dataFinLoadTask & data)
 
 {
+    // algorithm
+    // 1. check if all correct with database
+    // 2. open file to import
+    // 3. read and parse file line by line and push_back to vector with data
+    // 4.1 if it is not check in memory - load SS-tables
+    // 4.2 if it is not check in memory - convert loaded SS-tables to temporary LSM-tree
+    // 4.3 if it is check in memory - just use current main data holder
+    // 5. compare data in LSM-tree (temporary or current) with prepared early vector witn data
+    // 6. sending activity events wherever possible
 
-    {
+    { //activity event
         dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportBegin,data.GetParentWnd());
         queueTrdAnswers.Push(dt);
     }
-    {
+    { //activity event
         dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportCurrent,data.GetParentWnd());
         dt.SetPercent(0);
         queueTrdAnswers.Push(dt);
@@ -895,6 +979,7 @@ void workerLoader::workerFinQuotesCheck(BlockFreeQueue<dataFinLoadTask> & /*queu
     bool bIsEqual{true};
 
     ////////////////////////////////////////////////////////////
+    //activity event
     dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage,data.GetParentWnd());
     std::stringstream ss;
     char buffer[100];
@@ -914,6 +999,8 @@ void workerLoader::workerFinQuotesCheck(BlockFreeQueue<dataFinLoadTask> & /*queu
     dt.SetTextInfo(ss.str());
     queueTrdAnswers.Push(dt);
     ////////////////////////////////////////////////////////////
+    // 1. check if all correct with database
+
     std::stringstream ssErr;
     if (!stStore.InitializeTicker(data.TickerID,ssErr)){
         dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportEnd,data.GetParentWnd());
@@ -923,12 +1010,13 @@ void workerLoader::workerFinQuotesCheck(BlockFreeQueue<dataFinLoadTask> & /*queu
         queueTrdAnswers.Push(dt);
     }
     else{
-        if (ssErr.str().size()>0){
+        if (ssErr.str().size()>0){ //activity event
             dataBuckgroundThreadAnswer dtT (data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage,data.GetParentWnd());
             dtT.SetTextInfo(ssErr.str());
             queueTrdAnswers.Push(dtT);
         }
         ///////////////////////////////////////////////////////////////////////////
+        // 2. open file to import
 
         std::istringstream issTmp;
         std::ostringstream ossErr;
@@ -955,7 +1043,7 @@ void workerLoader::workerFinQuotesCheck(BlockFreeQueue<dataFinLoadTask> & /*queu
                 int iProgressSent{0};
                 int iCurrProgress{0};
                 file.seekg(0, std::ios::beg);
-                {
+                {//activity event
                     std::stringstream ss;
                     ss << "filesize: " << filesize<<"\n";
                     dataBuckgroundThreadAnswer dt (data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage,data.GetParentWnd());
@@ -963,19 +1051,17 @@ void workerLoader::workerFinQuotesCheck(BlockFreeQueue<dataFinLoadTask> & /*queu
                     queueTrdAnswers.Push(dt);
                 }
                 /////////////////////////////
-
-                /////////////////////////////
                 std::string sBuff;
                 std::istringstream iss;
 
-//                Storage::MutexDefender<std::shared_lock<std::shared_mutex>> defSlk;
-//                Storage::MutexDefender<std::unique_lock<std::shared_mutex>> defUlk;
-
-                {
+                {//activity event
                     dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage,data.GetParentWnd());
                     dt.SetTextInfo("parsing check file...");
                     queueTrdAnswers.Push(dt);
                 }
+
+                ////////////////////////////////////////////////////////////////////////
+                // 3. read and parse file line by line and push_back to vector with data
 
 
                 bWasSuccessfull = true;
@@ -1004,8 +1090,8 @@ void workerLoader::workerFinQuotesCheck(BlockFreeQueue<dataFinLoadTask> & /*queu
                     //}
 
                     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                    //// send completion percentage
-                    ///
+                    // activity event
+                    // send completion percentage
                     currsize = file.tellg();
                     iCurrProgress = int(50*(currsize/(double)filesize));
                     if(iProgressSent < iCurrProgress){
@@ -1014,8 +1100,8 @@ void workerLoader::workerFinQuotesCheck(BlockFreeQueue<dataFinLoadTask> & /*queu
                         queueTrdAnswers.Push(dt);
                         iProgressSent = iCurrProgress;
                     }
-                    //// send every 0.5 sec activity
-                    ///
+                    // activity event
+                    // send every 0.5 sec activity
                     tActivityCount = std::chrono::steady_clock::now() - dtActivity;
                     if (tActivityCount > milliseconds(500)){//500ms
                         dtActivity = std::chrono::steady_clock::now();
@@ -1036,16 +1122,19 @@ void workerLoader::workerFinQuotesCheck(BlockFreeQueue<dataFinLoadTask> & /*queu
                     }
                 }
                 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                // load data from own storage:
-                {
+                {// activity event
                     dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage,data.GetParentWnd());
                     dt.SetTextInfo("loading data from storage...");
                     queueTrdAnswers.Push(dt);
                 }
                 std::shared_ptr<GraphHolder> ptrHolder = std::make_shared<GraphHolder>(GraphHolder{data.TickerID});
 
+                /////////////////////////////////////////////////////
+                // 4.1 if it is not check in memory - load SS-tables
+
                 if (!data.bCheckInMemory){
-                    /// filling data from store
+                    // load data from own storage:
+                    // filling data from store
 
                     std::vector<std::vector<BarTick>> v_vStoredBars;
 
@@ -1120,14 +1209,14 @@ void workerLoader::workerFinQuotesCheck(BlockFreeQueue<dataFinLoadTask> & /*queu
                         }
                     }
                     iCurrProgress = 60;
-                    if(iProgressSent < iCurrProgress){
+                    if(iProgressSent < iCurrProgress){ // activity event
                         dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportCurrent,data.GetParentWnd());
                         dt.SetPercent(iCurrProgress);
                         queueTrdAnswers.Push(dt);
                         iProgressSent = iCurrProgress + 5;
                     }
-                    //// send every 0.5 sec activity
-                    ///
+                    // activity event
+                    // send every 0.5 sec activity
                     tActivityCount = std::chrono::steady_clock::now() - dtActivity;
                     if (tActivityCount > milliseconds(500)){//500ms
                         dtActivity = std::chrono::steady_clock::now();
@@ -1135,18 +1224,10 @@ void workerLoader::workerFinQuotesCheck(BlockFreeQueue<dataFinLoadTask> & /*queu
                         queueTrdAnswers.Push(dt);
                     }
                     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                    // 4.2 if it is not check in memory - convert loaded SS-tables to temporary LSM-tree
                     /// load data to holder
-    //                {
-    //                    dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage,data.GetParentWnd());
-    //                    dt.SetTextInfo("parsing storage data to memory structures...");
-    //                    queueTrdAnswers.Push(dt);
-    //                }
-                    //GraphHolder &hl = ptrHolder.get();
-
 
                     if (bWasSuccessfull){
-
                         if(ptrHolder->AddBarsLists(v_vStoredBars,data.dtBegin,tEnd)){
                             ;
                         }
@@ -1161,27 +1242,28 @@ void workerLoader::workerFinQuotesCheck(BlockFreeQueue<dataFinLoadTask> & /*queu
                     }
                 }
                 else{
+                    ///////////////////////////////////////////////////////////////////
+                    // 4.3 if it is check in memory - just use current main data holder
                     // using contained in memory data
                     ptrHolder = data.holder;
                 }
                 iCurrProgress = 80;
-                if(iProgressSent < iCurrProgress){
+                if(iProgressSent < iCurrProgress){// activity event
                     dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportCurrent,data.GetParentWnd());
                     dt.SetPercent(iCurrProgress);
                     queueTrdAnswers.Push(dt);
                    // iProgressSent = iCurrProgress + 5;
                 }
-                //// send every 0.5 sec activity
-                ///
+                // send every 0.5 sec activity
                 tActivityCount = std::chrono::steady_clock::now() - dtActivity;
-                if (tActivityCount > milliseconds(500)){//500ms
+                if (tActivityCount > milliseconds(500)){// activity event
                     dtActivity = std::chrono::steady_clock::now();
                     dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::LoadActivity,data.GetParentWnd());
                     queueTrdAnswers.Push(dt);
                 }
                 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-                // compare vectors
+                // 5. compare data in LSM-tree (temporary or current) with prepared early vector witn data
                 if (bWasSuccessfull){
                     bIsEqual = compareBars(*ptrHolder,data,vBars,queueTrdAnswers,dtActivity);
                 }
@@ -1210,7 +1292,7 @@ void workerLoader::workerFinQuotesCheck(BlockFreeQueue<dataFinLoadTask> & /*queu
             std::chrono::time_point dtStop(std::chrono::steady_clock::now());
             //milliseconds tCount = dtStop - dtStart;
             seconds tCount = dtStop - dtStart;
-            {
+            {// activity event
                 std::stringstream ss;
                 ss << "Check time: "<<tCount.count()<<" seconds\n";
                 dataBuckgroundThreadAnswer dt (data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage,data.GetParentWnd());
@@ -1218,6 +1300,7 @@ void workerLoader::workerFinQuotesCheck(BlockFreeQueue<dataFinLoadTask> & /*queu
                 queueTrdAnswers.Push(dt);
             }
 
+            // send back results
             dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::famImportEnd,data.GetParentWnd());
             dt.SetSuccessfull(bIsEqual);
             if (!bIsEqual){
@@ -1228,6 +1311,9 @@ void workerLoader::workerFinQuotesCheck(BlockFreeQueue<dataFinLoadTask> & /*queu
     }
 }
 //------------------------------------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief compareBars utility function to compare data storage with data set. Used by workerFinQuotesCheck
+///
 bool workerLoader::compareBars(GraphHolder &hl,dataFinLoadTask & data,std::vector<Bar> &vBars,
                                BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
                                std::chrono::time_point<std::chrono::steady_clock> dtActivity)
@@ -1245,6 +1331,10 @@ bool workerLoader::compareBarsT(GraphHolder &hl, dataFinLoadTask & data,std::vec
                                 BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
                                 std::chrono::time_point<std::chrono::steady_clock> dtActivity)
 {
+    // algorithm
+    // two ranges standard compare by iterating throught two iterators and retun false if not equal or has different size
+    // check differ and send back with log events
+
     {
         dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::TextInfoMessage,data.GetParentWnd());
         dt.SetTextInfo("begin checking data...");
@@ -1408,6 +1498,16 @@ bool workerLoader::compareBarsT(GraphHolder &hl, dataFinLoadTask & data,std::vec
 //------------------------------------------------------------------------------------------------------------------------------------------
 //////********************************************************************************************************************************//////
 //------------------------------------------------------------------------------------------------------------------------------------------
+/// \brief workerAmiClient Client for pipes with trade data sources (fast time work).
+/// Process has !infinite! lifetime. Works until this_thread_flagInterrup is set
+/// !Warning! Only one instanse of process must be run, or you must divide serviced pipes between instances.
+/// \param queueFinQuotesLoad queue for database work tasks (need to give orders for optimisation and etc.)
+/// \param queueTrdAnswers  queue for answers
+/// \param queuePipeTasks queue for receive main task or process
+/// \param queuePipeAnswers queue for answers
+/// \param queueFastTasks queue for setting tasks to process received packets with data
+/// \param pipesHolder partal threadsafe class for work with connections (pipes)
+///
 void workerLoader::workerAmiClient(BlockFreeQueue<dataFinLoadTask> & /*queueFinQuotesLoad*/,
                             BlockFreeQueue<dataBuckgroundThreadAnswer> &queueTrdAnswers,
                             BlockFreeQueue<dataAmiPipeTask> &queuePipeTasks,
@@ -1415,7 +1515,17 @@ void workerLoader::workerAmiClient(BlockFreeQueue<dataFinLoadTask> & /*queueFinQ
                             BlockFreeQueue<dataFastLoadTask> &queueFastTasks,
                             AmiPipeHolder& pipesHolder)
 {   
+    // algorithm
+    // 1. infinite loop until this_thread_flagInterrup is set
+    // 2. process two type of task:
+    //      2.1. receive list of pipes to get ticker name from them (not for work)
+    //      2.2. receive list of work pipes with ones to connect or disconnect
+    // 3. read the pipes for which we want to know the name of the ticker
+    // 4. read the pipes we actually work with
+
         try{
+            ///////////////////////////////////////////////////////////////////////////////
+            // 1. infinite loop until this_thread_flagInterrup is set
             bool bSuccess{false};
             bool bLoop{true};
             int iBytesRead{0};
@@ -1437,13 +1547,18 @@ void workerLoader::workerAmiClient(BlockFreeQueue<dataFinLoadTask> & /*queueFinQ
                     case dataAmiPipeTask::eTask_type::Nop:
                         break;
                     case dataAmiPipeTask::eTask_type::RefreshPipeList:
-                        if (!bWasRefresh){
+                        ////////////////////////////////////////////////////////////////////////
+                        // 2.2. receive list of work pipes with ones to connect or disconnect
 
+                        if (!bWasRefresh){//only once at loop
                             pipesHolder.RefreshActiveSockets(data.pipesBindedActive,data.pipesBindedOff,queuePipeAnswers);
                         }
                         bWasRefresh = true;
                         break;
                     case dataAmiPipeTask::eTask_type::AskPipesNames:
+                        ////////////////////////////////////////////////////////////////////////
+                        //2.1. receive list of pipes to get ticker name from them (not for work)
+
                         pipesHolder.AskPipesNames(data.pipesFree,queuePipeAnswers);
                         break;
                     }   
@@ -1458,10 +1573,16 @@ void workerLoader::workerAmiClient(BlockFreeQueue<dataFinLoadTask> & /*queueFinQ
                 ///////////////////////////////////////////////////////////////////////////////
                 // socket work block
 
+                ////////////////////////////////////////////
+                // 4. read the pipes we actually work with
+
                 {
                     ActiveProcessCounter counter;
                     pipesHolder.ReadConnectedPipes(queueFastTasks,queuePipeAnswers,queueTrdAnswers,false,iBytesRead,bWasFullBuffers);
                 }
+
+                ////////////////////////////////////////////
+                // 3. read the pipes for which we want to know the name of the ticker
 
                 {
                     ActiveProcessCounter counter;
@@ -1494,6 +1615,16 @@ void workerLoader::workerAmiClient(BlockFreeQueue<dataFinLoadTask> & /*queueFinQ
         }
 }
 //------------------------------------------------------------------------------------------------------------------------------------------
+/// \brief workerFastDataWork process for parallel processing receiving data packets (long time work).
+/// Inserting into LSM-tree database, forming data chunk to didplay by GUI and etc.
+/// Process has !infinite! lifetime. Works until this_thread_flagInterrup is set.
+/// You can run several instances of process - the received chunks of data are correctly ordered and processed.
+/// \param queueFastTasks queue for main task
+/// \param queuePipeAnswers queue for answer
+/// \param fastHolder partal threadsafe class for work with data chunks
+/// \param stStore stStore partal threadsafe class for work with database
+/// \param Holders main in-memory storage of trade data
+///
 void workerLoader::workerFastDataWork( BlockFreeQueue<dataFastLoadTask>     &queueFastTasks,
                                 //BlockFreeQueue<dataBuckgroundThreadAnswer>  &queueTrdAnswers,
                                 BlockFreeQueue<dataAmiPipeAnswer>           &queuePipeAnswers,
@@ -1502,10 +1633,11 @@ void workerLoader::workerFastDataWork( BlockFreeQueue<dataFastLoadTask>     &que
                                 std::map<int,std::shared_ptr<GraphHolder>> &Holders)
 {
 
-//    {
-//        ThreadFreeCout pcout;
-//        pcout <<"workerFastDataWork in\n";
-//    }
+    // algorithm
+    // 1. waiting on condition variable loop. wait_for 1 sec and exit if this_thread_flagInterrup was set
+    // 2. queueFastTasks is not empty, pop task and run processer
+    // 3. if queueFastTasks has another task - do it (without waiting on condition variable)
+
     bool bSuccess{false};
     try{
         while(true){
@@ -1514,6 +1646,8 @@ void workerLoader::workerFastDataWork( BlockFreeQueue<dataFastLoadTask>     &que
                 break;// to exit while
             }
             ///////////////////////////////////////////////////////////////////////////////
+            // 1. waiting on condition variable loop. wait_for 1 sec and exit if this_thread_flagInterrup was set
+
             std::unique_lock lk(mutexConditionFastData);
             conditionFastData.wait_for (lk,milliseconds(1000),[&]{
                         return !queueFastTasks.empty();});
@@ -1525,6 +1659,9 @@ void workerLoader::workerFastDataWork( BlockFreeQueue<dataFastLoadTask>     &que
             ///////////////////////////////////////////////////////////////////////////////
             if(!queueFastTasks.empty()){
                 ActiveProcessCounter counter;
+                ///////////////////////////////////////////////////////////////////
+                // 2. queueFastTasks is not empty, pop task and run processer
+
                 auto pdata =queueFastTasks.Pop(bSuccess);
                 while(bSuccess){
                     dataFastLoadTask &data(*pdata.get());
@@ -1541,6 +1678,8 @@ void workerLoader::workerFastDataWork( BlockFreeQueue<dataFastLoadTask>     &que
                         break;// to exit while
                     }
                     ////////////////////////////////////////
+                    // 3. if queueFastTasks has another task - do it (without waiting on condition variable)
+
                     pdata =queueFastTasks.Pop(bSuccess);
                 }
             }
@@ -1550,11 +1689,6 @@ void workerLoader::workerFastDataWork( BlockFreeQueue<dataFastLoadTask>     &que
         ThreadFreeCout pcout;
         pcout <<"crash ecxeption" <<ex.what()<<"\n";
     }
-
-//    {
-//        ThreadFreeCout pcout;
-//        pcout <<"workerFastDataWork out\n";
-//    }
 }
 //------------------------------------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------------------------------------
