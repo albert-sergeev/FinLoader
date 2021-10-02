@@ -1,23 +1,21 @@
 <RCC>
     <qresource prefix="/store">
-        <file>images/sc_cut.png</file>
-        <file>images/sc_hide.png</file>
-        <file>images/sc_move.png</file>
-        <file>images/sc_newdoc.png</file>
-        <file>images/sc_open.png</file>
-        <file>images/sc_paste.png</file>
-        <file>images/sc_pie.png</file>
-        <file>images/sc_print.png</file>
-        <file>images/sc_quit.png</file>
-        <file>images/sc_ruler.png</file>
-        <file>images/sc_runbasic.png</file>
-        <file>images/sc_runmacro.png</file>
-        <file>images/sc_save.png</file>
-        <file>images/sc_saveas.png</file>
-        <file>images/sc_config.png</file>
+        <file>images/config.png</file>
         <file>blackstyle.css</file>
         <file>FinLoader_ru_RU.qm</file>
         <file>FinLoader_en_US.qm</file>
-        <file>images/sc_err_log.png</file>
+        <file>images/err_log.png</file>
+        <file>images/graph.png</file>
+        <file>images/pipes.png</file>
+        <file>images/pipes2.png</file>
+        <file>images/scroll.png</file>
+        <file>images/open.png</file>
+        <file>images/open4.png</file>
+        <file>images/open3.png</file>
+        <file>images/open2.png</file>
+        <file>images/splashT.png</file>
+        <file>images/SplashScreen.png</file>
+        <file>images/SplashScreen2.png</file>
+        <file>images/logs.png</file>
     </qresource>
 </RCC>

@@ -35,6 +35,7 @@ ConfigWindow::ConfigWindow(modelMarketsList *modelM,int DefaultTickerMarket,
     , bDataMarketChanged{false}
     , bAddingMarketRow{false}
     , bIsAboutMarkerChanged(false)
+    , bDataMarketSessionTablesChanged{false}
     , bDataTickerChanged{false}
     , bAddingTickerRow {false}
     , bIsAboutTickerChanged{false}
@@ -230,22 +231,50 @@ ConfigWindow::ConfigWindow(modelMarketsList *modelM,int DefaultTickerMarket,
 
     connect(swtAutoLoadWholeMarket,SIGNAL(stateChanged(int)),this,SLOT(slotMarketDataChanged(int)));
     connect(swtUpToSysWholeMarket,SIGNAL(stateChanged(int)),this,SLOT(slotMarketDataChanged(int)));
-//    connect(ui->dateTimeStart,SIGNAL(timeChanged(const QTime &)),this,SLOT(slotMarketTimeChanged(const QTime &)));
-//    connect(ui->dateTimeEnd,SIGNAL(timeChanged(const QTime &)),this,SLOT(slotMarketTimeChanged(const QTime &)));
 
 
-
-//    sessionTable = Market::buildDefaultRepoTable();
-//    modelSessionTable.setSessionTable(sessionTable);
+    QItemSelectionModel  *qml;
+    modelSessionTableProxy.setSourceModel(&modelSessionTable);
+    modelSessionTableRepoProxy.setSourceModel(&modelSessionTableRepo);
 
     ui->treeviewSessions->setItemDelegate(new DateItemDelegate(this));
-    ui->treeviewSessions->setModel(&modelSessionTable);
+    //ui->treeviewSessions->setModel(&modelSessionTable);
+    ui->treeviewSessions->setModel(&modelSessionTableProxy);
+    qml =new QItemSelectionModel(&modelSessionTableProxy);
+    modelSessionTableProxy.sort(0);
+    ui->treeviewSessions->setSelectionModel(qml);
     ui->treeviewSessions->expandAll();
 
     ui->treeviewRepo->setItemDelegate(new DateItemDelegate(this));
-    ui->treeviewRepo->setModel(&modelSessionTableRepo);
+    //ui->treeviewRepo->setModel(&modelSessionTableRepo);
+    ui->treeviewRepo->setModel(&modelSessionTableRepoProxy);
+    qml =new QItemSelectionModel(&modelSessionTableRepoProxy);
+    modelSessionTableRepoProxy.sort(0);
+    ui->treeviewRepo->setSelectionModel(qml);
     ui->treeviewRepo->expandAll();
 
+    QObject::connect(&modelSessionTable,SIGNAL(dataChanged(const QModelIndex &,const QModelIndex &,const QVector<int>&)),
+                         this,SLOT(slotMarketDataChanged(const QModelIndex &,const QModelIndex &,const QVector<int>&)));
+
+    QObject::connect(&modelSessionTableRepo,SIGNAL(dataChanged(const QModelIndex &,const QModelIndex &,const QVector<int>&)),
+                         this,SLOT(slotMarketDataChanged(const QModelIndex &,const QModelIndex &,const QVector<int>&)));
+
+
+    connect(ui->btnSessionAddPeriod,        SIGNAL(clicked()),  this,SLOT(slotBtnSessionAddPeriodClicked()));
+    connect(ui->btnSessionInsertPeriod,     SIGNAL(clicked()),  this,SLOT(slotBtnSessionInsertPeriodClicked()));
+    connect(ui->btnSessionDeletePeriod,     SIGNAL(clicked()),  this,SLOT(slotBtnSessionDeletePeriodClicked()));
+    connect(ui->btnSessionAddTimeRange,     SIGNAL(clicked()),  this,SLOT(slotBtnSessionAddTimeRangeClicked()));
+    connect(ui->btnSessionInsertTimeRange,  SIGNAL(clicked()),  this,SLOT(slotBtnSessionInsertTimeRangeClicked()));
+    connect(ui->btnSessionDeleteTimeRange,  SIGNAL(clicked()),  this,SLOT(slotBtnSessionDeleteTimeRangeClicked()));
+    connect(ui->btnSessionDefaults,         SIGNAL(clicked()),  this,SLOT(slotBtnSessionSetDefaultClicked()));
+
+    connect(ui->btnRepoAddPeriod,           SIGNAL(clicked()),  this,SLOT(slotBtnRepoAddPeriodClicked()));
+    connect(ui->btnRepoInsertPeriod,        SIGNAL(clicked()),  this,SLOT(slotBtnRepoInsertPeriodClicked()));
+    connect(ui->btnRepoDeletePeriod,        SIGNAL(clicked()),  this,SLOT(slotBtnRepoDeletePeriodClicked()));
+    connect(ui->btnRepoAddTimeRange,        SIGNAL(clicked()),  this,SLOT(slotBtnRepoAddTimeRangeClicked()));
+    connect(ui->btnRepoInsertTimeRange,     SIGNAL(clicked()),  this,SLOT(slotBtnRepoInsertTimeRangeClicked()));
+    connect(ui->btnRepoDeleteTimeRange,     SIGNAL(clicked()),  this,SLOT(slotBtnRepoDeleteTimeRangeClicked()));
+    connect(ui->btnRepoDefaults,            SIGNAL(clicked()),  this,SLOT(slotBtnRepoSetDefaultClicked()));
 
     ///////////////////////////////////////////////////////////////////////
     // ticker-tab work
@@ -330,6 +359,16 @@ ConfigWindow::ConfigWindow(modelMarketsList *modelM,int DefaultTickerMarket,
 
     slotMarketDataChanged(false);
     slotTickerDataChanged(false);
+
+    //// not realized
+    ui->lblTradeSystem->hide();
+    ui->lblQuik->hide();
+    ui->wtAutoLoadWholeMarket->hide();
+    ui->wtUpToSysWholeMarket->hide();
+
+    ui->labelTickerUpload->hide();
+    ui->wtUpToSysTicker->hide();
+    ///
 
     ui->listViewTicker->setFocus();
 }
@@ -508,9 +547,14 @@ void ConfigWindow::ClearMarketWidgetsValues()
 ///
 void ConfigWindow::slotBtnSaveMarketClicked()
 {
+    QString qQuestion = tr("Do you want to save market changes?");
+    if (bDataMarketSessionTablesChanged){
+        qQuestion = tr("Session tables were changed. You need to reboot programm to apply changes. Do you want to continue?");
+    }
+
     if(bDataMarketChanged){
         int n=QMessageBox::warning(0,tr("Warning"),
-                               tr("Do you want to save market changes?"),
+                               qQuestion,
                                QMessageBox::Yes|QMessageBox::No|QMessageBox::Cancel
                                );
         if (n==QMessageBox::Yes){
@@ -529,29 +573,13 @@ void ConfigWindow::slotBtnSaveMarketClicked()
                   m.SetMarketSign   (trim(ui->edSign->text().toStdString()));
                   m.SetAutoLoad(swtAutoLoadWholeMarket->isChecked()? true:false);
                   m.SetUpToSys(swtUpToSysWholeMarket->isChecked()? true:false);
-                  //
-//                  const QTime tmS(ui->dateTimeStart->time());
-//                  std::tm tmSt;
-//                  {
-//                      tmSt.tm_year   = 2000 - 1900;
-//                      tmSt.tm_mon    = 1;
-//                      tmSt.tm_mday   = 1;
-//                      tmSt.tm_hour   = tmS.hour();
-//                      tmSt.tm_min    = tmS.minute();
-//                      tmSt.tm_sec    = tmS.second();
-//                      tmSt.tm_isdst  = 0;
-//                  }
-//                  std::time_t tS (mktime_gm(&tmSt));
-//                  m.SetStartTime(tS);
-                  //
-//                  const QTime tmE(ui->dateTimeEnd->time());
-//                  {
-//                      tmSt.tm_hour   = tmE.hour();
-//                      tmSt.tm_min    = tmE.minute();
-//                      tmSt.tm_sec    = tmE.second();
-//                  }
-//                  std::time_t tE (mktime_gm(&tmSt));
-//                  m.SetEndTime(tE);
+
+                  m.setSessionTable(modelSessionTable.getSessionTable());
+                  m.setRepoTable(modelSessionTableRepo.getSessionTable());
+
+//                  Market::coutSessionTable(m.SessionTable());
+//                  Market::coutSessionTable(m.RepoTable());
+
                   ///
                   emit NeedSaveMarketsChanges();
                   emit modelMarket->dataChanged(lst[0],lst[0]);
@@ -560,6 +588,10 @@ void ConfigWindow::slotBtnSaveMarketClicked()
                   slotMarketDataChanged(false);
 
                   ui->listViewMarket->setFocus();
+
+                  if (bDataMarketSessionTablesChanged){
+                      emit NeedToReboot();
+                  }
 
                   //qDebug() << "choiceSave";
             }
@@ -622,7 +654,7 @@ void ConfigWindow::slotBtnCancelMarketClicked()
     ui->listViewMarket->setFocus();
 
 
-    bAddingMarketRow=false;
+    bAddingMarketRow = false;
 };
 //--------------------------------------------------------------------------------------------------------
 ///
@@ -720,6 +752,7 @@ void ConfigWindow::slotSetSelectedMarket(const  QModelIndex& indx)
         ui->treeviewRepo->expandAll();
 
         bIsAboutMarkerChanged=false;
+        bDataMarketSessionTablesChanged = false;
 
         slotMarketDataChanged(false);
     }
@@ -1321,7 +1354,145 @@ void ConfigWindow::slotGeneralOptionChenged(int)
     ui->btnGeneralCancel ->setEnabled(true);
 }
 //--------------------------------------------------------------------------------------------------------
+void ConfigWindow::slotMarketDataChanged(const QModelIndex &,const QModelIndex &,const QVector<int>&)
+{
+    bDataMarketSessionTablesChanged = true;
+    slotMarketDataChanged(true);
+}
 //--------------------------------------------------------------------------------------------------------
+void ConfigWindow::slotBtnSessionAddPeriodClicked()
+{
+    modelSessionTableProxy.addNewPeriod();//const QModelIndex& indx
+    ui->treeviewSessions->expandAll();
+}
+//--------------------------------------------------------------------------------------------------------
+void ConfigWindow::slotBtnSessionInsertPeriodClicked()
+{
+    QItemSelectionModel  *qml = ui->treeviewSessions->selectionModel();
+    auto lst = qml->selectedIndexes();
+
+    if (lst.count()>0){
+        modelSessionTableProxy.addNewPeriod(lst[0]);
+        ui->treeviewSessions->expandAll();
+    }
+}
+//--------------------------------------------------------------------------------------------------------
+void ConfigWindow::slotBtnSessionDeletePeriodClicked()
+{
+    QItemSelectionModel  *qml = ui->treeviewSessions->selectionModel();
+    auto lst = qml->selectedIndexes();
+
+    if (lst.count()>0){
+        modelSessionTableProxy.DeletePeriod(lst[0]);
+        ui->treeviewSessions->expandAll();
+    }
+}
+//--------------------------------------------------------------------------------------------------------
+void ConfigWindow::slotBtnSessionAddTimeRangeClicked()
+{
+    QItemSelectionModel  *qml = ui->treeviewSessions->selectionModel();
+    auto lst = qml->selectedIndexes();
+
+    if (lst.count()>0){
+        modelSessionTableProxy.addNewTimeRange(lst[0]);
+        ui->treeviewSessions->expandAll();
+    }
+}
+//--------------------------------------------------------------------------------------------------------
+void ConfigWindow::slotBtnSessionInsertTimeRangeClicked()
+{
+    QItemSelectionModel  *qml = ui->treeviewSessions->selectionModel();
+    auto lst = qml->selectedIndexes();
+
+    if (lst.count()>0){
+        modelSessionTableProxy.addNewTimeRange(lst[0],true);
+        ui->treeviewSessions->expandAll();
+    }
+}
+//--------------------------------------------------------------------------------------------------------
+void ConfigWindow::slotBtnSessionDeleteTimeRangeClicked()
+{
+    QItemSelectionModel  *qml = ui->treeviewSessions->selectionModel();
+    auto lst = qml->selectedIndexes();
+
+    if (lst.count()>0){
+        modelSessionTableProxy.DeleteTimeRange(lst[0]);
+        ui->treeviewSessions->expandAll();
+    }
+}
+//--------------------------------------------------------------------------------------------------------
+void ConfigWindow::slotBtnSessionSetDefaultClicked()
+{
+    modelSessionTable.setSessionTable(Market::buildDefaultSessionsTable());
+    ui->treeviewSessions->expandAll();
+}
+//--------------------------------------------------------------------------------------------------------
+void ConfigWindow::slotBtnRepoAddPeriodClicked()
+{
+    modelSessionTableRepoProxy.addNewPeriod();
+    ui->treeviewRepo->expandAll();
+}
+//--------------------------------------------------------------------------------------------------------
+void ConfigWindow::slotBtnRepoInsertPeriodClicked()
+{
+    QItemSelectionModel  *qml = ui->treeviewRepo->selectionModel();
+    auto lst = qml->selectedIndexes();
+
+    if (lst.count()>0){
+        modelSessionTableRepoProxy.addNewPeriod(lst[0]);
+        ui->treeviewRepo->expandAll();
+    }
+}
+//--------------------------------------------------------------------------------------------------------
+void ConfigWindow::slotBtnRepoDeletePeriodClicked()
+{
+    QItemSelectionModel  *qml = ui->treeviewRepo->selectionModel();
+    auto lst = qml->selectedIndexes();
+
+    if (lst.count()>0){
+        modelSessionTableRepoProxy.DeletePeriod(lst[0]);
+        ui->treeviewRepo->expandAll();
+    }
+}
+//--------------------------------------------------------------------------------------------------------
+void ConfigWindow::slotBtnRepoAddTimeRangeClicked()
+{
+    QItemSelectionModel  *qml = ui->treeviewRepo->selectionModel();
+    auto lst = qml->selectedIndexes();
+
+    if (lst.count()>0){
+        modelSessionTableRepoProxy.addNewTimeRange(lst[0]);
+        ui->treeviewRepo->expandAll();
+    }
+}
+//--------------------------------------------------------------------------------------------------------
+void ConfigWindow::slotBtnRepoInsertTimeRangeClicked()
+{
+    QItemSelectionModel  *qml = ui->treeviewRepo->selectionModel();
+    auto lst = qml->selectedIndexes();
+
+    if (lst.count()>0){
+        modelSessionTableRepoProxy.addNewTimeRange(lst[0],true);
+        ui->treeviewRepo->expandAll();
+    }
+}
+//--------------------------------------------------------------------------------------------------------
+void ConfigWindow::slotBtnRepoDeleteTimeRangeClicked()
+{
+    QItemSelectionModel  *qml = ui->treeviewRepo->selectionModel();
+    auto lst = qml->selectedIndexes();
+
+    if (lst.count()>0){
+        modelSessionTableRepoProxy.DeleteTimeRange(lst[0]);
+        ui->treeviewRepo->expandAll();
+    }
+}
+//--------------------------------------------------------------------------------------------------------
+void ConfigWindow::slotBtnRepoSetDefaultClicked()
+{
+    modelSessionTableRepo.setSessionTable(Market::buildDefaultRepoTable());
+    ui->treeviewRepo->expandAll();
+}
 //--------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------

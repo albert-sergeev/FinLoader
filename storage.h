@@ -149,7 +149,7 @@ public:
     // log files interface
 
     int SaveToLogfile(const std::string &str,const  std::string & strLogFileName,
-                      const int iCurrentLogfileNumb, const int iMasLogfileSize, const int iMaxLogfiles);
+                      const int iCurrentLogfileNumb, const size_t iMasLogfileSize, const int iMaxLogfiles);
 
     //--------------------------------------------------------------------------------------------------------
     // stock quotes storage interface
@@ -186,6 +186,9 @@ private:
     void SaveMarketConfigLocal(std::vector<Market> & vMarketsLst);
     void SaveMarketConfigV_1(std::vector<Market> & vMarketsLst);
     void ParsMarketConfigV_1(std::vector<Market> & vMarketsLst, std::ifstream &file);
+
+    void SaveMarketConfigV_2(std::vector<Market> & vMarketsLst);
+    void ParsMarketConfigV_2(std::vector<Market> & vMarketsLst, std::ifstream &file);
 
     void SaveTickerConfigLocal(const Ticker & /*tT*/, op_type tp) ;
     void FormatTickerConfigV_1();

@@ -122,6 +122,10 @@ private:
     bool bFillNotAutoloadedTickers;
     bool bGrayColorFroNotAutoloadedTickers;
     int iDefaultMonthDepth;
+
+    bool bShowByName;
+    bool bShowAll;
+    bool bShowMarkets;
     //------------------------------------------------
     std::map<int,std::shared_ptr<GraphHolder>> Holders;
     std::queue<std::pair<int,std::chrono::time_point<std::chrono::steady_clock>>> qActivityQueue;
@@ -134,6 +138,7 @@ private:
     QList<QString> lstStyles;
     QString m_sStyleName;
     QString m_Language;
+    QString sStarterLanguage;
     QTranslator m_translator;
 
     std::chrono::time_point<std::chrono::steady_clock> dtCheckMemoryUsage;
@@ -256,6 +261,7 @@ protected:
     void SaveDataStorage();
     void InitDockBar();
     void InitHolders();
+    void GetStarterLocale();
 
     bool event(QEvent *event) override;
     void timerEvent(QTimerEvent * event) override;
@@ -269,6 +275,8 @@ public slots: // for config window
     void slotStoreConfigTickerSortByName(bool b)    {bConfigTickerSortByName = b;};
 
     void slotSaveGeneralOptions(bool,bool,int, bool,int,int,bool,int,int,bool,bool,bool,bool);
+
+    void slotNeedToReboot();
 
 public slots: // for import FinQuotes winow
     void slotDefaultOpenDirChanged(QString & s) {qsDefaultOpenDir = s;};
@@ -341,8 +349,6 @@ protected slots: // for main window
     void slotSendSignalToFastShow(int TickerID, std::time_t tBegin, std::time_t tEnd,std::shared_ptr<GraphHolder> ptrHolder);
 
 
-    //void slotTestPvBars(std::shared_ptr<std::vector<std::vector<BarTick>>> pvBars); // TODO: delete. for tests
-
     void slotGVFramesVisibilityStateChanged();
 
     void slotAmiPipeFormWasClosed();
@@ -364,15 +370,13 @@ protected slots: // for main window
     void slotSendToLog(QString);
     void slotSendToErrorLog(QString);
 
+    void slotBulbululatorContextMenuRequested(const QPoint &);
+    void slotProcessesContextMenuRequested(const QPoint & pos);
+    void slotTickerBarMenuRequested(const QPoint & pos);
+
 private:
-    //std::vector<std::vector<Bar>> testPvBars; // TODO: delete. for tests
 
     Ui::MainWindow *ui;
-
-
-    // QWidget interface
-
-
     // QObject interface
 public:
     bool eventFilter(QObject *watched, QEvent *event);

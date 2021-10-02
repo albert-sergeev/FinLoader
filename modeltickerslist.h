@@ -104,7 +104,7 @@ public:
 
     const Ticker & getTicker(const QModelIndex &index){
         QModelIndex src_indx =  mapToSource(index);
-        return  ((modelTickersList*)this->sourceModel())->getTicker(src_indx);
+        return  qobject_cast<modelTickersList *>(this->sourceModel())->getTicker(src_indx);
     };
 
     bool setData(const QModelIndex &index,const QVariant &value, int role = Qt::DisplayRole) override
@@ -114,23 +114,23 @@ public:
     };
     bool setData(const QModelIndex& index,const Ticker &t,int role) {
         QModelIndex src_indx =  mapToSource(index);
-        return  ((modelTickersList*)this->sourceModel())->setData(src_indx,t,role);
+        return  qobject_cast<modelTickersList *>(this->sourceModel())->setData(src_indx,t,role);
     };
 
     int AddRow(Ticker &t){
-        int i_src= ((modelTickersList*)this->sourceModel())->AddRow(t);
+        int i_src= qobject_cast<modelTickersList *>(this->sourceModel())->AddRow(t);
         return mapFromSource(sourceModel()->index(i_src,0)).row();
     }
     bool removeRow(int i,const QModelIndex &parent = QModelIndex()){
         QModelIndex src_indx =  mapToSource(index(i,0));
-        return ((modelTickersList*)this->sourceModel())->removeRow(src_indx.row(),parent);
+        return qobject_cast<modelTickersList *>(this->sourceModel())->removeRow(src_indx.row(),parent);
     }
 
     bool filterAcceptsRow ( int source_row, const QModelIndex & source_parent ) const override
     {
         QModelIndex indx= sourceModel()->index(source_row, 0, source_parent);
         if(indx.isValid()){
-            const Ticker & t  (((modelTickersList*)this->sourceModel())->getTicker(indx));
+            const Ticker & t  (qobject_cast<modelTickersList *>(this->sourceModel())->getTicker(indx));
             if (iDefaultMarket >=0 && t.MarketID() != iDefaultMarket){
                 return false;
             }
@@ -186,14 +186,14 @@ public:
 
     bool searchTickerByQuikSign(const std::string &sSign, QModelIndex & indx){
         QModelIndex src_indx ;//=  mapToSource(index)
-        bool bRet =((modelTickersList*)this->sourceModel())->searchTickerByQuikSign(sSign,src_indx);
+        bool bRet =qobject_cast<modelTickersList *>(this->sourceModel())->searchTickerByQuikSign(sSign,src_indx);
         indx = mapFromSource(src_indx);
         if (indx.row() < 0 ) return false;
         return bRet;
     }
     bool searchTickerByPureSign(const std::string &sSign, QModelIndex & indx){
         QModelIndex src_indx ;//=  mapToSource(index)
-        bool bRet =((modelTickersList*)this->sourceModel())->searchTickerByPureSign(sSign,src_indx);
+        bool bRet =qobject_cast<modelTickersList *>(this->sourceModel())->searchTickerByPureSign(sSign,src_indx);
         indx = mapFromSource(src_indx);
         if (indx.row() < 0 ) return false;
         return bRet;

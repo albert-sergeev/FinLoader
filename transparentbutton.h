@@ -28,6 +28,7 @@ public:
     void setText(QString Text)              {strText = Text;};
     void setTextAlternate(QString Text)     {strTextAlternate = Text;};
     void setState(bool State)               {bState = State;};
+    void setFont(const QFont &f)            {font = f;}
 
     eMode Mode()        const   {return modeMode;};
 

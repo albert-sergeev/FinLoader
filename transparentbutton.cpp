@@ -27,6 +27,10 @@ TransparentButton::TransparentButton(QString Text, QString TextAlternate, bool S
     bState              = State;
     modeMode            = eMode::CheckBox;
 
+    font.setPixelSize(12);
+    font.setBold(false);
+    font.setFamily("Times New Roman");
+
     iWidth  = 20;
     iHeight = 20;
     setFixedSize(iWidth, iHeight);
@@ -54,10 +58,7 @@ void TransparentButton::paintEvent(QPaintEvent */*event*/)
     //QPen circlePen(Qt::black,1,Qt::SolidLine);
     QPen circlePen(Qt::gray,1,Qt::SolidLine);
 
-    QFont font;
-    font.setPixelSize(12);
-    font.setBold(false);
-    font.setFamily("Times New Roman");
+
     painter.setFont(font);
 
 
@@ -79,7 +80,10 @@ void TransparentButton::paintEvent(QPaintEvent */*event*/)
 
     QRectF drawRect;
     QRectF drawTextRect;
-    if (!bPushed){
+
+    if ((modeMode != eMode::CheckBox && !bPushed) ||
+        (modeMode == eMode::CheckBox && !bState)
+            ){
         drawRect     = QRectF {1,1,boundRect.width() + 4,boundRect.height() + 1};
         drawTextRect = QRectF {3,2,boundRect.width(),boundRect.height()};
     }

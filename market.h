@@ -66,6 +66,11 @@ public:
     const SessionTable_type& SessionTable() const {return vSessionTable;};
     const SessionTable_type& RepoTable()    const {return vRepoTable;};
 
+    inline void setSessionTable(const SessionTable_type &table) {vSessionTable = table;};
+    inline void setRepoTable(const SessionTable_type &table)    {vRepoTable = table;};
+
+
+
 public:
     //--------------------------------------------------------------------------------------------------------
     // use only explicit constructor.
@@ -279,6 +284,25 @@ public:
         return false;
     };
     //--------------------------------------------------------------------------------------------------------
+    static std::time_t AccomodateToTime(std::time_t t){
+
+        std::call_once(market_call_once_flag,initStartConst);
+
+        t = ((t - t1990_01_01_00_00_00) % 86400) + t1990_01_01_00_00_00;
+        return t;
+    }
+    //--------------------------------------------------------------------------------------------------------
+    static void coutSessionTable(const SessionTable_type &tbl){
+        ThreadFreeCout pcout;
+        pcout <<"SessionTable:\n";
+
+        for(const auto &e:tbl){
+            pcout <<"{"<<threadfree_gmtime_to_str(&e.first)<<" : "<<threadfree_gmtime_to_str(&e.second.first)<<"}\n";
+            for(const auto &v:e.second.second){
+                pcout <<"\t{"<<threadfree_gmtime_to_str(&v.first)<<" : "<<threadfree_gmtime_to_str(&v.second)<<"}\n";
+            }
+        }
+    }
 protected:
 
     static void initStartConst(){
@@ -296,14 +320,7 @@ protected:
         t1990_01_01_00_00_00 = mktime_gm(&tmPer);
     };
     //--------------------------------------------------------------------------------------------------------
-    static std::time_t AccomodateToTime(std::time_t t){
 
-        std::call_once(market_call_once_flag,initStartConst);
-
-        t = ((t - t1990_01_01_00_00_00) % 86400) + t1990_01_01_00_00_00;
-        return t;
-    }
-    //--------------------------------------------------------------------------------------------------------
 
     template<typename T>
     static size_t LeftIndex(T v,std::time_t t){

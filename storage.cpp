@@ -12,7 +12,6 @@
 #include "threadfreelocaltime.h"
 #include "utilites.h"
 
-//using namespace std::filesystem;
 
 ////////////////////////////////////////////////////////////////////
 // file switch stages:
@@ -150,6 +149,9 @@ void Storage::LoadMarketConfig(std::vector<Market> & vMarketsLst)
         if(sBuff == "v1"){
             ParsMarketConfigV_1(vMarketsLst,fileMarket);
         }
+        else if(sBuff == "v2"){
+            ParsMarketConfigV_2(vMarketsLst,fileMarket);
+        }
         else{
             throw std::runtime_error("wrong file format ./data/markets.dat!");
         }
@@ -191,6 +193,121 @@ void Storage::ParsMarketConfigV_1(std::vector<Market> & vMarketsLst, std::ifstre
     }
 }
 //--------------------------------------------------------------------------------------------------------
+void Storage::ParsMarketConfigV_2(std::vector<Market> & vMarketsLst, std::ifstream &file)
+{
+    vMarketsLst.clear();
+    //
+    std::string sBuff;
+    std::istringstream iss;
+    while (std::getline(file,sBuff)) {
+        // link stringstream
+        iss.clear();
+        iss.str(sBuff);
+        //
+        std::vector<std::string> vS{std::istream_iterator<std::string>{iss},{}};
+
+        if(vS.size()<8){
+            std::stringstream ss;
+            ss <<"error parsing file. wrong format: "<<pathMarkersFile;
+            throw std::runtime_error(ss.str());
+        }
+        //
+        Market m{vS[1],vS[2],std::stoi(vS[0])};
+
+        m.SetAutoLoad   (std::stoi(vS[3]));
+        m.SetUpToSys    (std::stoi(vS[4]));
+        m.SetStartTime  (std::stoll(vS[5]));
+        m.SetEndTime    (std::stoll(vS[6]));
+
+
+        int iConfFileIndex = 7;
+        //////////////////////////////////////////////////////////////////
+        Market::SessionTable_type tbl;
+        int iTblSize = std::stoi(vS[iConfFileIndex++]);
+        if(iTblSize < 0){
+            std::stringstream ss;
+            ss <<"error parsing file. wrong format: "<<pathMarkersFile;
+            throw std::runtime_error(ss.str());
+        }
+        //
+        tbl.reserve(iTblSize);
+        std::time_t tDateBeg{0};
+        std::time_t tDateEnd{0};
+        std::time_t tTimeBeg{0};
+        std::time_t tTimeEnd{0};
+        int iRangeSize{0};
+        for(int i = 0; i < iTblSize; ++i){
+
+            if ((int)vS.size() < iConfFileIndex + 3){
+                std::stringstream ss;
+                ss <<"error parsing file. wrong format: "<<pathMarkersFile;
+                throw std::runtime_error(ss.str());
+            }
+            ////
+            tDateBeg    = std::stoll(vS[iConfFileIndex++]);
+            tDateEnd    = std::stoll(vS[iConfFileIndex++]);
+            tbl.push_back({tDateBeg,{tDateEnd,{}}});
+            iRangeSize  = std::stol(vS[iConfFileIndex++]);
+
+            tbl.back().second.second.reserve(iRangeSize);
+            for(int j = 0; j < iRangeSize; ++j){
+                if ((int)vS.size() < iConfFileIndex + 2){
+                    std::stringstream ss;
+                    ss <<"error parsing file. wrong format: "<<pathMarkersFile;
+                    throw std::runtime_error(ss.str());
+                }
+                tTimeBeg    = std::stoll(vS[iConfFileIndex++]);
+                tTimeEnd    = std::stoll(vS[iConfFileIndex++]);
+
+                tbl.back().second.second.push_back({tTimeBeg,tTimeEnd});
+            }
+        }
+        m.setSessionTable(tbl);
+        //////////////////////////////////////////////////////////////////
+        Market::SessionTable_type tblRepo;
+        iTblSize = std::stoi(vS[iConfFileIndex++]);
+        if(iTblSize < 0){
+            std::stringstream ss;
+            ss <<"error parsing file. wrong format: "<<pathMarkersFile;
+            throw std::runtime_error(ss.str());
+        }
+        //
+        tblRepo.reserve(iTblSize);
+
+        for(int i = 0; i < iTblSize; ++i){
+
+            if ((int)vS.size() < iConfFileIndex + 3){
+                std::stringstream ss;
+                ss <<"error parsing file. wrong format: "<<pathMarkersFile;
+                throw std::runtime_error(ss.str());
+            }
+            ////
+            tDateBeg    = std::stoll(vS[iConfFileIndex++]);
+            tDateEnd    = std::stoll(vS[iConfFileIndex++]);
+            tblRepo.push_back({tDateBeg,{tDateEnd,{}}});
+            iRangeSize  = std::stol(vS[iConfFileIndex++]);
+
+            tbl.back().second.second.reserve(iRangeSize);
+            for(int j = 0; j < iRangeSize; ++j){
+                if ((int)vS.size() < iConfFileIndex + 2){
+                    std::stringstream ss;
+                    ss <<"error parsing file. wrong format: "<<pathMarkersFile;
+                    throw std::runtime_error(ss.str());
+                }
+                tTimeBeg    = std::stoll(vS[iConfFileIndex++]);
+                tTimeEnd    = std::stoll(vS[iConfFileIndex++]);
+
+                tblRepo.back().second.second.push_back({tTimeBeg,tTimeEnd});
+            }
+        }
+        m.setRepoTable(tblRepo);
+        //////////////////////////////////////////////////////////////////
+
+        vMarketsLst.push_back(m);
+    }
+
+}
+//--------------------------------------------------------------------------------------------------------
 // plug for different versions
 void Storage::SaveMarketConfig(std::vector<Market> & vMarketsLst)
 {
@@ -206,7 +323,8 @@ void Storage::SaveMarketConfig(std::vector<Market> && vMarketsLst)
 // to avoid mutex
 void Storage::SaveMarketConfigLocal(std::vector<Market> & vMarketsLst)
 {
-    SaveMarketConfigV_1(vMarketsLst);
+    //SaveMarketConfigV_1(vMarketsLst);
+    SaveMarketConfigV_2(vMarketsLst);
 }
 //--------------------------------------------------------------------------------------------------------
 void Storage::SaveMarketConfigV_1(std::vector<Market> & vMarketsLst)
@@ -222,6 +340,50 @@ void Storage::SaveMarketConfigV_1(std::vector<Market> & vMarketsLst)
         fileMarket<<m.UpToSys()<<" ";
         fileMarket<<m.StartTime()<<" ";
         fileMarket<<m.EndTime()<<" ";
+        fileMarket<<"\n";
+    }
+}
+//--------------------------------------------------------------------------------------------------------
+void Storage::SaveMarketConfigV_2(std::vector<Market> & vMarketsLst)
+{
+    std::ofstream fileMarket(pathMarkersFile);
+    fileMarket <<"v2\n";
+    //
+    for(const auto &m:vMarketsLst){
+        fileMarket<<m.MarketID()<<" ";
+        fileMarket<<filter(trim(m.MarketName()))<<" ";
+        fileMarket<<filter(trim(m.MarketSign()))<<" ";
+        fileMarket<<m.AutoLoad()<<" ";
+        fileMarket<<m.UpToSys()<<" ";
+        fileMarket<<m.StartTime()<<" ";
+        fileMarket<<m.EndTime()<<" ";
+
+        Market::SessionTable_type tbl = m.SessionTable();
+
+        fileMarket<<tbl.size()<<" ";
+        for(const auto &e:tbl){
+            fileMarket<<e.first<<" ";
+            fileMarket<<e.second.first<<" ";
+            fileMarket<<e.second.second.size()<<" ";
+            for(const auto &v:e.second.second){
+                fileMarket<<v.first<<" ";
+                fileMarket<<v.second<<" ";
+            }
+        }
+
+        Market::SessionTable_type tblRepo = m.RepoTable();
+
+        fileMarket<<tblRepo.size()<<" ";
+        for(const auto &e:tblRepo){
+            fileMarket<<e.first<<" ";
+            fileMarket<<e.second.first<<" ";
+            fileMarket<<e.second.second.size()<<" ";
+            for(const auto &v:e.second.second){
+                fileMarket<<v.first<<" ";
+                fileMarket<<v.second<<" ";
+            }
+        }
+
         fileMarket<<"\n";
     }
 }
@@ -1926,7 +2088,7 @@ bool Storage::WriteMapToStore(std::string sFileName, std::map<std::time_t,std::v
 }
 //--------------------------------------------------------------------------------------------------------
 int Storage::SaveToLogfile(const std::string &str,const  std::string & strLogFileName,
-                           const int iCurrentLogfileNumb, const int iMasLogfileSize, const int iMaxLogfiles)
+                           const int iCurrentLogfileNumb, const size_t iMasLogfileSize, const int iMaxLogfiles)
 {
     int iNewNumb = iCurrentLogfileNumb;
     std::stringstream ssFName;

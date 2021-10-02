@@ -18,6 +18,7 @@ CONFIG += c++1z
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    aboutform.cpp \
     amipipeholder.cpp \
     amipipesform.cpp \
     bar.cpp \
@@ -48,6 +49,7 @@ SOURCES += \
     modeltickerslist.cpp \
     oneofkindprotector.cpp \
     plusbutton.cpp \
+    splashwindow.cpp \
     storage.cpp \
     styledswitcher.cpp \
     threadfreecout.cpp \
@@ -60,6 +62,7 @@ SOURCES += \
     workerloader.cpp
 
 HEADERS += \
+    aboutform.h \
     amipipeholder.h \
     amipipesform.h \
     bar.h \
@@ -89,6 +92,7 @@ HEADERS += \
     modeltickerslist.h \
     oneofkindprotector.h \
     plusbutton.h \
+    splashwindow.h \
     storage.h \
     styledswitcher.h \
     threadfreecout.h \
@@ -101,6 +105,7 @@ HEADERS += \
     workerloader.h
 
 FORMS += \
+    aboutform.ui \
     amipipesform.ui \
     configwindow.ui \
     graphviewform.ui \

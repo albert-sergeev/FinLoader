@@ -13,7 +13,7 @@
 #include<queue>
 #include<chrono>
 
-using namespace std::chrono_literals;
+//using namespace std::chrono_literals;
 
 #include "threadfreecout.h"
 
@@ -181,7 +181,6 @@ public:
                 }
             }
         }
-        vInterruptFlags.clear();
     }
     //---------------------------------------------------------------------------------------------------
     void Halt(){

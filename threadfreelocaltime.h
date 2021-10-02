@@ -141,6 +141,21 @@ inline std::time_t QDateToStdTime(QDate dt)
     return (mktime_gm(&tmSt));
 }
 //---------------------------------------------------------------------------------
+inline std::time_t QTimeToStdTime(QTime t)
+{
+    std::tm tmSt;
+    {
+        tmSt.tm_year   = 1990 - 1900;
+        tmSt.tm_mon    = 1 - 1;
+        tmSt.tm_mday   = 1;
+        tmSt.tm_hour   = t.hour();
+        tmSt.tm_min    = t.minute();
+        tmSt.tm_sec    = t.second();
+        tmSt.tm_isdst  = 0;
+    }
+    return (mktime_gm(&tmSt));
+}
+//---------------------------------------------------------------------------------
 
 /*
  * const QTime tmS(ui->dateTimeStart->time());

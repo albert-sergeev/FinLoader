@@ -5,7 +5,7 @@
 #include<atomic>
 #include "bartick.h"
 
-using namespace std::chrono_literals;
+//using namespace std::chrono_literals;
 using seconds=std::chrono::duration<double>;
 using milliseconds=std::chrono::duration<double,
     std::ratio_multiply<seconds::period,std::milli>

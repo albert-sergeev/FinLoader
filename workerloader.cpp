@@ -11,7 +11,7 @@
 #include "threadfreelocaltime.h"
 
 
-using namespace std::chrono_literals;
+//using namespace std::chrono_literals;
 using seconds=std::chrono::duration<double>;
 using milliseconds=std::chrono::duration<double,
     std::ratio_multiply<seconds::period,std::milli>
@@ -147,7 +147,7 @@ void workerLoader::workerEtalon(BlockFreeQueue<dataFinLoadTask> & queueFilLoad,
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::LoadActivity,data.GetParentWnd());
             ///
-            std::this_thread::sleep_for(4ms);
+            std::this_thread::sleep_for(milliseconds(4));//4ms
 
         }
         if (!bWasBreaked){
@@ -397,7 +397,7 @@ void workerLoader::workerFinQuotesLoad(BlockFreeQueue<dataFinLoadTask> & queueTa
                     //// send every 0.5 sec activity
                     ///
                     tActivityCount = std::chrono::steady_clock::now() - dtActivity;
-                    if (tActivityCount > 500ms){
+                    if (tActivityCount > milliseconds(500)){//500ms
                         dtActivity = std::chrono::steady_clock::now();
                         dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::LoadActivity,data.GetParentWnd());
                         queueTrdAnswers.Push(dt);
@@ -1017,7 +1017,7 @@ void workerLoader::workerFinQuotesCheck(BlockFreeQueue<dataFinLoadTask> & /*queu
                     //// send every 0.5 sec activity
                     ///
                     tActivityCount = std::chrono::steady_clock::now() - dtActivity;
-                    if (tActivityCount > 500ms){
+                    if (tActivityCount > milliseconds(500)){//500ms
                         dtActivity = std::chrono::steady_clock::now();
                         dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::LoadActivity,data.GetParentWnd());
                         queueTrdAnswers.Push(dt);
@@ -1129,7 +1129,7 @@ void workerLoader::workerFinQuotesCheck(BlockFreeQueue<dataFinLoadTask> & /*queu
                     //// send every 0.5 sec activity
                     ///
                     tActivityCount = std::chrono::steady_clock::now() - dtActivity;
-                    if (tActivityCount > 500ms){
+                    if (tActivityCount > milliseconds(500)){//500ms
                         dtActivity = std::chrono::steady_clock::now();
                         dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::LoadActivity,data.GetParentWnd());
                         queueTrdAnswers.Push(dt);
@@ -1174,7 +1174,7 @@ void workerLoader::workerFinQuotesCheck(BlockFreeQueue<dataFinLoadTask> & /*queu
                 //// send every 0.5 sec activity
                 ///
                 tActivityCount = std::chrono::steady_clock::now() - dtActivity;
-                if (tActivityCount > 500ms){
+                if (tActivityCount > milliseconds(500)){//500ms
                     dtActivity = std::chrono::steady_clock::now();
                     dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::LoadActivity,data.GetParentWnd());
                     queueTrdAnswers.Push(dt);
@@ -1337,7 +1337,7 @@ bool workerLoader::compareBarsT(GraphHolder &hl, dataFinLoadTask & data,std::vec
                 //// send every 0.5 sec activity
                 ///
                 tActivityCount = std::chrono::steady_clock::now() - dtActivity;
-                if (tActivityCount > 500ms){
+                if (tActivityCount > milliseconds(500)){//500ms
                     dtActivity = std::chrono::steady_clock::now();
                     dataBuckgroundThreadAnswer dt(data.TickerID,dataBuckgroundThreadAnswer::eAnswerType::LoadActivity,data.GetParentWnd());
                     queueTrdAnswers.Push(dt);

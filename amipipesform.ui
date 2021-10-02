@@ -46,18 +46,31 @@
      <layout class="QVBoxLayout" name="verticalLayout_2">
       <item>
        <layout class="QGridLayout" name="gridLayout_2">
-        <item row="2" column="2" rowspan="4">
-         <widget class="QListView" name="lstTickersUnallocated">
-          <property name="editTriggers">
-           <set>QAbstractItemView::AnyKeyPressed|QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed</set>
+        <item row="5" column="1">
+         <spacer name="verticalSpacer_5">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
           </property>
-         </widget>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
         </item>
-        <item row="7" column="2">
-         <widget class="QWidget" name="wtShowByNameUnallocated" native="true"/>
-        </item>
-        <item row="1" column="2">
-         <widget class="QComboBox" name="cmbMarketsUnallocated"/>
+        <item row="2" column="1">
+         <spacer name="verticalSpacer_4">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
         </item>
         <item row="3" column="1">
          <widget class="QPushButton" name="btnBind">
@@ -73,12 +86,15 @@
             <height>16777215</height>
            </size>
           </property>
+          <property name="toolTip">
+           <string>Bind the newly found pipe to the ticker in the database</string>
+          </property>
           <property name="text">
            <string>-&gt;</string>
           </property>
          </widget>
         </item>
-        <item row="2" column="0" rowspan="4">
+        <item row="2" column="0" rowspan="5">
          <widget class="QListView" name="lstTickersNew">
           <property name="editTriggers">
            <set>QAbstractItemView::DoubleClicked</set>
@@ -99,18 +115,18 @@
             <height>19</height>
            </size>
           </property>
+          <property name="toolTip">
+           <string>Scan the system for new active sources of trading data</string>
+          </property>
           <property name="text">
            <string>Scan pipes</string>
           </property>
          </widget>
         </item>
-        <item row="0" column="2">
-         <widget class="QLabel" name="label_3">
-          <property name="text">
-           <string>Unallocated</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignCenter</set>
+        <item row="1" column="2">
+         <widget class="QComboBox" name="cmbMarketsUnallocated">
+          <property name="toolTip">
+           <string>Toggle active  market</string>
           </property>
          </widget>
         </item>
@@ -124,33 +140,24 @@
           </property>
          </widget>
         </item>
-        <item row="2" column="1">
-         <spacer name="verticalSpacer_4">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
+        <item row="7" column="2">
+         <widget class="QWidget" name="wtShowByNameUnallocated" native="true">
+          <property name="toolTip">
+           <string>Toggle ticker display by name / by sign</string>
           </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
-          </property>
-         </spacer>
+         </widget>
         </item>
-        <item row="5" column="1">
-         <spacer name="verticalSpacer_5">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
+        <item row="0" column="2">
+         <widget class="QLabel" name="label_3">
+          <property name="text">
+           <string>Unallocated</string>
           </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
           </property>
-         </spacer>
+         </widget>
         </item>
-        <item row="6" column="2">
+        <item row="7" column="0">
          <widget class="QPushButton" name="btnBindAll">
           <property name="maximumSize">
            <size>
@@ -158,21 +165,18 @@
             <height>16777215</height>
            </size>
           </property>
+          <property name="toolTip">
+           <string>Bind All newly found pipes to tickers in the database</string>
+          </property>
           <property name="text">
            <string>Bind all</string>
           </property>
          </widget>
         </item>
-        <item row="6" column="0" rowspan="2">
-         <widget class="QPushButton" name="btnQuit">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="text">
-           <string>Close panel</string>
+        <item row="2" column="2" rowspan="5">
+         <widget class="QListView" name="lstTickersUnallocated">
+          <property name="editTriggers">
+           <set>QAbstractItemView::AnyKeyPressed|QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed</set>
           </property>
          </widget>
         </item>
@@ -204,6 +208,9 @@
             <height>16777215</height>
            </size>
           </property>
+          <property name="toolTip">
+           <string>Turn on autoload for all tickers</string>
+          </property>
           <property name="text">
            <string>&lt;&lt;</string>
           </property>
@@ -216,6 +223,9 @@
             <width>30</width>
             <height>16777215</height>
            </size>
+          </property>
+          <property name="toolTip">
+           <string>Turn off autoload of trade quotes for ticker</string>
           </property>
           <property name="text">
            <string>&gt;</string>
@@ -246,13 +256,20 @@
             <height>16777215</height>
            </size>
           </property>
+          <property name="toolTip">
+           <string>Turn on autoload of trade quotes for ticker</string>
+          </property>
           <property name="text">
            <string>&lt;</string>
           </property>
          </widget>
         </item>
         <item row="1" column="0">
-         <widget class="QComboBox" name="cmbMarketsActive"/>
+         <widget class="QComboBox" name="cmbMarketsActive">
+          <property name="toolTip">
+           <string>Toggle active  market</string>
+          </property>
+         </widget>
         </item>
         <item row="6" column="1">
          <widget class="QPushButton" name="btnOffAll">
@@ -261,6 +278,9 @@
             <width>30</width>
             <height>16777215</height>
            </size>
+          </property>
+          <property name="toolTip">
+           <string>Turn off autoload for all tickers</string>
           </property>
           <property name="text">
            <string>&gt;&gt;</string>
@@ -301,7 +321,11 @@
          </widget>
         </item>
         <item row="10" column="2">
-         <widget class="QWidget" name="wtShowByNameOff" native="true"/>
+         <widget class="QWidget" name="wtShowByNameOff" native="true">
+          <property name="toolTip">
+           <string>Toggle ticker display by name / by sign</string>
+          </property>
+         </widget>
         </item>
         <item row="0" column="2">
          <widget class="QLabel" name="label_2">
@@ -314,10 +338,18 @@
          </widget>
         </item>
         <item row="1" column="2">
-         <widget class="QComboBox" name="cmbMarketsOff"/>
+         <widget class="QComboBox" name="cmbMarketsOff">
+          <property name="toolTip">
+           <string>Toggle active  market</string>
+          </property>
+         </widget>
         </item>
         <item row="10" column="0">
-         <widget class="QWidget" name="wtShowByNameActive" native="true"/>
+         <widget class="QWidget" name="wtShowByNameActive" native="true">
+          <property name="toolTip">
+           <string>Toggle ticker display by name / by sign</string>
+          </property>
+         </widget>
         </item>
         <item row="0" column="0">
          <widget class="QLabel" name="label">
@@ -344,6 +376,9 @@
         </item>
         <item row="9" column="0">
          <widget class="QPushButton" name="btnDissociateActive">
+          <property name="toolTip">
+           <string>Dissociate ticker and trade data source pipe</string>
+          </property>
           <property name="text">
            <string>Dissociate</string>
           </property>
@@ -351,6 +386,9 @@
         </item>
         <item row="9" column="2">
          <widget class="QPushButton" name="btnDissociateOff">
+          <property name="toolTip">
+           <string>Разделить тикер и канал источника торговых данных</string>
+          </property>
           <property name="text">
            <string>Dissociate</string>
           </property>

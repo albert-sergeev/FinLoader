@@ -9,7 +9,7 @@
 
 #include <chrono>
 
-using namespace std::chrono_literals;
+//using namespace std::chrono_literals;
 using seconds=std::chrono::duration<double>;
 using milliseconds=std::chrono::duration<double,
     std::ratio_multiply<seconds::period,std::milli>
@@ -43,6 +43,7 @@ protected:
     int iProcessCount;
 
     eTickerState stState;
+    QString strName;
 
     //--------------------
 //    Buble bubleB;
@@ -55,8 +56,11 @@ public:
     ~Bulbululator();
     //---------------------------
 
-    inline void SetText(QString sTxt)   {lblMain->setText(sTxt);}
-    inline QString Text()      const    {  return lblMain->text();}
+    inline void SetText(QString sTxt)    {lblMain->setText(sTxt);}
+    inline QString Text()      const     {  return lblMain->text();}
+
+    inline void SetTickerName(QString s) {strName = s;}
+    inline QString TickerName() const    {  return strName;}
 
     inline void SetTickerID(const int TickerID)     {iTickerID = TickerID;}
     inline int  TickerID()      const               {return iTickerID;}
@@ -74,6 +78,7 @@ public:
 signals:
 
     void DoubleClicked(const int TickerID);
+    void ContextMenuRequested(const int TickerID, const QPoint);
 
 private:
     void timerEvent(QTimerEvent * event) override;

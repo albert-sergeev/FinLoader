@@ -34,6 +34,13 @@ private:
     std::vector<T> vContainer;
     std::map<time_t,size_t> mDictionary;
 
+    std::vector<double> vMovingBlue;
+    std::vector<double> vMovingRed;
+    std::vector<double> vMovingGreen;
+
+    size_t iLastCalculatedMovingAverage;
+
+
     const Bar::eInterval iInterval;
     const int iTickerID;
 
@@ -52,12 +59,24 @@ public:
     Graph(Graph&) = delete;
     Graph& operator=(Graph&) = delete;
     //--------------------------------------------------------------------------------------------------------
-    void clear()            {mDictionary.clear(); vContainer.clear();};
+    void clear(){
+        mDictionary.clear();
+        vContainer.clear();
+        vMovingBlue.clear();
+
+        vMovingRed.clear();
+        vMovingGreen.clear();
+        iLastCalculatedMovingAverage = 0;
+    };
     //--------------------------------------------------------------------------------------------------------
-    explicit Graph(int TickerID, Bar::eInterval Interval):iInterval{Interval},iTickerID{TickerID},iShiftIndex{0}{;}
+    explicit Graph(int TickerID, Bar::eInterval Interval):iLastCalculatedMovingAverage{0},iInterval{Interval},iTickerID{TickerID},iShiftIndex{0}{;}
     explicit Graph(Graph&& o):
         vContainer{std::move(o.vContainer)}
        ,mDictionary{std::move(o.mDictionary)}
+       ,vMovingBlue{std::move(o.vMovingBlue)}
+       ,vMovingRed{std::move(o.vMovingRed)}
+       ,vMovingGreen{std::move(o.vMovingGreen)}
+       ,iLastCalculatedMovingAverage{o.iLastCalculatedMovingAverage}
        ,iInterval{o.iInterval}
        ,iTickerID{o.iTickerID}
        ,iShiftIndex{o.iShiftIndex}{;}
@@ -65,9 +84,19 @@ public:
     T & operator[](const size_t i)  {if (/*i<0 ||*/ i>= vContainer.size()) {throw std::out_of_range("");} return vContainer[i];}
     const T & operator[](const size_t i) const  {if (/*i<0 ||*/ i>= vContainer.size()) {throw std::out_of_range("");} return vContainer[i];}
     //--------------------------------------------------------------------------------------------------------
-//    void Add (Bar &b, bool bReplaceIfExists = true);
-//    void AddTick (Bar &b, bool bNewSec);
-//    void Add (std::list<Bar> &lst);
+    double movingBlue (const size_t i) const {
+        if constexpr (std::is_same_v<T, Bar>)
+            {if (/*i<0 ||*/ i>= vMovingBlue.size())  {throw std::out_of_range("");} return vMovingBlue[i];}
+        else{return -10;}}
+    double movingRed  (const size_t i) const {
+        if constexpr (std::is_same_v<T, Bar>)
+            {if (/*i<0 ||*/ i>= vMovingRed.size())   {throw std::out_of_range("");} return vMovingRed[i];}
+        else{return 0;}}
+    double movingGreen(const size_t i) const {
+        if constexpr (std::is_same_v<T, Bar>)
+            {if (/*i<0 ||*/ i>= vMovingGreen.size()) {throw std::out_of_range("");} return vMovingGreen[i];}
+        else{return 0;}}
+    //--------------------------------------------------------------------------------------------------------
     bool AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,std::time_t dtEnd);
     bool AddBarsListsFast(std::vector<T> &v, std::set<std::time_t>   & stHolderTimeSet,std::pair<std::time_t,std::time_t> &pairRange,Graph<T> &grDst);
 
@@ -77,12 +106,14 @@ public:
     inline std::time_t GetDateMin() const  {return  vContainer.size()>0? vContainer.front().Period():0;};
     inline std::time_t GetDateMax() const  {return  vContainer.size()>0? vContainer.back().Period():0;};
 
-//    std::pair<double,double>  getMinMax() const;
-//    std::pair<double,double>  getMinMax(std::time_t dtStart,std::time_t dtEnd) const;
     std::tuple<double,double,unsigned long,unsigned long>  getMinMax() const;
     std::tuple<double,double,unsigned long,unsigned long>  getMinMax(std::time_t dtStart,std::time_t dtEnd) const;
 
     size_t getIndex(const std::time_t t) const;
+
+    size_t getMovingBlueSize() const {return vMovingBlue.size();};
+    size_t getMovingRedSize() const {return vMovingRed.size();};
+    size_t getMovingGreenSize() const {return vMovingGreen.size();};
     //--------------------------------------------------------------------------------------------------------
     bool CheckMap();
     std::string ToString();
@@ -96,6 +127,7 @@ public:
     //
 private:
     static size_t GetMoreThenIndex(std::vector<T> & v, std::time_t tT);
+    void calculateMovingAverages(size_t iStart);
 };
 
 //------------------------------------------------------------------------------------------------------------
@@ -143,6 +175,8 @@ bool Graph<T>::AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,s
         return true;
     }
     //////////////////////////////////////////////////////////////////
+    size_t iStart{0};
+    size_t iEnd{0};
 
     if (bInRange){
         // if it's addition to the back:
@@ -151,7 +185,8 @@ bool Graph<T>::AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,s
         // 3. if not found, add a new entry to the map
         // 4. push back to vector
 //        { ThreadFreeCout pcout; pcout<<"addition to tail\n";}
-
+        iStart = vContainer.size();
+        //
         for(const auto & lst:v){
             for(size_t i = 0; i < lst.size(); ++i){
                 if (mDictionary.find(lst[i].Period()) == mDictionary.end()){
@@ -172,8 +207,8 @@ bool Graph<T>::AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,s
 
         if(this_thread_flagInterrup.isSet()){return false;}
         // 1. look up range to delete in the vector
-        size_t iStart = GetMoreThenIndex(vContainer, dtStart);
-        size_t iEnd = GetMoreThenIndex(vContainer, dtEnd + 1); //
+        iStart = GetMoreThenIndex(vContainer, dtStart);
+        iEnd = GetMoreThenIndex(vContainer, dtEnd + 1); //
 
 
         if(this_thread_flagInterrup.isSet()){return false;}
@@ -253,6 +288,24 @@ bool Graph<T>::AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,s
 
     }
     //////////////////////////////////////////////////////////////////////////
+    if constexpr (std::is_same_v<T, Bar>){
+        if (vContainer.size() + 10 > vMovingBlue.capacity()){
+            vMovingBlue.reserve(vContainer.size() + 100);
+            vMovingRed.reserve(vContainer.size() + 100);
+            vMovingGreen.reserve(vContainer.size() + 100);
+        }
+
+        vMovingBlue.resize  (vContainer.size() + 8);
+        vMovingRed.resize   (vContainer.size() + 5);
+        vMovingGreen.resize (vContainer.size() + 3);
+
+        if (iLastCalculatedMovingAverage + 1 < vContainer.size() || iStart + 1 < vContainer.size()){
+            iStart = iLastCalculatedMovingAverage > iStart ? iStart : iLastCalculatedMovingAverage;
+            calculateMovingAverages(iStart);
+            iLastCalculatedMovingAverage = vContainer.size() - 1;
+        }
+    }
+    //////////////////////////////////////////////////////////////////////////
     return true;;
 }
 //------------------------------------------------------------------------------------------------------------
@@ -308,17 +361,9 @@ bool Graph<T>::AddBarsListsFast(std::vector<T>                      &vV,
             auto ItSrc    ( mDictionary.lower_bound(tB));
             auto ItSrcEnd ( mDictionary.upper_bound(tE));
             while(ItSrc != ItSrcEnd){
-//                {
-//                    ThreadFreeCout pcout;
-//                    pcout <<"{"<<ItSrc->first<<":0}";
-//                }
                 mNew[ItSrc->first];
                 ++ItSrc;
             }
-//            {
-//                ThreadFreeCout pcout;
-//                pcout <<"\n";
-//            }
             /////////
             stHolderTimeSet.emplace(It->first); // mark done
         }
@@ -343,14 +388,6 @@ bool Graph<T>::AddBarsListsFast(std::vector<T>                      &vV,
                     mAppendMap[It->first].reserve(std::distance(ItCpB,ItCpE));
                     std::copy(ItCpB,ItCpE,std::back_inserter(mAppendMap[It->first]));
 
-//                    {
-//                        ThreadFreeCout pcout;
-//                        pcout <<It->first<<" ";
-//                        for(const auto & e:mAppendMap[It->first]){
-//                            pcout <<"{"<<e.Period()<<"}";
-//                        }
-//                        pcout <<"\n";
-//                    }
                 }
             }
         }
@@ -384,19 +421,6 @@ bool Graph<T>::AddBarsListsFast(std::vector<T>                      &vV,
             iOldRange = vContainer.size() - ItSrc->second;
         }
     }
-    //
-    //size_t iRangeEnd {iRangeBegin + iNewLength};
-
-//    {
-//        ThreadFreeCout pcout;
-//        pcout <<"iNewLength: "<<iNewLength<<"\n";
-//        pcout <<"iRangeBegin: "<<iRangeBegin<<"\n";
-//        pcout <<"iOldRange: "<<iOldRange<<"\n";
-//        pcout <<"iRangeEnd: "<<iRangeEnd<<"\n";
-//        pcout <<"ItSrc: "<<std::distance(mDictionary.begin(),ItSrc)<<"\n";
-//        pcout <<"ItSrcEnd: "<<std::distance(mDictionary.begin(),ItSrcEnd)<<"\n";
-
-//    }
 
     /////////////////////////////////////////////////////////////////
     /// resize main storage
@@ -434,20 +458,10 @@ bool Graph<T>::AddBarsListsFast(std::vector<T>                      &vV,
         //erase old range index
         mDictionary.erase(ItSrc,ItSrcEnd);
 
-//        {
-//            ThreadFreeCout pcout;
-//            pcout <<"mDictionary.size_1 = "<< mDictionary.size()<<"\n";
-//        }
-
     }
     else if(iDelta < 0){
         //        auto ItSrc    ( mDictionary.lower_bound(mNew.begin()->second.front().Period()));
         //        auto ItSrcEnd ( mDictionary.upper_bound(mNew.rbegin()->second.back().Period()));
-
-//        {
-//            ThreadFreeCout pcout;
-//            pcout << "iDelta = " << iDelta<<"\n";
-//        }
 
         if (ItSrcEnd != mDictionary.end()){
 
@@ -457,10 +471,6 @@ bool Graph<T>::AddBarsListsFast(std::vector<T>                      &vV,
             std::copy(ItBeg,ItEnd,std::next(vContainer.begin(),ItSrcEnd->second + iDelta));
         }
         vContainer.resize(vContainer.size() + iDelta);
-//        {
-//            ThreadFreeCout pcout;
-//            pcout << "vContainer.size() = " << vContainer.size()<<"\n";
-//        }
 
         // shift tail index
         auto ItMShift (ItSrcEnd);
@@ -471,18 +481,9 @@ bool Graph<T>::AddBarsListsFast(std::vector<T>                      &vV,
 
         //erase old range index
         mDictionary.erase(ItSrc,ItSrcEnd);
-
-//            {
-//                ThreadFreeCout pcout;
-//                pcout <<"mDictionary.size_2 = "<< mDictionary.size()<<"\n";
-//            }
     }
     /////////////////////////
     /// copy new data
-    {
-        //ThreadFreeCout pcout;
-       // pcout <<"mNew.size = "<< mNew.size()<<"\n";
-    }
     auto ItInsert(vContainer.begin());
     for(const auto &v:mNew){
         std::vector<T> &vA =  mAppendMap[v.first];
@@ -498,15 +499,10 @@ bool Graph<T>::AddBarsListsFast(std::vector<T>                      &vV,
         iRangeBegin += v.second.size();
     }
 
-    /////
-//    if (iRangeEnd != iRangeBegin){
-//        ThreadFreeCout pcout;
-//        pcout <<"RangeEnd != iRangeBegin {"<<iRangeEnd<<"!="<<iRangeBegin<<"}\n";
-//    }
-
     /////////////////////////
     /// make affected range
     pairRange = {mNew.begin()->first,mNew.rbegin()->first};
+    //size_t iStart{0};
 
     /////////////////////////
     /// copy data chunk for fast load
@@ -537,14 +533,19 @@ bool Graph<T>::AddBarsListsFast(std::vector<T>                      &vV,
         }
 
         grDst.iShiftIndex = ItDictRangeBegin->second;
-
-//        if (!grDst.CheckMap()){
-//            ThreadFreeCout pcout;
-//            pcout <<"grDst.CheckMap() failed!!!\n";
-//        }
+        //iStart =  ItDictRangeBegin->second;
     }
 
-    /////////////////////////
+    //////////////////////////////////////////////////////////////////////////
+    if constexpr (std::is_same_v<T, Bar>){ // never!!!
+//        if (vContainer.size() + 8 >  vMovingBlue.size())    vMovingBlue.resize  (vContainer.size() + 8);
+//        if (vContainer.size() + 5 >  vMovingRed.size())     vMovingRed.resize   (vContainer.size() + 5);
+//        if (vContainer.size() + 3 >  vMovingGreen.size())   vMovingGreen.resize (vContainer.size() + 3);
+//        //calculateMovingAverages(iStart);
+//        size_t iRecalc = iStart >= 8 ? iStart - 8: 0;
+//        calculateMovingAverages(iRecalc);
+    }
+    //////////////////////////////////////////////////////////////////////////
     return true;
 }
 
@@ -637,6 +638,48 @@ void Graph<T>::CloneGraph(Graph<T> &grNew,const size_t Start, const size_t End, 
 
     std::copy(ItBeg,ItEnd,std::back_inserter(grNew.vContainer));
     grNew.iShiftIndex = iBeg;
+
+    ////////////////////////////////////////////////////////////////////
+    if constexpr (std::is_same_v<T, Bar>){
+//        if (bRecalculateAverages){
+//            if (vContainer.size() + 8 >  vMovingBlue.size())    vMovingBlue.resize  (vContainer.size() + 8);
+//            if (vContainer.size() + 5 >  vMovingRed.size())     vMovingRed.resize   (vContainer.size() + 5);
+//            if (vContainer.size() + 3 >  vMovingGreen.size())   vMovingGreen.resize (vContainer.size() + 3);
+//            calculateMovingAverages(iBeg);
+//        }
+
+        //////////////////////////////////
+        if (vMovingBlue.size() > iBeg){
+            auto ItBlueBeg(std::next(vMovingBlue.begin(),iBeg));
+            auto ItBlueEnd(vMovingBlue.end());
+            if(End < vMovingBlue.size()-1){
+                ItBlueEnd = std::next(vMovingBlue.begin(),End + 1);
+            }
+            grNew.vMovingBlue.reserve(std::distance(ItBlueBeg,ItBlueEnd));
+            std::copy(ItBlueBeg,ItBlueEnd,std::back_inserter(grNew.vMovingBlue));
+        }
+        //////////////////////////////////
+        if (vMovingRed.size() > iBeg){
+            auto ItRedBeg(std::next(vMovingRed.begin(),iBeg));
+            auto ItRedEnd(vMovingRed.end());
+            if(End < vMovingRed.size()-1){
+                ItRedEnd = std::next(vMovingRed.begin(),End + 1);
+            }
+            grNew.vMovingRed.reserve(std::distance(ItRedBeg,ItRedEnd));
+            std::copy(ItRedBeg,ItRedEnd,std::back_inserter(grNew.vMovingRed));
+        }
+        //////////////////////////////////
+        if (vMovingGreen.size() > iBeg){
+            auto ItGreenBeg(std::next(vMovingGreen.begin(),iBeg));
+            auto ItGreenEnd(vMovingGreen.end());
+            if(End < vMovingGreen.size()-1){
+                ItGreenEnd = std::next(vMovingGreen.begin(),End + 1);
+            }
+            grNew.vMovingGreen.reserve(std::distance(ItGreenBeg,ItGreenEnd));
+            std::copy(ItGreenBeg,ItGreenEnd,std::back_inserter(grNew.vMovingGreen));
+        }
+    }
+    ////////////////////////////////////////////////////////////////////
 }
 //------------------------------------------------------------------------------------------------------------
 template<typename T>
@@ -695,7 +738,17 @@ bool Graph<T>::shrink_extras_left(std::time_t dtEnd)
     auto It = mDictionary.lower_bound(dtEnd);
     if(It == mDictionary.end()) {return true;}
 
-    auto ItContEnd = std::next(vContainer.begin(),It->second);
+    auto ItContEnd  = std::next(vContainer.begin(),It->second);
+
+    if constexpr (std::is_same_v<T, Bar>){
+        auto ItBlueEnd  = std::next(vMovingBlue.begin(),It->second);
+        auto ItRedEnd   = std::next(vMovingRed.begin(),It->second);
+        auto ItGreenEnd = std::next(vMovingGreen.begin(),It->second);
+
+        vMovingBlue.erase   (vMovingBlue.begin(),ItBlueEnd);
+        vMovingRed.erase    (vMovingRed.begin(),ItRedEnd);
+        vMovingGreen.erase  (vMovingGreen.begin(),ItGreenEnd);
+    }
 
     vContainer.erase(vContainer.begin(),ItContEnd);
     mDictionary.erase(mDictionary.begin(),It);
@@ -705,7 +758,9 @@ bool Graph<T>::shrink_extras_left(std::time_t dtEnd)
         It->second += iDelta;
         ++It;
     }
+    iLastCalculatedMovingAverage += iDelta;
     return true;
+
 }
 //------------------------------------------------------------------------------------------------------------
 template<typename T> template<typename T_SRC>
@@ -792,6 +847,7 @@ bool Graph<T>::BuildFromLowerList(Graph<T_SRC> &grSrc, std::time_t dtStart,std::
     }
     /////
     bool bRes = AddBarsList(v,dtAccStart,dtAccEndLower);
+    size_t iStart{vContainer.size()};
 
     if(bCopyToDst){
         grDst.clear();
@@ -803,16 +859,105 @@ bool Graph<T>::BuildFromLowerList(Graph<T_SRC> &grSrc, std::time_t dtStart,std::
         else{
             grDst.iShiftIndex = vContainer.size();
         }
+        iStart = grDst.iShiftIndex;
     }
+    //////////////////////////////////////////////////////////////////////////
+    if constexpr (std::is_same_v<T, Bar>){
+//        if (vContainer.size() + 8 >  vMovingBlue.size())    vMovingBlue.resize  (vContainer.size() + 8);
+//        if (vContainer.size() + 5 >  vMovingRed.size())     vMovingRed.resize   (vContainer.size() + 5);
+//        if (vContainer.size() + 3 >  vMovingGreen.size())   vMovingGreen.resize (vContainer.size() + 3);
+//        size_t iRecalc = iStart >= 8 ? iStart - 8: 0;
+//        calculateMovingAverages(iRecalc);
+
+        if(bCopyToDst){
+            if (vMovingBlue.size() > iStart){
+                auto ItBlueBeg(std::next(vMovingBlue.begin(),iStart));
+                auto ItBlueEnd(vMovingBlue.end());
+                grDst.vMovingBlue.clear();
+
+                grDst.vMovingBlue.reserve(std::distance(ItBlueBeg,ItBlueEnd));
+                std::copy(ItBlueBeg,ItBlueEnd,std::back_inserter(grDst.vMovingBlue));
+            }
+            //////////////////////////////////
+            if (vMovingRed.size() > iStart){
+                auto ItRedBeg(std::next(vMovingRed.begin(),iStart));
+                auto ItRedEnd(vMovingRed.end());
+                grDst.vMovingRed.clear();
+
+                grDst.vMovingRed.reserve(std::distance(ItRedBeg,ItRedEnd));
+                std::copy(ItRedBeg,ItRedEnd,std::back_inserter(grDst.vMovingRed));
+            }
+            //////////////////////////////////
+            if (vMovingGreen.size() > iStart){
+                auto ItGreenBeg(std::next(vMovingGreen.begin(),iStart));
+                auto ItGreenEnd(vMovingGreen.end());
+                grDst.vMovingGreen.clear();
+
+                grDst.vMovingGreen.reserve(std::distance(ItGreenBeg,ItGreenEnd));
+                std::copy(ItGreenBeg,ItGreenEnd,std::back_inserter(grDst.vMovingGreen));
+            }
+        }
+    }
+    //////////////////////////////////////////////////////////////////////////
+
     return bRes;
 }
 //------------------------------------------------------------------------------------------------------------
 template<typename T>
 std::size_t Graph<T>::GetUsedMemory() const
 {
-    return vContainer.size() * sizeof(T) + mDictionary.size() * (sizeof(std::time_t) + sizeof(size_t));
+    return vContainer.size() * sizeof(T) + mDictionary.size() * (sizeof(std::time_t) + sizeof(size_t))
+            + vMovingBlue.size() * sizeof (double) + vMovingRed.size() * sizeof (double) + vMovingGreen.size() * sizeof (double);
 }
 //------------------------------------------------------------------------------------------------------------
+template<typename T>
+void Graph<T>::calculateMovingAverages(size_t iStart)
+{
+    if constexpr (std::is_same_v<T, Bar>){
+
+        //------------------------------------------
+        if (iStart > 0) iStart--;
+        //------------------------------------------
+
+        const double dBluePeriod  {2.0/(25.0 + 1.0)};
+        const double dRedPeriod   {2.0/(15.0 + 1.0)};
+        const double dGreenPeriod {2.0/(9.0 + 1.0)};
+
+        double dBlueLeft{0};
+        double dRedLeft{0};
+        double dGreenLeft{0};
+        //------------------------------------------
+
+        if(/*iStart >= 0 &&*/ iStart + 8 < vMovingBlue.size() && vMovingBlue[iStart + 8] != 0){
+            dBlueLeft   = vMovingBlue[iStart + 8];
+            dRedLeft    = vMovingRed[iStart + 5];
+            dGreenLeft  = vMovingGreen[iStart + 3];
+        }
+        else{
+            dBlueLeft   = (vContainer[iStart].High() + vContainer[iStart].Low())/2.0;
+            dRedLeft    = dBlueLeft;
+            dGreenLeft  = dBlueLeft;
+        }
+        //------------------------------------------
+        iStart++;
+        //------------------------------------------
+        for (size_t i = iStart; i < vMovingBlue.size() - 8 /*&& i < vContainer.size()*/; ++i){
+            vMovingBlue[i + 8] = dBlueLeft * (1 - dBluePeriod) + dBluePeriod * (vContainer[i].High() + vContainer[i].Low())/2.0;
+            dBlueLeft = vMovingBlue[i + 8];
+        }
+        //--
+        for (size_t i = iStart; i < vMovingRed.size() - 5 /*&& i < vContainer.size()*/; ++i){
+            vMovingRed[i + 5] = dRedLeft * (1 - dRedPeriod) + dRedPeriod * (vContainer[i].High() + vContainer[i].Low())/2.0;
+            dRedLeft = vMovingRed[i + 5];
+        }
+        //--
+        for (size_t i = iStart; i < vMovingGreen.size() - 3 /*&& i < vContainer.size()*/; ++i){
+            vMovingGreen[i + 3] = dGreenLeft * (1 - dGreenPeriod) + dGreenPeriod * (vContainer[i].High() + vContainer[i].Low())/2.0;
+            dGreenLeft = vMovingGreen[i + 3];
+        }
+        //--
+    }
+}
 //------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------
 //------------------------------------------------------------------------------------------------------------

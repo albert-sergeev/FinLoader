@@ -11,6 +11,7 @@
 #include "styledswitcher.h"
 #include "plusbutton.h"
 #include "memometer.h"
+#include "transparentbutton.h"
 
 namespace Ui {
 class GraphViewForm;
@@ -24,7 +25,7 @@ struct RepainTask{
 
     typedef unsigned int Type_type;
 
-    enum eRepaintType:Type_type {InvalidateRepaint = 1, FastBars = 2, FastVolumes = 4, FastFrames = 8};
+    enum eRepaintType:Type_type {InvalidateRepaint = 1, FastBars = 2, FastVolumes = 4, FastFrames = 8, FastAverages = 16, PaintViewport = 32};
 
     RepainTask(){;}
     RepainTask(std::time_t Start,std::time_t End,bool NeedToRescale){
@@ -54,6 +55,7 @@ struct RepainTask{
         bNeedToRescale  = o.bNeedToRescale;
         bReplacementMode= o.bReplacementMode;
         bInvalidate     = o.bInvalidate;
+        bRecalculateAverages = o.bRecalculateAverages;
     }
 
     Type_type Type{eRepaintType::InvalidateRepaint};
@@ -65,6 +67,7 @@ struct RepainTask{
     int         iLetShift{0};
     bool        bReplacementMode{false};
     bool        bInvalidate{false};
+    bool        bRecalculateAverages{false};
 
     bool bStoreRightPos{false};
 
@@ -131,7 +134,9 @@ private:
     QPushButton  *btnHelp;
     QPushButton  *btnHelpR;
 
-
+    TransparentButton *btnScaleHViewDefault;
+    TransparentButton *btnScaleVViewDefault;
+    TransparentButton *btnScaleVVolumeDefault;
 
     const int iTickerID;
     Ticker tTicker;
@@ -152,6 +157,17 @@ private:
 
     std::map<int,std::vector<BarGraphicsItem *>>    mShowedGraphicsBars;
     std::map<int,std::vector<QGraphicsItem *>>      mShowedVolumes;
+
+    std::map<int,QPointF>      mMovingBlue;
+    std::map<int,QPointF>      mMovingRed;
+    std::map<int,QPointF>      mMovingGreen;
+
+    std::chrono::time_point<std::chrono::steady_clock> dtFastShowAverageActivity;
+    std::set<int> stFastShowAverages;
+
+    QGraphicsPathItem *pathBlue;
+    QGraphicsPathItem *pathRed;
+    QGraphicsPathItem *pathGreen;
 
     std::map<int,std::vector<QGraphicsItem *>>      mVFramesViewQuotes;
     std::map<int,std::vector<QGraphicsItem *>>      mVFramesScaleUpper;
@@ -267,6 +283,14 @@ protected slots:
 
     void slotCandleStateChanged(int);
 
+    void slotScaleHViewDefaultClicked();
+    void slotScaleVViewDefaultClicked();
+    void slotScaleVVolumeDefaultClicked();
+
+    void slotSetNewHScaleQuotes(double dNewScale);
+    void slotSetNewVScaleQuotes(double dNewScale);
+    void slotSetNewVScaleVolume(double dNewScale);
+
 private:
     Ui::GraphViewForm *ui;
 
@@ -294,17 +318,24 @@ protected:
 
     std::pair<int,int> getViewPortRangeToHolder();
 
-    void PaintViewPort               (bool bFrames,bool bBars,bool bVolumes, bool bStoreRightPos, bool bInvalidate);
+    bool PaintViewPort               (bool bFrames,bool bBars,bool bVolumes, bool bStoreRightPos, bool bInvalidate);
     void PaintViewPort               (int iStart, int iEnd,bool bFrames ,bool bBars,bool bVolumes, bool bStoreRightPos, bool bInvalidate);
 
     bool FastLoadHolder(RepainTask &);
     bool FastPaintBars(RepainTask &);
     bool FastPaintFrames(RepainTask &);
+    bool FastPaintAverages(RepainTask &);
+
+    void checkFastShowAverages(int iStart, int iEnd);
 
     template<typename T>
     bool PaintBars       (std::shared_ptr<GraphHolder> holder, int iStart, int iEnd,
                                     bool bPaintBars, bool bPaintVolumes,
                                     bool bStoreRightPos, bool bReplacementMode);
+
+    bool PaintMovingAverages (std::shared_ptr<GraphHolder> local_holder,
+                                                int iStartI, int iEndI,
+                                                bool bReplacementMode);
 
     bool PaintHorizontalScales       ();
     bool PaintHorizontalFrames       ();
@@ -325,10 +356,10 @@ protected:
     template<typename T>
     void EraseLinesMid(T& mM, int iStart,int iEnd, QGraphicsScene *);
 
-
     void Erase();
     void EraseTimeScale();
     void EraseBars();
+    void EraseMovingAverages();
     void EraseVolumes();
     void EraseFrames();
 
@@ -357,6 +388,14 @@ protected:
                                         std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QFont & font, const qreal zvalue = 0);
     void DrawDoubleToScene(const int idx,const  qreal x ,const  qreal y,const double n, Qt::AlignmentFlag alignH, Qt::AlignmentFlag alignV,
                            std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QFont & font, const qreal zvalue = 0);
+
+    //-----------------------------------------------------------------------------------------------
+    // curve line functions
+
+    float distance(const QPointF& pt1, const QPointF& pt2);
+    QPointF getLineStart(const QPointF& pt1, const QPointF& pt2);
+    QPointF getLineEnd(const QPointF& pt1, const QPointF& pt2);
+    QPainterPath smoothOut(const std::map<int,QPointF> &map, const float& factor);
 
     //-----------------------------------------------------------------------------------------------
     // utility functions

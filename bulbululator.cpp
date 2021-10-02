@@ -189,6 +189,16 @@ bool Bulbululator::event(QEvent *event)
     else if(event->type() == QEvent::MouseButtonDblClick){
         emit DoubleClicked(iTickerID);
     }
+    else if(event->type() == QEvent::ContextMenu){
+        //emit DoubleClicked(iTickerID);
+//        ThreadFreeCout pcout;
+//        pcout <<"context requested {"<<this->Text().toStdString() <<"}\n";
+
+        QPoint point;
+
+        emit ContextMenuRequested(iTickerID, point);
+
+    }
 
     return QWidget::event(event);
 }
