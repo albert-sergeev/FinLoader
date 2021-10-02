@@ -41,9 +41,9 @@
 /////////////////////////////////////////////////////////////////////////////////////////
 
 
-
 /////////////////////////////////////////////////////////////////////////////////////////
-/// \brief The flagInterrupt class
+/// \brief The flagInterrupt class. Cover for thread local atomic bool variable used to interrupt process
+/// using future/promise mechanics to transmit variable refference to main process so it can set it
 ///
 class flagInterrupt
 {
@@ -54,18 +54,17 @@ public:
     bool isSet()    {return  bInt.load();};
 };
 
+// place to store interrupt flag
 inline thread_local flagInterrupt this_thread_flagInterrup;
+
+/////////////////////////////////////////////////////////////////////////////////////////
+// var to count active processes. Processes must increment var on entering and decrement on leaving.
+// Usualy using ActiveProcessCounter cover for it
+
 inline std::atomic<int> aActiveProcCounter{0};
-/////////////////////////////////////////////////////////////////////////////////////////
-//inline thread_local int WorkerThreadID;
-//inline std::atomic<int> WorkerThreadCounter{1};
-
-
-
-class ActiveProcessCounter;
 
 /////////////////////////////////////////////////////////////////////////////////////////
-/// \brief Cover for safe join std::vector<std::thread>
+/// \brief Cover for safe join for std::vector<std::thread>
 ///
 template <typename ThreadType>
 class join_threads{
@@ -78,15 +77,15 @@ public:
             if(threads[i].joinable())
                 threads[i].join();
         }
-//        {
-//            ThreadFreeCout pcout;
-//            pcout <<"~join_threads() {"<<(&threads)<<"}\n";
-//        }
     };
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////
 /// \brief Wrapper for std::packaged_task<func> for using futures
+/// Idia is to create copy constructor for non copyable class (std::packaged_task<func>)
+/// so we through inheritance mechanism  make instance cover for std::packaged_task,
+/// and then move the created object by reference to the base class if neaded
+/// so we can use this wrapper with copy-demanded containers using move constructors
 ///
 class FuncWrapper{
     struct impl_base{
@@ -117,34 +116,42 @@ public:
 
 
 /////////////////////////////////////////////////////////////////////////////////////////
-/// \brief The ThreadPool class
+/// \brief The ThreadPool class. Used to manage multythread tasks.
+///
+/// Task provided through AddTask(std::packaged_task<func> f).
+/// Task pushed to work_queue and then if neaded run new process.
+/// New task is supplied with two promises: one to get back refference to thread_local interrupt flag
+/// and second - for set on exit from task.
+/// AddTask return the future to the result of the task, so if the caller saves it, the return value can be obtained.
+/// By the way doing checking for finished tasks and freeing threadpool process slots
+///
 ////////////////////////////////////////////////////////////////////////////////////////////
-
 class ThreadPool
 {
 private:
-    int threadMaxCount;
-    std::atomic_bool bQuit;
-    std::mutex mut_qeue;
-    std::mutex mut_treads;
-    std::queue<FuncWrapper> work_queue;
+    int threadMaxCount;                 // max threads limit
+    std::atomic_bool bQuit;             // flag to mark work finished
+    std::mutex mut_qeue;                // mutex to protect queue whith tasks
+    std::mutex mut_treads;              // mutex to protect queue whith threads
+    std::queue<FuncWrapper> work_queue; // queue for task
 
-    std::vector<std::thread> threads;
-    std::vector<std::thread> threadsDeleted;
+    std::vector<std::thread> threads;               // container for work threads
+    std::vector<std::thread> threadsDeleted;        // container for threads  which needs to delete
 
+    std::vector<std::future<bool>>  vFutures;       // cover for futures to mark threads exit               !one dimention with threads
+    std::vector<flagInterrupt *>  vInterruptFlags;  // cover for reference to interupt flags of processes   !one dimention with threads
 
-
-    std::vector<std::future<bool>>  vFutures;
-    std::vector<flagInterrupt *>  vInterruptFlags;
-
-    join_threads<std::thread> joinerDeleted;
-    join_threads<std::thread> joiner;
+    join_threads<std::thread> joinerDeleted;    // defender for joinig threadsDeleted
+    join_threads<std::thread> joiner;           // defender for joinig threads
 
     //---------------------------------------------------------------------------------------------------
+    // base procedure for threads
     void worker(std::promise<bool> pr,std::promise<flagInterrupt *> prIt){
 
+        // transmit refference for interrupt flag
         prIt.set_value(&this_thread_flagInterrup);
 
+        //loop until have tasks or was global exit
         while(!bQuit && !work_queue.empty()){
 
             FuncWrapper task;
@@ -154,21 +161,25 @@ private:
                 work_queue.pop();
                 lk.unlock();
 
+                // task running
                 task();
             }
         }
+        // transmit exit event
         pr.set_value(true);
     };
     //---------------------------------------------------------------------------------------------------
 public:
+    // basic user interface
     inline size_t ActiveThreads()   const {return threads.size();};
     inline size_t TasksToDo()       const {return work_queue.size();};
     inline size_t MaxThreads()      const {return threadMaxCount;}
 
 public:
     //---------------------------------------------------------------------------------------------------
-
-
+    /// \brief ThreadPool cConstructor
+    /// \param MaxThreads cannot be less than 1 or more than std::thread::hardware_concurrency()
+    ///
     ThreadPool(int MaxThreads = std::thread::hardware_concurrency())
         :bQuit{false},joinerDeleted{threadsDeleted},joiner{threads}{
 
@@ -188,15 +199,13 @@ public:
         }
     };
     //---------------------------------------------------------------------------------------------------
+    // on destruction set global exit flag and do Interupt for all processes
     ~ThreadPool(){
         bQuit = true;
         Interrupt();
-//        {
-//            ThreadFreeCout pcout;
-//            pcout <<"~ThreadPool()\n";
-//        }
     }
     //---------------------------------------------------------------------------------------------------
+    // send interrupt signal to all process through stored refferences on thread_local lags
     void Interrupt(){
         std::unique_lock lkT(mut_treads);
         for(size_t i = 0; i < vInterruptFlags.size(); ++i){
@@ -208,13 +217,10 @@ public:
         }
     }
     //---------------------------------------------------------------------------------------------------
+    // same as destructor, but used by owner of class
     void Halt(){
         bQuit = true;
         Interrupt();
-//        {
-//            ThreadFreeCout pcout;
-//            pcout <<"ThreadPool::Halt()\n";
-//        }
         for(int i = 0 ; i < (int)threads.size(); ++i){
             if(threads[i].joinable())
                 threads[i].join();
@@ -225,12 +231,27 @@ public:
         }
     }
     //---------------------------------------------------------------------------------------------------
+    /// Main add process class
+    /// <T> must be a func with no parameters, but can return a value
+    /// if needed <T> may be lambda covering more complicated func
+    ///
     template<typename T>
     std::future<typename std::result_of<T()>::type> AddTask(T f)
     {
+        // algorithm
+        // 1. check, if there are finished process, to free threadpool slots
+        // 2. package task to std::packaged_task and get future to result
+        // 3. push task to main queue
+        // 4. if there are free slots, run new thread, set all promises to their pools
+        // 5. delete finished process if there are some
 
+        //////////////////////////////////////////////////////////////////////
+        // 1. check, if there are finished process, to free threadpool slots
 
         ShrinkFinishedTreads();
+
+        //////////////////////////////////////////////////////////////////////
+        // 2. package task to std::packaged_task and get future to result
 
         std::packaged_task<typename std::result_of<T()>::type()> task(std::move(f));
         std::future<typename std::result_of<T()>::type> res(task.get_future());
@@ -239,11 +260,16 @@ public:
             return res;
         }
 
+        //////////////////////////////////////////////////////////////////////
+        // 3. push task to main queue
+
         {
         std::unique_lock lk(mut_qeue);
         work_queue.push(std::move(task));
         }
 
+        //////////////////////////////////////////////////////////////////////
+        // 4. if there are free slots, run new thread, set all promises to their pools
         if(threadMaxCount > (int)threads.size())
         {
             try{
@@ -269,6 +295,9 @@ public:
                 }
             }
         }
+
+        //////////////////////////////////////////////////////////////////////
+        // 5. delete finished process if there are some
         DeleteFinishedTreads();
         return  res;
     }
@@ -276,15 +305,30 @@ public:
 
 private:
     //---------------------------------------------------------------------------------------------------
+    /// \brief ShrinkFinishedTreads func to free threadpool slot from finished processes
+    ///
     void ShrinkFinishedTreads()
     {
+        // algorithm
+        // 1. lock mutex
+        // 2. loop through threads and check if futures for finished event was set
+        // 3. if so, move thread to threadsDeleted and free containers
         if (!bQuit)
         {
+        /////////////////////////////////////////////////////////////
+        // 1. lock mutex
+
         std::unique_lock lkT(mut_treads);
+
+            /////////////////////////////////////////////////////////////
+            // 2. loop through threads and check if futures for finished event was set
 
             for(int i = 0; i < (int)threads.size(); ++i){
                 if(vFutures[i].wait_for(std::chrono::microseconds(1)) == std::future_status::ready){
                 //if(threads[i].IsFinished()){
+
+                    /////////////////////////////////////////////////////////////
+                    // 3. if so, move thread to threadsDeleted and free containers
 
                     threadsDeleted.emplace_back(std::move(threads[i]));
 
@@ -300,14 +344,13 @@ private:
                 }
             }
         }
-//        {
-//            ThreadFreeCout fcout;
-//            fcout<<"assigned threads: "<<threads.size()<<"\n";
-//        }
     }
 
     //---------------------------------------------------------------------------------------------------
+    /// delete finished threads
+    ///
     void DeleteFinishedTreads(){
+        // lock & join. then clear
         std::unique_lock lkT(mut_treads);
         for(int i = 0; i < (int)threadsDeleted.size(); ++i){
             if (threadsDeleted[i].joinable()){
@@ -319,9 +362,13 @@ private:
     //---------------------------------------------------------------------------------------------------
 };
 
+///////////////////////////////////////////////////////////////////////////////////
+/// \brief The ActiveProcessCounter class for safely manipulate aActiveProcCounter
+/// processes must create instanses of the class, when they become active and destroy them when stoped
+/// used for calculate active processes for display on GUI
+///
 class ActiveProcessCounter
 {
-
 public:
     ActiveProcessCounter(){
         int iCount = aActiveProcCounter.load();
@@ -332,7 +379,6 @@ public:
         while(!aActiveProcCounter.compare_exchange_weak(iCount,iCount - 1)){;}
     }
 };
-
 
 
 
