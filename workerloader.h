@@ -80,7 +80,7 @@ public:
     /// \brief workerFastDataWork process for parallel processing receiving data packets (long time work).
     /// Inserting into LSM-tree database, forming data chunk to didplay by GUI and etc.
     /// Process has !infinite! lifetime. Works until this_thread_flagInterrup is set.
-    /// You can run several instances of process - the received chunks of data are correctly ordered and processed.
+    /// You can safely run several instances of process - the received chunks of data are correctly ordered and processed.
     /// \param queueFastTasks queue for main task
     /// \param queuePipeAnswers queue for answer
     /// \param fastHolder partal threadsafe class for work with data chunks

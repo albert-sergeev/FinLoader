@@ -1,3 +1,22 @@
+/****************************************************************************
+*  This is part of FinLoader
+*  Copyright (C) 2021  Albert Sergeyev
+*  Contact: albert.s.sergeev@mail.ru
+*
+*  This program is free software: you can redistribute it and/or modify
+*  it under the terms of the GNU General Public License as published by
+*  the Free Software Foundation, either version 3 of the License, or
+*  (at your option) any later version.
+*
+*  This program is distributed in the hope that it will be useful,
+*  but WITHOUT ANY WARRANTY; without even the implied warranty of
+*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+*  GNU General Public License for more details.
+*
+*  You should have received a copy of the GNU General Public License
+*  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+****************************************************************************/
+
 #include "win32namedpipe.h"
 
 #ifdef _WIN32
@@ -12,6 +31,10 @@
 
 //}
 //----------------------------------------------------------------------------------------------------------------------------
+///
+/// \brief Win32NamedPipe::open open pipe dependent of mode set in constructor
+/// \return true if success. error is in GetLastError()
+///
 bool Win32NamedPipe::open()
 {
     if(iMode == ePipeMode_type::Byte_Nonblocking){
@@ -25,8 +48,13 @@ bool Win32NamedPipe::open()
     }
 }
 //----------------------------------------------------------------------------------------------------------------------------
+///
+/// \brief Win32NamedPipe::open_messagemode windows behavor procedure for opening a pipe in non-blocking message mode
+/// \return
+///
 bool Win32NamedPipe::open_messagemode()
 {
+    // check pipe state
     if (pipeState == ePipeState_type::Connected){
         if(iMode == ePipeMode_type::Message_Nonblocking){
             return true;
@@ -79,6 +107,8 @@ bool Win32NamedPipe::open_messagemode()
         }
     }
     ////////////////////////////////////////////////////////////////////////////////
+    // change state not needed - all correct on creation
+
 //    DWORD dwMode = PIPE_READMODE_MESSAGE | PIPE_NOWAIT;// PIPE_READMODE_MESSAGE;
 //    bool fSuccess = SetNamedPipeHandleState(
 //        hPipe,    // pipe handle
@@ -94,18 +124,19 @@ bool Win32NamedPipe::open_messagemode()
 //        return false;
 //    }
 
-//    {
-//        ThreadFreeCout pcout;
-//        pcout <<"open message mode hPipe = {"<<hPipe<<"}\n";
-//    }
 
     pipeState =ePipeState_type::Connected;
     return true;
 
 }
 //----------------------------------------------------------------------------------------------------------------------------
+///
+/// \brief Win32NamedPipe::open_bytemode windows behavor procedure for opening a pipe in non-blocking byte mode
+/// \return
+///
 bool Win32NamedPipe::open_bytemode()
 {
+    // check state
     if (pipeState == ePipeState_type::Connected){
         if(iMode == ePipeMode_type::Byte_Nonblocking){
             return true;
@@ -157,6 +188,8 @@ bool Win32NamedPipe::open_bytemode()
         }
     }
     ////////////////////////////////////////////////////////////////////////////////
+    /// set pipe Handle workstate (change mode to byte)
+
     DWORD dwMode = PIPE_READMODE_BYTE | PIPE_NOWAIT;// PIPE_READMODE_MESSAGE;
     bool fSuccess = SetNamedPipeHandleState(
         hPipe,    // pipe handle
@@ -172,15 +205,15 @@ bool Win32NamedPipe::open_bytemode()
         return false;
     }
 
-//    {
-//        ThreadFreeCout pcout;
-//        pcout <<"Open byte mode nonblocking hPipe = {"<<hPipe<<"}\n";
-//    }
-
     pipeState = ePipeState_type::Connected;
     return true;
 }
 //----------------------------------------------------------------------------------------------------------------------------
+/// read connected pipe
+/// ret true if success & bytesRead - real bytes read
+/// if pipe has more data, return false too (Windows behavor) - so need to check GetLastError()!=ERROR_MORE_DATA
+/// in GetLastError() - error
+///
 bool Win32NamedPipe::read(char * buff, int buffsize, int &bytesRead)
 {
     if (pipeState != ePipeState_type::Connected){
@@ -190,10 +223,7 @@ bool Win32NamedPipe::read(char * buff, int buffsize, int &bytesRead)
     /// \brief fSuccess
     DWORD  cbRead;
     bool fSuccess;
-//    {
-//        ThreadFreeCout pcout;
-//        pcout <<"pipe to read={"<<hPipe<<"}"<<"\n";
-//    }
+
     // Read from the pipe.
     fSuccess = ReadFile(
           hPipe,    // pipe handle
@@ -212,15 +242,14 @@ bool Win32NamedPipe::read(char * buff, int buffsize, int &bytesRead)
         pipeState = ePipeState_type::Error;
         return false;
     }
-    else{
-//        ThreadFreeCout pcout;
-//        pcout << "pcout: "<<cbRead<<"\n";
-    }
     bytesRead = cbRead;
     //////////////////////////////////////////////////////////////////////
     return fSuccess;
 }
 //----------------------------------------------------------------------------------------------------------------------------
+///
+/// \brief Win32NamedPipe::close close pipe (only if connected)
+///
 void Win32NamedPipe::close()
 {
     if (pipeState == ePipeState_type::Connected){
@@ -229,6 +258,12 @@ void Win32NamedPipe::close()
     }
 }
 //----------------------------------------------------------------------------------------------------------------------------
+///
+/// \brief Win32NamedPipe::reinit reinit pipe.
+/// Not usual procedure, so use cerefully
+/// \param bForce
+/// \return
+///
 bool Win32NamedPipe::reinit(bool bForce)
 {
     if (pipeState == ePipeState_type::Closed){
@@ -249,6 +284,7 @@ bool Win32NamedPipe::reinit(bool bForce)
     return false;
 }
 //----------------------------------------------------------------------------------------------------------------------------
+/// close pipe on destruction
 Win32NamedPipe::~Win32NamedPipe()
 {
     close();
