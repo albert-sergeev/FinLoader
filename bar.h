@@ -33,6 +33,7 @@ class BarMemcopier;
 
 ////
 /// \brief Main class for store trade operations data for decent time period
+/// expands expands BarTick class for candle data
 ///
 class Bar:public BarTick
 {
