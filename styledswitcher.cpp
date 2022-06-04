@@ -1,3 +1,22 @@
+/****************************************************************************
+*  This is part of FinLoader
+*  Copyright (C) 2021  Albert Sergeyev
+*  Contact: albert.s.sergeev@mail.ru
+*
+*  This program is free software: you can redistribute it and/or modify
+*  it under the terms of the GNU General Public License as published by
+*  the Free Software Foundation, either version 3 of the License, or
+*  (at your option) any later version.
+*
+*  This program is distributed in the hope that it will be useful,
+*  but WITHOUT ANY WARRANTY; without even the implied warranty of
+*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+*  GNU General Public License for more details.
+*
+*  You should have received a copy of the GNU General Public License
+*  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+****************************************************************************/
+
 #include "styledswitcher.h"
 
 #include <QHBoxLayout>
@@ -9,7 +28,14 @@
 
 #include "threadfreecout.h"
 
-
+//////////////////////////////////////////////////////////////
+/// \brief Constructor
+/// \param Text for left part
+/// \param Text for right part
+/// \param Init State
+/// \param minumum width of the widget
+/// \param parent
+///
 StyledSwitcher::StyledSwitcher(QString Left,QString Right,bool InitState, int btnWidth, QWidget *parent) : QWidget(parent)
 {
 
@@ -67,9 +93,6 @@ StyledSwitcher::StyledSwitcher(QString Left,QString Right,bool InitState, int bt
     else
         psm->setInitialState(stateOff);
 
-//    QSignalTransition * ptrans1 = stateOff->addTransition(btnP,SIGNAL(clicked()),stateOn);
-//    QSignalTransition * ptrans2 = stateOn->addTransition(btnP,SIGNAL(clicked()),stateOff);
-
     QSignalTransition * ptrans1 = stateOff->addTransition(this,SIGNAL(DoChangeStateOn()),stateOn);
     QSignalTransition * ptrans2 = stateOn->addTransition(this,SIGNAL(DoChangeStateOff()),stateOff);
 
@@ -117,8 +140,7 @@ void StyledSwitcher::slotButtonClicked()
 void StyledSwitcher::slotStateOnActivated(bool bActive)
 {
     if (bActive){
-        //bChecked = true;
-        if (!bChecked){//redone because init problems
+        if (!bChecked){
             emit DoChangeStateOff();
         }
     }
@@ -126,8 +148,7 @@ void StyledSwitcher::slotStateOnActivated(bool bActive)
 void StyledSwitcher::slotStateOffActivated(bool bActive)
 {
     if (bActive){
-//        bChecked = false;
-        if (bChecked){//redone because init problems
+        if (bChecked){
             emit DoChangeStateOn();
         }
     }
@@ -152,8 +173,6 @@ void StyledSwitcher::SetOnColor(const QPalette::ColorRole role, const QColor q)
 {
 
     QPalette p = lblL->palette();
-    //p.setColor(QPalette::Window,q);
-    //p.setColor(QPalette::WindowText,q); // text
     p.setColor(role,q); // text
     lblL->setAutoFillBackground(true);
     lblL->setPalette(p);
@@ -162,8 +181,6 @@ void StyledSwitcher::SetOnColor(const QPalette::ColorRole role, const QColor q)
 void StyledSwitcher::SetOffColor(const QPalette::ColorRole role,  const QColor q)
 {
     QPalette p = lblR->palette();
-    //p.setColor(QPalette::Window,q);
-    //p.setColor(QPalette::WindowText,q); // text
     p.setColor(role,q); // text
     lblR->setAutoFillBackground(true);
     lblR->setPalette(p);

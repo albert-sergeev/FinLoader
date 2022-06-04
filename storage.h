@@ -1,3 +1,22 @@
+/****************************************************************************
+*  This is part of FinLoader
+*  Copyright (C) 2021  Albert Sergeyev
+*  Contact: albert.s.sergeev@mail.ru
+*
+*  This program is free software: you can redistribute it and/or modify
+*  it under the terms of the GNU General Public License as published by
+*  the Free Software Foundation, either version 3 of the License, or
+*  (at your option) any later version.
+*
+*  This program is distributed in the hope that it will be useful,
+*  but WITHOUT ANY WARRANTY; without even the implied warranty of
+*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+*  GNU General Public License for more details.
+*
+*  You should have received a copy of the GNU General Public License
+*  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+****************************************************************************/
+
 #ifndef STORAGE_H
 #define STORAGE_H
 
@@ -14,7 +33,7 @@
 
 
 ////////////////////////////////////////////////////////////////////
-// file switch stages:
+// SS-table file switch stages:
 //      1   2   3   4   5   6   (7)
 //  1.  W   L2  L2  U   W   W   (W)
 //  2.  U   W   W   W   L2  L2  (U)
@@ -28,9 +47,14 @@
 //  L2  - read only (read order: second)
 //  S   - shrinked (compilation of L1 + L2)
 ///////////////////////////////////////////////////////////////////
-/// \brief The Storage class
-/// main storage work class
-/// 2 for 2
+
+
+///////////////////////////////////////////////////////////////////
+/// \brief The Storage class used for followed purposes:
+/// 1. main programm path manipulation
+/// 2. markets&tickers config files save/load
+/// 3. main database SS-file manipulation
+/// 4. logsiles saving
 class Storage
 {
     bool bInitialized;
@@ -43,12 +67,11 @@ class Storage
     std::filesystem::path pathDataDir;
     std::filesystem::path pathStorageDir;
     std::filesystem::path pathMarkersFile;
-    //std::filesystem::path pathMarkersSwitcherFile;
     std::filesystem::path pathTickersFile;
     std::filesystem::path pathTickersSwitcherFile;
 
     //---------------------------------------
-    // for tickers configs
+    // for markets/tickers configs
     int iTickerMark{1};
     std::shared_mutex mutexTickerConfigFile;
     std::shared_mutex mutexMarketConfigFile;
@@ -71,10 +94,14 @@ class Storage
     const std::vector<bool> vStorage3;
     const std::vector<bool> vStorage4;
 
-    //std::atomic<int> aIntCount{0};
 
 public:
-    //-----------------------------------------------------------
+    //=======================================================================================================
+    /// utility class to manipulate mutexes for writing to SS-file.
+    /// idea is to check if mutex from parameter is same as stored,
+    /// and if so do nothing, else - locking.
+    /// shared or unique lock defined by template
+    ///
     template<typename T>
     class MutexDefender{
         //std::unique_lock<std::shared_mutex> *lk;
@@ -106,37 +133,53 @@ public:
             }
         }
     };
-    //-----------------------------------------------------------
+    //=======================================================================================================
 
 public:
+    //=======================================================================================================
+    // creating and init interface
+    Storage();
+    ~Storage(){;}
+
+    /// init  must always be called at start. mostly initializes paths, and create absent files
+    ///
+    void Initialize(std::string sPath);
+
+    /// public enums
+    ///
+    enum data_type:char { usual = 0, new_sec = 1, del_from = 2 , del_to = 3};
+
+public:
+    //=======================================================================================================
+    // main programm path public interface. if Initialize(...) had not run has undefined behavor
 
     inline std::string GetCurrentPath() {return  pathCurr.string();};
     inline std::string GetDataPath()    {return  pathDataDir.string();};
     inline std::string GetStoragePath() {return  pathStorageDir.string();};
 
-
-    enum data_type:char { usual = 0, new_sec = 1, del_from = 2 , del_to = 3};
-
-
 public:
-    //--------------------------------------------------------------------------------------------------------
-    Storage();
-    ~Storage(){
-//        {
-//            ThreadFreeCout pcout;
-//            pcout <<"~Storage()\n";
-//        }
-    }
-
-public:
-    //--------------------------------------------------------------------------------------------------------
-    // base settings interface
-
-    void Initialize(std::string sPath);
+    //=======================================================================================================
+    // market config interface
+    //
+    // market config files has usual text-with-delimiter structure, one file for config without any complicated things,
+    // so do usual text read/write with parse
 
     void LoadMarketConfig(std::vector<Market> & vMarketsLst);
     void SaveMarketConfig(std::vector<Market> & vMarketsLst);
     void SaveMarketConfig(std::vector<Market> && vMarketsLst);
+
+private:
+
+    void SaveMarketConfigLocal(std::vector<Market> & vMarketsLst);
+    void SaveMarketConfigV_1(std::vector<Market> & vMarketsLst);
+    void ParsMarketConfigV_1(std::vector<Market> & vMarketsLst, std::ifstream &file);
+
+    void SaveMarketConfigV_2(std::vector<Market> & vMarketsLst);
+    void ParsMarketConfigV_2(std::vector<Market> & vMarketsLst, std::ifstream &file);
+
+public:
+    //=======================================================================================================
+    // tickers config interface
 
     enum op_type:int { update = 1, remove = 2 };
 
@@ -144,16 +187,31 @@ public:
     void SaveTickerConfig(const Ticker & /*tT*/, op_type tp = op_type::update) ;
     void SaveTickerConfig(Ticker && /*tT*/, op_type tp = op_type::update) ;
 
+private:
 
-    //--------------------------------------------------------------------------------------------------------
+    void SaveTickerConfigLocal(const Ticker & /*tT*/, op_type tp) ;
+    void FormatTickerConfigV_1();
+    void SaveTickerConfigV_1(std::filesystem::path  /*pathFile*/,const Ticker & /*tT*/, op_type tp = op_type::update, int iForceMark = 0);
+    int ParsTickerConfigV_1(std::vector<Ticker> & /*vTickersLst*/, std::ifstream & /*file*/);
+
+    void FormatTickerConfigV_2();
+    void SaveTickerConfigV_2(std::filesystem::path  /*pathFile*/,const Ticker & /*tT*/, op_type tp = op_type::update, int iForceMark = 0);
+    int ParsTickerConfigV_2(std::vector<Ticker> & /*vTickersLst*/, std::ifstream & /*file*/);
+
+    void SwitchTickersConfigFile();
+    std::filesystem::path ReadTickersConfigFileName(bool bOld);
+    void CompressTickerConfigFile(std::vector<Ticker> & /*vTickersLst*/);
+
+public:
+    //=======================================================================================================
     // log files interface
 
     int SaveToLogfile(const std::string &str,const  std::string & strLogFileName,
                       const int iCurrentLogfileNumb, const size_t iMasLogfileSize, const int iMaxLogfiles);
 
-    //--------------------------------------------------------------------------------------------------------
+public:
+    //=======================================================================================================
     // stock quotes storage interface
-    //
 
     bool InitializeTicker(int iTickerID,std::stringstream & ssOut, bool bCheckOnly = false);
     int CreateAndGetFileStageForTicker(int iTickerID, std::time_t tMonth, std::stringstream & ssOut);
@@ -182,27 +240,7 @@ public:
     static std::time_t dateAddMonth(std::time_t, int iMonth);
 
 private:
-    //--------------------------------------------------------------------------------------------------------
-    void SaveMarketConfigLocal(std::vector<Market> & vMarketsLst);
-    void SaveMarketConfigV_1(std::vector<Market> & vMarketsLst);
-    void ParsMarketConfigV_1(std::vector<Market> & vMarketsLst, std::ifstream &file);
 
-    void SaveMarketConfigV_2(std::vector<Market> & vMarketsLst);
-    void ParsMarketConfigV_2(std::vector<Market> & vMarketsLst, std::ifstream &file);
-
-    void SaveTickerConfigLocal(const Ticker & /*tT*/, op_type tp) ;
-    void FormatTickerConfigV_1();
-    void SaveTickerConfigV_1(std::filesystem::path  /*pathFile*/,const Ticker & /*tT*/, op_type tp = op_type::update, int iForceMark = 0);
-    int ParsTickerConfigV_1(std::vector<Ticker> & /*vTickersLst*/, std::ifstream & /*file*/);
-
-    void FormatTickerConfigV_2();
-    void SaveTickerConfigV_2(std::filesystem::path  /*pathFile*/,const Ticker & /*tT*/, op_type tp = op_type::update, int iForceMark = 0);
-    int ParsTickerConfigV_2(std::vector<Ticker> & /*vTickersLst*/, std::ifstream & /*file*/);
-
-    void SwitchTickersConfigFile();
-    std::filesystem::path ReadTickersConfigFileName(bool bOld);
-    void CompressTickerConfigFile(std::vector<Ticker> & /*vTickersLst*/);
-    //--------------------------------------------------------------------------------------------------------
     bool InitializeTickerEntry(int iTickerID,std::stringstream & ssOut);
     int CreateStageEntryForTicker(int iTickerID, std::time_t tMonth,std::stringstream& ssOut);
     int GetStageEntryForTicker(int iTickerID, std::time_t tMonth,std::stringstream& ssOut);
@@ -223,11 +261,14 @@ private:
                               std::stringstream & ssOut);
 
     static size_t mapSize(std::map<std::time_t,std::vector<BarTick>> &m);
+    //=======================================================================================================
 
 };
 
+
+
 //--------------------------------------------------------------------------------------------------------
-// construct for parsing with any delimeters
+// constructions for parsing with any delimeters
 
 template <char D>
 struct StringDelimiter : public std::string
@@ -240,7 +281,6 @@ operator>>(std::istream & is, StringDelimiter<D> & output)
   std::getline(is, output, D);
   return is;
 }
-
 //--------------------------------------------------------------------------------------------------------
 
 
