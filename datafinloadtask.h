@@ -29,6 +29,10 @@
 #include "graphholder.h"
 #include "blockfreequeue.h"
 
+//////////////////////////////////////////////////////////////////////////////////////////////////
+/// data container for set bulk tasks to main type background processes
+
+
 
 class dataFinLoadTask
 {

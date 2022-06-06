@@ -25,6 +25,8 @@
 
 #include "graphholder.h"
 
+//////////////////////////////////////////////////////////////////////////////////////////////////
+/// data container for an answer(and another activities) of ami pipe background process
 
 class dataAmiPipeAnswer
 {

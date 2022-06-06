@@ -23,6 +23,11 @@
 //#include <sstream>
 #include <QWidget>
 
+//////////////////////////////////////////////////////////////////////////////////////////////////
+/// graphics item for using in user interface.
+/// Represents active background process.
+///
+
 class CombIndicator : public QWidget
 {
     Q_OBJECT

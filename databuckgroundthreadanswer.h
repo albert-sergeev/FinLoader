@@ -27,6 +27,9 @@
 #include "bar.h"
 #include "bartick.h"
 
+//////////////////////////////////////////////////////////////////////////////////////////////////
+/// data container for activities of main type background processes
+
 
 class dataBuckgroundThreadAnswer
 {

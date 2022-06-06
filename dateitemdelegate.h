@@ -22,6 +22,10 @@
 
 #include <QStyledItemDelegate>
 
+///////////////////////////////////////////////////////
+/// \brief The DateItemDelegate class
+/// used for correct display date/time fields in treeview
+
 class DateItemDelegate : public QStyledItemDelegate
 {
     Q_OBJECT

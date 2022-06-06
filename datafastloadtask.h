@@ -24,6 +24,10 @@
 #include<atomic>
 #include "bartick.h"
 
+//////////////////////////////////////////////////////////////////////////////////////////////////
+/// data container for fast load tasks (a few ticks, wich need to append to LSM tree)
+
+
 //using namespace std::chrono_literals;
 using seconds=std::chrono::duration<double>;
 using milliseconds=std::chrono::duration<double,
