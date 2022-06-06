@@ -28,6 +28,13 @@
 
 #include <chrono>
 
+//////////////////////////////////////////////////////////////////////////////////////////////////
+/// Bulbululator class - graphics item for using in user interface.
+/// Represents activities with specified ticker to user.
+///
+/// Buble - not used (not implemenyed complitly)
+///
+
 //using namespace std::chrono_literals;
 using seconds=std::chrono::duration<double>;
 using milliseconds=std::chrono::duration<double,
