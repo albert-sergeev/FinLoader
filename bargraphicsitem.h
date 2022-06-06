@@ -26,24 +26,34 @@
 
 
 
-
+///////////////////////////////////////////////
+/// \brief Graphic Item for using in main view as candle
+///
 class BarGraphicsItem : public QGraphicsItem
 {
     ///////////////////////////////////////////////////////
-
-    Bar b;
-    size_t iRealIndex;
-    bool bOHLC;
-    int iState;
-    double dHScale;
-    bool IsTick{false};
+    Bar b;              // core data of element
+    size_t iRealIndex;  // index in LSA Tree to position
+    bool bOHLC;         // view type: candle or OHLC
+    int iState;         // view type: color depends on state
+    double dHScale;     // scale
+    bool IsTick{false}; // view type: simple (tick) or complex (candle/OHLC)
 public:
 
+    // constants for using in graphviews
     static const int nPenWidth{1};
     static const int BarWidth{nPenWidth*7};
     static const int nTickHalfHeight{3};
 
 public:
+
+    ////
+    /// \brief BarGraphicsItem main constructor specialized for Bar type
+    /// \param bb       - Bar type core data
+    /// \param idx      - index in LSA tree
+    /// \param State    - state of bar
+    /// \param dS       - scale
+    ///
     BarGraphicsItem(Bar bb,size_t idx, int State, double dS):
         b{bb},iRealIndex{idx},bOHLC{true},iState{State},
         dHScale{dS},
@@ -67,6 +77,13 @@ public:
 
         this->setToolTip(QString::fromStdString(ss.str()));
     };
+    ////
+    /// \brief BarGraphicsItem main constructor specialized for _BarTick_ type
+    /// \param bb       - Bar type core data
+    /// \param idx      - index in LSA tree
+    /// \param State    - state of bar
+    /// \param dS       - scale
+    ///
     BarGraphicsItem(BarTick bb,size_t idx, int State, double dS):
         b{bb},iRealIndex{idx},bOHLC{true},iState{State},
         dHScale{dS},
@@ -87,19 +104,22 @@ public:
         this->setToolTip(QString::fromStdString(ss.str()));
     };
 
+    // methods for using when draw
     virtual QRectF boundingRect() const;
-
     virtual void paint(QPainter* ppainter, const QStyleOptionGraphicsItem*, QWidget*);
 
 
+    // utilities
     inline std::time_t Period() const {return b.Period();}
     inline size_t  realPosition() const {return iRealIndex;}
 
     //virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent *) ;
 
+    // modification methods
     void setBar(const Bar &bb)         {b = bb;};
     void setBar(const BarTick &bb)     {b = bb;};
 
+    // delegate method for dinamic change view type of item
     template <class F, class... Args>
     void SetOHLC(F&& f, Args&&... args){funcOHLC = std::bind (f,args...);}
 
