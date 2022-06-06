@@ -37,23 +37,37 @@
 
 inline std::once_flag AmiPipeHolder_call_once_flag;
 
-
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Used to hold client tasks to communicate with AmiBroker type pipes
+///
+/// Used one instance of object in all threads.
+///
+/// A client connection for a socket (channel) uses a single stream for all channels (i.e. for all connections).
+///
+///
 class AmiPipeHolder
 {
 public:
-    //typedef std::map<std::string,std::pair<int,std::tuple<std::string,std::string,std::string,int,int>>> pipes_type;    
+
+    // enumerator for pipe work type
+    //typedef std::map<std::string,std::pair<int,std::tuple<std::string,std::string,std::string,int,int>>> pipes_type;
     enum ePipeMode_type:int {Byte_Nonblocking = 1,Message_Nonblocking = 2};
 protected:
 
+    // constants for time manipulation
     std::time_t t1971_01_01_00_00_00;
     std::time_t t1970_01_01_04_00_00;
     std::time_t t2100_01_01_00_00_00;
 
+    // platform dependent container type for pipes declaration:
 #ifdef _WIN32
     typedef std::map<std::string,std::pair<int,std::pair<int,Win32NamedPipe>>> internal_pipes_type;
 #else
     typedef std::map<std::string,std::pair<int,std::pair<int,std::ifstream>>> internal_pipes_type;
 #endif
+
+    //////////////////////////////////////////////////////////////////////
+    // containers for pipes, depends of pipe state
 
     internal_pipes_type mPipesConnected;
     internal_pipes_type mPipesHalted;
@@ -63,28 +77,35 @@ protected:
     //////////////////////////////////////////////////////////////////////
     /// \brief utility maps
     ///
-    std::shared_mutex mutUtility;
+    std::shared_mutex mutUtility;                       // main mutex
 
-    std::map<int,std::chrono::time_point<std::chrono::steady_clock>> mDtActivity;
+    std::map<int,std::chrono::time_point<std::chrono::steady_clock>> mDtActivity;   // container for store last activity of pipes
 
-    std::map<int,std::time_t> mCurrentSecond;
+    //
+    std::map<int,std::time_t> mCurrentSecond;           // watermark
 
+    // variables for parce raw data to ticks
     static const int iBlockMaxSize {2048};
     std::map<std::string,std::vector<char>> mBuffer;
     std::map<std::string,int> mPointerToWrite;
     std::map<std::string,int> mPointerToRead;
 
+    // variables to order received ticks
     std::map<int,long> mTask;
     std::map<int,long long> mPacketsCounter;
 
+    // variable to store received from pipe name of company for used ticker
     std::map<std::string,std::string> mPaperName;
     std::map<std::string,std::chrono::time_point<std::chrono::steady_clock>> mCheckTime;
 
+    // work type of pipes to init
     ePipeMode_type iMode {Byte_Nonblocking};
 
+    // current path
     std::filesystem::path pathCurr;
 
     //////////////////////////////////////////////////////////////////////
+    /// variable to count active tasks
     std::atomic<long> aiTaskCounter;
     //////////////////////////////////////////////////////////////////////
 
@@ -92,8 +113,10 @@ protected:
 public:
     AmiPipeHolder();
 
+    // initial function to store current path
     inline void setCurrentPath(std::filesystem::path path) {pathCurr = path;};
 
+    // function to check new pipes, test connect
     static void CheckPipes(std::vector<Ticker> &vT,
                            dataAmiPipeTask::pipes_type & mBindedPipes,
                            dataAmiPipeTask::pipes_type & mBindedPipesOff,
@@ -101,10 +124,16 @@ public:
                            std::vector<int> &vUnconnectedPipes,
                            std::vector<int> &vInformantsPipes);
 
+    // function to check sockets for activity (connected/disconnected etc.)
     void RefreshActiveSockets(dataAmiPipeTask::pipes_type& pipesBindedActive,
                               dataAmiPipeTask::pipes_type& pipesBindedOff,
                               BlockFreeQueue<dataAmiPipeAnswer>                 &queuePipeAnswers);
 
+    // main function to read from connected pipes
+    // read all connected pipes until they have no data
+    // better to be called from its own thread
+    // construct outcoming events with data
+    // exit on this_thread_flagInterrup.isSet()
     void ReadConnectedPipes(BlockFreeQueue<dataFastLoadTask>                    &queueFastTasks,
                             BlockFreeQueue<dataAmiPipeAnswer>                   &queuePipeAnswers,
                             BlockFreeQueue<dataBuckgroundThreadAnswer>          &queueTrdAnswers,
@@ -113,26 +142,30 @@ public:
                             bool & bWasFullBuffers
                             );
 
+    // function to get company name from pipe for used ticker
     void AskPipesNames(dataAmiPipeTask::pipes_type &pFree, BlockFreeQueue<dataAmiPipeAnswer> & queuePipeAnswers);
 
 protected:
 
-    void AddUtilityMapEntry(int iTickerID, std::string sBind);
-    void RemoveUtilityMapEntry(int iTickerID, std::string sBind,bool bCheckMode = false);
+    void AddUtilityMapEntry(int iTickerID, std::string sBind);      // init procedure for variables for newly connected pipe
+    void RemoveUtilityMapEntry(int iTickerID, std::string sBind,bool bCheckMode = false);   // release variables procedure for closing pipe
 
-
+    // scans local system for pipes and return map container with them
     static dataAmiPipeTask::pipes_type ScanActivePipes();
-    static std::string getSignFromBind(std::string sBind);
-    static std::string getNameFromRaw(std::string sRaw);
 
+    static std::string getSignFromBind(std::string sBind);          // gets sign of ticker from data packet
+    static std::string getNameFromRaw(std::string sRaw);            // gets name of ticker from data packet
+
+    // init constants
     void initStartConst();
 
+    // store logs
     void SendToLog      (BlockFreeQueue<dataAmiPipeAnswer> &queuePipeAnswers, const int iTickerID, const std::string &s);
     void SendToErrorLog (BlockFreeQueue<dataAmiPipeAnswer> &queuePipeAnswers, const int iTickerID, const std::string &s);
     void dumpToFile     (BlockFreeQueue<dataAmiPipeAnswer> &queuePipeAnswers, const int iTickerID, const std::string &sFileName, const  char * cBuff, const size_t bytes, const int iReadStart, const bool  bWriteHeader = true);
 
     //------------------------------------------------------------------------------------------------
-
+    // platform independed part of parse procedure
     int ProcessReceivedBuffer(BlockFreeQueue<dataFastLoadTask>              &queueFastTasks,
                               BlockFreeQueue<dataAmiPipeAnswer>             &queuePipeAnswers,
                               BlockFreeQueue<dataBuckgroundThreadAnswer>    &queueTrdAnswers,
@@ -145,6 +178,8 @@ protected:
                               int &ptrToWrite
                               );
 protected:
+    //------------------------------------------------------------------------------------------------
+    //platform depended part of parse procedures
 #ifdef _WIN32
     void ReadConnectedPipes_bytemode_win32(BlockFreeQueue<dataFastLoadTask>     &queueFastTasks,
                             BlockFreeQueue<dataAmiPipeAnswer>                   &queuePipeAnswers,
