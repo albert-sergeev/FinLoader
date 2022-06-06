@@ -35,13 +35,12 @@
 #include "threadpool.h"
 
 /////////////////////////////////////////////
-/// \brief Class for store trade graphics
+/// \brief Class for store trade graphics. Base class for LSM tree.
 /// elements - class Bar
 /// elements counts by incremented index. Random access by time implimented by map dictionary
 /// contains additional moving averages graphics and aligators
 /// contains interfaces for adding new bars from single bar and from lists
 ///
-/// removing not implemented (dont needed)
 ///
 template<typename T>
 class Graph
@@ -50,30 +49,35 @@ class Graph
 
 private:
 
-    std::vector<T> vContainer;
-    std::map<time_t,size_t> mDictionary;
+    // core data
 
-    std::vector<double> vMovingBlue;
-    std::vector<double> vMovingRed;
-    std::vector<double> vMovingGreen;
+    std::vector<T> vContainer;              // core stored data
+    std::map<time_t,size_t> mDictionary;    // main index
 
-    size_t iLastCalculatedMovingAverage;
+    std::vector<double> vMovingBlue;        // derived data
+    std::vector<double> vMovingRed;         // derived data
+    std::vector<double> vMovingGreen;       // derived data
+
+    size_t iLastCalculatedMovingAverage;    // mark to calculate derived data
 
 
-    const Bar::eInterval iInterval;
-    const int iTickerID;
+    const Bar::eInterval iInterval;         // key data - used interval
+    const int iTickerID;                    // key data - ticker
 
-    size_t iShiftIndex;
+    size_t iShiftIndex;                     // left shift. used when this is partal data cut
 
-    friend class Graph<Bar>;
-    friend class Graph<BarTick>;
+    friend class Graph<Bar>;                // used to access to template class methods, when based on another class
+    friend class Graph<BarTick>;            // used to access to template class methods, when based on another class
 
 public:
+
+    // size :)
 
     inline size_t size() const {return vContainer.size(); };
 
 public:
     //--------------------------------------------------------------------------------------------------------
+    // used only specialized constructors for safety
     Graph() = delete;
     Graph(Graph&) = delete;
     Graph& operator=(Graph&) = delete;
@@ -100,9 +104,11 @@ public:
        ,iTickerID{o.iTickerID}
        ,iShiftIndex{o.iShiftIndex}{;}
     //--------------------------------------------------------------------------------------------------------
+    // safe access methods to main core data
     T & operator[](const size_t i)  {if (/*i<0 ||*/ i>= vContainer.size()) {throw std::out_of_range("");} return vContainer[i];}
     const T & operator[](const size_t i) const  {if (/*i<0 ||*/ i>= vContainer.size()) {throw std::out_of_range("");} return vContainer[i];}
     //--------------------------------------------------------------------------------------------------------
+    // safe access methods to derived data
     double movingBlue (const size_t i) const {
         if constexpr (std::is_same_v<T, Bar>)
             {if (/*i<0 ||*/ i>= vMovingBlue.size())  {throw std::out_of_range("");} return vMovingBlue[i];}
@@ -116,11 +122,15 @@ public:
             {if (/*i<0 ||*/ i>= vMovingGreen.size()) {throw std::out_of_range("");} return vMovingGreen[i];}
         else{return 0;}}
     //--------------------------------------------------------------------------------------------------------
+    // build methods:
     bool AddBarsList(std::vector<std::vector<T>> &v, std::time_t dtStart,std::time_t dtEnd);
     bool AddBarsListsFast(std::vector<T> &v, std::set<std::time_t>   & stHolderTimeSet,std::pair<std::time_t,std::time_t> &pairRange,Graph<T> &grDst);
 
     template<typename T_SRC>
     bool BuildFromLowerList(Graph<T_SRC> &grSrc, std::time_t dtStart,std::time_t dtEnd,bool bCopyToDst,Graph<T> &grDst);
+
+    //--------------------------------------------------------------------------------------------------------
+    // utility methods for access to container data:
 
     inline std::time_t GetDateMin() const  {return  vContainer.size()>0? vContainer.front().Period():0;};
     inline std::time_t GetDateMax() const  {return  vContainer.size()>0? vContainer.back().Period():0;};
@@ -134,14 +144,22 @@ public:
     size_t getMovingRedSize() const {return vMovingRed.size();};
     size_t getMovingGreenSize() const {return vMovingGreen.size();};
     //--------------------------------------------------------------------------------------------------------
+    // method for integrity control
     bool CheckMap();
+    //--------------------------------------------------------------------------------------------------------
+    //  utility get-type methods
+
     std::string ToString();
     std::string ToStringPeriods();
     std::size_t GetShiftIndex()  const {return iShiftIndex;};
 
     std::size_t GetUsedMemory() const;
 
+    //--------------------------------------------------------------------------------------------------------
+    // method to clone graph to another container
     void CloneGraph(Graph<T> &grNew,const size_t Start, const size_t End, const size_t LetShift);
+
+    // release metod (cut and free tail)
     bool shrink_extras_left(std::time_t dtEnd);
     //
 private:

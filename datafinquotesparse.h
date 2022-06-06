@@ -28,6 +28,10 @@
 #include"bar.h"
 
 
+//////////////////////////////////////////////////////////////////////////////////////////////////
+/// data container for set parse tasks parameters
+
+
 class dataFinQuotesParse{
 
     std::istringstream * const issT;

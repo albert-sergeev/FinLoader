@@ -34,14 +34,24 @@
 #include "graph.h"
 #include "ticker.h"
 
+/////////////////////////////////////////////
+/// \brief The GraphHolder class
+/// Key class for LSM-tree
+///
+/// contains storage classes for Graph<> for all time intervals
+/// contains iterator integrated with mutex to access to storage files and data in multithread environment
+/// contains methods to operate/manipulate contained data (using member classes methods)
+///
+
 class GraphHolder
 {
 private:
 
-    const int iTickerID;
+    const int iTickerID;                        // key data - ticker ID
 
-    mutable std::shared_mutex mutexHolder;
+    mutable std::shared_mutex mutexHolder;      // main mutex for container
 
+    // core data, based on intervals
     Graph<BarTick> graphTick;
     Graph<Bar> graph1;
     Graph<Bar> graph5;
@@ -56,11 +66,14 @@ private:
     Graph<Bar> graphMonth;
 
 
-    std::map<Bar::eInterval,Graph<Bar>&> mpGraphs;
+    std::map<Bar::eInterval,Graph<Bar>&> mpGraphs;  // construct to access data by index(interval)
 
 
 public:
     //-----------------------------------------------------------------------------------------------------------------------------------
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// Iterator implementation part begin
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     template<typename T>
     class Iterator
     {
@@ -186,63 +199,6 @@ public:
         inline void unlock()              { if(!bEndIterator) lk.unlock();}
     };
 
-public:
-
-    explicit GraphHolder(const int iTickerID = 0);
-    GraphHolder(GraphHolder &&);
-
-
-    //------------------------------------------------------------
-    void clear()    {
-                    graphMonth.clear();
-                    graphWeek.clear();
-                    graphDay.clear();
-                    graph180.clear();
-                    graph120.clear();
-                    graph60.clear();
-                    graph30.clear();
-                    graph15.clear();
-                    graph10.clear();
-                    graph5.clear();
-                    graph1.clear();
-                    graphTick.clear();
-                    };
-    //------------------------------------------------------------
-    inline const BarTick & grTick(size_t i)   {return graphTick[i];};
-    inline const Bar & gr1(size_t i)          {return graph1[i];};
-    inline const Bar & gr5(size_t i)          {return graph5[i];};
-    inline const Bar & gr10(size_t i)         {return graph10[i];};
-    inline const Bar & gr15(size_t i)         {return graph15[i];};
-    inline const Bar & gr30(size_t i)         {return graph30[i];};
-    inline const Bar & gr60(size_t i)         {return graph60[i];};
-    inline const Bar & gr120(size_t i)        {return graph120[i];};
-    inline const Bar & gr180(size_t i)        {return graph180[i];};
-    inline const Bar & grDay(size_t i)        {return graphDay[i];};
-    inline const Bar & grWeek(size_t i)       {return graphWeek[i];};
-    inline const Bar & grMonth(size_t i)      {return graphMonth[i];};
-    //------------------------------------------------------------
-    size_t getViewGraphSize(const Bar::eInterval i) const;
-    size_t getViewGraphIndex(const std::time_t t, const Bar::eInterval i) const;
-
-    std::time_t getViewGraphDateMin(Bar::eInterval it);
-    std::time_t getViewGraphDateMax(Bar::eInterval it);
-
-    std::tuple<double,double,unsigned long,unsigned long>  getMinMax(const Bar::eInterval it) const;
-    std::tuple<double,double,unsigned long,unsigned long>  getMinMax(const Bar::eInterval it, const  std::time_t dtStart, const std::time_t dtEnd) const;
-
-
-    std::time_t getTimeByIndex(const Bar::eInterval it,const size_t indx);
-    template<typename T>
-    T & getByIndex(const Bar::eInterval it,const size_t indx);
-
-    double getMovingBlueByIndex(const Bar::eInterval it,const size_t indx) const;
-    double getMovingRedByIndex(const Bar::eInterval it,const size_t indx) const;
-    double getMovingGreenByIndex(const Bar::eInterval it,const size_t indx) const;
-
-    double getMovingBlueSize(const Bar::eInterval it) const;
-    double getMovingRedSize(const Bar::eInterval it) const;
-    double getMovingGreenSize(const Bar::eInterval it) const;
-
     //------------------------------------------------------------
 
 
@@ -267,20 +223,93 @@ public:
     }
 
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// Iterator implementation part end
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+public:
+
     //------------------------------------------------------------
+    // constructors
+    explicit GraphHolder(const int iTickerID = 0);
+    GraphHolder(GraphHolder &&);
+
+    //------------------------------------------------------------
+    void clear()    {
+                    graphMonth.clear();
+                    graphWeek.clear();
+                    graphDay.clear();
+                    graph180.clear();
+                    graph120.clear();
+                    graph60.clear();
+                    graph30.clear();
+                    graph15.clear();
+                    graph10.clear();
+                    graph5.clear();
+                    graph1.clear();
+                    graphTick.clear();
+                    };
+    //------------------------------------------------------------
+    // get access methods
+    inline const BarTick & grTick(size_t i)   {return graphTick[i];};
+    inline const Bar & gr1(size_t i)          {return graph1[i];};
+    inline const Bar & gr5(size_t i)          {return graph5[i];};
+    inline const Bar & gr10(size_t i)         {return graph10[i];};
+    inline const Bar & gr15(size_t i)         {return graph15[i];};
+    inline const Bar & gr30(size_t i)         {return graph30[i];};
+    inline const Bar & gr60(size_t i)         {return graph60[i];};
+    inline const Bar & gr120(size_t i)        {return graph120[i];};
+    inline const Bar & gr180(size_t i)        {return graph180[i];};
+    inline const Bar & grDay(size_t i)        {return graphDay[i];};
+    inline const Bar & grWeek(size_t i)       {return graphWeek[i];};
+    inline const Bar & grMonth(size_t i)      {return graphMonth[i];};
+    //------------------------------------------------------------
+    // utility methods to access data
+
+    size_t getViewGraphSize(const Bar::eInterval i) const;
+    size_t getViewGraphIndex(const std::time_t t, const Bar::eInterval i) const;
+
+    std::time_t getViewGraphDateMin(Bar::eInterval it);
+    std::time_t getViewGraphDateMax(Bar::eInterval it);
+
+    std::tuple<double,double,unsigned long,unsigned long>  getMinMax(const Bar::eInterval it) const;
+    std::tuple<double,double,unsigned long,unsigned long>  getMinMax(const Bar::eInterval it, const  std::time_t dtStart, const std::time_t dtEnd) const;
+
+
+    std::time_t getTimeByIndex(const Bar::eInterval it,const size_t indx);
+    template<typename T>
+    T & getByIndex(const Bar::eInterval it,const size_t indx);
+
+    double getMovingBlueByIndex(const Bar::eInterval it,const size_t indx) const;
+    double getMovingRedByIndex(const Bar::eInterval it,const size_t indx) const;
+    double getMovingGreenByIndex(const Bar::eInterval it,const size_t indx) const;
+
+    double getMovingBlueSize(const Bar::eInterval it) const;
+    double getMovingRedSize(const Bar::eInterval it) const;
+    double getMovingGreenSize(const Bar::eInterval it) const;
+
+
+    //------------------------------------------------------------
+    // construct and manipulate utilities:
+
     bool AddBarsLists(std::vector<std::vector<BarTick>> &v, std::time_t dtStart,std::time_t dtEnd);
     bool AddBarsListsFast(std::vector<BarTick> &v, std::set<std::time_t>   & stHolderTimeSet,std::pair<std::time_t,std::time_t> &pairRange,GraphHolder &grDest);
-    bool CheckMap();
+    bool CheckMap(); // data integrity check method
     bool shrink_extras_left(std::time_t dtEnd);
 
     std::size_t getShiftIndex(Bar::eInterval it)  const;
 
+    //------------------------------------------------------------
+    // method to access contained grapth
     template<typename T>
     const Graph<T>& getGraph(Bar::eInterval it) const;
 
+    //------------------------------------------------------------
+    // clone method
     bool CloneHolder(std::shared_ptr<GraphHolder>  &hlNew, const Bar::eInterval it, const size_t iStart,const size_t iEnd, const size_t LetShift);
 
 
+    //------------------------------------------------------------
+    // used memory calculate
     bool GetUsedMemory(std::size_t &iSize) const;
 
 protected:
