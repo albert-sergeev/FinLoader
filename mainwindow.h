@@ -95,7 +95,10 @@ class MainWindow : public QMainWindow
 private:
     // for main window
 
-    int iTimerID;
+    int iTimerID; // event timer
+
+    //---------------------------------------------------------
+    // member widget elements:
 
     QMenu * m_mnuWindows;
     QMenu * m_mnuStyles;
@@ -130,6 +133,10 @@ private:
     std::time_t tLocalStoredPacketActivity{0};
 
     QToolBar * tbrToolBar;
+
+    //---------------------------------------------------------
+    // elements state variables (used on init etc.)
+
     bool bToolBarOnLoadIsHidden;
     bool bTickerBarOnLoadIsHidden;
     bool bStatusBarOnLoadIsHidden;
@@ -149,11 +156,43 @@ private:
     bool bShowAll;
     bool bShowMarkets;
     //------------------------------------------------
+    // main core data
     std::map<int,std::shared_ptr<GraphHolder>> Holders;
+    //------------------------------------------------
+    // global storage objects
+
+    std::vector<Market> vMarketsLst;
+    modelMarketsList m_MarketLstModel;
+
+    std::vector<Ticker> vTickersLst;
+    std::vector<Ticker> vTickersLstEtalon;
+    modelTickersList m_TickerLstModel;
+
+    QSettings m_settings;
+    Storage stStore; // main storage manipulate class
+    QString qsStorageDirPath;
+    bool bDefaultStoragePath;
+
+    // data for manipulate toolbar for activity indicator elements (bulbululator type widgets)
     std::queue<std::pair<int,std::chrono::time_point<std::chrono::steady_clock>>> qActivityQueue;
     std::map<int,std::pair<bool,std::chrono::time_point<std::chrono::steady_clock>>> mBlinkedState;
+    std::vector<Bulbululator *> vBulbululators;
+
+    //------------------------------------------------
+    // thread manipulation
+    BlockFreeQueue<dataFinLoadTask> queueFinQuotesLoad;
+    BlockFreeQueue<dataBuckgroundThreadAnswer> queueTrdAnswers;
+    BlockFreeQueue<dataAmiPipeTask> queuePipeTasks;
+    BlockFreeQueue<dataAmiPipeAnswer> queuePipeAnswers;
+    BlockFreeQueue<dataFastLoadTask>  queueFastTasks;
+    workerLoader wrkrLoadFinQuotes;
+
+    ThreadPool thrdPoolLoadFinQuotes;
+    ThreadPool thrdPoolAmiClient;
+    ThreadPool thrdPoolFastDataWork;
     //------------------------------------------------
 
+    // menu elements data
     QSignalMapper * m_psigmapper;
     QSignalMapper * m_psigmapperStyle;
     QSignalMapper * m_psigmapperLang;
@@ -163,24 +202,16 @@ private:
     QString sStarterLanguage;
     QTranslator m_translator;
 
+    // data for check and display used memory
     std::chrono::time_point<std::chrono::steady_clock> dtCheckMemoryUsage;
     std::size_t iStoredUsedMemory;
     std::size_t iPhisicalMemory;
-
-    // global storage objects
-    QSettings m_settings;
-    std::vector<Market> vMarketsLst;
-    modelMarketsList m_MarketLstModel;
-    QString qsStorageDirPath;
-    bool bDefaultStoragePath;
 
     // for condig subwindow
     int iDefaultTickerMarket;
     bool bConfigTickerShowByName;
     bool bConfigTickerSortByName;
-    std::vector<Ticker> vTickersLst;
-    std::vector<Ticker> vTickersLstEtalon;
-    modelTickersList m_TickerLstModel;
+
 
     bool bDefaultSaveLogToFile;
     int iDefaultLogSize;
@@ -230,29 +261,14 @@ private:
     bool bAmiPipesNewWndShown;
     bool bAmiPipesActiveWndShown;
 
-
-    std::vector<Bulbululator *> vBulbululators;
-
-    // thread manipulation
-    bool bWasClose{false};
-    BlockFreeQueue<dataFinLoadTask> queueFinQuotesLoad;
-    BlockFreeQueue<dataBuckgroundThreadAnswer> queueTrdAnswers;
-    BlockFreeQueue<dataAmiPipeTask> queuePipeTasks;
-    BlockFreeQueue<dataAmiPipeAnswer> queuePipeAnswers;
-    BlockFreeQueue<dataFastLoadTask>  queueFastTasks;
-    workerLoader wrkrLoadFinQuotes;
-
+    ///////////////////////////////////
     /// TODO: delete for tests
     std::chrono::time_point<std::chrono::steady_clock> dtSpeedCounter;
     void initTestConst();
 
-    ///////////////////////////////////
-    Storage stStore;
-    ///////////////////////////////////
-    ThreadPool thrdPoolLoadFinQuotes;
-    ThreadPool thrdPoolAmiClient;
-    ThreadPool thrdPoolFastDataWork;
-    ///////////////////////////////////
+
+    //  close indicator
+    bool bWasClose{false};
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
@@ -276,6 +292,9 @@ signals:
     void ShowHelpButtonsChanged(bool b);
 
 protected:
+
+    // init functions
+
     void InitAction();
     void SaveSettings();
     void LoadSettings();
@@ -285,8 +304,8 @@ protected:
     void InitHolders();
     void GetStarterLocale();
 
-    bool event(QEvent *event) override;
-    void timerEvent(QTimerEvent * event) override;
+    //////////////////////////////////////////////////////////////////////////////////////////
+    // slots section begin
 
 public slots: // for config window
     void slotSaveMarketDataStorage();
@@ -396,10 +415,17 @@ protected slots: // for main window
     void slotProcessesContextMenuRequested(const QPoint & pos);
     void slotTickerBarMenuRequested(const QPoint & pos);
 
+    // slots section end
+    //////////////////////////////////////////////////////////////////////////////////////////
+
 private:
 
     Ui::MainWindow *ui;
     // QObject interface
+
+protected:
+    bool event(QEvent *event) override;
+    void timerEvent(QTimerEvent * event) override;
 public:
     bool eventFilter(QObject *watched, QEvent *event);
     bool eventTickerBar(QObject *watched, QEvent *event);

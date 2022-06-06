@@ -39,12 +39,17 @@ namespace Ui {
 class ImportFinamForm;
 }
 
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Form for import data from files
+///
 class ImportFinQuotesForm : public QWidget
 {
     Q_OBJECT
 
 private:
+
+    //----------------------------------------------------------------
+    // interface elements data
 
     StyledSwitcher * swtShowByName;
 
@@ -56,19 +61,28 @@ private:
     bool bPacImport;
 
 
+    //----------------------------------------------------------------
+    // core data
+
+    // filesystem path
     std::filesystem::path pathFile;
     std::filesystem::path pathDir;
     char cDelimiter{','};
 
+    // stored selected market
     int iDefaultTickerMarket;
 
+    // data to display market & ticker data
     modelMarketsList * const modelMarket;
     modelTickersList * const modelTicker;
     TickerProxyListModel proxyTickerModel;
 
+    // form state
     bool bInLoading{false};
     bool bInChecking{false};
 
+    //-----------------------------------------------
+    // elements used during parsing:
 
     bool bReadyToImport{false};
     bool bCheckingInMemory{false};
@@ -83,6 +97,7 @@ private:
 
     QDateTime qdtMin;
     QDateTime qdtMax;
+    //-----------------------------------------------
 
 public:
     explicit ImportFinQuotesForm(modelMarketsList *modelM, int DefaultTickerMarket,
@@ -91,10 +106,14 @@ public:
     ~ImportFinQuotesForm();
 
 public:
+    // used to initialize
+
     void SetDefaultOpenDir(QString &s);
     void SetDelimiter(char c);
 
 public slots:
+
+    // used to receive events from main form
 
     void SetProgressBarValue(int);
     void slotLoadingHasBegun();
@@ -104,6 +123,9 @@ public slots:
     void slotShowHelpButtonsChanged(bool);
 
 signals:
+
+    // used to send changes/tasks to mainform (and then store settings):
+
     void OpenImportFilePathChanged(QString &);
     void NeedSaveDefaultTickerMarket(int);
     void DelimiterHasChanged(char c);
@@ -111,6 +133,8 @@ signals:
     void NeedToStopLoadings();
 
 private slots:
+
+    // interface slots
 
     void slotBtnOpenClicked();
     void slotBtnCreateClicked();

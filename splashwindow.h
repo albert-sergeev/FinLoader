@@ -24,6 +24,9 @@
 #include <QTextEdit>
 #include "transparentbutton.h"
 
+///////////////////////////////////////////////////////////////////////////
+/// \brief Startup splash window
+///
 class SplashWindow : public QSplashScreen
 {
     Q_OBJECT
