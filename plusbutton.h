@@ -23,6 +23,9 @@
 #include <QWidget>
 #include <QLabel>
 
+//////////////////////////////////////////////////////////////////////////////
+/// \brief Transparent plus/minus button widget
+///
 class PlusButton : public QWidget
 {
     Q_OBJECT

@@ -85,6 +85,9 @@ using milliseconds=std::chrono::duration<double,
 
 inline std::once_flag mainwindow_test_call_once_flag;
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief The MainWindow class
+///
 class MainWindow : public QMainWindow
 {
     Q_OBJECT

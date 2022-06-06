@@ -24,6 +24,11 @@
 #include <vector>
 #include "ticker.h"
 
+/////////////////////////////////////////////////////////////
+/// \brief The modelMarketsList class
+///
+/// model class used in user interface to represent market list table
+///
 class modelMarketsList : public QAbstractTableModel
 {
     Q_OBJECT

@@ -22,6 +22,10 @@
 
 #include <QWidget>
 
+/////////////////////////////////////////////////////////////////////////////
+/// \brief The Memometer class
+/// Widget to display used memory size
+///
 class Memometer : public QWidget
 {
     Q_OBJECT

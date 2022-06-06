@@ -29,6 +29,9 @@
 //inline const int DateRole {Qt::UserRole+1};
 //inline const int TimeRole {Qt::UserRole+2};
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief model class used in user interface to represent session list table of market
+///
 class modelSessions : public QStandardItemModel
 {
     Q_OBJECT

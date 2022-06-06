@@ -26,6 +26,9 @@
 #include<QCryptographicHash>
 #include<QDebug>
 
+/////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Class used to protect from running multiple instances of the program
+///
 class OneOfKindProtector
 {
     bool bTheOne;

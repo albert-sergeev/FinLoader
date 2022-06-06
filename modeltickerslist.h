@@ -26,6 +26,9 @@
 #include "ticker.h"
 #include "utilites.h"
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief model class used in user interface to represent ticker list table
+///
 class modelTickersList : public QAbstractTableModel
 {
     Q_OBJECT
