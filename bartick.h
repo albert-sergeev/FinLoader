@@ -31,19 +31,29 @@ class BarTickMemcopier;
 
 inline std::once_flag bar_call_once_flag;
 
+
+////////////////////////////////////////////////
+/// \brief The BarTick class
+/// Core data primitive for LSM tree
+///
 class BarTick
 {
 protected:
+
+    // core data
     double dClose;
     unsigned long iVolume;
     std::time_t tmPeriod;
 
+    // friend class for direct memoty access. Used whith storage procedures
     friend class BarTickMemcopier;
 
+    // constant mark for time calculation procedures
     static std::time_t t1990_01_01_00_00_00;
 
 public:
     //--------------------------------------------------------------------------------------------------------
+    // core time interval enumerator
     enum eInterval:int {pUndefined=(-99), pTick=(0),p1=1,p5=5,p10=10,p15=15,p30=30,p60=60,p120=120,p180=180, pDay=1440, pWeek=10080, pMonth=302400};
 
     static eInterval castInterval(int Interval ){
@@ -67,6 +77,8 @@ public:
     }
     //--------------------------------------------------------------------------------------------------------
 
+    // set/get methods
+
     virtual double Open()                   const   {return dClose;};
     virtual double High()                   const   {return dClose;};
     virtual double Low()                    const   {return dClose;};
@@ -89,6 +101,8 @@ public:
 public:
 
 
+    ///////////////////////////////////////////////////////////////////////////////
+    // constructors
     //--------------------------------------------------------------------------------------------------------
     BarTick(){};
     //--------------------------------------------------------------------------------------------------------
@@ -108,6 +122,11 @@ public:
     //--------------------------------------------------------------------------------------------------------
     //--------------------------------------------------------------------------------------------------------
     //--------------------------------------------------------------------------------------------------------
+
+    ///////////////////////////////////////////////////////////////////////////////
+    // properties:
+
+    // can reinit from another BarTick
     BarTick & reinit (const BarTick &b)
     {
         dClose      =   b.dClose;
@@ -116,6 +135,7 @@ public:
         return  *this;
     }
     //--------------------------------------------------------------------------------------------------------
+    // copy operator
     BarTick & operator= (const BarTick &b)
     {
         dClose      =   b.dClose;
@@ -124,7 +144,7 @@ public:
 
         return  *this;
     }
-    //
+    // rvalue
     BarTick & operator= (BarTick &&b)
     {
         return operator=(b);
@@ -139,6 +159,7 @@ public:
 //        return equal(b);
 //    }
     //--------------------------------------------------------------------------------------------------------
+    // comparison function (not used [==] becouse more safe)
     bool equal (const BarTick &b) const
     {
         if(
@@ -150,7 +171,7 @@ public:
         else
             return  false;
     }
-    //
+    // rvalue variant
     bool equal (BarTick &&b) const
     {
         return equal(b);
@@ -166,6 +187,7 @@ public:
         return tmPeriod < t;
     }
     //--------------------------------------------------------------------------------------------------------
+    // used in LSM tree building procedures
     BarTick & Append (const BarTick &b)
     {
         //dOpen       =   b.dOpen;                      //  first event is in left element
@@ -175,14 +197,14 @@ public:
         //
         return  *this;
     }
-    //
+    // rvalue variant
     BarTick & Append (BarTick &&b)
     {
         return Append(b);
     }
 
     //--------------------------------------------------------------------------------------------------------
-    // align dates to discret marks
+    // alignes dates to discrete marks because LSM tree uses discrete time
     static time_t DateAccommodate(time_t t, int iInterval, bool bUp = false)
     {
         std::call_once(bar_call_once_flag,initStartConst);
@@ -306,6 +328,8 @@ public:
     //--------------------------------------------------------------------------------------------------------
 private:
     //--------------------------------------------------------------------------------------------------------
+
+    // init constants
     static void initStartConst(){
         std::tm t_tm;
         t_tm.tm_year   = 1990 - 1900;
@@ -322,6 +346,9 @@ private:
 
 inline std::time_t BarTick::t1990_01_01_00_00_00;
 
+/////
+/// \brief The BarTickMemcopier class
+///  used for direct memory access
 class BarTickMemcopier{
 
     BarTick &bb;
