@@ -39,14 +39,18 @@ class Bar:public BarTick
 {
 protected:
 
+    // core data
     double dOpen;
     double dHigh;
     double dLow;
     int iInterval;
 
+    // friend class for direct memory access
     friend class BarMemcopier;
 
 public:
+
+    // get/set methods
 
     virtual double Open()                    const   {return dOpen;};
     virtual double High()                    const   {return dHigh;};
@@ -153,6 +157,7 @@ public:
 //        return equal(b);
 //    }
     //--------------------------------------------------------------------------------------------------------
+    // comparison (not used [==] because safety)
     bool equal (const Bar &b) const
     {
         if(b.Interval() != Interval()){
@@ -174,7 +179,7 @@ public:
         else
             return  false;
     }
-    //
+    // rvalue variant
     bool equal (Bar &&b) const
     {
         return equal(b);
@@ -196,6 +201,7 @@ public:
         return tmPeriod < t;
     }
     //--------------------------------------------------------------------------------------------------------
+    // for use in LSM tree building
     Bar & Append (const Bar &b)
     {
         if(b.Interval() > Interval()){// must be less or equal

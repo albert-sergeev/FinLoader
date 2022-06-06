@@ -26,6 +26,9 @@ namespace Ui {
 class AboutForm;
 }
 
+/////////
+/// \brief The AboutForm class
+/// primitive about form
 class AboutForm : public QWidget
 {
     Q_OBJECT
