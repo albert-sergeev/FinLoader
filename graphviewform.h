@@ -131,11 +131,22 @@ public:
 ///
 inline std::once_flag GraphViewForm_init_consts_call_once_flag;
 
+//////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Main display form of programm
+///
+/// Displays graphs, manipulates views, changes scalses etc
+/// Receives events from background process, when main LSM-tree storage has been changed and then updates views
+///
+///
+//////////////////////////////////////////////////////////////////////////////////////////////////
 class GraphViewForm : public QWidget
 {
     Q_OBJECT
 
 private:
+
+    //----------------------------------------------------------------------------
+    // interface elements:
 
     StyledSwitcher *swtCandle;
 
@@ -157,12 +168,19 @@ private:
     TransparentButton *btnScaleVViewDefault;
     TransparentButton *btnScaleVVolumeDefault;
 
-    const int iTickerID;
-    Ticker tTicker;
-    std::vector<Ticker> & vTickersLst;
+    //----------------------------------------------------------------------------
+    // core data:
 
-    BlockFreeQueue<RepainTask> queueRepaint;
-    std::shared_ptr<GraphHolder> holder;
+    const int iTickerID;                        // key index of ticker
+    Ticker tTicker;                             // data of ticker
+    std::vector<Ticker> & vTickersLst;          // reference to tickers list table in main form
+
+    BlockFreeQueue<RepainTask> queueRepaint;    //internal(for form) tasks queue
+
+    std::shared_ptr<GraphHolder> holder;        // pointer to data holder in main form
+    //----------------------------------------------------------------------------
+
+    // used scenes:
 
     QGraphicsScene *grScene;
     QGraphicsScene *grSceneScaleUpper;
@@ -173,20 +191,31 @@ private:
     QGraphicsScene *grSceneViewL1;
     QGraphicsScene *grSceneVertScroll;
 
+    //----------------------------------------------------------------------------
 
+    // container to store main data representation elements
     std::map<int,std::vector<BarGraphicsItem *>>    mShowedGraphicsBars;
     std::map<int,std::vector<QGraphicsItem *>>      mShowedVolumes;
 
+    // container to store derived data representation elements
     std::map<int,QPointF>      mMovingBlue;
     std::map<int,QPointF>      mMovingRed;
     std::map<int,QPointF>      mMovingGreen;
+    //----------------------------------------------------------------------------
 
+    // members to operate fast load events
     std::chrono::time_point<std::chrono::steady_clock> dtFastShowAverageActivity;
     std::set<int> stFastShowAverages;
+    //----------------------------------------------------------------------------
+
+    // elements to paint smoothed lines of alligator indicators
 
     QGraphicsPathItem *pathBlue;
     QGraphicsPathItem *pathRed;
     QGraphicsPathItem *pathGreen;
+
+    //----------------------------------------------------------------------------
+    // containers to store graphics items for different scenes
 
     std::map<int,std::vector<QGraphicsItem *>>      mVFramesViewQuotes;
     std::map<int,std::vector<QGraphicsItem *>>      mVFramesScaleUpper;
@@ -201,6 +230,8 @@ private:
     std::map<int,std::vector<QGraphicsItem *>>      mRightFrames;
 
     std::map<int,std::pair<std::time_t,bool>>       mTimesScale;
+    //----------------------------------------------------------------------------
+    // main constants for views:
 
     QFont fontTime;
     QFont fontNumb;
@@ -208,17 +239,17 @@ private:
     static int iConstWidthNumb1;
     static int iConstWidthNumb2;
     static int iConstWidthTime;
-
+    //----------------------------------------------------------------------------
+    // utility instance counter
 
     std::atomic<int> aiInvalidateCounter;
-
     friend class InvalidateCounterDefender;
-
     InvalidateCounterDefender defInit;
 
-
-
 private:
+
+    //----------------------------------------------------------------------------
+    // geometry elements variables:
 
     std::time_t tStoredRightPointPosition;
     int iStoredRightAggregate;
@@ -239,10 +270,16 @@ private:
     std::map<int,double> mVVolumeScale;
 
     std::vector<std::pair<double,bool>> vHLines;
-    bool bOHLC;
+
+
+    //----------------------------------------------------------------------------
+    // display & view  style
 
     bool bInvertMouseWheel;
+    bool bOHLC;
+    //----------------------------------------------------------------------------
 
+    // geometry constants
     static const int iLeftShift{20};
     static const int iRightShift{50};
 
@@ -265,12 +302,19 @@ public:
 public:
 signals:
 
+    // to send to main form
+
     void SendToLog(QString);
     void NeedLoadGraph(const  int iTickerID, const std::time_t tBegin, const std::time_t tEnd);
     void NeedSaveTickerConig(const Ticker tT, const bool bFull);
 
 
 public slots:
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// slots area begin
+
+    // to receive commands and events from main form
 
     void slotInvalidateGraph(std::time_t dtDegin, std::time_t dtEnd, bool bNeedToRescale = false);
     void slotProcessRepaintQueue();
@@ -285,6 +329,8 @@ public slots:
     void slotShowHelpButtonsChanged(bool);
 
 protected slots:
+    // internal elements events:
+
   //  void slotLoadGraphButton(); // for tests
 
     void slotSceneRectChanged( const QRectF &);
@@ -310,12 +356,20 @@ protected slots:
     void slotSetNewVScaleQuotes(double dNewScale);
     void slotSetNewVScaleVolume(double dNewScale);
 
+    /// slots area end
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 private:
     Ui::GraphViewForm *ui;
 
 protected:
 
-    //-----------------------------------------------------------------------------------------------
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// paint functions area begin
+
+
     // globals
 //    template<typename T>
 //    void PaintBarsFastT(std::time_t tBegin, std::time_t tEnd,std::shared_ptr<GraphHolder> ptrHolder);
@@ -408,6 +462,12 @@ protected:
     void DrawDoubleToScene(const int idx,const  qreal x ,const  qreal y,const double n, Qt::AlignmentFlag alignH, Qt::AlignmentFlag alignV,
                            std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QFont & font, const qreal zvalue = 0);
 
+
+
+    /// paint functions area end
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     //-----------------------------------------------------------------------------------------------
     // curve line functions
 
@@ -415,6 +475,7 @@ protected:
     QPointF getLineStart(const QPointF& pt1, const QPointF& pt2);
     QPointF getLineEnd(const QPointF& pt1, const QPointF& pt2);
     QPainterPath smoothOut(const std::map<int,QPointF> &map, const float& factor);
+
 
     //-----------------------------------------------------------------------------------------------
     // utility functions
