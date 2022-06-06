@@ -38,6 +38,16 @@ namespace Ui {
 class AmiPipesForm;
 }
 
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Form to display interface for AmiBrocker type pipes manipulation:
+/// search/connection/disconnection etc.
+///
+/// used as docked bar pannel
+///
+/// can be rolled up/unroll partially or completely
+///
+///
 class AmiPipesForm : public QWidget
 {
     Q_OBJECT
@@ -46,19 +56,27 @@ protected:
 
     int iDefaultTickerMarket;
 
+    ///////////////////////////////////////////////
+    // elements to access market/ticker data tables in main form
+
     modelMarketsList * const modelMarket;
     modelTickersList * const modelTicker;
     TickerProxyListModel proxyTickerModelUnallocated;
     TickerProxyListModel proxyTickerModelActive;
     TickerProxyListModel proxyTickerModelOff;
 
+    std::vector<Ticker> &vTickersLst; // reference to tickers list table
+    ///////////////////////////////////////////////
+    // elemets to manipulate and display pipes:
+
     QStringListModel    *modelNew;
     dataAmiPipeTask::pipes_type mFreePipes;
     dataAmiPipeTask::pipes_type mFreePipesAsked;
 
-    AmiPipeHolder &pipes;
+    AmiPipeHolder &pipes;           // holder for pipes
+    ///////////////////////////////////////////////
 
-    std::vector<Ticker> &vTickersLst;
+    // interface elements and geometry variables:
 
     StyledSwitcher *swtShowByNameUnallocated;
     StyledSwitcher *swtShowByNameActive;
@@ -96,6 +114,9 @@ public:
 
 public:
 signals:
+
+    // signals for main form:
+
     void SendToMainLog(QString);
     void NeedSaveDefaultTickerMarket(int);
     void WasCloseEvent();
@@ -113,16 +134,22 @@ signals:
 
     void AskPipesNames(dataAmiPipeTask::pipes_type &pipesFree);
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // slots area begin
+
 public slots:
+
+    // to receive events from main form
+
     void slotInternalPanelsStateChanged(bool bLeft, bool bRight);
     void slotPipeNameReceived(std::string,std::string);
 
-protected:
-    void SetMarketModel();
-    void SetTickerModel();
 
 
 protected slots:
+
+    // internal interface events:
+
     void slotBtnCheckClicked();
     void slotSetSelectedTickersMarket(int i);
 
@@ -166,6 +193,15 @@ protected slots:
     void slotTransparentBtnRightStateChanged(int);
 
     int CalculatedMimimum();
+
+    // slots area end
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+protected:
+    // used in events to set models
+
+    void SetMarketModel();
+    void SetTickerModel();
 
 private:
     Ui::AmiPipesForm *ui;
