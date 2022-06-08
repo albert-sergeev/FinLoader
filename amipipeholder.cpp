@@ -645,6 +645,20 @@ void AmiPipeHolder::RemoveUtilityMapEntry(int iTickerID, std::string sBind, bool
 //-------------------------------------------------------------------------------------------------
 #ifdef _WIN32
 //-------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////
+/// \brief parse reseived raw data stream from buffer and form events with parsed ticks
+/// \param queueFastTasks           - queue for tasks
+/// \param queuePipeAnswers         - queue for answers
+/// \param queueTrdAnswers          - queue for answers
+/// \param iTickerID                - ticker id
+/// \param strBind                  - pipe name (equal ticker sign)
+/// \param bCheckMode               - mode to work
+/// \param task                     - task object to send
+/// \param buff                     - buffer to analilze
+/// \param ptrToRead                - pointer to start read buffer
+/// \param ptrToWrite               - pointer to the end for read (equal pointer to write on higher layer)
+/// \return                         - always return 0
+///
 int AmiPipeHolder::ProcessReceivedBuffer(BlockFreeQueue<dataFastLoadTask>                   &queueFastTasks,
                                          BlockFreeQueue<dataAmiPipeAnswer>                  &queuePipeAnswers,
                                          BlockFreeQueue<dataBuckgroundThreadAnswer>         &queueTrdAnswers,
@@ -657,34 +671,45 @@ int AmiPipeHolder::ProcessReceivedBuffer(BlockFreeQueue<dataFastLoadTask>       
                                          int &ptrToWrite
                                          )
 {
+    /////////////////////////////////////////////////////////
+    /// check bufer from ptrToRead to ptrToWrite, forming a slider window,
+    /// check type of packets
+    /// when packets has found - get tick info from it
+    /// and then prepare task with ticks to send to processing thread
+
+    // check arguments
     assert(iTickerID  > 0 || bCheckMode);
     assert(ptrToRead  >= 0);
     assert(ptrToWrite >= 0);
     assert(ptrToWrite >= ptrToRead);
 
-    BarTick b(0,0,0);
-    BarTickMemcopier bM(b);
-    unsigned long long longDate{0};
-    double volume{0};
-    double vC{0};
-    std::string strName;
+    // variables to analize packets
+    BarTick b(0,0,0);                           // container for analized tick packet
+    BarTickMemcopier bM(b);                     // memcopier
+    unsigned long long longDate{0};             // date in 8-byte format
+    double volume{0};                           // temporary var for store data from packet
+    double vC{0};                               // temporary var for store data from packet
+    std::string strName;                        // name of the company
 
-    bool bInStream{false};
-    enum eStream:int {s0,s1,s2,sN,s6,s7,s8};
-    eStream streamNum{s0};
-    int16_t iStreamNameLen;
+    bool bInStream{false};                      // in-packet flag (ie type of packet has been determined and we get info from it)
+    enum eStream:int {s0,s1,s2,sN,s6,s7,s8};    // type of packet enum
+    eStream streamNum{s0};                      // current packet type
+    int16_t iStreamNameLen;                     // lengh of name packet
 
     int iBlockStart{0};
     int iReadStart{0};
 
+    // prepare space in task.vector for parsed ticks
     const int iExpectedBuff (sizeof (b) * (1 + ((ptrToWrite - ptrToRead)/48)));
     if (task.vV.capacity() - task.vV.size() < iExpectedBuff){
         task.vV.reserve(task.vV.size() + iExpectedBuff);
     }
 
 
+    // loop through buffer byte by byte forming slider window
     int i = ptrToRead;
     while(i < ptrToWrite){
+        // if we are not in packet and already have two bytes - try to determinate type of packet (ie of stream)
         if(i >= 2 && !bInStream){
             if(buff[i - 2] == 0 && buff[i - 1] == 0){ iReadStart = i;}
             if(buff[i - 2] == 1 && buff[i - 1] == 0){ bInStream = true; streamNum = s1;}
@@ -695,26 +720,30 @@ int AmiPipeHolder::ProcessReceivedBuffer(BlockFreeQueue<dataFastLoadTask>       
             iBlockStart = 0;
         }
         //----------------------------------------------------------------------------
+        // s1-type packet. just init packet
         if (bInStream && streamNum == s1 && iBlockStart >= 0){
             bInStream = false;
-            iReadStart = i - iBlockStart;
+            iReadStart = i - iBlockStart;   // set start of the packet
         }
+        // s2-type packet. length of company name
         else if (bInStream && streamNum == s2 && iBlockStart >= 4){
             bInStream = false;
-            iReadStart = i - iBlockStart;
+            iReadStart = i - iBlockStart;   // set start of the packet
             iReadStart+=2;
             memcpy(&iStreamNameLen,buff + iReadStart, 2);     iReadStart += 2;
 
             if(iStreamNameLen > 0){
                 bInStream = true;
-                streamNum = sN;
+                streamNum = sN; // there will be company name next
                 iBlockStart = 0;
             }
         }
+        // sN-type packet. company name
         else if (bInStream && streamNum == sN && iBlockStart >= iStreamNameLen){
 
             bInStream = false;
-            iReadStart = i - iBlockStart;
+            iReadStart = i - iBlockStart;   // set start of the packet
+            // copy raw name to temporary buffer
             strName.resize(iStreamNameLen+1);
             memcpy(strName.data(),buff + iReadStart, iStreamNameLen);     iReadStart += iStreamNameLen;
 
@@ -725,33 +754,41 @@ int AmiPipeHolder::ProcessReceivedBuffer(BlockFreeQueue<dataFastLoadTask>       
                 strName[iStreamNameLen+1] = '\0';
             }
 
+            // convert name from 8Bit to unicode
             mPaperName[strBind] = getNameFromRaw(QString::fromLocal8Bit(strName.data(),(int)strName.size()).toStdString());
         }
+        // s6/s7-type packet. headers of data blocks
         else if (bInStream && (streamNum == s6 || streamNum == s7) && iBlockStart >= 4){
             bInStream = false;
-            iReadStart = i - iBlockStart;
+            iReadStart = i - iBlockStart;   // set start of the packet
             iReadStart += 4;
         }
+        // data block. One tick has 48-byte length
         else if (bInStream && iBlockStart >= 48){
             bInStream = false;
-            iReadStart = i - iBlockStart;
+            iReadStart = i - iBlockStart;   // set start of the packet
 
+            // copy to temporary vars
             memcpy(&longDate,buff + iReadStart, 8);     iReadStart += 8;
             /*memcpy(&vO,buff  + iReadStart, 8);*/       iReadStart += 8;
             /*memcpy(&vH,buff  + iReadStart, 8);*/       iReadStart += 8;
             /*memcpy(&vL,buff  + iReadStart, 8);*/       iReadStart += 8;
             memcpy(&vC,buff  + iReadStart, 8);          iReadStart += 8;
             memcpy(&volume,buff + iReadStart, 8);       iReadStart += 8;
+
+            // construct tick
                                                                    // 13275568800 179 000 1
-            bM.Period() = t1970_01_01_04_00_00 + (longDate/10000000 - 11644488000);
+            bM.Period() = t1970_01_01_04_00_00 + (longDate/10000000 - 11644488000); //convert from 8-byte time to unix time
             bM.Close() = vC;
             bM.Volume() = (long)volume;
 
+            // check integrity and if all is ok form task with ticks
             if(b.Period() > t1971_01_01_00_00_00 &&
                b.Period() < t2100_01_01_00_00_00){
-                // writing tick to vector
+                // writing tick to vector in task
                 task.vV.push_back(b);
             }
+            // if broken value send error event
             else{
                 std::stringstream ss;
                 ss <<"error in time during import from pipe: "<<iTickerID<<"\n";
@@ -762,23 +799,27 @@ int AmiPipeHolder::ProcessReceivedBuffer(BlockFreeQueue<dataFastLoadTask>       
         ++iBlockStart;
     }
 
+    // if there were new ticks form event
     if(iReadStart > 0 && !task.vV.empty()){
+
+        // shrink analized data
         ptrToRead = iReadStart;
-
         int iDelta = ptrToWrite - iReadStart;
-
         memcpy(buff,buff + iReadStart, iDelta);
         ptrToWrite -= iReadStart;
         ptrToRead = 0;
 
+        // if in usual mode then form packet with newly parsed ticks and sent event
         if (!bCheckMode){
             task.iTickerID       = iTickerID;
             task.lTask           = mTask[iTickerID];
             task.llPackesCounter = mPacketsCounter[iTickerID]++;
+            // pull to queue
             queueFastTasks.Push(task);
+            // notify processing process
             conditionFastData.notify_one();
 
-
+            // send activity event to main form
             milliseconds tActivityCount = std::chrono::steady_clock::now() - mDtActivity[iTickerID];
             if (tActivityCount > milliseconds(1800)/*ms*/){
                 mDtActivity[iTickerID] = std::chrono::steady_clock::now();
@@ -788,6 +829,7 @@ int AmiPipeHolder::ProcessReceivedBuffer(BlockFreeQueue<dataFastLoadTask>       
         }
     }
 
+    // shrink analized part of buffer
     if(ptrToWrite + 48 > iBlockMaxSize/2){
 
         memcpy(buff,buff + ptrToWrite - 48, iBlockMaxSize/2 - ptrToWrite + 48);
@@ -798,6 +840,19 @@ int AmiPipeHolder::ProcessReceivedBuffer(BlockFreeQueue<dataFastLoadTask>       
     return 0;
 }
 //-------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////
+/// \brief read and parse pipe in bytemode/win32
+/// \param pip                      - pipe object
+/// \param bCheckMode               - mode to work
+/// \param iTickerID                - ticker id
+/// \param strBind                  - pipe name (equal ticker sign)
+/// \param queueFastTasks           - queue for tasks
+/// \param queuePipeAnswers         - queue for answers
+/// \param queueTrdAnswers          - queue for answers
+/// \param BytesRead                - return bytes read
+/// \param bWasFullBuffers          - return true if there left  buffers with data
+/// \return                         - return true if there was successfull read operation
+///
 bool AmiPipeHolder::ReadPipe_bytemode_win32(Win32NamedPipe &pip,
                                             bool bCheckMode,
                                             const int iTickerID,
@@ -809,43 +864,57 @@ bool AmiPipeHolder::ReadPipe_bytemode_win32(Win32NamedPipe &pip,
                                             bool & bWasFullBuffers)
 {
 
+    // prepare object with processed data (ticks) to send
     dataFastLoadTask task(dataFastLoadTask::NewTicks);
 
+    // init variables
     int iWriteStart{0};
     int iReadCount{0};
     int iBytesToRead{0};
-    static const int iMaxReadCount{30};
+    static const int iMaxReadCount{30};             // set max loops to read for pipe
     bool bLastReadMoreData{false};
     int iTotalBytesRead{0};
     bool bSuccessfullRead{false};
 
-    iWriteStart = mPointerToWrite[strBind];
+    iWriteStart = mPointerToWrite[strBind];         // use stored pointer to place where write to buffer
     //iReadStart = mPointerToRead[strBind];
-    iBytesToRead = iBlockMaxSize  - iWriteStart;
+    iBytesToRead = iBlockMaxSize  - iWriteStart;    // calculate free space in buffer
     iReadCount = 0;
     iTotalBytesRead = 0;
-    char *buff = mBuffer[strBind].data();
+    char *buff = mBuffer[strBind].data();           // set body of buffer for the pipe
     //bLastReadMoreData = true;
 
     while(true){
+
+        // read file into buffer
         if (pip.read (buff + iWriteStart,iBytesToRead,iTotalBytesRead) || GetLastError() == ERROR_MORE_DATA){
 
+            // set flag of successfull read
             bSuccessfullRead = true;
+            // move froward write pointer
             mPointerToWrite[strBind] = iWriteStart + iTotalBytesRead;
+            // increment read bytes
             BytesRead += iTotalBytesRead;
+            // if set ERROR_MORE_DATA - set flags
             if (GetLastError() == ERROR_MORE_DATA)  {bLastReadMoreData = true;  bWasFullBuffers = true;}
             else                                    {bLastReadMoreData = false;}
+            // count read loop
             iReadCount++;
-            ////
+
+            // parse reseived raw data stream from buffer and form events with parsed ticks
             ProcessReceivedBuffer(queueFastTasks,queuePipeAnswers,queueTrdAnswers,
                         iTickerID,strBind,bCheckMode,task,buff,mPointerToRead[strBind],mPointerToWrite[strBind]);
 
+            // move write pointer to actual value
             iWriteStart = mPointerToWrite[strBind];
+            // recalculate free space in buffer
             iBytesToRead = iBlockMaxSize  - iWriteStart;
         }
         else{
+            // if there were no data - anyway read counts successfull
             if (GetLastError() == ERROR_NO_DATA)  {bSuccessfullRead = true;}
         }
+        // if there are no data left in pipe or too many read loops  then exit
         if (!bLastReadMoreData || iReadCount >= iMaxReadCount) break;
     }
 
@@ -853,13 +922,13 @@ bool AmiPipeHolder::ReadPipe_bytemode_win32(Win32NamedPipe &pip,
 }
 //-------------------------------------------------------------------------------------------------
 ///////////////////////////////////////////////////////////////////////////////////////
-/// \brief Read from pipes: windows/bytemode. Not implemented.
-/// \param queueFastTasks
-/// \param queuePipeAnswers
-/// \param queueTrdAnswers
-/// \param bCheckMode
-/// \param BytesRead
-/// \param bWasFullBuffers
+/// \brief Read from pipes: windows/bytemode.
+/// \param queueFastTasks           - queue for tasks
+/// \param queuePipeAnswers         - queue for answers
+/// \param queueTrdAnswers          - queue for answers
+/// \param bCheckMode               - work mode
+/// \param BytesRead                - return bytes read
+/// \param bWasFullBuffers          - return true if there left  buffers with data
 ///
 void AmiPipeHolder::ReadConnectedPipes_bytemode_win32(BlockFreeQueue<dataFastLoadTask>     &queueFastTasks,
                             BlockFreeQueue<dataAmiPipeAnswer>                   &queuePipeAnswers,
@@ -869,8 +938,21 @@ void AmiPipeHolder::ReadConnectedPipes_bytemode_win32(BlockFreeQueue<dataFastLoa
                             bool & bWasFullBuffers
                             )
 {
+    ///////////////////////////////////////////
+    // algorithm
+    // 1. init variables
+    // 2. set pipes list depending on work mode
+    // 3. loop throught connected pipes list
+    // 3.1 get pipes info:
+    // 3.2 if pipe is connecred proceed
+    // 3.2.1 read and parse pipe
+    // 3.2.2 if in check mode try to get company name
+    // 3.2.2.1 calculate time from connection
+    // 3.2.2.2 if company name was set or too many time pasts form event message
+    // 3.3 if cannot read - disconnect
 
 
+    // 1. init variables
     bWasFullBuffers = false;
     BytesRead = 0;
 
@@ -881,30 +963,38 @@ void AmiPipeHolder::ReadConnectedPipes_bytemode_win32(BlockFreeQueue<dataFastLoa
     milliseconds tActivityCount;
 
     ////////////////////////////////////////////////
+    // 2. set pipes list depending on work mode
     internal_pipes_type &mMap = !bCheckMode  ? mPipesConnected : mPipesFree;
     ////////////////////////////////////////////////
 
+    // 3. loop throught connected pipes list
     auto ItConnected = mMap.begin();
-
     while (ItConnected != mMap.end()){
 
+        // 3.1 get pipes info:
 
-        iTickerID   = ItConnected->second.second.first;
-        strBind     = ItConnected->first;
-        Win32NamedPipe &pip = ItConnected->second.second.second;
+        iTickerID   = ItConnected->second.second.first;             // ticker ID for pipe
+        strBind     = ItConnected->first;                           // pipe name
+        Win32NamedPipe &pip = ItConnected->second.second.second;    // pipe object
         bSuccessfullRead = false;
 
+        // 3.2 if pipe is connecred proceed
         if (pip.good()){
+            // 3.2.1 read and parse pipe
             bSuccessfullRead = ReadPipe_bytemode_win32(pip,bCheckMode,iTickerID,strBind,
                                                        queueFastTasks,
                                                        queuePipeAnswers,
                                                        queueTrdAnswers,
                                                        BytesRead,
                                                        bWasFullBuffers);
+            // 3.2.2 if in check mode try to get company name
             if(bCheckMode){
+                // 3.2.2.1 calculate time from connection
                 tActivityCount = std::chrono::steady_clock::now() - mCheckTime[strBind];
+                // 3.2.2.2 if company name was set or too many time pasts form event message
                 if (mPaperName[strBind].size() > 0 || tActivityCount > milliseconds(2000)){//2000ms
 
+                    // create event object
                     dataAmiPipeAnswer answ;
                     answ.SetType(dataAmiPipeAnswer::AskNameAnswer);
                     answ.SetTickerID(iTickerID);
@@ -912,15 +1002,19 @@ void AmiPipeHolder::ReadConnectedPipes_bytemode_win32(BlockFreeQueue<dataFastLoa
 
                     if (mPaperName[strBind].size() > 0) answ.SetPipeName(mPaperName[strBind]);
                     else                                answ.SetPipeName(getSignFromBind(strBind));
+                    // send event
                     queuePipeAnswers.Push(answ);
 
+                    // try to close pipe
                     try{
                         ItConnected->second.second.second.close();
                     }
                     catch (...) {;}
 
+                    // free variables for pipe
                     RemoveUtilityMapEntry(iTickerID, strBind);
-                    //
+
+                    // erase ConnectedPipe entry and do loop
                     auto ItNext = std::next(ItConnected);
                     mMap.erase(ItConnected);
                     ItConnected = ItNext;
@@ -929,9 +1023,11 @@ void AmiPipeHolder::ReadConnectedPipes_bytemode_win32(BlockFreeQueue<dataFastLoa
             }
         }
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        //  3.3 if cannot read - disconnect
         if(!bSuccessfullRead){
 
-            if (GetLastError() != 233){ // server close connection
+            if (GetLastError() != 233){ // not server close connection error
+                // write error log
                 /////////////////////////////////////////////////////////////////////
                 std::stringstream ss;
                 ss <<"-----------------------------------------------------\n";
@@ -942,23 +1038,27 @@ void AmiPipeHolder::ReadConnectedPipes_bytemode_win32(BlockFreeQueue<dataFastLoa
                 SendToErrorLog(queuePipeAnswers, iTickerID, ss.str());
                 /////////////////////////////////////////////////////////////////////
             }
+            // if server close connection  - simply close pipe
             else{
                 std::stringstream ss;
                 ss <<"server close connection on {"<<iTickerID<<"} {"<<strBind<<"}";
                 SendToErrorLog(queuePipeAnswers, iTickerID, ss.str());
             }
             try{
+                // try to close pipe
                 ItConnected->second.second.second.close();
             }
             catch (...) {;}
             //
             //
+            // if in usual mode - send disconnect event
             if (!bCheckMode){
                 dataAmiPipeAnswer answ;
                 answ.SetType(dataAmiPipeAnswer::PipeDisconnected);
                 answ.SetTickerID(ItConnected->second.second.first);
                 queuePipeAnswers.Push(answ);
             }
+            // if in check mode - send  pipe sign as company name
             else{
                 dataAmiPipeAnswer answ;
                 answ.SetType(dataAmiPipeAnswer::AskNameAnswer);
@@ -967,9 +1067,10 @@ void AmiPipeHolder::ReadConnectedPipes_bytemode_win32(BlockFreeQueue<dataFastLoa
                 answ.SetPipeName(getSignFromBind(ItConnected->first)+"_t2");
                 queuePipeAnswers.Push(answ);
             }
-            //
+            // free variables for pipe
             RemoveUtilityMapEntry(iTickerID, strBind);
-            //
+
+            // erase ConnectedPipe entry
             auto ItNext = std::next(ItConnected);
             mMap.erase(ItConnected);
             ItConnected = ItNext;
@@ -983,6 +1084,11 @@ void AmiPipeHolder::ReadConnectedPipes_bytemode_win32(BlockFreeQueue<dataFastLoa
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 }
 //-------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////
+/// \brief  Read from pipes: windows/messagemode. Not implemented.
+/// \param BytesRead
+/// \param bWasFullBuffers
+///
 void AmiPipeHolder::ReadConnectedPipes_messagemode_win32(BlockFreeQueue<dataFastLoadTask>        &/*queueFastTasks*/,
                             BlockFreeQueue<dataAmiPipeAnswer>                   &/*queuePipeAnswers*/,
                             BlockFreeQueue<dataBuckgroundThreadAnswer>          &/*queueTrdAnswers*/,
@@ -991,6 +1097,7 @@ void AmiPipeHolder::ReadConnectedPipes_messagemode_win32(BlockFreeQueue<dataFast
                             bool & bWasFullBuffers
                             )
 {
+    // plug. not implemented
     {
         BytesRead = 0;
         bWasFullBuffers = false;
