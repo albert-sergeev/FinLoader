@@ -853,6 +853,14 @@ bool AmiPipeHolder::ReadPipe_bytemode_win32(Win32NamedPipe &pip,
 }
 //-------------------------------------------------------------------------------------------------
 ///////////////////////////////////////////////////////////////////////////////////////
+/// \brief Read from pipes: windows/bytemode. Not implemented.
+/// \param queueFastTasks
+/// \param queuePipeAnswers
+/// \param queueTrdAnswers
+/// \param bCheckMode
+/// \param BytesRead
+/// \param bWasFullBuffers
+///
 void AmiPipeHolder::ReadConnectedPipes_bytemode_win32(BlockFreeQueue<dataFastLoadTask>     &queueFastTasks,
                             BlockFreeQueue<dataAmiPipeAnswer>                   &queuePipeAnswers,
                             BlockFreeQueue<dataBuckgroundThreadAnswer>          &queueTrdAnswers,
