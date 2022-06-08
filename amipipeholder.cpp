@@ -42,6 +42,9 @@ using milliseconds=std::chrono::duration<double,
 
 
 //-------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////
+/// \brief Constructor
+///
 AmiPipeHolder::AmiPipeHolder():
     iMode{Byte_Nonblocking},
     //iMode{Message_Nonblocking},
@@ -52,6 +55,9 @@ AmiPipeHolder::AmiPipeHolder():
 
 }
 //-------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////
+/// \brief Procedure to init static constants to use during flow parsing
+///
 void AmiPipeHolder::initStartConst(){
     std::tm t_tm;
     t_tm.tm_year   = 1971 - 1900;
@@ -85,6 +91,11 @@ void AmiPipeHolder::initStartConst(){
     t1970_01_01_04_00_00 = mktime_gm(&t_tm);
 };
 //-------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////
+/// \brief Parses system pipe name and returns ticker name
+/// \param sBind    - raw text of system pipe name (normaly contains ticker name)
+/// \return         - name of ticker
+///
 std::string AmiPipeHolder::getSignFromBind(std::string sBind)
 {
     std::stringstream ssRegSign;
@@ -100,6 +111,11 @@ std::string AmiPipeHolder::getSignFromBind(std::string sBind)
     }
 }
 //-------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////
+/// \brief Parses raw data packet and return company name
+/// \param sRaw     - data of raw packet wich contains full company name
+/// \return         - company name
+///
 std::string AmiPipeHolder::getNameFromRaw(std::string sRaw)
 {
     std::stringstream ssRegName;
@@ -115,10 +131,19 @@ std::string AmiPipeHolder::getNameFromRaw(std::string sRaw)
     }
 }
 //-------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////
+/// \brief Scan the system for AmiBroker format pipes.
+/// fully implemented only on windows platform
+/// \return container with pipes
+///
 dataAmiPipeTask::pipes_type AmiPipeHolder::ScanActivePipes()
 {
+    //--------------------------------------------------
+    // declarations:
     dataAmiPipeTask::pipes_type mRet;
 
+    //--------------------------------------------------
+    // standart path to pipes
     std::string sPipeDir = "\\\\.\\pipe\\";
     std::stringstream ssFilePath("");
 
@@ -129,39 +154,51 @@ dataAmiPipeTask::pipes_type AmiPipeHolder::ScanActivePipes()
 //        ssOut <<" ./data/[TickerID] - is not directory";
 //        return false;
 //    }
-    //////////////////
+    //--------------------------------------------------
+    // prepare regexes to rearch
     std::stringstream ssReg;
     std::stringstream ssRegSign;
 
-    //AmiBroker2QUIK_TQBR.SBER_TICKS
+    // regex for search pipes by name
+    // sample: AmiBroker2QUIK_TQBR.SBER_TICKS
     ssReg <<"^AmiBroker2QUIK_(.*)_TICKS$";
     const std::regex reAmiPipe {ssReg.str()};
 
+    // regex to cut ticker sign from pipe name
     ssRegSign <<"(?:(?![.]).)+$";
     const std::regex reAmiSign {ssRegSign.str()};
 
-    std::vector<std::filesystem::directory_entry> vPipes;
+    // simple vector to store pipenames
+    //std::vector<std::filesystem::directory_entry> vPipes;
 
+    // temporary variables
     std::string sSign;
     std::string sBind;
 
 #ifdef _WIN32
 #else
+    // simple check that file system is working
     if (std::filesystem::exists(pathTickerDir))
 #endif
     {
+        // loop through files in pipes list
         for (const std::filesystem::directory_entry &fl:std::filesystem::directory_iterator{pathTickerDir}){
 
+            // if exists and usual file (pipe is an usual file) - proceed
             if ( fl.exists()
                  && fl.is_regular_file()
                  //&& fl.is_fifo()
                  ){
+                // check with regex if pipe fits
                 std::string ss(fl.path().filename().string());
                 const auto ItPipe = std::sregex_token_iterator(ss.begin(),ss.end(),reAmiPipe);
                 if ( ItPipe != std::sregex_token_iterator()){
+                    // cut with regex  part with sign from pipename
                     const auto ItQuik = std::sregex_token_iterator(ss.begin(),ss.end(),reAmiPipe,1);
                     sBind = *ItQuik;
                     if (ItQuik != std::sregex_token_iterator()){
+                        // if success fill pipes list entry
+
 //                        const auto ItSign = std::sregex_token_iterator(sBind.begin(),sBind.end(),reAmiSign);
 //                        sSign = "";
 //                        if (ItSign != std::sregex_token_iterator()){
@@ -173,7 +210,7 @@ dataAmiPipeTask::pipes_type AmiPipeHolder::ScanActivePipes()
                         ssFilePath <<sPipeDir<<(*ItPipe);
                         //ssFilePath <<fl.path().filename().string();
 
-
+                        // create new entry
                         mRet[sBind] = {0,{*ItPipe,sSign,ssFilePath.str(),0,0,sSign}};
                     }
                 }
@@ -184,6 +221,15 @@ dataAmiPipeTask::pipes_type AmiPipeHolder::ScanActivePipes()
 }
 
 //-------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////
+/// \brief Check pipes container for activity and change their status if needed
+/// \param vT                   - list of tickers
+/// \param mBindedPipesActive   - container with binded active pipes
+/// \param mBindedPipesOff      - container with binded pipes for wich work was turned off
+/// \param mFreePipes           - container with not binded to tickers pipes
+/// \param vUnconnectedPipes    - list of tickers with binded pipe wich state is unconnected
+/// \param vInformantsPipes     - list of tickers wich have no pipe and work was turned off
+///
 void AmiPipeHolder::CheckPipes(std::vector<Ticker> &vT,
                                dataAmiPipeTask::pipes_type & mBindedPipesActive,
                                dataAmiPipeTask::pipes_type & mBindedPipesOff,
@@ -192,16 +238,40 @@ void AmiPipeHolder::CheckPipes(std::vector<Ticker> &vT,
                                std::vector<int> &vInformantsPipes
                                )
 {
+    ///////////////////////////////////////////////////////////////
+    // algotithm:
+    //
+    // 1. clear storage containers for pipes
+    // 2. get pipes list from the system
+    // 3. loop throught list of tickers and check pipes for them
+    // 3.1. gets  identifier for pipe  stored in ticker (sign)
+    // 3.2 if pipe for it exists proceed
+    // 3.2.1 create pipe entry in temporary map and if set autoload for the ticker - set autoload flag
+    // 3.2.2 create pipe entry in temporary map and  if not - set flag to not-autoload
+    // 3.3 if no pipes for it:
+    // 3.3.1 if set autoload for pipe move it to unconnected list
+    // 3.3.2 if not - move it to informants
+    // 4. loop throught found pipes
+    // 4.1 create new entry in container with active pipe
+    // 4.2 create new entry in container with turned off pipe
+    // 4.3 create new entry in container with pipes do not bonded to any ticker
+    ///////////////////////////////////////////////////////////////
+
+    // 1. clear storage containers for pipes
     mBindedPipesActive.clear();
     mBindedPipesOff.clear();
     mFreePipes.clear();
-    //
+    // 2. get pipes list from the system
     dataAmiPipeTask::pipes_type mPipes = AmiPipeHolder::ScanActivePipes();
     //
+    // 3. loop throught list of tickers and check pipes for them
     std::string sTmp;
     for(const auto &t:vT){
+        // 3.1. gets  identifier for pipe  stored in ticker (sign)
         sTmp = trim(t.TickerSignQuik());
+        // 3.2 if pipe for it exists proceed
         if(sTmp.size() > 0 && mPipes.find(sTmp) != mPipes.end()){
+            // 3.2.1 create pipe entry in temporary map and if set autoload for the ticker - set autoload flag
             if (t.AutoLoad()){
                 mPipes[sTmp].second = {std::get<0>(mPipes[sTmp].second),
                                        std::get<1>(mPipes[sTmp].second),
@@ -211,6 +281,7 @@ void AmiPipeHolder::CheckPipes(std::vector<Ticker> &vT,
                                        std::get<5>(mPipes[sTmp].second)
                                       };
             }
+            // 3.2.2 create pipe entry in temporary map and  if not - set flag to not-autoload
             else{
                 mPipes[sTmp].second = {std::get<0>(mPipes[sTmp].second),
                                        std::get<1>(mPipes[sTmp].second),
@@ -222,68 +293,121 @@ void AmiPipeHolder::CheckPipes(std::vector<Ticker> &vT,
             }
 
         }
+        // 3.3 if no pipes for it:
         else{
+            // 3.3.1 if set autoload for pipe move it to unconnected list
             if (t.AutoLoad()){
                 vUnconnectedPipes.push_back(t.TickerID());
             }
+            //3.3.2 if not - move it to informants
             else{
                 vInformantsPipes.push_back(t.TickerID());
             }
         }
     }
-    ///
+    // 4. loop throught found pipes
     for(const auto &p:mPipes){
         if (std::get<4>(p.second.second) == 1){
+            // 4.1 create new entry in container with active pipe
             mBindedPipesActive[p.first] = p.second;
         }
         else if (std::get<4>(p.second.second) == 2){
+            // 4.2 create new entry in container with turned off pipe
             mBindedPipesOff[p.first] = p.second;
         }
         else{
+            // 4.3 create new entry in container with pipes do not bonded to any ticker
             mFreePipes[p.first] = p.second;
         }
     }
 }
 //-------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////
+/// \brief Check set of active pipes and close in the broken
+/// \param pActive              - container with binded active pipes
+/// \param pOff                 - container with binded pipes for wich work was turned off
+/// \param queuePipeAnswers     - queue to send activity events
+///
 void AmiPipeHolder::RefreshActiveSockets(dataAmiPipeTask::pipes_type& pActive,
                           dataAmiPipeTask::pipes_type& pOff,
                           BlockFreeQueue<dataAmiPipeAnswer>&queuePipeAnswers)
 {
+
+    ///////////////////////////////////////////////////////////
+    // algorithm
+    // 1. drop check flag for all entry in containers
+    // 2. loop throught active pipes
+    // 2.1 threadlocal exit variable check
+    // 2.2 try to find in halted pipe list and if not find try to connect (halted pipes reconected by hands)
+    // 2.3 search in connected pipes list and if its new - try to connect
+    // 2.4 system dependant connect procedure
+    // 3.1 initialize containers and variables for newly connected pipe
+    // 3.2 send connection event
+    // 4. if cannot connect - erase pipe from connected pipes list
+    // 5. if cannot open file create new entry for halted pipes
+    // 5.1 fill system dependant values for the entry
+    // 5.2 send halt event for pipe
+    // 6. mark connected pipe as checked
+    // 7. mark halted pipe as checked
+    // 8. for entries wich was not checked (ie check flag was not set) - remove from connect list
+    // 8.1 do close for pipe object (ie socket)
+    // 8.2 send disconnect signal depending on is pipe active or not
+    // 8.3 remove variables set for the pipe
+    // 8.4 erase entry in Connected pipe list and do loop
+    // 9. erase absent (ie not checked) entries for halted pipes list
+    ///////////////////////////////////////////////////////////
+
+
+
+    // 1. drop check flag for all entry in containers
     for (auto &m:mPipesHalted){m.second.first =0;}
     for (auto &m:mPipesConnected){m.second.first =0;}
     //
+    // 2. loop throught active pipes
     for(const auto & p:pActive){
+
+        // 2.1 threadlocal exit variable check
         if (this_thread_flagInterrup.isSet()){
             return;
         }
+        // 2.2 try to find in halted pipe list and if not find try to connect (halted pipes reconected by hands)
         auto ItHalted (mPipesHalted.find(p.first));
         if ( ItHalted == mPipesHalted.end()){
+            // 2.3 search in connected pipes list and if its new - try to connect
             auto ItConnected (mPipesConnected.find(p.first));
             if ( ItConnected == mPipesConnected.end()){
                 bool bOpend{false};
                 try{
+                    // 2.4 system dependant connect procedure
 #ifdef _WIN32
-                    mPipesConnected[p.first].first  = 1;
-                    mPipesConnected[p.first].second = {std::get<3>(p.second.second),{}};
-                    mPipesConnected[p.first].second.second.setPipePath(std::get<2>(p.second.second));
+                    // create new entry for the connected pipe and fill pipe information
+                    mPipesConnected[p.first].first  = 1;                                                    // check flag
+                    mPipesConnected[p.first].second = {std::get<3>(p.second.second),{}};                    // store pipe object itself
+                    mPipesConnected[p.first].second.second.setPipePath(std::get<2>(p.second.second));       // store string pipe name
 
+                    // set mode for pipe to work (mode set in constructor)
                     if (iMode == Byte_Nonblocking){
                         mPipesConnected[p.first].second.second.setMode(Win32NamedPipe::ePipeMode_type::Byte_Nonblocking);
                     }
                     else{
                         mPipesConnected[p.first].second.second.setMode(Win32NamedPipe::ePipeMode_type::Message_Nonblocking);
                     }
+                    // try to open pipe (ie socket)
                     mPipesConnected[p.first].second.second.open();
 
+                    // if all is ok proceed
                     if (mPipesConnected[p.first].second.second.good()){
 #else
+                    // plug - not fully implemented
                     std::ifstream file(std::get<2>(p.second.second),std::ios::in);
                     if (file.good()){
                         mPipesConnected[p.first].second = {std::get<3>(p.second.second),
                                                             std::move(file)};
 #endif
+                        // 3.1 initialize containers and variables for newly connected pipe
                         AddUtilityMapEntry(std::get<3>(p.second.second), p.first);
-                        //
+
+                        // 3.2 send connection event
                         dataAmiPipeAnswer answ;
                         answ.SetType(dataAmiPipeAnswer::PipeConnected);
                         answ.SetTickerID(std::get<3>(p.second.second));
@@ -291,6 +415,7 @@ void AmiPipeHolder::RefreshActiveSockets(dataAmiPipeTask::pipes_type& pActive,
                         bOpend = true;
                     }
 #ifdef _WIN32
+                    // 4. if cannot connect - erase pipe from connected pipes list
                     else{
                         auto ItD (mPipesConnected.find(p.first));
                         if (ItD != mPipesConnected.end()){
@@ -303,7 +428,10 @@ void AmiPipeHolder::RefreshActiveSockets(dataAmiPipeTask::pipes_type& pActive,
                     ;
                 }
                 if (!bOpend){
-                    mPipesHalted[p.first].first  = 1;
+                    // 5. if cannot open file create new entry for halted pipes
+                    mPipesHalted[p.first].first  = 1; // set check flag
+
+                    // 5.1 fill system dependant values for the entry
 #ifdef _WIN32
                     Win32NamedPipe file("");
                     mPipesHalted[p.first].second = {std::get<3>(p.second.second),file};
@@ -312,40 +440,46 @@ void AmiPipeHolder::RefreshActiveSockets(dataAmiPipeTask::pipes_type& pActive,
                                                     std::ifstream{}
                                                    };
 #endif
-                    //
+                    // 5.2 send halt event for pipe
                     dataAmiPipeAnswer answ;
                     answ.SetType(dataAmiPipeAnswer::PipeHalted);
                     answ.SetTickerID(std::get<3>(p.second.second));
                     queuePipeAnswers.Push(answ);
                 }
             }
-            else{
+            else{ // 6. mark connected pipe as checked
                 ItConnected->second.first = 1;
             }
         }
-        else{
+        else{ // 7. mark halted pipe as checked
             ItHalted->second.first = 1;
         }
+        // exit if needed
         if (this_thread_flagInterrup.isSet()){
             return;
         }
     }
     //////////////////////////////////////////////////////////
+    // 8. for entries wich was not checked (ie check flag was not set) - remove from connect list
     auto ItConnected = mPipesConnected.begin();
     while (ItConnected != mPipesConnected.end()){
         if (ItConnected->second.first == 0){
             ///
+            // 8.1 do close for pipe object (ie socket)
             ItConnected->second.second.second.close();
-            ///
+
+            // 8.2 send disconnect signal depending on is pipe active or not
             dataAmiPipeAnswer answ;
             if(pOff.find(ItConnected->first)!=pOff.end())    answ.SetType(dataAmiPipeAnswer::PipeOff);
             else                                             answ.SetType(dataAmiPipeAnswer::PipeDisconnected);
 
             answ.SetTickerID(ItConnected->second.second.first);
             queuePipeAnswers.Push(answ);
-            //
+
+            // 8.3 remove variables set for the pipe
             RemoveUtilityMapEntry(ItConnected->second.second.first, ItConnected->first);
-            //
+
+            // 8.4 erase entry in Connected pipe list and do loop
             auto ItNext = std::next(ItConnected);
             mPipesConnected.erase(ItConnected);
             ItConnected = ItNext;
@@ -354,9 +488,10 @@ void AmiPipeHolder::RefreshActiveSockets(dataAmiPipeTask::pipes_type& pActive,
             ItConnected++;
         }
     }
-    //
+    // 9. erase absent (ie not checked) entries for halted pipes list
     auto ItHulted = mPipesHalted.begin();
     while (ItHulted != mPipesHalted.end()){
+        // if check flag do not set - remove
         if (ItHulted->second.first == 0){
 
             auto ItNext = std::next(ItHulted);
@@ -369,6 +504,19 @@ void AmiPipeHolder::RefreshActiveSockets(dataAmiPipeTask::pipes_type& pActive,
     }
 }
 //-------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////
+/// \brief main function to read from connected pipes
+/// read all connected pipes until they have no data
+/// better to be called from its own thread
+/// construct outcoming events with data
+/// exit on this_thread_flagInterrup.isSet()
+/// \param queueFastTasks           - queue for receiving tasks
+/// \param queuePipeAnswers         - queue to form answers
+/// \param queueTrdAnswers          - queue to form answers
+/// \param bCheckMode               - if true then  read begin of data flow and cut full company name from it else usual work
+/// \param BytesRead                - return number of read bytes
+/// \param bWasFullBuffers          - return true if there were more data in pipes buffers
+///
 void AmiPipeHolder::ReadConnectedPipes(BlockFreeQueue<dataFastLoadTask>                    &queueFastTasks,
                                        BlockFreeQueue<dataAmiPipeAnswer>                   &queuePipeAnswers,
                                        BlockFreeQueue<dataBuckgroundThreadAnswer>          &queueTrdAnswers,
@@ -376,6 +524,8 @@ void AmiPipeHolder::ReadConnectedPipes(BlockFreeQueue<dataFastLoadTask>         
                                        int &BytesRead,
                                        bool & bWasFullBuffers)
 {
+    // system and mode dependant selector for work function
+
 #ifdef _WIN32
     if (iMode == AmiPipeHolder::ePipeMode_type::Byte_Nonblocking){
         return ReadConnectedPipes_bytemode_win32(queueFastTasks,queuePipeAnswers,queueTrdAnswers,bCheckMode,BytesRead,bWasFullBuffers);
@@ -402,32 +552,48 @@ void AmiPipeHolder::ReadConnectedPipes(BlockFreeQueue<dataFastLoadTask>         
 //std::map<int,std::chrono::time_point<std::chrono::steady_clock>> mDtActivity;
 //std::map<int,std::time_t> mCurrentSecond;
 //-------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////
+/// \brief Utility to create all needed variables for newly connected pipe
+/// \param iTickerID        - ticker ID in database
+/// \param sBind            - pipe identifier (cut from pipe filename, equal to ticker sign)
+///
 void AmiPipeHolder::AddUtilityMapEntry(int iTickerID, std::string sBind)
 {
+    // defend maps change
     std::unique_lock lk(mutUtility);
 
+    // safe get unique task identifier
     long lTask = aiTaskCounter.load();
     while(!aiTaskCounter.compare_exchange_weak(lTask,lTask + 1)){;}
 
 
-    mBuffer[sBind].resize(iBlockMaxSize);
-    mPointerToWrite[sBind] = 0;
-    mPointerToRead[sBind] = 0;
+    mBuffer[sBind].resize(iBlockMaxSize);                       // buffer to use with pipe
+    mPointerToWrite[sBind] = 0;                                 // pointer to buffer to write (to set to pipe)
+    mPointerToRead[sBind] = 0;                                  // pointer to buffer to read
 
-    mDtActivity[iTickerID] = std::chrono::steady_clock::now();
-    mCurrentSecond[iTickerID] = 0;
+    mDtActivity[iTickerID] = std::chrono::steady_clock::now();  // time to check ticker activity
+    mCurrentSecond[iTickerID] = 0;                              // place to store curren second (there can be many ticks in one second)
 
-    mTask[iTickerID] = lTask;
-    mPacketsCounter[iTickerID] = 1;
+    mTask[iTickerID] = lTask;                                   // unique task identifier for pipe connection
+    mPacketsCounter[iTickerID] = 1;                             // initialize packets counter
 
-    mPaperName[sBind] = "";//getSignFromBind(sBind);
-    mCheckTime[sBind] = std::chrono::steady_clock::now();
+    mPaperName[sBind] = "";//getSignFromBind(sBind);            // company name (not known when init)
+    mCheckTime[sBind] = std::chrono::steady_clock::now();       // time to check activity for pipe
 
 }
 //-------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////
+/// \brief Utility to remove all used variables for deleted pipe entry
+/// \param iTickerID        - ticker ID in database
+/// \param sBind            - pipe identifier (cut from pipe filename, equal to ticker sign)
+/// \param bCheckMode       - mode of pipe work (for check mode here are no some variables)
+///
 void AmiPipeHolder::RemoveUtilityMapEntry(int iTickerID, std::string sBind, bool bCheckMode)
 {
+    // defend maps change
     std::unique_lock lk(mutUtility);
+
+    // delete existing entries from maps
 
     auto ItBuff = mBuffer.find(sBind);
     if (ItBuff != mBuffer.end()){
@@ -686,6 +852,7 @@ bool AmiPipeHolder::ReadPipe_bytemode_win32(Win32NamedPipe &pip,
     return bSuccessfullRead;
 }
 //-------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////
 void AmiPipeHolder::ReadConnectedPipes_bytemode_win32(BlockFreeQueue<dataFastLoadTask>     &queueFastTasks,
                             BlockFreeQueue<dataAmiPipeAnswer>                   &queuePipeAnswers,
                             BlockFreeQueue<dataBuckgroundThreadAnswer>          &queueTrdAnswers,
@@ -1093,6 +1260,11 @@ void AmiPipeHolder::ReadConnectedPipes_bytemode_linux(BlockFreeQueue<dataFastLoa
 }
 
 //-------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////
+/// \brief Read from pipes: linux/messagemode. Not implemented.
+/// \param BytesRead
+/// \param bWasFullBuffers
+///
 void AmiPipeHolder::ReadConnectedPipes_messagemode_linux(BlockFreeQueue<dataFastLoadTask>        &/*queueFastTasks*/,
                                                          BlockFreeQueue<dataAmiPipeAnswer>                   &/*queuePipeAnswers*/,
                                                          BlockFreeQueue<dataBuckgroundThreadAnswer>          &/*queueTrdAnswers*/,
@@ -1101,12 +1273,20 @@ void AmiPipeHolder::ReadConnectedPipes_messagemode_linux(BlockFreeQueue<dataFast
                                                          bool & bWasFullBuffers
                             )
 {
+    // plug - not implemented
+    \
     BytesRead = 0;
     bWasFullBuffers = false;
     return;
 }
 #endif
 //-------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////
+/// \brief Create event to send to log
+/// \param queuePipeAnswers     - queue for messages
+/// \param iTickerID            - ticker id
+/// \param s                    - text to sent
+///
 void AmiPipeHolder::SendToLog      (BlockFreeQueue<dataAmiPipeAnswer> &queuePipeAnswers, const int iTickerID, const std::string &s)
 {
     dataAmiPipeAnswer answ;
@@ -1119,6 +1299,12 @@ void AmiPipeHolder::SendToLog      (BlockFreeQueue<dataAmiPipeAnswer> &queuePipe
     pcout <<s<<"\n";
 }
 //-------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////
+/// \brief Create error event to send to errlog
+/// \param queuePipeAnswers     - queue for messages
+/// \param iTickerID            - ticker id
+/// \param s                    - text to sent
+///
 void AmiPipeHolder::SendToErrorLog (BlockFreeQueue<dataAmiPipeAnswer> &queuePipeAnswers, const int iTickerID, const std::string &s)
 {
     dataAmiPipeAnswer answ;
@@ -1131,6 +1317,16 @@ void AmiPipeHolder::SendToErrorLog (BlockFreeQueue<dataAmiPipeAnswer> &queuePipe
     pcout <<s<<"\n";
 }
 //-------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////
+/// \brief Write buffer to dump file
+/// \param queuePipeAnswers     - queue for messages
+/// \param iTickerID            - ticker id
+/// \param sFileName            - filename to write
+/// \param cBuff                - buffer with data
+/// \param bytes                - bytes to write
+/// \param iReadStart           - info of read start pointer
+/// \param bWriteHeader         - if true then write header
+///
 void AmiPipeHolder::dumpToFile     (BlockFreeQueue<dataAmiPipeAnswer> &queuePipeAnswers,  const int iTickerID, const std::string &sFileName, const  char * cBuff, const size_t bytes, const int iReadStart, const bool bWriteHeader)
 {
     std::filesystem::path pathFile = std::filesystem::absolute(pathCurr/sFileName);
@@ -1175,36 +1371,51 @@ void AmiPipeHolder::dumpToFile     (BlockFreeQueue<dataAmiPipeAnswer> &queuePipe
     }
 }
 //-------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////
+/// \brief Connect to pipe in check mode and get company name from it
+/// \param pFree                - container with not binded with tickers pipes
+/// \param queuePipeAnswers     - queue to answer
+///
 void AmiPipeHolder::AskPipesNames(dataAmiPipeTask::pipes_type &pFree, BlockFreeQueue<dataAmiPipeAnswer> & queuePipeAnswers)
 {
-    //mFreePipesAsked
+    // loop throught free pipes
     for (const auto &p:pFree){
+        // exit if was global interrupt
         if (this_thread_flagInterrup.isSet()){
             return;
         }
+        // check if its new pipe
         if (mPipesFree.find(p.first) == mPipesFree.end()){
             bool bOpend{false};
             try{
+                // system dependant connect
 #ifdef _WIN32
-                mPipesFree[p.first].first  = 1;
-                mPipesFree[p.first].second = {std::get<3>(p.second.second),{}};
-                mPipesFree[p.first].second.second.setPipePath(std::get<2>(p.second.second));
+                // create new pipe entry and fill infos
+                mPipesFree[p.first].first  = 1;                                                 // set check flag
+                mPipesFree[p.first].second = {std::get<3>(p.second.second),{}};                 // set pipe object itself
+                mPipesFree[p.first].second.second.setPipePath(std::get<2>(p.second.second));    // set pipe filename
 
+                // set work mode (set in constructor)
                 if (iMode == Byte_Nonblocking){
                     mPipesFree[p.first].second.second.setMode(Win32NamedPipe::ePipeMode_type::Byte_Nonblocking);
                 }
                 else{
                     mPipesFree[p.first].second.second.setMode(Win32NamedPipe::ePipeMode_type::Message_Nonblocking);
                 }
+
+                // try to open
                 mPipesFree[p.first].second.second.open();
 
+                // if all is ok
                 if (mPipesFree[p.first].second.second.good()){
 #else
+                // plug - not implemented
                 std::ifstream file(std::get<2>(p.second.second),std::ios::in);
                 if (file.good()){
                     mPipesFree[p.first].second = {std::get<3>(p.second.second),
                                                         std::move(file)};
 #endif
+                    // form variables for connected pipe
                     AddUtilityMapEntry(std::get<3>(p.second.second), p.first);
                     //
                     bOpend = true;
@@ -1222,7 +1433,7 @@ void AmiPipeHolder::AskPipesNames(dataAmiPipeTask::pipes_type &pFree, BlockFreeQ
                 ;
             }
             if (!bOpend){
-                //
+                // if cannot connect - return name same as sign
                 dataAmiPipeAnswer answ;
                 answ.SetType(dataAmiPipeAnswer::AskNameAnswer);
                 answ.SetTickerID(std::get<3>(p.second.second));

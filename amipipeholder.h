@@ -44,6 +44,7 @@ inline std::once_flag AmiPipeHolder_call_once_flag;
 ///
 /// A client connection for a socket (channel) uses a single stream for all channels (i.e. for all connections).
 ///
+/// platform depended part fully implemented only on windows
 ///
 class AmiPipeHolder
 {
@@ -65,6 +66,14 @@ protected:
 #else
     typedef std::map<std::string,std::pair<int,std::pair<int,std::ifstream>>> internal_pipes_type;
 #endif
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // internal_pipes_type description:
+    // std::map<std::string,                                                - pipe sign (cut from pipe name and equal to ticker sign)
+    //                      std::pair<int,                                  - check flag (used when check pipe connection)
+    //                                    std::pair<int,                    - ticker ID in database
+    //                                                  Win32NamedPipe>>>   - system dependant pipe object
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////
     // containers for pipes, depends of pipe state
