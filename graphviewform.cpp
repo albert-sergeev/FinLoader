@@ -42,6 +42,7 @@ using milliseconds=std::chrono::duration<double,
 
 
 //---------------------------------------------------------------------------------------------------------------
+// contains main init procedures
 GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::shared_ptr<GraphHolder> hldr, QWidget *parent) :
     QWidget(parent),
     iTickerID{TickerID},
@@ -66,6 +67,7 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
     ui->setupUi(this);
 
     //-------------------------------------------------------------
+    // init fonts for captions
     fontTime.setPixelSize(11);
     fontTime.setBold(false);
     fontTime.setFamily("Times New Roman");
@@ -80,6 +82,9 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
     //-------------------------------------------------------------
     // for ticker
     //-------------------------------------------------------------
+    ////////////////////////////////////////////////////////////////////////////////////////////
+    /// init main interface elements begin
+    ///
     QHBoxLayout *lt1 = new QHBoxLayout();
     lt1->setMargin(0);
     ui->wtCandle->setLayout(lt1);
@@ -126,10 +131,19 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
 //    btnHelp->setToolTip(tr("To panic :)"));
 //    btnHelpR->setToolTip(tr("To panic a little ;)"));
     //-------------------------------------------------------------
+    /// init main interface elements end
+    ////////////////////////////////////////////////////////////////////////////////////////////
+
+    //-------------------------------------------------------------
+    // init memory display widget
+
     indicatorMemo = new Memometer(this);
     indicatorMemo->setValue(0);
     indicatorMemo->setToolTipText(QString(tr("Memory usage: 0")).toStdString());
     //-------------------------------------------------------------
+
+    ////////////////////////////////////////////////////////////////////////////////////////////
+    // init plus/minus buttons
 
     btnScaleHViewPlus       = new PlusButton(true,this);
     btnScaleHViewMinus      = new PlusButton(false,this);
@@ -186,8 +200,13 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
     connect(btnScaleVViewDefault,SIGNAL(clicked()),this,SLOT(slotScaleVViewDefaultClicked()));
     connect(btnScaleVVolumeDefault,SIGNAL(clicked()),this,SLOT(slotScaleVVolumeDefaultClicked()));
 
+    // init plus/minus buttons end
+    ////////////////////////////////////////////////////////////////////////////////////////////
+
 
     //-------------------------------------------------------------
+    // init reference on main data to show
+
     holder = hldr;
     //
     auto It (std::find_if(vTickersLst.begin(),vTickersLst.end(),[&](const Ticker &t){
@@ -203,6 +222,8 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
     lblSign->setText(QString::fromStdString(tTicker.TickerSign()));
     lblSignR->setText(QString::fromStdString(tTicker.TickerSign()));
     //-------------------------------------------------------------------------------------
+    // init geometry params from stored in config ( i.e. from config files)
+
     iSelectedInterval   = tTicker.StoredSelectedInterval();
     dStoredVValue       = tTicker.StoredVValue();
     dHScale             = tTicker.StoredHScale() == 0 ? 1 : tTicker.StoredHScale();
@@ -242,6 +263,7 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
     mVVolumeScale[Bar::eInterval::pMonth]     = tTicker.StoredVVolumeScale(Bar::eInterval::pMonth);
 
     //-------------------------------------------------------------------------------------
+    // initializes scene objects, connectes to views
 
     grScene = new QGraphicsScene();
     ui->grViewQuotes->setScene(grScene);
@@ -277,11 +299,12 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
     connect(ui->grHorizScroll->horizontalScrollBar(),SIGNAL(valueChanged(int)),this,SLOT(slotHorizontalScrollBarValueChanged(int)));
 
     //----------------------------------------------------------------------------
+    // links for changing date/time widgets
     connect(ui->dtBeginDate,SIGNAL(dateTimeChanged(const QDateTime&)),this,SLOT(dateTimeBeginChanged(const QDateTime&)));
     connect(ui->dtEndDate,SIGNAL(dateTimeChanged(const QDateTime&)),this,SLOT(dateTimeEndChanged(const QDateTime&)));
-
-
     //----------------------------------------------------------------------------
+
+    //create event to fill main views
 
     std::time_t dtBegin{0};
     std::time_t dtEnd{0};
@@ -298,6 +321,9 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
             }
         }
     }
+    ////////////////////////////////////////////////////////////////////////////
+    // initializes event handlers etc for interface
+
 
     SetSelectedIntervalToControls();
     connect(ui->btnTick, SIGNAL(clicked()),this,SLOT(slotPeriodButtonChanged()));
@@ -345,6 +371,7 @@ GraphViewForm::GraphViewForm(const int TickerID, std::vector<Ticker> &v, std::sh
 
     ui->grViewL1->installEventFilter(this);
 
+    // init activity watermark
     dtFastShowAverageActivity = std::chrono::steady_clock::now();
 
    // {ThreadFreeCout pcout; pcout<<"const out\n";}
@@ -370,20 +397,47 @@ GraphViewForm::~GraphViewForm()
 //    emit NeedLoadGraph(iTickerID, tBegin, tEnd);
 //}
 //---------------------------------------------------------------------------------------------------------------
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Slot to invalidate range of data in main view to redraw in main ticker view
+/// Main safe method to invalidate views
+/// \param dtBegin  -   begin of invalid interval
+/// \param dtEnd    -   end  of invalid interval
+/// \param bNeedToRescale   - indicator if scene need to be rescaled (for big changes, for example)
+///
 void GraphViewForm::slotInvalidateGraph(std::time_t dtBegin, std::time_t dtEnd, bool bNeedToRescale)
 {
+    // create event to invalidate range of data to show
     queueRepaint.Push({dtBegin,dtEnd,bNeedToRescale});
+
+    // process event
     slotProcessRepaintQueue();
 }
 //---------------------------------------------------------------------------------------------------------------
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Main painting event handler loop
+///
 void GraphViewForm::slotProcessRepaintQueue()
 {
+    ///////////////////////////////////////////////////////////////////////
+    // algorithm:
+    // 1. check event queue, pop and process/loop until empty.
+    //    uses "bSuccess" variable to indicate if can locks data source (if cannot - cancels loop)
+    // 2.1 global repaint event for all type of primitives
+    // 2.2 specialized repaint event, based on stored in event object params
+    // 2.3 specialilzed for fast repaint event option
+    // 3. loop end. If cannot done event (ie data was unaccesseble) - postpone, else check new event
+
+
+
+    // 1. check event queue, pop and process/loop until empty.
+    //    uses "bSuccess" variable to indicate if can locks data source (if cannot - cancels loop)
     bool bSuccess{false};
     auto pData (queueRepaint.Pop(bSuccess));
     while(bSuccess)
     {
-        auto data(*pData.get());
+        auto data(*pData.get());    //get data from ptr
         //////
+        // 2.1 global repaint event for all type of primitives
         if(bSuccess && data.Type == RepainTask::eRepaintType::InvalidateRepaint){
             if (iSelectedInterval == Bar::eInterval::pTick) {
                 bSuccess = RepainInvalidRange<BarTick>(data);
@@ -392,12 +446,14 @@ void GraphViewForm::slotProcessRepaintQueue()
                 bSuccess = RepainInvalidRange<Bar>(data);
             }
         }
+        // 2.2 specialized repaint event, based on storet in event object params
         else if (bSuccess && data.Type & RepainTask::eRepaintType::PaintViewport){
             bool bFrames    = data.Type & RepainTask::eRepaintType::FastFrames;
             bool bBars      = data.Type & RepainTask::eRepaintType::FastBars;
             bool bVolumes   = data.Type & RepainTask::eRepaintType::FastVolumes;
             bSuccess = PaintViewPort(bFrames,bBars,bVolumes,data.bStoreRightPos,data.bInvalidate);
         }
+        // 2.3 specialilzed for fast repaint event option
         else{
             if(bSuccess && (data.Type &(RepainTask::eRepaintType::FastBars | RepainTask::eRepaintType::FastVolumes))){
                 bSuccess = FastPaintBars(data);
@@ -410,6 +466,8 @@ void GraphViewForm::slotProcessRepaintQueue()
             }
         }
         ///////
+        // 3. loop end. If cannot done event (ie data was unaccesseble) - postpone, else check new event
+
         if(!bSuccess){ // if not, postpone for the future
             queueRepaint.Push(data);
         }
@@ -419,10 +477,40 @@ void GraphViewForm::slotProcessRepaintQueue()
     }
 }
 //---------------------------------------------------------------------------------------------------------------
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// main procedure to repaint whole view of form
+/// depending on run environment, rescales scenes, recalculates scales etc
+/// run on start and then if need global repaints
+///
+/// doesn't do the repaint itself, only prepares the scene for it, and then fires the actual draw event.
+///
+/// return true if success, and false if data was locked (ie need to postpone)
+///
 template<typename T>
 bool GraphViewForm::RepainInvalidRange(RepainTask & data)
 {
+    //////////////////////////////////////////////////////////////////////
+    // algorithm:
+    //
+    // 1. lock data whith protecting iterator (because data can be changed in multithreaded environment)
+    // 2. if invalidate data range is empty - exit
+    // 3. calculate min/max period of range and compare with stored for scale changing
+    // 4. check min/max of whole data in holder  for scale changing
+    // 5.1 check if scale for selected interval never was done. If so initialize
+    // 5.2 check if scale (for volume scene) for selected interval never was done. If so initialize
+    // 6. calculate if neсessary clean all
+    // 7.1 do cleaning of invalid range
+    // 7.2 do cleaning of invalid part of view
+    // 8. resize Scene rect
+    // 9. resize Scene rect for Volume
+    // 10. store new size parameters
+    // 11. freeing data defender
+    // 12.1 reposition view to stored coordinates (needed on start, chenging selected interval etc)
+    // 12.2 create repaint event
+    //
+
+
+    // 1. lock data whith protecting iterator (because data can be changed in multithreaded environment)
     bool bSuccess;
     auto It (holder->beginIteratorByDate<T>(iSelectedInterval,Bar::DateAccommodate(data.dtStart,iSelectedInterval),bSuccess));
     if (bSuccess){
@@ -437,9 +525,12 @@ bool GraphViewForm::RepainInvalidRange(RepainTask & data)
 //                pcout <<"data.dtStart: "<<threadfree_gmtime_to_str(&data.dtStart)<<"\n";
 //                pcout <<"data.dtEnd: "<<threadfree_gmtime_to_str(&data.dtEnd)<<"\n";
             }
+            // defender to count active invalidate proceesses
             InvalidateCounterDefender def(aiInvalidateCounter);
+
             auto ItTotalEnd (holder->end<T>());
 
+            // 2. if invalidate data range is empty - exit
             if (It == ItTotalEnd || It.realPosition() > ItEnd.realPosition()) {
                 return true;
             }
@@ -447,6 +538,7 @@ bool GraphViewForm::RepainInvalidRange(RepainTask & data)
             /// \brief ItTotalEnd
             ///{ThreadFreeCout pcout; pcout<<"inv 1";}
 
+            // 3. calculate min/max period of range and compare with stored for scale changing
 
             int iSize =  (int)holder->getViewGraphSize(iSelectedInterval);
             std::time_t tMinDate = holder->getViewGraphDateMin(Bar::eInterval::pTick);
@@ -457,6 +549,7 @@ bool GraphViewForm::RepainInvalidRange(RepainTask & data)
 
             SetMinMaxDateToControls();
 
+            // 4. check min/max of whole data in holder  for scale changing
             auto p = holder->getMinMax(iSelectedInterval,tStoredMinDate,tStoredMaxDate);
 
             double dLowMin  = std::get<0>(p);
@@ -470,6 +563,7 @@ bool GraphViewForm::RepainInvalidRange(RepainTask & data)
             if (dStoredVolumeLowMin == 0  || dStoredVolumeLowMin  > dVolumeLowMin)    { dStoredVolumeLowMin = dVolumeLowMin;      }
             if (dStoredVolumeHighMax == 0 || dStoredVolumeHighMax < dVolumeHighMax)   { dStoredVolumeHighMax = dVolumeHighMax;    }
 
+            // 5.1 check if scale for selected interval never was done. If so initialize
             if (mVScale.at(iSelectedInterval) == 0){
                 bNeedRescale = true;
                 if ((dStoredHighMax - dStoredLowMin) <= 0){
@@ -480,6 +574,7 @@ bool GraphViewForm::RepainInvalidRange(RepainTask & data)
                 }
             }
 
+            // 5.2 check if scale (for volume scene) for selected interval never was done. If so initialize
             if (mVVolumeScale.at(iSelectedInterval) == 0){              
                 bNeedRescaleVolume = true;
                 if ((dStoredVolumeHighMax /*- dStoredVolumeLowMin*/) <= 0){
@@ -490,7 +585,8 @@ bool GraphViewForm::RepainInvalidRange(RepainTask & data)
                 }
             }
 
-            // if neсessary clean all
+
+            // 6. calculate if neсessary clean all
             bool bWasTotalErase{false};
             if (    tStoredMinDate == 0
                 || tMinDate != tStoredMinDate
@@ -508,7 +604,7 @@ bool GraphViewForm::RepainInvalidRange(RepainTask & data)
                 bWasTotalErase = true;
             }
 
-            // clean invalid range
+            // 7.1 do cleaning of invalid range
             int iEnd = (int)ItEnd.realPosition() + 1;
             iEnd = iEnd > iSize ? iSize : iEnd;
             //
@@ -516,6 +612,7 @@ bool GraphViewForm::RepainInvalidRange(RepainTask & data)
             EraseLinesMid(mShowedVolumes,       (int)It.realPosition(),iEnd, ui->grViewVolume->scene());
 
 
+            // 7.2 do cleaning of invalid part of view
             if (!bWasTotalErase && (int)It.realPosition() < iEnd){
 
                 qreal x1 = (It.realPosition() + iLeftShift ) * BarGraphicsItem::BarWidth * dHScale;
@@ -532,7 +629,7 @@ bool GraphViewForm::RepainInvalidRange(RepainTask & data)
 
             }
 
-            // resize Scene rect
+            // 8. resize Scene rect
             if (iStoredMaxSize !=iSize || bNeedRescale || data.bNeedToRescale){
 
 
@@ -554,7 +651,7 @@ bool GraphViewForm::RepainInvalidRange(RepainTask & data)
                 ReDoHLines();
             }
 
-            // resize Scene rect for Volume
+            // 9. resize Scene rect for Volume
             if (iStoredMaxSize !=iSize || bNeedRescale || data.bNeedToRescale){
 
                 int iNewVolumeSceneH = (mVVolumeScale.at(iSelectedInterval) * (dStoredVolumeHighMax - dStoredVolumeLowMin) + iVolumeViewPortHighStrip);
@@ -570,13 +667,16 @@ bool GraphViewForm::RepainInvalidRange(RepainTask & data)
                 ui->grViewVolume->scene()->setSceneRect(newRec);
             }
 
+            // 10. store new size parameters
             iStoredMaxSize  = iSize;
             tStoredMinDate  = tMinDate;
             tStoredMaxDate  = tMaxDate;
 
             //---------------------------
+            // 11. freeing data defender
             def.free();
 
+            // 12.1 reposition view to stored coordinates (needed on start, chenging selected interval etc)
             if (!this->isHidden()){
 
                 if (tStoredRightPointPosition != 0){
@@ -587,6 +687,8 @@ bool GraphViewForm::RepainInvalidRange(RepainTask & data)
                 }
                 SetSliderToVertPos(dStoredVValue);
             }
+
+            // 12.2 create repaint event
             PaintViewPort   (true,true,true, false,true);
         }
     }
@@ -594,6 +696,11 @@ bool GraphViewForm::RepainInvalidRange(RepainTask & data)
 }
 
 //---------------------------------------------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Resize event
+///        used to reposition dinamic widgets
+/// \param event
+///
 void GraphViewForm::resizeEvent(QResizeEvent *event)
 {
     InvalidateCounterDefender def(aiInvalidateCounter);
@@ -604,6 +711,10 @@ void GraphViewForm::resizeEvent(QResizeEvent *event)
     QWidget::resizeEvent(event);
 }
 //---------------------------------------------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief ShowEvent - handled for correct initial position dynamic widgets
+/// \param event
+///
 void GraphViewForm::showEvent(QShowEvent *event)
 {
 
@@ -623,6 +734,9 @@ void GraphViewForm::showEvent(QShowEvent *event)
     QWidget::showEvent(event);
 }
 //---------------------------------------------------------------------------------------------------------------
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Event used for resize dependants scenes
+///
 void GraphViewForm::slotSceneRectChanged( const QRectF & rect)
 {
     RefreshHLines();
@@ -645,31 +759,44 @@ void GraphViewForm::slotSceneRectChanged( const QRectF & rect)
     ui->grHorizScroll->scene()->setSceneRect(newRecHScScrl);
 }
 //---------------------------------------------------------------------------------------------------------------
+// used for synchronous change of dependant scrollbars value
+// and set stored VValue for future use
 void GraphViewForm::slotVerticalScrollBarValueChanged(int iV)
 {
 
+    // synchronize scrollbars value
     ui->grViewL1->verticalScrollBar()->setValue(iV);
     ui->grViewR1->verticalScrollBar()->setValue(iV);
     ui->grViewQuotes->verticalScrollBar()->setValue(iV);
     ui->grVertScroll->verticalScrollBar()->setValue(iV);
 
+    // if there are no chengers - update stored value
     if(iStoredMaxSize > 0 && aiInvalidateCounter == 0){
         dStoredVValue = sceneYtoRealY(-iV) - (sceneYtoRealY(-iV) - sceneYtoRealY(-iV - ui->grViewQuotes->verticalScrollBar()->pageStep())) / 2 ;
     }
 }
 //---------------------------------------------------------------------------------------------------------------
+// repaint scene objects depend on scrollbar value
+// also used for synchronous change of dependant scrollbars value
 void GraphViewForm::slotHorizontalScrollBarValueChanged(int iH)
 {
 
+    // synchronize scrollbars value
     ui->grViewScaleUpper->horizontalScrollBar()->setValue(iH);
     ui->grViewVolume->horizontalScrollBar()->setValue(iH);
     ui->grViewScaleLower->horizontalScrollBar()->setValue(iH);
     ui->grViewQuotes->horizontalScrollBar()->setValue(iH);
     ui->grHorizScroll->horizontalScrollBar()->setValue(iH);
 
+    // repaint scene (repaints only caught in the view graphics primitives)
     PaintViewPort(true,true,true,true,false);
 }
 //---------------------------------------------------------------------------------------------------------------
+// utility for voluntary broke vertical field of viewed part of scene on horisontal stripes
+// return height of stripes and their count. two last values not used
+//
+// used to draw a horizontal grid
+//
 std::tuple<int,int,int,int> GraphViewForm::getHPartStep(double realH, double viewportH)
 {
     int iUpCount{0};
@@ -727,6 +854,20 @@ std::tuple<int,int,int,int> GraphViewForm::getHPartStep(double realH, double vie
     return  {iBaseH,iUpCount,0,0};
 }
 //---------------------------------------------------------------------------------------------------------------
+////////////////////////////////////////////////////////////////////////
+/// \brief Draw graphics primitive (Double) to scene
+///
+/// \param idx          -   index of item (corresponds to tick index in database)
+/// \param x            -   scene [x] coordinate
+/// \param y            -   scene [y] coordinate
+/// \param n            -   number to paint
+/// \param alignH       -   horisontal alignment of text
+/// \param alignV       -   vertical alignment of text
+/// \param mM           -   map object to store pointer to QGraphicsItem object
+/// \param scene        -   scene object to paint
+/// \param font         -   font to use
+/// \param zvalue       -   layer of scene to place (not implemented)
+///
 void GraphViewForm::DrawDoubleToScene(const int idx,const  qreal x ,const  qreal y,const double n,  Qt::AlignmentFlag alignH, Qt::AlignmentFlag alignV,
                                     std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QFont & font, const qreal zvalue)
 {
@@ -760,6 +901,20 @@ void GraphViewForm::DrawDoubleToScene(const int idx,const  qreal x ,const  qreal
 }
 
 //---------------------------------------------------------------------------------------------------------------
+////////////////////////////////////////////////////////////////////////
+/// \brief Draw graphics primitive (int) to scene
+///
+/// \param idx          -   index of item (corresponds to tick index in database)
+/// \param x            -   scene [x] coordinate
+/// \param y            -   scene [y] coordinate
+/// \param n            -   number to paint
+/// \param alignH       -   horisontal alignment of text
+/// \param alignV       -   vertical alignment of text
+/// \param mM           -   map object to store pointer to QGraphicsItem object
+/// \param scene        -   scene object to paint
+/// \param font         -   font to use
+/// \param zvalue       -   layer of scene to place (not implemented)
+///
 void GraphViewForm::DrawIntToScene(const int idx,const  qreal x,const  qreal y,const  int n, Qt::AlignmentFlag alignH, Qt::AlignmentFlag alignV,
                                     std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QFont & font, const qreal zvalue)
 {
@@ -789,6 +944,20 @@ void GraphViewForm::DrawIntToScene(const int idx,const  qreal x,const  qreal y,c
 
 }
 //---------------------------------------------------------------------------------------------------------------
+////////////////////////////////////////////////////////////////////////
+/// \brief Draw graphics primitive (time) to scene
+///
+/// \param idx          -   index of item (corresponds to tick index in database)
+/// \param x            -   scene [x] coordinate
+/// \param y            -   scene [y] coordinate
+/// \param tmT          -   time to paint
+/// \param alignH       -   horisontal alignment of text
+/// \param alignV       -   vertical alignment of text
+/// \param mM           -   map object to store pointer to QGraphicsItem object
+/// \param scene        -   scene object to paint
+/// \param font         -   font to use
+/// \param zvalue       -   layer of scene to place (not implemented)
+///
 void GraphViewForm::DrawTimeToScene(const int idx,const  qreal x,const  qreal y,const  std::tm & tmT,
                                     std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QFont & font, const qreal zvalue)
 {
@@ -806,6 +975,21 @@ void GraphViewForm::DrawTimeToScene(const int idx,const  qreal x,const  qreal y,
 
 }
 //---------------------------------------------------------------------------------------------------------------
+////////////////////////////////////////////////////////////////////////
+/// \brief Draw graphics primitive (Intermittent Line) to scene (specialized for time parameter)
+///
+/// \param idx          -   index of item (corresponds to tick index in database)
+/// \param x1           -   scene [x1] coordinate
+/// \param y1           -   scene [x2] coordinate
+/// \param x2           -   scene [y1] coordinate
+/// \param y2           -   scene [y2] coordinate
+/// \param mM           -   map object to store pointer to QGraphicsItem object
+/// \param scene        -   scene object to paint
+/// \param pen          -   pen to use
+/// \param t            -   time to showing in tooltip
+/// \param bHasTooltip  -   indicator of showing tooltip
+/// \param zvalue       -   layer of scene to place
+///
 void GraphViewForm::DrawIntermittentLineToScene(const int idx,const  qreal x1,const  qreal y1,const qreal x2,const  qreal y2,
                      std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QPen & pen,
                      const  std::time_t t, bool bHasTooltip, const qreal zvalue)
@@ -818,6 +1002,21 @@ void GraphViewForm::DrawIntermittentLineToScene(const int idx,const  qreal x1,co
     DrawIntermittentLineToScene(idx,x1,y1,x2,y2,mM,scene, pen,ss.str(),  bHasTooltip,zvalue);
 }
 //---------------------------------------------------------------------------------------------------------------
+////////////////////////////////////////////////////////////////////////
+/// \brief Draw graphics primitive (Intermittent Line) to scene (specialized for string for tooltip parameter)
+///
+/// \param idx          -   index of item (corresponds to tick index in database)
+/// \param x1           -   scene [x1] coordinate
+/// \param y1           -   scene [x2] coordinate
+/// \param x2           -   scene [y1] coordinate
+/// \param y2           -   scene [y2] coordinate
+/// \param mM           -   map object to store pointer to QGraphicsItem object
+/// \param scene        -   scene object to paint
+/// \param pen          -   pen to use
+/// \param sToolTip     -   string to showing in tooltip
+/// \param bHasTooltip  -   indicator of showing tooltip
+/// \param zvalue       -   layer of scene to place
+///
 void GraphViewForm::DrawIntermittentLineToScene(const int idx,const  qreal x1,const  qreal y1,const qreal x2,const  qreal y2,
                      std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QPen & pen,
                      const  std::string sToolTip, bool bHasTooltip, const qreal zvalue)
@@ -858,6 +1057,21 @@ void GraphViewForm::DrawIntermittentLineToScene(const int idx,const  qreal x1,co
 }
 
 //---------------------------------------------------------------------------------------------------------------
+////////////////////////////////////////////////////////////////////////
+/// \brief Draw graphics primitive (Solid Line) to scene (specialized for time parameter)
+///
+/// \param idx          -   index of item (corresponds to tick index in database)
+/// \param x1           -   scene [x1] coordinate
+/// \param y1           -   scene [x2] coordinate
+/// \param x2           -   scene [y1] coordinate
+/// \param y2           -   scene [y2] coordinate
+/// \param mM           -   map object to store pointer to QGraphicsItem object
+/// \param scene        -   scene object to paint
+/// \param pen          -   pen to use
+/// \param t            -   time to showing in tooltip
+/// \param bHasTooltip  -   indicator of showing tooltip
+/// \param zvalue       -   layer of scene to place
+///
 void GraphViewForm::DrawLineToScene(const int idx,const  qreal x1,const  qreal y1,const qreal x2,const  qreal y2,
                                     std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene,
                                     const QPen & pen, const  std::time_t t, bool bHasTooltip, const qreal zvalue)
@@ -869,6 +1083,21 @@ void GraphViewForm::DrawLineToScene(const int idx,const  qreal x1,const  qreal y
     DrawLineToScene(idx,x1,y1,x2,y2,mM, scene,pen,ss.str(), bHasTooltip,zvalue);
 }
 //---------------------------------------------------------------------------------------------------------------
+////////////////////////////////////////////////////////////////////////
+/// \brief Draw graphics primitive (Solid Line) to scene (specialized for string for tooltip parameter)
+///
+/// \param idx          -   index of item (corresponds to tick index in database)
+/// \param x1           -   scene [x1] coordinate
+/// \param y1           -   scene [x2] coordinate
+/// \param x2           -   scene [y1] coordinate
+/// \param y2           -   scene [y2] coordinate
+/// \param mM           -   map object to store pointer to QGraphicsItem object
+/// \param scene        -   scene object to paint
+/// \param pen          -   pen to use
+/// \param sToolTip     -   string to showing in tooltip
+/// \param bHasTooltip  -   indicator of showing tooltip
+/// \param zvalue       -   layer of scene to place
+///
 void GraphViewForm::DrawLineToScene(const int idx,const  qreal x1,const  qreal y1,const qreal x2,const  qreal y2,
                      std::map<int,std::vector<QGraphicsItem *>>& mM, QGraphicsScene *scene, const QPen & pen,
                      const  std::string sToolTip, bool bHasTooltip, const qreal zvalue)
@@ -886,6 +1115,13 @@ void GraphViewForm::DrawLineToScene(const int idx,const  qreal x1,const  qreal y
         item->setToolTip(QString::fromStdString(sToolTip));
 }
 //---------------------------------------------------------------------------------------------------------------
+////////////////////////////////////////////////////////////////////////
+/// utility for erase range of invalid object in container of graphics primitives
+/// erase middle range
+/// index corresponds to tick index in database
+///
+/// !removes graphics objects from scene!
+///
 template<typename T>
 void GraphViewForm::EraseLinesMid(T& mM, int iStart,int iEnd, QGraphicsScene *scene)
 //void GraphViewForm::EraseLinesMid(std::map<int,std::vector<QGraphicsItem *>>& mM, int iStart,int iEnd, QGraphicsScene *scene)
@@ -920,6 +1156,13 @@ void GraphViewForm::EraseLinesMid(T& mM, int iStart,int iEnd, QGraphicsScene *sc
     }
 }
 //---------------------------------------------------------------------------------------------------------------
+////////////////////////////////////////////////////////////////////////
+/// utility for erase range of invalid object in container of graphics primitives
+/// erase lower range
+/// index corresponds to tick index in database
+///
+/// !removes graphics objects from scene!
+///
 template<typename T>
 void GraphViewForm::EraseLinesLower(T& mM, int iStart, QGraphicsScene * scene)
 //void GraphViewForm::EraseLinesLower(std::map<int,std::vector<QGraphicsItem *>>& mM, int iStart, QGraphicsScene * scene)
@@ -949,6 +1192,13 @@ void GraphViewForm::EraseLinesLower(T& mM, int iStart, QGraphicsScene * scene)
     }
 }
 //---------------------------------------------------------------------------------------------------------------
+////////////////////////////////////////////////////////////////////////
+/// utility for erase range of invalid object in container of graphics primitives
+/// erase upper range
+/// index corresponds to tick index in database
+///
+/// !removes graphics objects from scene!
+///
 template<typename T>
 void GraphViewForm::EraseLinesUpper(T& mM, int iEnd, QGraphicsScene *scene)
 //void GraphViewForm::EraseLinesUpper(std::map<int,std::vector<QGraphicsItem *>>& mM, int iEnd, QGraphicsScene *scene)
@@ -977,6 +1227,9 @@ void GraphViewForm::EraseLinesUpper(T& mM, int iEnd, QGraphicsScene *scene)
     }
 }
 //---------------------------------------------------------------------------------------------------------------
+////////////////////////////////////////////////////////////////////////
+/// Method to invalidate all utility scenes
+///
 void GraphViewForm::InvalidateScenes()
 {
     ui->grViewQuotes->scene()->invalidate(ui->grViewQuotes->scene()->sceneRect());
@@ -987,13 +1240,20 @@ void GraphViewForm::InvalidateScenes()
 
 }
 //---------------------------------------------------------------------------------------------------------------
+////////////////////////////////////////////////////////////////////////
+/// \brief Event handler for plus/minus button press. Changes horisontal scale
+///
+/// \param bPlus        - type of button press (plus or minus)
+///
 void GraphViewForm::slotHScaleQuotesClicked(bool bPlus)
 {
+    // calculate new scale
     if (dHScale ==0) dHScale = 1.0;
     if (dHScale > 0.5 || bPlus){
         if (bPlus) dHScale *= 1.1;
         else dHScale *= 0.9;
 
+        // use specialized handler
         slotSetNewHScaleQuotes(dHScale);
 
 //        Erase();
@@ -1023,12 +1283,23 @@ void GraphViewForm::slotHScaleQuotesClicked(bool bPlus)
     }
 }
 //---------------------------------------------------------------------------------------------------------------
-
+////////////////////////////////////////////////////////////////////////
+/// \brief Event handler scale change
+///
+/// \param dNewScale    - new scale
+///
 void GraphViewForm::slotSetNewHScaleQuotes(double dNewScale)
 {
+    //---------------------------------------------------
+    //store new dcale
     dHScale = dNewScale;
 
+    //---------------------------------------------------
+    // clear all
     Erase();
+
+    //---------------------------------------------------
+    // recalculate new scene geometry
 
     int iNewWidth =  (iStoredMaxSize + iLeftShift + iRightShift) * BarGraphicsItem::BarWidth * dHScale;
 
@@ -1036,29 +1307,43 @@ void GraphViewForm::slotSetNewHScaleQuotes(double dNewScale)
                   iNewWidth  ,
                   ui->grViewQuotes->scene()->sceneRect().height()
                   );
+    //---------------------------------------------------
+    // set new geometry
     disconnect(ui->grHorizScroll->horizontalScrollBar(),SIGNAL(valueChanged(int)),this,SLOT(slotHorizontalScrollBarValueChanged(int)));
     grScene->setSceneRect(newRec);
     connect(ui->grHorizScroll->horizontalScrollBar(),SIGNAL(valueChanged(int)),this,SLOT(slotHorizontalScrollBarValueChanged(int)));
+    //---------------------------------------------------
 
+    // create event to paint core data
     PaintViewPort(true,true,true,false,false);
 
+    //---------------------------------------------------
+    // reposition view
     if (tStoredRightPointPosition != 0){
         SetSliderToPos(tStoredRightPointPosition, iStoredRightAggregate);
     }
     else{
         SetSliderToPos(tStoredMaxDate, iRightShift);
     }
-
-
+    //---------------------------------------------------
+    // invalidate views to redraw
     ui->grViewQuotes->scene()->invalidate(ui->grViewQuotes->sceneRect());
     ui->grViewVolume->scene()->invalidate(ui->grViewVolume->sceneRect());
 
+    //---------------------------------------------------
+    // show/hide scale button depending on scale is default or not
     if (dHScale == 1) btnScaleHViewDefault->hide();
     else btnScaleHViewDefault->show();
 }
 //---------------------------------------------------------------------------------------------------------------
+////////////////////////////////////////////////////////////////////////
+/// \brief Event handler vertical scale change
+///
+/// \param bPlus        - type of button press (plus or minus)
+///
 void GraphViewForm::slotVScaleQuotesClicked(bool bPlus)
 {
+    // calculate new scale for interval
     int iNewViewPortH = (mVScale.at(iSelectedInterval) * (dStoredHighMax - dStoredLowMin)  + iViewPortLowStrip + iViewPortHighStrip );
     double dNewScale = mVScale[iSelectedInterval];
     if (dNewScale == 0) dNewScale = 1.0;
@@ -1067,25 +1352,42 @@ void GraphViewForm::slotVScaleQuotesClicked(bool bPlus)
         if (bPlus) dNewScale *= 1.1;
         else dNewScale *= 0.9;
 
+        // use specialized handler
         slotSetNewVScaleQuotes(dNewScale);
     }
 }
 //---------------------------------------------------------------------------------------------------------------
+////////////////////////////////////////////////////////////////////////
+/// \brief Event handler vertical scale change
+///
+/// \param dNewScale    - new scale
+///
 void GraphViewForm::slotSetNewVScaleQuotes(double dNewScale)
 {
+    //---------------------------------------------------
+    // defender for invalidators counter
     InvalidateCounterDefender def(aiInvalidateCounter);
 
+    //---------------------------------------------------
+    // set new scale
     mVScale[iSelectedInterval] = dNewScale;
 
     //int iNewViewPortH = (mVScale.at(iSelectedInterval) * (dStoredHighMax - dStoredLowMin)  + iViewPortLowStrip + iViewPortHighStrip );
 
+    //---------------------------------------------------
+    // clear all
     EraseFrames();
     EraseBars();
     EraseMovingAverages();
     RefreshHLines();
+    //---------------------------------------------------
+    // send signal to repaint
 
     ui->grViewL1->scene()->invalidate(ui->grViewL1->sceneRect());
     ui->grViewR1->scene()->invalidate(ui->grViewR1->sceneRect());
+
+    //---------------------------------------------------
+    // calculate new geometry
 
     int iNewViewPortH = (mVScale.at(iSelectedInterval) * (dStoredHighMax - dStoredLowMin)  + iViewPortLowStrip + iViewPortHighStrip );
 
@@ -1097,22 +1399,33 @@ void GraphViewForm::slotSetNewVScaleQuotes(double dNewScale)
                   ui->grViewQuotes->scene()->sceneRect().width()  ,
                   iNewViewPortH
                   );
+    //---------------------------------------------------
+    // set new geometry
     disconnect(ui->grHorizScroll->horizontalScrollBar(),SIGNAL(valueChanged(int)),this,SLOT(slotHorizontalScrollBarValueChanged(int)));
     grScene->setSceneRect(newRec);
     connect(ui->grHorizScroll->horizontalScrollBar(),SIGNAL(valueChanged(int)),this,SLOT(slotHorizontalScrollBarValueChanged(int)));
-
-
-
+    //---------------------------------------------------
+    // free invalidator counter
     def.free();
+    //---------------------------------------------------
+    // create event to repaint core data
     PaintViewPort(true,true,false,false,false);
-
+    //---------------------------------------------------
+    // send signal to repaint
     ui->grViewQuotes->scene()->invalidate(ui->grViewQuotes->sceneRect());
-
+    //---------------------------------------------------
+    // reposition viewpoint
     SetSliderToVertPos(dStoredVValue);
 }
 //---------------------------------------------------------------------------------------------------------------
+////////////////////////////////////////////////////////////////////////
+/// \brief Event handler vertical scale change (for volume scene)
+///
+/// \param bPlus        - type of button press (plus or minus)
+///
 void GraphViewForm::slotVScaleVolumeClicked(bool bPlus)
 {
+    // calculate new scale
 
     double dNewScale = mVVolumeScale[iSelectedInterval];
 
@@ -1120,15 +1433,27 @@ void GraphViewForm::slotVScaleVolumeClicked(bool bPlus)
     if (bPlus) dNewScale *= 1.1;
     else dNewScale *= 0.9;
 
+    // use specialized handler
     slotSetNewVScaleVolume(dNewScale);
 }
 //---------------------------------------------------------------------------------------------------------------
+////////////////////////////////////////////////////////////////////////
+/// \brief Event handler vertical scale change (for volume scene)
+///
+/// \param dNewScale    - new scale
+///
 void GraphViewForm::slotSetNewVScaleVolume(double dNewScale){
 
+    //---------------------------------------------------
+    // set new scale
     mVVolumeScale[iSelectedInterval] = dNewScale;
 
+    //---------------------------------------------------
+    // erase primitives for volume scene
     EraseLinesLower(mShowedVolumes,        0, ui->grViewVolume->scene());
 
+    //---------------------------------------------------
+    // calculate new geometry
     int iNewVolumeSceneH = (mVVolumeScale.at(iSelectedInterval) * (dStoredVolumeHighMax - dStoredVolumeLowMin) + iVolumeViewPortHighStrip);
     if (ui->grViewVolume->maximumHeight() > iNewVolumeSceneH){
         iNewVolumeSceneH = ui->grViewVolume->maximumHeight();
@@ -1139,13 +1464,20 @@ void GraphViewForm::slotSetNewVScaleVolume(double dNewScale){
                   iNewVolumeSceneH
                   );
 
+    //---------------------------------------------------
+    // set new geometry
     ui->grViewVolume->scene()->setSceneRect(newRec);
-
+    //---------------------------------------------------
+    // create event to repaimt volume data
     PaintViewPort(false,false,true,false,false);
-
+    //---------------------------------------------------
+    // send dignal to repaint
     ui->grViewVolume->scene()->invalidate(ui->grViewVolume->sceneRect());
 }
 //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Erase all graphics objects (from graphics scenes too)
+///
 void GraphViewForm::Erase()
 {
     EraseFrames();
@@ -1157,15 +1489,24 @@ void GraphViewForm::Erase()
     stFastShowAverages.clear();
 }
 //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Erase time captions
+///
 void GraphViewForm::EraseTimeScale(){
     mTimesScale.clear();
 }
 //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Erase bars (ie ticks)
+///
 void GraphViewForm::EraseBars()
 {
     EraseLinesLower(mShowedGraphicsBars,  0, ui->grViewQuotes->scene());
 }
 //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Erase moving average curving lines
+///
 void GraphViewForm::EraseMovingAverages()
 {
 //    EraseLinesLower(mMovingBlue,    0, ui->grViewQuotes->scene());
@@ -1180,6 +1521,9 @@ void GraphViewForm::EraseMovingAverages()
     if (pathGreen){grScene->removeItem(pathGreen); pathGreen = nullptr;}
 }
 //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Erase  graphics objects on volume scene
+///
 void GraphViewForm::EraseVolumes()
 {
 //    ThreadFreeCout pcout;
@@ -1188,6 +1532,9 @@ void GraphViewForm::EraseVolumes()
     EraseLinesLower(mShowedVolumes,  0, ui->grViewVolume->scene());
 }
 //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Erase all frames
+///
 void GraphViewForm::EraseFrames()
 {
     EraseInvariantFrames(true,false);
@@ -1204,6 +1551,12 @@ void GraphViewForm::EraseFrames()
 
 }
 //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Erase  frames (Invariant part of them)
+///
+/// \param bHorizontal      -   horisontal/vertical part
+/// \param bRepain          -   repaint or not
+///
 void GraphViewForm::EraseInvariantFrames      (bool bHorizontal,bool bRepain){
 
     if (bHorizontal){
@@ -1236,6 +1589,9 @@ void GraphViewForm::EraseInvariantFrames      (bool bHorizontal,bool bRepain){
     }
 }
 //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Set values to date/time range widgets
+///
 void GraphViewForm::SetMinMaxDateToControls()
 {
     {
@@ -1254,6 +1610,12 @@ void GraphViewForm::SetMinMaxDateToControls()
     }
 }
 //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Handler to process changing of begin time of data range
+///
+/// if needed new data - auto loads them from database
+/// if chosed shorter period - asks user to unload from memory unused part
+///
 void GraphViewForm::dateTimeBeginChanged(const QDateTime&)
 {
 
@@ -1292,6 +1654,13 @@ void GraphViewForm::dateTimeBeginChanged(const QDateTime&)
     }
 }
 //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Handler to process changing of end time of data range
+///
+/// if needed new data - auto loads them from database
+/// if chosed shorter period - do nothing
+///
+
 void GraphViewForm::dateTimeEndChanged(const QDateTime&)
 {
     const QDate tmD(ui->dtEndDate->date());
@@ -1316,6 +1685,15 @@ void GraphViewForm::dateTimeEndChanged(const QDateTime&)
     }
 }
 //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Set frames visibility. Used when user change view settings from menu etc.
+/// \param tuple:
+///     1.  -   left vertical scale
+///     2.  -   right vertical scale
+///     3.  -   upper horisontal scale
+///     4.  -   lower horisontal scale
+///     5.  -   volume view
+///
 void GraphViewForm::setFramesVisibility(std::tuple<bool,bool,bool,bool,bool> tp)
 {
 
@@ -1343,11 +1721,15 @@ void GraphViewForm::setFramesVisibility(std::tuple<bool,bool,bool,bool,bool> tp)
     btnScaleVVolumePlus->setVisible(bVolume);
     btnScaleVVolumeMinus->setVisible(bVolume);
 
+    // reposition dynamic widgets
     RepositionPlusMinusButtons();
     ResizeMemometer();
 
 }
 //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Reposition plus/minus dynamic buttons depending on hidden/showed views
+///
 void GraphViewForm::RepositionPlusMinusButtons()
 {
     QPoint pQ   = ui->grViewQuotes->pos();
@@ -1391,8 +1773,14 @@ void GraphViewForm::RepositionPlusMinusButtons()
     btnScaleVVolumeDefault->move  (rX - btnScaleVVolumeDefault->width() - 15 - 5 + 1, pV.y() + 10 );
 }
 //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Handler of event when user change viewed time interval
+///
 void GraphViewForm::slotPeriodButtonChanged()
 {
+    //----------------------------------------------------------------------
+    // determine new interval
+
     Bar::eInterval iNewInterval{Bar::eInterval::pUndefined};
 
     if (ui->btnTick->isChecked())       {iNewInterval = Bar::eInterval::pTick;     }
@@ -1410,10 +1798,13 @@ void GraphViewForm::slotPeriodButtonChanged()
     else{
         throw std::runtime_error("No period button selected!");
     }
-    //
+    //----------------------------------------------------------------------
+    // calculate if necessary new position for horizontal scrollbar, in time coordinates
     if (tStoredRightPointPosition !=0 && iSelectedInterval <  iNewInterval){
       tStoredRightPointPosition = Bar::DateAccommodate(tStoredRightPointPosition,iNewInterval,true);
     }
+    //----------------------------------------------------------------------
+    // reinit geometry and erase all primitives
 
     iSelectedInterval =  iNewInterval;
 
@@ -1424,11 +1815,16 @@ void GraphViewForm::slotPeriodButtonChanged()
     iStoredMaxSize          = 0;
     /////
     Erase();
+    //----------------------------------------------------------------------
 
+    // global repaint
     slotInvalidateGraph(tStoredMinDate, tStoredMaxDate,true);
 
 }
 //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Init state of pressed button for selected interval (used on loading)
+///
  void GraphViewForm::SetSelectedIntervalToControls()
  {
      switch (iSelectedInterval) {
@@ -1449,13 +1845,28 @@ void GraphViewForm::slotPeriodButtonChanged()
  }
 //---------------------------------------------------------------------------------------------------------------
 //---------------------------------------------------------------------------------------------------------------
+ ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+ /// \brief Do repaint based on desired type and send event to  processing loop if nessesuary:
+ ///        if it's already called from invalidate procedure - create repaint object and send task
+ ///        else do repaint directly.
+ /// \param bFrames         -   repaint frames
+ /// \param bBars           -   repaint bars
+ /// \param bVolumes        -   repaint volumes
+ /// \param bStoreRightPos  -   store horisontal scrollbar position
+ /// \param bInvalidate     -   invalidate scene (do scene object internal repaint)
+ /// \return                -   true if called directly, false if was forced to create event
+ ///
+ /// This need to break dependency between different processes (data core can be locked in multithreaded environment)
+ ///
  bool GraphViewForm::PaintViewPort   (bool bFrames ,bool bBars ,bool bVolumes, bool bStoreRightPos, bool bInvalidate)
  {
+     // 1. in direct call - do repaint
      if (aiInvalidateCounter == 0){
          auto iRange = getViewPortRangeToHolder();
          PaintViewPort   (iRange.first/*iBeg*/,iRange.second/* iEnd*/, bFrames, bBars, bVolumes,bStoreRightPos,bInvalidate);
          return true;
      }
+     // 2. when called from another invalidate task - create repaint event
      else{
          RepainTask task;
          task.Type = RepainTask::eRepaintType::PaintViewport;
@@ -1476,6 +1887,17 @@ void GraphViewForm::slotPeriodButtonChanged()
      }
  }
  //---------------------------------------------------------------------------------------------------------------
+ ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+ /// \brief PaintViewPort specialization, always creating event (does not do repaint directly). Needed data range as parameter.
+ ///
+ /// \param iStart          -   start index
+ /// \param iEnd            -   end index
+ /// \param bFrames         -   repaint frames
+ /// \param bBars           -   repaint bars
+ /// \param bVolumes        -   repaint volumes
+ /// \param bStoreRightPos  -   store horisontal scrollbar position
+ /// \param bInvalidate     -   invalidate scene (do scene object internal repaint)
+ ///
  void GraphViewForm::PaintViewPort   (int iStart, int iEnd,bool bFrames,bool bBars,bool bVolumes, bool bStoreRightPos, bool bInvalidate)
  {
      RepainTask task(0,iStart,iEnd,false);
@@ -1503,10 +1925,22 @@ void GraphViewForm::slotPeriodButtonChanged()
      }
  }
  //---------------------------------------------------------------------------------------------------------------
+ ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+ /// \brief FastPaint interface part. Repaint frames.
+ /// \param data        - data task from fast tasks events
+ /// \return            - return false to indicate if data is locked and need to postpone task
+ ///
  bool GraphViewForm::FastPaintFrames(RepainTask & data)
  {
+     /////////////////
+     // work in two modes: replacement/usual
+     // 1. in usual mode repaint frames
+     // 2. in replacement mode draws only changed elements (ie vertical frames)
+     // return uses bSuccess to indicate if data is locked
+
      bool bSuccess{true};
 
+     // 1. in usual mode repaint frames
      if (!data.bReplacementMode){
 
          if(!data.holder){
@@ -1525,6 +1959,7 @@ void GraphViewForm::slotPeriodButtonChanged()
                                                        data.bReplacementMode,
                                                        data.bInvalidate);}
      }
+     // 2. in replacement mode draws only changed elements
      else{
          //if (bSuccess) {bSuccess = PaintHorizontalScales();}
          //if (bSuccess) {bSuccess = PaintHorizontalFrames ();}
@@ -1541,18 +1976,30 @@ void GraphViewForm::slotPeriodButtonChanged()
      return bSuccess;
  }
  //---------------------------------------------------------------------------------------------------------------
+ ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+ /// \brief FastPaint interface part. Repaint bars (ie ticks).
+ /// \param data        - data task from fast tasks events
+ /// \return            - return false to indicate if data is locked and need to postpone task
+ ///
  bool GraphViewForm::FastPaintBars(RepainTask & data)
  {
+     //-----------------------------------------------------------------------------
+     // data can be empty on first call of event. So need to request data from database
      if(!data.holder){
+         // try to request data from database
          if(!FastLoadHolder(data)){
+             // if unsuccessfull - postpone
              return false;
          }
      }
+     //-----------------------------------------------------------------------------
 
+     // determine what to draw
      bool bPaintBars = (data.Type & RepainTask::eRepaintType::FastBars) > 0 ? true: false;
      bool bPaintVolumes = (data.Type & RepainTask::eRepaintType::FastVolumes) > 0 ? true: false;
 
 
+     // redraw template depend on selected interval
      bool bSuccess {false};
      if (iSelectedInterval == Bar::eInterval::pTick){
          bSuccess = PaintBars<BarTick>(data.holder, data.iStart, data.iEnd , bPaintBars, bPaintVolumes, data.bStoreRightPos,data.bReplacementMode);
@@ -1564,16 +2011,26 @@ void GraphViewForm::slotPeriodButtonChanged()
      return bSuccess;
  }
  //---------------------------------------------------------------------------------------------------------------
+ ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+ /// \brief FastPaint interface part. Repaint moving averages.
  bool GraphViewForm::FastPaintAverages(RepainTask & data)
  {
+     //-----------------------------------------------------------------------------
+     // data can be empty on first call of event. So need to request data from database
      if(!data.holder){
+         // try to request data from database
          if(!FastLoadHolder(data)){
+             // if unsuccessfull - postpone
              return false;
          }
      }
+     //-----------------------------------------------------------------------------
      return PaintMovingAverages (data.holder, data.iStart, data.iEnd,data.bReplacementMode);
  }
  //---------------------------------------------------------------------------------------------------------------
+ ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+ /// \brief FastPaint interface part. Clones smaller sub range from database to work.
+ /// return false if data core was locked.
  bool GraphViewForm::FastLoadHolder(RepainTask &data)
  {
      return holder->CloneHolder(data.holder,iSelectedInterval,
@@ -1583,25 +2040,67 @@ void GraphViewForm::slotPeriodButtonChanged()
                                 );
  }
  //---------------------------------------------------------------------------------------------------------------
+ ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+ /// \brief PaintBars is main procedure to paint bars
+ /// \param local_holder        - local holder for data to paint
+ /// \param iStartI             - begin of the range in local_holder-dimension coordinates
+ /// \param iEndI               - end of the range in local_holder-dimension coordinates
+ /// \param bPaintBars          - paint bars (ie ticks)
+ /// \param bPaintVolumes       - paint volumes
+ /// \param bStoreRightPos      - store position of horisontal scroll
+ /// \param bReplacementMode    - mode used in FastPaint interface to draw only changing parts
+ /// return false if data core was locked.
+ ///
  template<typename T>
  bool GraphViewForm::PaintBars (std::shared_ptr<GraphHolder> local_holder,int iStartI, int iEndI ,
                                 bool bPaintBars, bool bPaintVolumes,
                                 bool bStoreRightPos, bool bReplacementMode)
 {
+     //////////////////////////////////////////
+     // algorithm:
+     //
+     // 1. safe increment count of invalidators
+     // 2. check database, lock data core, determinate data shift in local_holder
+     // 3. calculate range coordinates in global data table-index coordinates
+     // 4. depend on ReplacementMode do cleaning
+     // 5. main loop. From begin to end repaint bars/volumes
+     // 5.1 calculate coordinates in scene dimention
+     // 5.2 get const bar object to operate
+     // 5.3 fill time scale
+     // 6. Paint bars
+     // 6.1 try to find bar in painted
+     // 6.2 if not found (or cleaned earlier) - redraw
+     // 6.3 get current geometry
+     // 6.4 calculate new geometry
+     // 6.5 store new geometry if needed
+     // 6.6 prepare task to redraw vertical frames for bar
+     // 6.7 if new height exceed current - expand scene
+     // 6.8 if new width exceed current (counting small clean area at right edge) - expand scene
+     // 6.9 paint bars
+     // 7. Paint volumes
+     // 8. If in FastTask mode create task to redraw frames
+     // 9. If not in FastTask mode store horizontal scroll position if needed
+
+     // 1. safe increment count of invalidators
      InvalidateCounterDefender def(aiInvalidateCounter);
 //     {
 //         ThreadFreeCout pcout;
 //         pcout << "PaintBars <"<<iStartI<<":"<<iEndI<<">\n";
 //     }
      /////////////////////////////////////////////////////////////////////////////////////////
-     if (!local_holder) return true;
+     // 2. check database, lock data core, determinate data shift in local_holder
+
+     if (!local_holder) return true; // if empty data - do nothing
+
+     // lock data core
      bool bSuccess;
      auto ItDefender = local_holder->beginIteratorByDate<T>(iSelectedInterval,0,bSuccess);
-     if (!bSuccess) return false;
+     if (!bSuccess) return false; // if unsuccessfull - postpone
      //
      int iMaxSize = (int)local_holder->getViewGraphSize(iSelectedInterval);
-     if (iMaxSize == 0 ) return true;
+     if (iMaxSize == 0 ) return true; // if empty - fo nothing
 
+     // get const container to work with and determinate shift of the data
      const Graph<T>& graph = local_holder->getGraph<T>(iSelectedInterval);
      const int iShift {(int)graph.GetShiftIndex()};
      /////////////////////////////////////////////////////////////////////////////////////////
@@ -1614,7 +2113,8 @@ void GraphViewForm::slotPeriodButtonChanged()
 //     }
 
      //size_t iViewWidth = ui->grViewQuotes->width()/(dHScale *BarGraphicsItem::BarWidth);
-
+     /////////////////////////////////////////////////////////////////////////////////////////
+     // 3. calculate range coordinates in global data table-index coordinates
 
      int iBeg    = iStartI - iShift >= 0    ? iStartI - iShift  : 0 ;
      iBeg        = iBeg < iMaxSize          ? iBeg              : iMaxSize - 1;
@@ -1624,8 +2124,10 @@ void GraphViewForm::slotPeriodButtonChanged()
 
      /////////////////////////////////////////////////////////////////
 
+     // if all is ok - proceed
      if (bSuccess && iMaxSize > 0){
 
+         // 4. depend on ReplacementMode do cleaning
          if (!bReplacementMode)
          {
              if (bPaintBars){
@@ -1653,16 +2155,25 @@ void GraphViewForm::slotPeriodButtonChanged()
          std::time_t tTmp;
          QPen bluePen(Qt::blue,1,Qt::SolidLine);
 
+         // 5. main loop. From begin to end repaint bars/volumes
          for (int i = iBeg ; i <= iEnd; ++i){
+             // 5.1 calculate coordinates in scene dimention
              qreal xCur = (i + iShift + iLeftShift)     * BarGraphicsItem::BarWidth * dHScale;
+
+             // 5.2 get const bar object to operate
              const T &b = graph[i];
+
+             // 5.3 fill time scale
              if(mTimesScale.find(i + iShift) == mTimesScale.end()){
                  mTimesScale[i + iShift] = {b.Period(),false};
              }
-             //
+             // 6. Paint bars
              if (bPaintBars){
+
+                 // 6.1 try to find bar in painted
                  auto ItFound = mShowedGraphicsBars.find(i + iShift);
 
+                 // 6.2 if not found (or cleaned earlier) - redraw
                  if (ItFound == mShowedGraphicsBars.end())
                  {
 
@@ -1671,11 +2182,14 @@ void GraphViewForm::slotPeriodButtonChanged()
 
                      //if (bReplacementMode)
                      {
+                         // 6.3 get current geometry
                          QRectF scRect = ui->grViewQuotes->scene()->sceneRect();
 
+                         // 6.4 calculate new geometry
                          qreal xNewRight = (i + iShift + iLeftShift + iRightShift) * BarGraphicsItem::BarWidth * dHScale;
                          qreal xNewHalfRight = (i + iShift + iLeftShift + iRightShift/3) * BarGraphicsItem::BarWidth * dHScale;
 
+                         // 6.5 store new geometry if needed
                          if(b.High() > dStoredHighMax)      dStoredHighMax = b.High();
                          if(b.Low() < dStoredLowMin)        dStoredLowMin = b.Low();
                          if (iStoredMaxSize < i + iShift + 1)   iStoredMaxSize = i + iShift + 1;
@@ -1685,7 +2199,7 @@ void GraphViewForm::slotPeriodButtonChanged()
                              iNewViewPortH = iViewPortHeight;
                          }
 
-                         ////
+                         // 6.6 prepare task to redraw vertical frames for bar
                          RepainTask task(0,0,0,false);
                          task.Type |=  RepainTask::eRepaintType::FastFrames;
                          task.bReplacementMode = true;
@@ -1693,6 +2207,7 @@ void GraphViewForm::slotPeriodButtonChanged()
                          task.iStart =  iBeg + iShift;
                          task.iEnd   =  iEnd + iShift;
 
+                         // 6.7 if new height exceed current - expand scene
                          if(scRect.height() < iNewViewPortH ){
                              QRectF newRec(0,-iNewViewPortH,xNewRight,iNewViewPortH);
                              grScene->setSceneRect(newRec);
@@ -1705,6 +2220,7 @@ void GraphViewForm::slotPeriodButtonChanged()
                              task.iLetShift = 100;
                              queueRepaint.Push(task);
                          }
+                         // 6.8 if new width exceed current (counting small clean area at right edge) - expand scene
                          else if(scRect.x() + scRect.width() < xNewHalfRight){
                              QRectF newRec(0,scRect.y(),xNewRight,scRect.height());
 
@@ -1721,7 +2237,7 @@ void GraphViewForm::slotPeriodButtonChanged()
 
                      }
                      ///////////////////////////////////////////////////////////////
-                     /// paint bars
+                     // 6.9 paint bars
 
                      BarGraphicsItem *item = new BarGraphicsItem(b,i + iShift,3,mVScale[iSelectedInterval]);
                      mShowedGraphicsBars[i + iShift].push_back(item);
@@ -1733,9 +2249,11 @@ void GraphViewForm::slotPeriodButtonChanged()
              }
 
              //====================================================
+             // 7. Paint volumes
              if (bPaintVolumes){
                  auto ItFound = mShowedVolumes.find(i + iShift);
 
+                 // if new or cleaned before - redraw
                  if (ItFound == mShowedVolumes.end())
                  {
                      ss.str("");
@@ -1750,6 +2268,7 @@ void GraphViewForm::slotPeriodButtonChanged()
              }
          }
          ////////////////////////////////////////////////////////////////////
+         // 8. If in FastTask mode create task to redraw frames
          if(bReplacementMode && iBeg <= iEnd){
 
              auto It (mTimesScale.lower_bound(iBeg + iShift));
@@ -1774,6 +2293,7 @@ void GraphViewForm::slotPeriodButtonChanged()
                  //FastPaintFrames(task);
              }
          }
+         // 9. If not in FastTask mode store horizontal scroll position if needed
          if (!bReplacementMode && bStoreRightPos && iEndI > 0){
              if(mTimesScale.find(iEndI) != mTimesScale.end()){
                  tStoredRightPointPosition = Bar::DateAccommodate(mTimesScale[iEndI].first,iSelectedInterval,true);
@@ -1789,7 +2309,10 @@ void GraphViewForm::slotPeriodButtonChanged()
      }
      return true;
 }
- //---------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Calculate horisontal grid coordinates (when rescaling)
+///
 void GraphViewForm::ReDoHLines()
 {
      double realH = dStoredHighMax - dStoredLowMin;
@@ -1808,6 +2331,9 @@ void GraphViewForm::ReDoHLines()
      }
 }
 //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief cleans states of horizontal grid lines (used to draw only visible lines)
+///
 void GraphViewForm::RefreshHLines()
 {
      for (auto &d: vHLines){
@@ -1815,18 +2341,25 @@ void GraphViewForm::RefreshHLines()
      }
 }
 //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Paint Horizontal Frames
+/// \return
+///
 bool GraphViewForm::PaintHorizontalFrames       ()
 {
-     // TODO: paint only viewport
+    //-----------------------------------------------------------------------
+     // recalculate lines of horizontal grid if their height too high
      if (vHLines.size() > 1){
          double dDelta = realYtoSceneY(vHLines[1].first) - realYtoSceneY(vHLines[0].first);
          if (dDelta < 60){
              ReDoHLines();
          }
      }
+     //-----------------------------------------------------------------------
      //ReDoHLines();
      //RefreshHLines();
-     ////
+     //-----------------------------------------------------------------------
+     // clear lines of another scale
      int iMoveCount{0};
      bool bWas{false};
      size_t i = 0;
@@ -1849,7 +2382,7 @@ bool GraphViewForm::PaintHorizontalFrames       ()
               ++i;
          }
      }
-     ///////////
+     //-----------------------------------------------------------------------
 
      //QPen Pen(Qt::black,1,Qt::DashLine);
      //QColor color(31, 53, 200,40);
@@ -1861,7 +2394,8 @@ bool GraphViewForm::PaintHorizontalFrames       ()
      //QPen Pen(Qt::black,0.5,Qt::DashLine);
      QPen Pen(color,1,Qt::DashLine);
 
-
+     //-----------------------------------------------------------------------
+     // loop and if line has not been drawn then do
      int iCount{0};
      for(const auto &d:vHLines){
          if (!d.second){
@@ -1881,8 +2415,13 @@ bool GraphViewForm::PaintHorizontalFrames       ()
      return true;
 }
 //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Paint vertical scales on the sides of the main scene
+/// \return
+///
 bool GraphViewForm::PaintVerticalSideScales     ()
 {
+     // get geometry of side scenes
      QRectF rL = ui->grViewL1->scene()->sceneRect();
      QRectF rR = ui->grViewR1->scene()->sceneRect();
 
@@ -1899,10 +2438,12 @@ bool GraphViewForm::PaintVerticalSideScales     ()
 
 
      if (mLeftFrames.size() == 0){
+         // draw big vertical side lines
          DrawLineToScene(0, rL.width() - 1, 0, rL.width()-1 , -rL.height(), mLeftFrames, ui->grViewL1->scene(),blackHalfPen,0,false);
          DrawLineToScene(0, 0,          0,          0 , -rR.height(), mRightFrames, ui->grViewR1->scene(),blackHalfPen,0,false);
 
          qreal y;
+         // draw horisontal scales
          for(const auto &d:vHLines){
              y  = -realYtoSceneY(d.first);
              DrawLineToScene(0, rL.width(), y, rL.width() -3 , y, mLeftFrames,  ui->grViewL1->scene(),blackHalfPen,0,false);
@@ -1919,39 +2460,73 @@ bool GraphViewForm::PaintVerticalSideScales     ()
      return true;
 }
 //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Paint vertical frames for range
+/// \param local_holder         - local holder for data to paint
+/// \param iStartI              - begin of the range in global dimension coordinates
+/// \param iEnd                 - end of the range in global dimension coordinates
+/// \param iLeftStock           -
+/// \param bReplacementMode     - mode used in FastPaint interface to draw only changing parts
+/// \param bInvalidate          - flag to do scene-internal invalidate
+/// \return                     - return false if data was locked
+///
 bool GraphViewForm::PaintVerticalFrames ( std::shared_ptr<GraphHolder> local_holder, int iStart, int iEnd,
                                            int iLeftStock,
                                            bool bReplacementMode,
                                            bool bInvalidate)
 {
+
+    ///////////////////////////////////////////////////////////////////////////
+    // algorithm:
+    //
+    // 1. if not in Replacement Mode try to lock core data
+    // 2. call cpecialized template to draw frames
+
+
      if (!bReplacementMode){
          if (!local_holder) return true;
          bool bSuccess;
 
          if (iSelectedInterval == Bar::eInterval::pTick){
+             // try to lock core data
              auto ItDefender = local_holder->beginIteratorByDate<BarTick>(iSelectedInterval,0,bSuccess);
              if (!bSuccess) return false;
 
+             // call cpecialized template to draw frames
              return PainVerticalFramesT<BarTick>   (local_holder, iStart, iEnd,iLeftStock,bReplacementMode,bInvalidate);
          }
          else{
+             // try to lock core data
              auto ItDefender = local_holder->beginIteratorByDate<Bar>(iSelectedInterval,0,bSuccess);
              if (!bSuccess) return false;
 
+             // call cpecialized template to draw frames
              return PainVerticalFramesT<Bar>       (local_holder, iStart, iEnd,iLeftStock,bReplacementMode,bInvalidate);
          }
      }
      else{
 
         if (iSelectedInterval == Bar::eInterval::pTick){
+            // call cpecialized template to draw frames
             return PainVerticalFramesT<BarTick>   (local_holder, iStart, iEnd,iLeftStock,bReplacementMode,bInvalidate);
         }
          else{
+            // call cpecialized template to draw frames
              return PainVerticalFramesT<Bar>       (local_holder, iStart, iEnd,iLeftStock,bReplacementMode,bInvalidate);
          }
      }
 }
 //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Template to paint vertical frames for range
+/// \param local_holder         - local holder for data to paint
+/// \param iStartI              - begin of the range in global dimension coordinates
+/// \param iEnd                 - end of the range in global dimension coordinates
+/// \param iLeftStock           -
+/// \param bReplacementMode     - mode used in FastPaint interface to draw only changing parts
+/// \param bInvalidate          - flag to do scene-internal invalidate
+/// \return                     - return false if data was locked
+///
 template<typename T>
 bool GraphViewForm::PainVerticalFramesT(std::shared_ptr<GraphHolder> local_holder,int iBegSrc, int iEndSrc,
                                          int iLeftStock,
@@ -1959,6 +2534,31 @@ bool GraphViewForm::PainVerticalFramesT(std::shared_ptr<GraphHolder> local_holde
                                          bool bInvalidate)
 {
 
+    ////////////////////////////////////////////////////////////
+    // algorithm:
+    // 1. prepare data source [Graph<T>] - to work independed from ReplacementMode
+    // 2. calculate range coordinates in [Graph<T>] dimention
+    // 3. do cleaning depending from Replacement Mode
+    // 4. prepare pens and variables
+    // 5. draw preliminary (left) horisontal scale
+    // 6. main ciclus. vertical line by line.
+    // 6.1 check if the line already exists
+    // 6.2 calculate real [x] coordinates of line
+    // 6.3 if line is in correct range and if replacement mode is exists proceed
+    // 6.4 get real time of line depend on replacment mode
+    // 6.5 set mark that the time has been processed (to prevent multiple redraws)
+    // 6.6 draw small lines down under :)
+    // 6.7 draw year line
+    // 6.8 draw month line
+    // 6.9 draw day line
+    // 6.10 draw interday line
+    // 6.11 draw ticks with caption line
+    // 6.12 draw ticks line
+    // 7.  draw side scales
+    // 8. do scene-internal invalidate
+    ////////////////////////////////////////////////////////////
+
+    // 1. prepare data source [Graph<T>] - to work independed from ReplacementMode
      const Graph<T>  grTmp(iTickerID,iSelectedInterval);
      const Graph<T>& graph = !bReplacementMode  ? local_holder->getGraph<T>(iSelectedInterval)              : grTmp;
      const int iShift = !bReplacementMode       ? (int)graph.GetShiftIndex()                                : 0;
@@ -1967,6 +2567,8 @@ bool GraphViewForm::PainVerticalFramesT(std::shared_ptr<GraphHolder> local_holde
      if (bReplacementMode && mTimesScale.empty()) return true;
      /////////////////////////////////////////////////////////////////////////////////////////
      /////////////////////////////////////////////////////////////////////////////////////////
+
+     // 2. calculate range coordinates in [Graph<T>] dimention
 //     {
 //         ThreadFreeCout pcout;
 //         pcout <<"paint frames {iBegSrc:iEndSrc} {"<<iBegSrc<<":"<<iEndSrc<<"}\n";
@@ -1981,6 +2583,7 @@ bool GraphViewForm::PainVerticalFramesT(std::shared_ptr<GraphHolder> local_holde
 //         pcout <<"paint frames {iSLeftBeg:iSBeg:iSEnd} {"<<iSLeftBeg<<":"<<iSBeg<<":"<<iSEnd<<"}\n";
 //     }
 
+     // 3. do cleaning depending from Replacement Mode
      if (!bReplacementMode){
          EraseLinesUpper(mVFramesViewQuotes,        iBegSrc, ui->grViewQuotes->scene());
          EraseLinesLower(mVFramesViewQuotes,        iEndSrc, ui->grViewQuotes->scene());
@@ -2001,7 +2604,8 @@ bool GraphViewForm::PainVerticalFramesT(std::shared_ptr<GraphHolder> local_holde
 
          iSBeg = iSLeftBeg;
      }
-
+     //-----------------------------------------
+     // 4. prepare pens and variables
 
      QPen blackSolidPen(Qt::black,0.5,Qt::SolidLine);
      QPen blackDashPen(Qt::gray,1,Qt::DashLine);
@@ -2012,33 +2616,33 @@ bool GraphViewForm::PainVerticalFramesT(std::shared_ptr<GraphHolder> local_holde
 
      int iLineH = ui->grViewScaleUpper->scene()->sceneRect().height()/2;
      static const int iShiftH {4};
-     //////////////////////////////////////////////////////////////
-     qreal xCur{0};
+     //
+     qreal xCur{0};                                 // real[x] coordinate in scene dimention
      //qreal xPre{0};
-     int iFCount{0};
-     int iDayCounter{0};
-     int iSecCounter{0};
-     std::time_t tTmp{0};
+     int iFCount{0};                                // counter for short line to draw
+     int iDayCounter{0};                            // count of days pasts from day line drawed
+     int iSecCounter{0};                            // count of seconds pasts from day line drawed (used to draw day lines not too often)
+     std::time_t tTmp{0};                           // variable to store time which need to be drawn
 
-     std::tm tmPre = *threadfree_gmtime(&tTmp);
-     std::tm tmCur = tmPre;
+     std::tm tmPre = *threadfree_gmtime(&tTmp);     // same as last
+     std::tm tmCur = tmPre;                         // same as last
 
-     bool bFifstLine{true};
+     bool bFifstLine{true};                         // marker of first line
 
      tmCur = *threadfree_gmtime(&tTmp);
 
-     QRectF rectQuotes =  ui->grViewQuotes->scene()->sceneRect();
-     QRectF rectVolume =  ui->grViewVolume->scene()->sceneRect();
+     QRectF rectQuotes =  ui->grViewQuotes->scene()->sceneRect();   // geometry of main scene
+     QRectF rectVolume =  ui->grViewVolume->scene()->sceneRect();   // geometry of volume scene
      /////
-     bool bLineExists{false};
-     int iInvalidate_X_BEG_1{iSBeg + iShift};
-     int iInvalidate_X_BEG_2{0};
+     bool bLineExists{false};                       // marker that line is exists (drawn only if absences)
+     int iInvalidate_X_BEG_1{iSBeg + iShift};       // left border to invalidate
+     int iInvalidate_X_BEG_2{0};                    // right border to invalidate
      //
      /////
      std::stringstream ss;
 
      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-     // preliminary (left) scale
+     // 5. draw preliminary (left) horisontal scale
      for (int j = iBegSrc ; j <= 0 ; ++j) {
          auto ItSL = mVFramesHorisSmallScale.find(j);
          if (ItSL == mVFramesHorisSmallScale.end() || ItSL->second.size() == 0){
@@ -2052,10 +2656,10 @@ bool GraphViewForm::PainVerticalFramesT(std::shared_ptr<GraphHolder> local_holde
      std::call_once(GraphViewForm_init_consts_call_once_flag,&GraphViewForm::init_const,this);
      //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-     // main ciclus
+     // 6. main ciclus. vertical line by line.
      for (int indx = iSLeftBeg; indx<= iSEnd; ++indx){
          bLineExists = false;
-         //
+         // 6.1 check if the line already exists
          ss.str("");
          ss.clear();
          auto ItSL = mVFramesHorisSmallScale.find(indx + iShift);
@@ -2068,11 +2672,15 @@ bool GraphViewForm::PainVerticalFramesT(std::shared_ptr<GraphHolder> local_holde
          }
          //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
          //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+         // 6.2 calculate real [x] coordinates of line
          xCur = (indx + iShift + iLeftShift)     * BarGraphicsItem::BarWidth * dHScale;
+
+         // 6.3 if line is in correct range and if replacement mode is exists
          if ( indx >= 0 && indx  < iMaxSize
               && (!bReplacementMode || mTimesScale.find(indx + iShift) != mTimesScale.end())
               ){
              //--------------------------
+             // 6.4 get realtime of line depend on replacment mode
              if(!bReplacementMode){
                  const T & tM = graph[indx];// holder->getByIndex<T>(iSelectedInterval,indx + iShift);
                  tTmp = tM.Period();
@@ -2082,14 +2690,14 @@ bool GraphViewForm::PainVerticalFramesT(std::shared_ptr<GraphHolder> local_holde
              }
              tmCur = *threadfree_gmtime(&tTmp);
              //--------------------------
-             if (!bFifstLine ){
+             if (!bFifstLine ){ // do not draw first line
                  //------------------------------------------------------------------------
-                 // set mark that the time has been processed
+                 // 6.5 set mark that the time has been processed (to prevent multiple redraws)
                  if (iSBeg <= indx && !bLineExists ){
                      mTimesScale[indx + iShift].second = true;
                  }
                  //------------------------------------------------------------------------
-                 // draw small lines down under :)
+                 // 6.6 draw small lines down under :)
                  if (iSBeg <= indx && !bLineExists ){//&& false
                      if (iFCount <= 0){
                           DrawLineToScene(indx + iShift, xCur,0,xCur,1, mVFramesHorisSmallScale, ui->grViewScaleUpper->scene(),blackSolidPen,tTmp,true);
@@ -2099,7 +2707,7 @@ bool GraphViewForm::PainVerticalFramesT(std::shared_ptr<GraphHolder> local_holde
                      }
                  }
                  //------------------------------------------------------------------------
-                 //  draw year line
+                 // 6.7 draw year line
                  if(tmPre.tm_year != tmCur.tm_year){
                      iDayCounter = 0;
 
@@ -2116,7 +2724,7 @@ bool GraphViewForm::PainVerticalFramesT(std::shared_ptr<GraphHolder> local_holde
                                         mVFramesScaleUpper, ui->grViewScaleUpper->scene(), fontNumb);
                      }
                  }
-                 //  draw month line
+                 // 6.8 draw month line
                  else if(tmPre.tm_mon != tmCur.tm_mon
                          && iSelectedInterval != Bar::eInterval::pMonth // for months don't draw
                          && (iSelectedInterval != Bar::eInterval::pWeek || tmCur.tm_mon % 3 ==0) // for weeks  - only draw only for every third
@@ -2138,7 +2746,7 @@ bool GraphViewForm::PainVerticalFramesT(std::shared_ptr<GraphHolder> local_holde
 
                      }
                  }
-                 //  draw day line
+                 // 6.9 draw day line
                  else if((tmPre.tm_mday != tmCur.tm_mday || tmPre.tm_mon != tmCur.tm_mon || tmPre.tm_year != tmCur.tm_year)
                          && ((iSelectedInterval == Bar::eInterval::pDay && iDayCounter % 8 == 0 ) ||
                              (iSelectedInterval == Bar::eInterval::p180 && iDayCounter % 4 == 0 ) ||
@@ -2164,6 +2772,7 @@ bool GraphViewForm::PainVerticalFramesT(std::shared_ptr<GraphHolder> local_holde
 //                         }
 
                      }
+                     // set marker to draw short lines ( to keep place for captions)
                      if (iFCount > 0){
                          if (tmCur.tm_mday <10)
                              iFCount = - iConstWidthNumb1;
@@ -2171,7 +2780,7 @@ bool GraphViewForm::PainVerticalFramesT(std::shared_ptr<GraphHolder> local_holde
                              iFCount = - iConstWidthNumb2;
                      }
                  }
-                 //  draw interday
+                 // 6.10 draw interday
                  else if((!(tmPre.tm_mday != tmCur.tm_mday || tmPre.tm_mon != tmCur.tm_mon || tmPre.tm_year != tmCur.tm_year))
                          && ((iSelectedInterval == Bar::eInterval::p1  && tmCur.tm_min % 15 == 0 ) ||
                              (iSelectedInterval == Bar::eInterval::p5  && tmCur.tm_min  == 0 ) ||
@@ -2183,19 +2792,21 @@ bool GraphViewForm::PainVerticalFramesT(std::shared_ptr<GraphHolder> local_holde
                          DrawLineToScene             (indx + iShift, xCur, -iShiftH ,xCur, - rectVolume.height() + iShiftH * 2, mVFramesVolume, ui->grViewVolume ->scene(),blackDashPen,tTmp,true); // volume line
                          DrawIntermittentLineToScene (indx + iShift, xCur, -iShiftH ,xCur, - rectQuotes.height() + iShiftH * 2, mVFramesViewQuotes, ui->grViewQuotes->scene(),blackDashPen,tTmp,true); // middle line
 
+                         // draw time only if have place
                          if (iFCount > 1)
                          {
                              DrawTimeToScene(indx + iShift, xCur, -1 ,tmCur,mVFramesScaleUpper, ui->grViewScaleUpper->scene(), fontTime);
                          }
                      }
 
+                     // set marker to draw short lines ( to keep place for captions)
                      if (iFCount > 1)
                      {
                          iFCount = - iConstWidthTime;
                      }
 
                  }
-                 //  draw ticks
+                 // 6.11 draw ticks with caption
                  else if(iSelectedInterval == Bar::eInterval::pTick && (tmPre.tm_min != tmCur.tm_min)){
 
                      if (iSBeg <= indx && !bLineExists){
@@ -2203,12 +2814,14 @@ bool GraphViewForm::PainVerticalFramesT(std::shared_ptr<GraphHolder> local_holde
                          DrawLineToScene             (indx + iShift, xCur, -iShiftH ,xCur, - rectVolume.height() + iShiftH * 2, mVFramesVolume, ui->grViewVolume ->scene(),blackDashPen,tTmp,true); // volume line
                          DrawIntermittentLineToScene (indx + iShift, xCur, -iShiftH ,xCur, - rectQuotes.height() + iShiftH * 2, mVFramesViewQuotes, ui->grViewQuotes->scene(),blackDashPen,tTmp,true); // middle line
 
+                         // draw time only if have place
                          if (iFCount > 0)
                          {
                              DrawTimeToScene(indx + iShift, xCur, -1 ,tmCur,mVFramesScaleUpper, ui->grViewScaleUpper->scene(), fontTime);
                          }
 
                      }
+                     // set marker to draw short lines ( to keep place for captions)
                      if (iFCount > 0)
                      {
                          iFCount = - iConstWidthTime;
@@ -2216,6 +2829,7 @@ bool GraphViewForm::PainVerticalFramesT(std::shared_ptr<GraphHolder> local_holde
 
                      iSecCounter = 0;
                  }
+                 // 6.12 draw ticks
                  else if(iSelectedInterval == Bar::eInterval::pTick
                          && (tmPre.tm_sec != tmCur.tm_sec /*&& iSecCounter >=8 */)
                          ){
@@ -2232,14 +2846,17 @@ bool GraphViewForm::PainVerticalFramesT(std::shared_ptr<GraphHolder> local_holde
 
              }
              else{
+                 //drop first line flag
                  bFifstLine = false;
              }
 
+             // increment day counter
              if (tmPre.tm_mday != tmCur.tm_mday || tmPre.tm_mon != tmCur.tm_mon || tmPre.tm_year != tmCur.tm_year){
                  iDayCounter++;
              }
          }
          else{
+             // 7.  draw side scales
              if (!bLineExists){
                  if ( indx + iShift >= iMaxSize){ // only right
                      if (mVFramesHorisSmallScaleExtremities.find(indx + iShift) == mVFramesHorisSmallScaleExtremities.end()){
@@ -2259,6 +2876,7 @@ bool GraphViewForm::PainVerticalFramesT(std::shared_ptr<GraphHolder> local_holde
          tmPre = tmCur;
      }
 
+     // 8. do scene-internal invalidate
      if (bInvalidate)
      {
          QRectF rec =  ui->grViewQuotes->scene()->sceneRect();
@@ -2274,6 +2892,10 @@ bool GraphViewForm::PainVerticalFramesT(std::shared_ptr<GraphHolder> local_holde
      return true;
 }
 //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Paint horizontal scale
+/// \return
+///
 bool GraphViewForm::PaintHorizontalScales()
 {
 
@@ -2313,6 +2935,10 @@ bool GraphViewForm::PaintHorizontalScales()
      return true;
 }
 //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief set vertical scroll position to selected value
+/// \param dPos
+///
 void GraphViewForm::SetSliderToVertPos(double dPos)
 {
     double dHalf = (sceneYtoRealY(-ui->grViewQuotes->verticalScrollBar()->value()) -
@@ -2324,6 +2950,11 @@ void GraphViewForm::SetSliderToVertPos(double dPos)
     ui->grViewQuotes->verticalScrollBar()->setValue(-realYtoSceneY(dCur));
 }
 //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Set horisontal scroll position to selected value
+/// \param tRightPos            - far right point to display
+/// \param iRightAggregate      - size of far right blank place to display
+///
 void GraphViewForm::SetSliderToPos(std::time_t tRightPos, int iRightAggregate)
 {
      if (iSelectedInterval == Bar::eInterval::pTick){
@@ -2334,13 +2965,20 @@ void GraphViewForm::SetSliderToPos(std::time_t tRightPos, int iRightAggregate)
      }
  }
  //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Template to set horisontal scroll position to selected value
+/// \param tRightPos            - far right point to display
+/// \param iRightAggregate      - size of far right blank place to display
+///
  template<typename T>
  void GraphViewForm::SetSliderToPosT(std::time_t tRightPos, int iRightAggregate)
  {
+     // lock data to operate
      bool bSuccess;
      auto It = holder->beginIteratorByDate<T>(iSelectedInterval,tRightPos,bSuccess);
      auto ItEnd (holder->end<T>());
      if (bSuccess ){
+         // if success  - calculate new position of scrollbar
          int xCur{0};
          int iPos{0};
 
@@ -2355,7 +2993,10 @@ void GraphViewForm::SetSliderToPos(std::time_t tRightPos, int iRightAggregate)
              xCur += iRightAggregate * BarGraphicsItem::BarWidth * dHScale;
          }
 
+        // free lock
         It.unlock();
+
+        // set scrollbars values
         ui->grViewScaleUpper->horizontalScrollBar()->setValue(xCur);
         ui->grViewVolume->horizontalScrollBar()->setValue(xCur);
         //ui->grViewScaleLower->horizontalScrollBar()->setValue(xCur);
@@ -2364,8 +3005,13 @@ void GraphViewForm::SetSliderToPos(std::time_t tRightPos, int iRightAggregate)
      }
 }
 //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Get size of viewport in data index dimention
+/// \return
+///
 std::pair<int,int> GraphViewForm::getViewPortRangeToHolder()
 {
+     // get values of scrollbar viewport
      int iBeg = ui->grViewQuotes->horizontalScrollBar()->value();
      int iEnd = iBeg + ui->grViewQuotes->horizontalScrollBar()->pageStep();
 
@@ -2374,6 +3020,8 @@ std::pair<int,int> GraphViewForm::getViewPortRangeToHolder()
 
      if (ui->grViewQuotes->horizontalScrollBar()->maximum() > 0) { // if slider range was expanded and exceeds viewport
 
+         // do scaling based on geometry constants
+
          iBeg = ((((double)iBeg)/dHScale)/(double)BarGraphicsItem::BarWidth);
          iEnd = ((((double)iEnd)/dHScale)/(double)BarGraphicsItem::BarWidth);
 
@@ -2381,23 +3029,32 @@ std::pair<int,int> GraphViewForm::getViewPortRangeToHolder()
          iEnd = iEnd - iLeftShift;
      }
      else{
+         // get empty window
          iBeg = -iLeftShift;
          iEnd = ((rS.width()/dHScale)/(double)BarGraphicsItem::BarWidth) - iLeftShift;
      }
      return {iBeg,iEnd};
 }
 //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Part of FastShow interface. Event called by main window when fast data chunk arrived.
+/// \param ptrHolder
+///
 void GraphViewForm::slotFastShowEvent(std::shared_ptr<GraphHolder> ptrHolder)
 {
 
-    InvalidateCounterDefender def(aiInvalidateCounter);
+     // safe count invalidators
+     InvalidateCounterDefender def(aiInvalidateCounter);
 
+     // calculate data range value based on local data holder shift
      const int iShift = (int)ptrHolder->getShiftIndex(iSelectedInterval);
      int iShBeg = iShift;
      int iShEnd = iShBeg + (int)ptrHolder->getViewGraphSize(iSelectedInterval);
 
+     // calculate viewport range
      std::pair<int,int> pViewPortRange = getViewPortRangeToHolder();
 
+     // if data chank in viewport - create redraw event
      if(!(pViewPortRange.first > iShEnd || pViewPortRange.second < iShBeg)){
 
          if (iShBeg < pViewPortRange.first)  iShBeg = pViewPortRange.first;
@@ -2405,6 +3062,7 @@ void GraphViewForm::slotFastShowEvent(std::shared_ptr<GraphHolder> ptrHolder)
 
 
          {
+             // create event object
              RepainTask task(0,0,0,false);
              task.Type |= RepainTask::eRepaintType::FastBars;
              task.Type |= RepainTask::eRepaintType::FastVolumes;
@@ -2416,8 +3074,10 @@ void GraphViewForm::slotFastShowEvent(std::shared_ptr<GraphHolder> ptrHolder)
 
              task.holder = ptrHolder;
 
+             // place event to queue
              queueRepaint.Push(task);
 
+             // call redraw of moving averages
              checkFastShowAverages(iShBeg, iShEnd);
          }
      }
@@ -2426,16 +3086,22 @@ void GraphViewForm::slotFastShowEvent(std::shared_ptr<GraphHolder> ptrHolder)
      ////////////////////////////////////////////////////////////////
 }
 //---------------------------------------------------------------------------------------------------------------
-// paint averages only if there are more then 1 bar or more then 500ms passed
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Create task to calculate averages only if there are more then 1 bar or more then 10000ms passed
+/// \param iStart       - begin of range to calculate
+/// \param iEnd         - end of range to calculate
+///
 void GraphViewForm::checkFastShowAverages(int iStart, int iEnd){
 
     milliseconds mLast = std::chrono::steady_clock::now() - dtFastShowAverageActivity;
 
+    // mark averages to redraw
     for (int i = iStart; i <= iEnd; ++i){
         if (stFastShowAverages.find(i) == stFastShowAverages.end()){
             stFastShowAverages.insert(i);
         }
     }
+    // check can we create new task
     if (    (stFastShowAverages.size() > 1 && mLast.count() > 500)
          || (stFastShowAverages.size() > 0 && mLast.count() > 10000)){
         dtFastShowAverageActivity = std::chrono::steady_clock::now();
@@ -2451,6 +3117,8 @@ void GraphViewForm::checkFastShowAverages(int iStart, int iEnd){
         task.bRecalculateAverages = true;
 
         queueRepaint.Push(task);
+
+        // erase last point to calculate (for beauty))
         if(stFastShowAverages.size() > 1){
             auto It (stFastShowAverages.end());
             It--;
@@ -2459,6 +3127,10 @@ void GraphViewForm::checkFastShowAverages(int iStart, int iEnd){
     }
 }
 //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Init constants for texts alignment
+/// mast be called only once because too heavy resourse request
+///
 void GraphViewForm::init_const(){
 
      QGraphicsTextItem itemNumb1("0");
@@ -2475,6 +3147,12 @@ void GraphViewForm::init_const(){
 
 }
 //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Event handler for interface (mainly foir views)
+/// \param watched
+/// \param event
+/// \return
+///
 bool GraphViewForm::eventFilter(QObject *watched, QEvent *event)
 {
      if (    watched == ui->grViewQuotes
@@ -2492,15 +3170,18 @@ bool GraphViewForm::eventFilter(QObject *watched, QEvent *event)
              || watched == ui->grViewVolume->horizontalScrollBar()
              || watched == ui->grViewScaleLower->horizontalScrollBar()
              ){
+         // wheel events
          if(event->type() == QEvent::Wheel){
              QWheelEvent* pe = (QWheelEvent*)event;
              if (pe ){
+                 // get event details
                  QPoint numPixels = pe->pixelDelta();
                  QPoint numDegrees = pe->angleDelta();
-
                  auto bt = pe->modifiers();
                  //
+                 // with controll button pressed
                  if (bt.testFlag(Qt::ControlModifier)){
+                     // do vertical scaling
                      if ((!numPixels.isNull()  && numPixels.x() != 0) || (!numDegrees.isNull())){
 
                          bool bPlus{false};
@@ -2518,7 +3199,9 @@ bool GraphViewForm::eventFilter(QObject *watched, QEvent *event)
                          return true;
                      }
                  }
+                 // with alt button pressed
                  else if (bt.testFlag(Qt::AltModifier)){
+                     // do horisontal scaling
                      if ((!numPixels.isNull()  && numPixels.x() != 0) || (!numDegrees.isNull())){
 
                          bool bPlus{false};
@@ -2531,8 +3214,10 @@ bool GraphViewForm::eventFilter(QObject *watched, QEvent *event)
                      return true;
                  }
                  else if ((bt.testFlag(Qt::ShiftModifier) && bInvertMouseWheel) || (!bt.testFlag(Qt::ShiftModifier) && !bInvertMouseWheel)){
+                     //do nothing - parant event doing vert scroling
                  }
                  else if ((bt.testFlag(Qt::ShiftModifier) && !bInvertMouseWheel) || bInvertMouseWheel){
+                     // do horisontal scrolling
                      bool bRet;
                      if (watched != ui->grViewVolume && watched != ui->grViewVolume->verticalScrollBar()){
                          bRet = ui->grViewQuotes->horizontalScrollBar()->event(event);
@@ -2551,11 +3236,13 @@ bool GraphViewForm::eventFilter(QObject *watched, QEvent *event)
          }
      }
      if(watched == ui->grViewL1){
+         // reposition dynamic widgets when hide part of view
          if(event->type() == QEvent::Hide){
              RepositionPlusMinusButtons();
          }
      }
      if (watched == btnScaleHViewDefault || watched == btnScaleVViewDefault || watched ==btnScaleVVolumeDefault){
+         // reposition dynamic widgets when resize window
          if(event->type() == QEvent::Resize){
              RepositionPlusMinusButtons();
          }
@@ -2563,6 +3250,11 @@ bool GraphViewForm::eventFilter(QObject *watched, QEvent *event)
      return QObject::eventFilter(watched, event);
 }
 //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Prepare for close
+/// \param event
+/// \return
+///
 bool GraphViewForm::event(QEvent *event)
 {
     if(event->type() == QEvent::Close)
@@ -2572,6 +3264,9 @@ bool GraphViewForm::event(QEvent *event)
     return QWidget::event(event);
 }
 //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Save view geometry to ticker for future use
+///
 void GraphViewForm::slotSaveUnsavedConfigs()
 {
     auto It (std::find_if(vTickersLst.begin(),vTickersLst.end(),[&](const Ticker &t){
@@ -2589,12 +3284,16 @@ void GraphViewForm::slotSaveUnsavedConfigs()
         It->SetVScale(mVScale);
         It->SetVVolumeScale(mVVolumeScale);
 
+        // if there are changes - generate event to save config
         if (!tTicker.equalFull(*It)){
             emit NeedSaveTickerConig(*It, true);
         }
     }
 }
 //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Handle change of candle view type
+///
 void GraphViewForm::slotCandleStateChanged(int)
 {
     bOHLC = swtCandle->isChecked();
@@ -2602,6 +3301,9 @@ void GraphViewForm::slotCandleStateChanged(int)
     //ui->grViewQuotes->invalidateScene(ui->grViewQuotes->sceneRect());
 }
 //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Handle resize of momometer widget
+///
 void GraphViewForm::ResizeMemometer()
 {
     QPoint pU   = ui->grViewR1->pos();
@@ -2620,6 +3322,11 @@ void GraphViewForm::ResizeMemometer()
 
 }
 //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Receive event when size of used memory was changed
+/// \param iM           - new used memory size
+/// \param iTotal       - total memory count
+///
 void GraphViewForm::slotUsedMemoryChanged(size_t iM,size_t iTotal)
 {
     std::stringstream ss;
@@ -2635,6 +3342,11 @@ void GraphViewForm::slotUsedMemoryChanged(size_t iM,size_t iTotal)
     indicatorMemo->setToolTipText(ss.str());
 }
 //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief To string converter of memory size
+/// \param iSize
+/// \return
+///
 std::string GraphViewForm::MemoSizeToStr(size_t iSize)
 {
     std::stringstream ss;
@@ -2657,23 +3369,58 @@ std::string GraphViewForm::MemoSizeToStr(size_t iSize)
     return ss.str();
 }
 //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Handler for wheel use mode change event
+/// \param b
+///
 void GraphViewForm::slotInvertMouseWheelChanged(bool b)
 {
     bInvertMouseWheel = b;
 }
 //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Handler for help buttons visibility change event
+/// \param b
+///
 void GraphViewForm::slotShowHelpButtonsChanged(bool b)
 {
     btnHelp->setVisible(b);
     btnHelpR->setVisible(b);
 }
 //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Calculate and paint moving averages
+/// \param local_holder         - local holder for data to paint
+/// \param iStartI              - begin of the range in global dimension coordinates
+/// \param iEnd                 - end of the range in global dimension coordinates
+/// \param bReplacementMode     - mode used in FastPaint interface to draw only changing parts
+/// \return                     - return false if data was locked
+///
 bool GraphViewForm::PaintMovingAverages (std::shared_ptr<GraphHolder> local_holder,
                                             int iStartI, int iEndI,
                                             bool bReplacementMode)
 {
-    if (iSelectedInterval == Bar::eInterval::pTick) return true;
+
+    /////////////////////////////////////////////////////////////////////
+    // algorithm:
     //
+    // 1. do not do for tick interval
+    // 2. lock data and get min/max/shift parameters of data range
+    // 3. convert range to global dimention
+    // 4. do cleaning depending on ReplacementMode
+    // 5. prepare variables
+    // 6.1 prepare point range for blue moving average
+    // 6.2 prepare point range for red moving average
+    // 6.3 prepare point range for green moving average
+    // 7.1 clear old curves
+    // 7.2 do smoothing
+    // 7.3 set new curves
+    // 7.4 set layer of view
+
+    /////////////////////////////////////////////////////////////////////////////////////////
+    // 1. do not do for tick interval
+    if (iSelectedInterval == Bar::eInterval::pTick) return true;
+    // safe invalidator counter
     InvalidateCounterDefender def(aiInvalidateCounter);
 //    {
 //         ThreadFreeCout pcout;
@@ -2681,10 +3428,11 @@ bool GraphViewForm::PaintMovingAverages (std::shared_ptr<GraphHolder> local_hold
 //         pcout << "mMovingBlue.size() <"<<mMovingBlue.size()<<">\n";
 //    }
     /////////////////////////////////////////////////////////////////////////////////////////
+    // 2. lock data and get min/max/shift parameters of data range
     if (!local_holder) return true;
     bool bSuccess;
     auto ItDefender = local_holder->beginIteratorByDate<Bar>(iSelectedInterval,0,bSuccess);
-    if (!bSuccess) return false;
+    if (!bSuccess) return false; // if locked - postpone
     //
     int iMaxBlueSize = (int)local_holder->getMovingBlueSize(iSelectedInterval);
     int iMaxRedSize = (int)local_holder->getMovingRedSize(iSelectedInterval);
@@ -2693,6 +3441,7 @@ bool GraphViewForm::PaintMovingAverages (std::shared_ptr<GraphHolder> local_hold
     const Graph<Bar>& graph = local_holder->getGraph<Bar>(iSelectedInterval);
     const int iShift {(int)graph.GetShiftIndex()};
     /////////////////////////////////////////////////////////////////////////////////////////
+    // 3. convert range to global dimention
 
     int iBeg     = iStartI - iShift - 1 >= 0    ? iStartI - iShift - 1 : 0 ;
 
@@ -2706,6 +3455,7 @@ bool GraphViewForm::PaintMovingAverages (std::shared_ptr<GraphHolder> local_hold
     iEndGreen    = iEndGreen - iShift < iMaxGreenSize ? iEndGreen - iShift     : iMaxGreenSize - 1;
 
     /////////////////////////////////////////////////////////////////
+    // 4. do cleaning depending on ReplacementMode
 
 //    mMovingBlue;
 //    mMovingRed;
@@ -2732,6 +3482,8 @@ bool GraphViewForm::PaintMovingAverages (std::shared_ptr<GraphHolder> local_hold
         EraseLinesLower(mMovingGreen, iBeg   + iShift, ui->grViewQuotes->scene());
     }
     /////////////////////////////////////////////////////////////////
+    // 5. prepare variables
+
     std::stringstream ss;
     QPen bluePen(Qt::blue,1,Qt::SolidLine);
     QPen redPen(Qt::red,1,Qt::SolidLine);
@@ -2741,6 +3493,7 @@ bool GraphViewForm::PaintMovingAverages (std::shared_ptr<GraphHolder> local_hold
     qreal xCur{0};
 
     /////////////////////////////////////////////////////////////////
+    // 6.1 prepare point range for blue moving average
     for (int i = iBeg ; i <= iEndBlue; ++i){
         auto ItFound = mMovingBlue.find(i + iShift);
         if (ItFound == mMovingBlue.end())
@@ -2753,6 +3506,7 @@ bool GraphViewForm::PaintMovingAverages (std::shared_ptr<GraphHolder> local_hold
         }
     }
     /////////////////////////////////////////////////////////////////
+    // 6.2 prepare point range for red moving average
     for (int i = iBeg ; i <= iEndRed; ++i){
         auto ItFound = mMovingRed.find(i + iShift);
         if (ItFound == mMovingRed.end())
@@ -2765,6 +3519,7 @@ bool GraphViewForm::PaintMovingAverages (std::shared_ptr<GraphHolder> local_hold
         }
     }
     /////////////////////////////////////////////////////////////////
+    // 6.3 prepare point range for green moving average
     for (int i = iBeg ; i <= iEndGreen; ++i){
         auto ItFound = mMovingGreen.find(i + iShift);
         if (ItFound == mMovingGreen.end())
@@ -2777,19 +3532,23 @@ bool GraphViewForm::PaintMovingAverages (std::shared_ptr<GraphHolder> local_hold
         }
     }
     /////////////////////////////////////////////////////////////////
+    // 7.1 clear old curves
 
     if (pathBlue)   grScene->removeItem(pathBlue);
     if (pathRed)    grScene->removeItem(pathRed);
     if (pathGreen)  grScene->removeItem(pathGreen);
 
+    // 7.2 do smoothing
     QPainterPath blue   = smoothOut(mMovingBlue, 3);
     QPainterPath red    = smoothOut(mMovingRed, 3);
     QPainterPath green  = smoothOut(mMovingGreen, 3);
 
+    // 7.3 set new curves
     pathBlue    = grScene->addPath(blue,bluePen);
     pathRed     = grScene->addPath(red,redPen);
     pathGreen   = grScene->addPath(green,greenPen);
 
+    // 7.4 set layer of view
     pathBlue->setZValue(7);
     pathRed->setZValue(7);
     pathGreen->setZValue(7);
@@ -2857,11 +3616,17 @@ QPainterPath GraphViewForm::smoothOut(const std::map<int,QPointF> &map, const fl
     return path;
 }
 //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Drop horizontal scale to default (ie [1])
+///
 void GraphViewForm::slotScaleHViewDefaultClicked()
 {
     slotSetNewHScaleQuotes(1);
 }
 //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Drop vertical scale to default (based on viewport size)
+///
 void GraphViewForm::slotScaleVViewDefaultClicked()
 {
     double dNewScale {1.0};
@@ -2871,6 +3636,9 @@ void GraphViewForm::slotScaleVViewDefaultClicked()
     slotSetNewVScaleQuotes(dNewScale);
 }
 //---------------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Drop vertical scale to default for volume view (based on viewport size)
+///
 void GraphViewForm::slotScaleVVolumeDefaultClicked()
 {
     double dNewScale = (ui->grViewVolume->maximumHeight() - iVolumeViewPortHighStrip * 2)/(dStoredVolumeHighMax /*- dStoredVolumeLowMin*/);
