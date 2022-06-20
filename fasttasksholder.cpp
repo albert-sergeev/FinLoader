@@ -26,6 +26,13 @@ FastTasksHolder::FastTasksHolder()
 }
 
 //--------------------------------------------------------------------------------------------------------
+//////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Processing data chunks(ticks) from pipe
+/// \param data                 -   chunks of data
+/// \param stStore              -   object to work with database files
+/// \param Holders              -   current LSM-tree
+/// \param queuePipeAnswers     -   queue to send events
+///
 void FastTasksHolder::PacketReceived(dataFastLoadTask &data,
                                      Storage &stStore,
                                      std::map<int,std::shared_ptr<GraphHolder>>& Holders,
@@ -42,7 +49,7 @@ void FastTasksHolder::PacketReceived(dataFastLoadTask &data,
     if (Holders.find(iTickerID) == Holders.end()){
         lk.unlock();
         std::shared_lock lk2(mutexMainHolder);
-        Holders[iTickerID] = std::make_shared<GraphHolder>(GraphHolder{iTickerID});
+        Holders[iTickerID] = std::make_shared<GraphHolder>(GraphHolder{iTickerID}); //create new branch to tree
         lk2.unlock();
         lk.lock();
     }
@@ -69,7 +76,7 @@ void FastTasksHolder::PacketReceived(dataFastLoadTask &data,
     if (mUtilityMutexes.find(iTickerID) == mUtilityMutexes.end()){
         lkMap.unlock();
         std::unique_lock lkMap2 (mutexUtilityMaps);
-        mUtilityMutexes[iTickerID];
+        mUtilityMutexes[iTickerID];         // create new mutex if needed
         lkMap2.unlock();
         lkMap.lock();
     }
@@ -237,6 +244,16 @@ void FastTasksHolder::PacketReceived(dataFastLoadTask &data,
     }
 }
 //--------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Direct write new ticks to ss-table (bypassing lsm-tree)
+/// \param iTickerID                    - current ticker
+/// \param tLastTime                    - time of previous packet (for correct choseing of data file)
+/// \param strBuff                      - work buffer
+/// \param stTimeSet                    - set to store packets time
+/// \param stStore                      - storage object
+/// \param v                            - vector with packets to process
+/// \param queuePipeAnswers             - queue to sending events
+///
 void FastTasksHolder::WriteVectorToStorage(int iTickerID,
                                            std::time_t tLastTime,
                                            std::string &strBuff,
@@ -246,39 +263,62 @@ void FastTasksHolder::WriteVectorToStorage(int iTickerID,
                                            BlockFreeQueue<dataAmiPipeAnswer>  &queuePipeAnswers)
 {
 
+    //////////////////////////////////////////////////////////////////////////////////////////
+    // algotithm
+    // 1. prepare variables
+    // 2. loop through ticks and fill data flow to write ss-tree
+    // 2.1 check time of tick to switch ss-file if nessesuary
+    // 2.2 switch ss-files if needed
+    // 2.3 write data flow to ss-file if buffer is full
+    // 2.4 store current time in set and make clean packet if needed
+    // 2.5 store data to flow
+    // 3. store tail of data to flow
 
 
 
-    char *cOutBuff = strBuff.data();
-    int iOutBuffPointer {0};
+    /////////////////////////////////////////////////////////////////////////////////
+    // 1. prepare variables
 
-    BarTick bb(0,0,0);
-    BarTickMemcopier bM(bb);
-    int iBlockSize (  sizeof (Storage::data_type)
+    char *cOutBuff = strBuff.data();                // work bussef
+    int iOutBuffPointer {0};                        // pointer to buffer
+
+    BarTick bb(0,0,0);                              // tick to process
+    BarTickMemcopier bM(bb);                        // direct memory accessor
+    int iBlockSize (  sizeof (Storage::data_type)   // size of tick
                     + sizeof (bb.Close())
                     + sizeof (bb.Volume())
                     + sizeof (bb.Period())
                     );
 
-    Storage::data_type iState{Storage::data_type::new_sec};
+    Storage::data_type iState{Storage::data_type::new_sec};                 // indicator of dataflow type
 
-    std::time_t tCurrentMonth = Storage::dateCastToMonth(tLastTime);
+    std::time_t tCurrentMonth = Storage::dateCastToMonth(tLastTime);        // current set of ss-files (ie divided by month)
 
     std::time_t tMonth{0};
     std::time_t tSec{0};
 
-    std::stringstream ssErr;
+    std::stringstream ssErr;                                                // stream fro errorrs
 
-    Storage::MutexDefender<std::shared_lock<std::shared_mutex>> defSlk;
-    Storage::MutexDefender<std::unique_lock<std::shared_mutex>> defUlk;
+    Storage::MutexDefender<std::shared_lock<std::shared_mutex>> defSlk;     // shared mutex for ss-tree
+    Storage::MutexDefender<std::unique_lock<std::shared_mutex>> defUlk;     // uniqur mutex for ss-tree
+
+    /////////////////////////////////////////////////////////////////////////////////
+
+    // 2. loop through ticks and fill data flow to write ss-tree
 
     bool bWasSuccessfull{true};
 
     for (const BarTick &b:v){
+        // 2.1 check time of tick to switch ss-file if nessesuary
         tMonth = Storage::dateCastToMonth(b.Period());
         bb = b;
-        tSec = b.Period();
+        tSec = b.Period(); // time of current packet
+
+        // 2.2 switch ss-files if needed
         if (tCurrentMonth != tMonth){
+
+            //  calculate data period needed to clean for previous months (and write clean packet to ss-fie)
+
             // switch month and write tail
             std::time_t tB{tSec}; // begin of needed to clean period
             std::time_t tE{tSec}; // end of needed to clean period
@@ -286,21 +326,27 @@ void FastTasksHolder::WriteVectorToStorage(int iTickerID,
             auto ItB (stTimeSet.lower_bound(tSec));
             auto ItE (ItB);//(stTimeSet.upper_bound(tSec));
 
+            // get (time + 1 sec) from previous packet
             if (ItB !=stTimeSet.end() && ItB != stTimeSet.begin()){
                 --ItB;
                 tB = (*ItB) + 1;
             }
+            // get (time - 1 sec) from next packet
             if (ItE != stTimeSet.end()){
                 tE = (*ItE) - 1;
             }
 
             std::time_t tTmpMonth = tCurrentMonth;
 
+            // loop by month previous months (ss-files are divided by month)
             while(tTmpMonth < tMonth){
+                // prepare clean packet
                 iOutBuffPointer = createCleanPackets(tTmpMonth, cOutBuff,iOutBuffPointer,tB, tE);
 
+                //if there left data write it to ss-file
                 if (iOutBuffPointer > 0){
                     if(!stStore.WriteMemblockToStore(defSlk,defUlk,iTickerID, tCurrentMonth, cOutBuff,iOutBuffPointer, ssErr)){
+                        // send activity event
                         dataAmiPipeAnswer answ;
                         answ.SetTickerID(iTickerID);
                         answ.SetType(dataAmiPipeAnswer::ErrMessage);
@@ -309,13 +355,16 @@ void FastTasksHolder::WriteVectorToStorage(int iTickerID,
                         break; //exit
                     }
                 }
+                // prepare to next
                 tTmpMonth   = Storage::dateAddMonth(tTmpMonth);
                 iOutBuffPointer = 0;
             }
+            // in current month - create clean packet
             iOutBuffPointer = createCleanPackets(tTmpMonth, cOutBuff,iOutBuffPointer,tB, tE);
 
             tCurrentMonth = tMonth;
         }
+        // 2.3 write data flow to ss-file if buffer is full
         else if( iOutBuffPointer + iBlockSize * 4 > iOutBuffMax){ // do write if full
 
             if(!stStore.WriteMemblockToStore(defSlk,defUlk,iTickerID, tCurrentMonth, cOutBuff,iOutBuffPointer, ssErr)){
@@ -329,6 +378,7 @@ void FastTasksHolder::WriteVectorToStorage(int iTickerID,
 
             iOutBuffPointer = 0;
         }
+        // 2.4 store current time in set and make clean packet if needed
         if (stTimeSet.find(tSec) == stTimeSet.end()){
 
             std::time_t tB{tSec};
@@ -337,13 +387,17 @@ void FastTasksHolder::WriteVectorToStorage(int iTickerID,
             auto ItB (stTimeSet.lower_bound(tSec));
             auto ItE (ItB);//(stTimeSet.upper_bound(tSec));
 
+            // get (time + 1 sec) from previous packet
             if (ItB !=stTimeSet.end() && ItB != stTimeSet.begin()){
                 --ItB;
                 tB = (*ItB) + 1;
             }
+            // get (time - 1 sec) from next packet
             if (ItE != stTimeSet.end()){
                 tE = (*ItE) - 1;
             }
+
+            // if distance is more then 1 sec - make clean packet
             if (tB < tE || (tB == tE && tB != tSec)){
                 iOutBuffPointer = createCleanPackets(tCurrentMonth, cOutBuff,iOutBuffPointer,tB, tE);
             }
@@ -355,6 +409,7 @@ void FastTasksHolder::WriteVectorToStorage(int iTickerID,
             iState  = Storage::data_type::usual;
         }
 
+        // 2.5 store data to flow
         {
             memcpy(cOutBuff + iOutBuffPointer,&iState,   sizeof (Storage::data_type));      iOutBuffPointer += sizeof (Storage::data_type);
             memcpy(cOutBuff + iOutBuffPointer,&bM.Close(),  sizeof (bM.Close()));           iOutBuffPointer += sizeof (bM.Close());
@@ -362,6 +417,8 @@ void FastTasksHolder::WriteVectorToStorage(int iTickerID,
             memcpy(cOutBuff + iOutBuffPointer,&bM.Period(), sizeof (bM.Period()));          iOutBuffPointer += sizeof (bM.Period());
         }
     }
+
+    // 3. store tail of data to flow
     if (bWasSuccessfull && iOutBuffPointer > 0){
         ////////////////////////
         /// write tail
@@ -378,6 +435,15 @@ void FastTasksHolder::WriteVectorToStorage(int iTickerID,
 
 }
 //--------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Utility to create clean packet (to buffer)
+/// \param tMonth               -   current month (ie ss-table file-set)
+/// \param cBuff                -   buffer to use
+/// \param iBuffPointer         -   write begin pointer
+/// \param tBegin               -   clean time begin
+/// \param tEnd                 -   clean time end
+/// \return
+///
 int FastTasksHolder::createCleanPackets(std::time_t tMonth, char* cBuff,int iBuffPointer,std::time_t tBegin, std::time_t tEnd)
 {
 
@@ -417,6 +483,10 @@ int FastTasksHolder::createCleanPackets(std::time_t tMonth, char* cBuff,int iBuf
     return iBuffPointer;
 }
 //--------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Thread free utility to set repo table
+/// \param mappedRepoTable
+///
 void FastTasksHolder::setRepoTable(const std::map<int,Market::SessionTable_type>&  mappedRepoTable)
 {
     std::unique_lock lk(mutexSessionTables);
@@ -424,6 +494,10 @@ void FastTasksHolder::setRepoTable(const std::map<int,Market::SessionTable_type>
     shptrMappedRepoTable = std::make_shared<std::map<int,Market::SessionTable_type>>(std::map<int,Market::SessionTable_type>{mappedRepoTable});
 }
 //--------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Thread free utility to get repo table
+/// \return
+///
 std::shared_ptr<std::map<int,Market::SessionTable_type>> FastTasksHolder::getRepoTable()
 {
     std::shared_lock lk(mutexSessionTables);
@@ -431,6 +505,11 @@ std::shared_ptr<std::map<int,Market::SessionTable_type>> FastTasksHolder::getRep
     return shRet;
 }
 //--------------------------------------------------------------------------------------------------------
+///////////////////////////////////////////////////////////////////////////////////////////////
+/// \brief Loops through vector and check if time is in session table. Filters packets inplace.
+/// \param v            - vector to filter
+/// \param repoTable    - session time table
+///
 void FastTasksHolder::FilterPacket(std::vector<BarTick> &v,Market::SessionTable_type &repoTable)
 {
     auto It (v.begin());
